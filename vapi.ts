@@ -42,7 +42,7 @@ export default class Vapi {
       return;
     }
     this.started = true;
-    const url = process.env.VAPI_URL + "/web_call";
+    const url = "https://phone-api-dev.onrender.com/web_call";
     axios
       .post(
         url,
