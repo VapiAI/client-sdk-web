@@ -1,0 +1,33 @@
+{
+  "name": "vapi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/vapi.js",
+  "types": "dist/vapi.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && tsc --declaration",
+    "start": "npm run build && node dist/vapi.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VapiAI/snippet.git"
+  },
+  "author": "vapi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/VapiAI/snippet/issues"
+  },
+  "homepage": "https://github.com/VapiAI/snippet#readme",
+  "dependencies": {
+    "axios": "^1.5.0",
+    "base64-arraybuffer": "^1.0.2",
+    "openai": "^4.0.1",
+    "standardized-audio-context": "^25.3.56",
+    "ws": "^8.14.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.6.0",
+    "@types/ws": "^8.5.5"
+  }
+}
