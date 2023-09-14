@@ -1,6 +1,6 @@
 {
   "name": "vapi-snippet",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "",
   "main": "dist/vapi.js",
   "types": "dist/vapi.d.ts",
@@ -20,7 +20,6 @@
   },
   "homepage": "https://github.com/VapiAI/snippet#readme",
   "dependencies": {
-    "axios": "^1.5.0",
     "base64-arraybuffer": "^1.0.2",
     "openai": "^4.0.1",
     "standardized-audio-context": "^25.3.56",

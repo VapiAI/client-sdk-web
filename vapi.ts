@@ -6,7 +6,6 @@ import {
 
 import { Chat } from "openai/resources";
 import WebSocket from "ws";
-import axios from "axios";
 import { decode } from "base64-arraybuffer";
 
 export type Agent = {
@@ -43,16 +42,17 @@ export default class Vapi {
     }
     this.started = true;
     const url = "https://phone-api-dev.onrender.com/web_call";
-    axios
-      .post(
-        url,
-        { agent, startTalking },
-        {
-          headers: { Authorization: `Bearer ${this.apiToken}` },
-        }
-      )
-      .then((response) => {
-        const { url, callId } = response.data;
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiToken}`,
+      },
+      body: JSON.stringify({ agent, startTalking }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        const { url, callId } = data;
         this.ws = new WebSocket(url);
         this.ws.on("open", () => {
           this.ws?.send(JSON.stringify({ event: "start", callId }));
