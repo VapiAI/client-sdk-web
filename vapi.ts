@@ -67,10 +67,7 @@ export default class Vapi {
   }
 
   private startRecording(): void {
-    console.log("starting");
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      console.log("got stream");
-
       this.mediaRecorder = new MediaRecorder(stream);
       this.mediaRecorder.start(200);
       this.mediaRecorder.ondataavailable = (event) => {
@@ -78,11 +75,8 @@ export default class Vapi {
           const reader = new FileReader();
           reader.onloadend = () => {
             if (reader.result) {
-              const buffer = new Uint8Array(reader.result as ArrayBuffer);
-              // Convert the buffer to a base64 string
-              const base64String = btoa(
-                String.fromCharCode.apply(null, buffer)
-              );
+              // Convert the result directly to a base64 string
+              const base64String = (reader.result as string).split(",")[1];
               console.log(base64String);
               this.ws?.send(
                 JSON.stringify({
@@ -93,7 +87,7 @@ export default class Vapi {
               );
             }
           };
-          reader.readAsArrayBuffer(event.data);
+          reader.readAsDataURL(event.data);
         }
       };
     });
