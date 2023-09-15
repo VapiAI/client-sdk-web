@@ -104,10 +104,3 @@ export default class Vapi {
     this.mediaRecorder = null;
   }
 }
-
-const vapi = new Vapi(process.env.VAPI_TOKEN || "");
-vapi.start({
-  name: "test",
-  context: "I am John, a plumber.",
-  voice: "en-US-Wavenet-D",
-});
