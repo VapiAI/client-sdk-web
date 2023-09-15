@@ -5,7 +5,6 @@ import {
 } from "standardized-audio-context";
 
 import { Chat } from "openai/resources";
-import WebSocket from "ws";
 import { decode } from "base64-arraybuffer";
 
 export type Agent = {
@@ -15,12 +14,6 @@ export type Agent = {
   functions?: Chat.CompletionCreateParams.Function[];
   callbackUrl?: string;
   voice?: string;
-};
-
-type MessageEvent = {
-  type: "media";
-  callId: string;
-  media: string;
 };
 
 export default class Vapi {
@@ -54,14 +47,17 @@ export default class Vapi {
       .then((data) => {
         const { url, callId } = data;
         this.ws = new WebSocket(url);
-        this.ws.on("open", () => {
+        this.ws.onopen = () => {
           this.ws?.send(JSON.stringify({ event: "start", callId }));
           this.startRecording();
-        });
-        this.ws.on("message", this.onMessage);
-        this.ws.on("close", () => {
+        };
+        this.ws.onmessage = (event) => {
+          if (!this.ws) return;
+          this.onMessage(this.ws, event);
+        };
+        this.ws.onclose = () => {
           this.stop();
-        });
+        };
       })
       .catch((error) => {
         console.error(error);
@@ -81,7 +77,7 @@ export default class Vapi {
   }
 
   private onMessage(ws: WebSocket, event: MessageEvent): void {
-    const data = JSON.parse(event.media);
+    const data = JSON.parse(event.data);
     if (data.event === "media") {
       const audioData = decode(data.media.payload);
       this.audioContext.decodeAudioData(audioData, (buffer) => {

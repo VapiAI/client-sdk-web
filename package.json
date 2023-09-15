@@ -1,6 +1,6 @@
 {
   "name": "vapi-snippet",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "main": "dist/vapi.js",
   "types": "dist/vapi.d.ts",
@@ -22,8 +22,7 @@
   "dependencies": {
     "base64-arraybuffer": "^1.0.2",
     "openai": "^4.0.1",
-    "standardized-audio-context": "^25.3.56",
-    "ws": "^8.14.1"
+    "standardized-audio-context": "^25.3.56"
   },
   "devDependencies": {
     "@types/node": "^20.6.0",
