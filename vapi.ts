@@ -69,7 +69,7 @@ export default class Vapi {
   private startRecording(): void {
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
       this.mediaRecorder = new MediaRecorder(stream);
-      this.mediaRecorder.start(200);
+      this.mediaRecorder.start(40);
       this.mediaRecorder.ondataavailable = (event) => {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
           const reader = new FileReader();
