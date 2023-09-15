@@ -23,6 +23,7 @@ export default class Vapi {
   private started: boolean = false;
   private ws: WebSocket | null = null;
   private mediaRecorder: MediaRecorder | null = null;
+  private callId: string | null = null;
 
   constructor(apiToken: string) {
     this.apiToken = apiToken;
@@ -47,6 +48,7 @@ export default class Vapi {
       .then((response) => response.json())
       .then((data) => {
         const { url, callId } = data;
+        this.callId = callId;
         this.ws = new WebSocket(url);
         this.ws.onopen = () => {
           this.ws?.send(JSON.stringify({ event: "start", callId }));
@@ -73,8 +75,25 @@ export default class Vapi {
       this.mediaRecorder.start(200);
       this.mediaRecorder.ondataavailable = (event) => {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          console.log(JSON.stringify({ event: "media", media: event.data }));
-          this.ws.send(JSON.stringify({ event: "media", media: event.data }));
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (reader.result) {
+              const buffer = new Uint8Array(reader.result as ArrayBuffer);
+              // Convert the buffer to a base64 string
+              const base64String = btoa(
+                String.fromCharCode.apply(null, buffer)
+              );
+              console.log(base64String);
+              this.ws?.send(
+                JSON.stringify({
+                  event: "media",
+                  media: base64String,
+                  callId: this.callId,
+                })
+              );
+            }
+          };
+          reader.readAsArrayBuffer(event.data);
         }
       };
     });
