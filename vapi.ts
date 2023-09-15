@@ -18,7 +18,7 @@ export type Agent = {
 
 export default class Vapi {
   private apiToken: string;
-  private audioContext: AudioContext;
+  private audioContext: AudioContext | null = null;
   private source: IAudioBufferSourceNode<IAudioContext> | null = null;
   private started: boolean = false;
   private ws: WebSocket | null = null;
@@ -26,13 +26,14 @@ export default class Vapi {
 
   constructor(apiToken: string) {
     this.apiToken = apiToken;
-    this.audioContext = new AudioContext();
   }
 
   start(agent: Agent, startTalking = true): void {
     if (this.started) {
       return;
     }
+    this.audioContext = new AudioContext();
+    this.startRecording();
     this.started = true;
     const url = "https://phone-api-dev.onrender.com/web_call";
     fetch(url, {
@@ -49,7 +50,6 @@ export default class Vapi {
         this.ws = new WebSocket(url);
         this.ws.onopen = () => {
           this.ws?.send(JSON.stringify({ event: "start", callId }));
-          this.startRecording();
         };
         this.ws.onmessage = (event) => {
           if (!this.ws) return;
@@ -70,6 +70,7 @@ export default class Vapi {
       this.mediaRecorder.start(200);
       this.mediaRecorder.ondataavailable = (event) => {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          console.log(JSON.stringify({ event: "media", media: event.data }));
           this.ws.send(JSON.stringify({ event: "media", media: event.data }));
         }
       };
@@ -80,7 +81,11 @@ export default class Vapi {
     const data = JSON.parse(event.data);
     if (data.event === "media") {
       const audioData = decode(data.media.payload);
+      if (!this.audioContext) return;
+
       this.audioContext.decodeAudioData(audioData, (buffer) => {
+        if (!this.audioContext) return;
+
         this.source = this.audioContext.createBufferSource();
         this.source.buffer = buffer;
         this.source.connect(this.audioContext.destination);
@@ -102,5 +107,10 @@ export default class Vapi {
       this.mediaRecorder.stop();
     }
     this.mediaRecorder = null;
+
+    if (this.audioContext) {
+      this.audioContext.close();
+    }
+    this.audioContext = null;
   }
 }
