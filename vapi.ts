@@ -65,7 +65,10 @@ export default class Vapi {
   }
 
   private startRecording(): void {
+    console.log("starting");
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      console.log("got stream");
+
       this.mediaRecorder = new MediaRecorder(stream);
       this.mediaRecorder.start(200);
       this.mediaRecorder.ondataavailable = (event) => {
