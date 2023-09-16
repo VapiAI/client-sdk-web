@@ -1,6 +1,6 @@
 {
   "name": "vapi-snippet",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "",
   "main": "dist/vapi.js",
   "types": "dist/vapi.d.ts",

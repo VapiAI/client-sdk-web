@@ -68,8 +68,7 @@ export default class Vapi {
 
   private startRecording(): void {
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      const options = { mimeType: "audio/wav" };
-      this.mediaRecorder = new MediaRecorder(stream, options);
+      this.mediaRecorder = new MediaRecorder(stream);
       this.mediaRecorder.start(40);
       this.mediaRecorder.ondataavailable = (event) => {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
