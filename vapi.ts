@@ -68,7 +68,8 @@ export default class Vapi {
 
   private startRecording(): void {
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      this.mediaRecorder = new MediaRecorder(stream);
+      const options = { mimeType: "audio/wav" };
+      this.mediaRecorder = new MediaRecorder(stream, options);
       this.mediaRecorder.start(40);
       this.mediaRecorder.ondataavailable = (event) => {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -77,7 +78,7 @@ export default class Vapi {
             if (reader.result) {
               // Convert the result directly to a base64 string
               const base64String = (reader.result as string).split(",")[1];
-              console.log(base64String);
+
               this.ws?.send(
                 JSON.stringify({
                   event: "media",
