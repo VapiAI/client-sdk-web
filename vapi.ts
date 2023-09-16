@@ -3,8 +3,14 @@ import {
   IAudioBufferSourceNode,
   IAudioContext,
 } from "standardized-audio-context";
+import {
+  IMediaRecorder,
+  MediaRecorder,
+  register,
+} from "extendable-media-recorder";
 
 import { Chat } from "openai/resources";
+import { connect } from "extendable-media-recorder-wav-encoder";
 import { decode } from "base64-arraybuffer";
 
 export type Agent = {
@@ -22,11 +28,14 @@ export default class Vapi {
   private source: IAudioBufferSourceNode<IAudioContext> | null = null;
   private started: boolean = false;
   private ws: WebSocket | null = null;
-  private mediaRecorder: MediaRecorder | null = null;
+  private mediaRecorder: IMediaRecorder | null = null;
   private callId: string | null = null;
 
   constructor(apiToken: string) {
     this.apiToken = apiToken;
+    connect().then((rec) => {
+      register(rec);
+    });
   }
 
   start(agent: Agent, startTalking = true): void {
@@ -68,7 +77,8 @@ export default class Vapi {
 
   private startRecording(): void {
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      this.mediaRecorder = new MediaRecorder(stream);
+      this.mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/wav" });
+
       this.mediaRecorder.start(40);
       this.mediaRecorder.ondataavailable = (event) => {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
