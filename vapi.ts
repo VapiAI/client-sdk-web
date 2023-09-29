@@ -60,31 +60,31 @@ export default class Vapi {
 
     this.started = true;
 
-    // client.call
-    //   .callControllerCreateWebCall({
-    //     agent,
-    //   })
-    //   .then(({ data }) => {
-    // const { callId, url } = data;
-    const socket = new WebSocket("ws://localhost:3001");
+    client.call
+      .callControllerCreateWebCall({
+        agent,
+      })
+      .then(({ data }) => {
+        const { callId, url } = data;
+        const socket = new WebSocket(url);
 
-    this.ws = socket;
+        this.ws = socket;
 
-    socket.onopen = () => {
-      socket.send(JSON.stringify({ event: "start", callId: "123" }));
-      this.startRecording();
-    };
-    socket.onmessage = (event) => {
-      if (!socket) return;
-      this.onMessage(socket, event);
-    };
-    socket.onclose = () => {
-      this.stop();
-    };
-    // })
-    // .catch((error) => {
-    //   console.error(error);
-    // });
+        socket.onopen = () => {
+          socket.send(JSON.stringify({ event: "start", callId }));
+          this.startRecording();
+        };
+        socket.onmessage = (event) => {
+          if (!socket) return;
+          this.onMessage(socket, event);
+        };
+        socket.onclose = () => {
+          this.stop();
+        };
+      })
+      .catch((error) => {
+        console.error(error);
+      });
   }
 
   private startRecording(): void {
