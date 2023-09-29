@@ -19,37 +19,30 @@ export default class Vapi {
   private nextClipTime: number = 0;
 
   private decodeQueue: QueueObject<ArrayBuffer>;
-  private playQueue: QueueObject<AudioBuffer>;
 
   constructor(apiToken: string) {
     client.setSecurityData(apiToken);
 
     this.decodeQueue = async.queue((task, callback) => {
       this.audioContext.decodeAudioData(task, (buffer) => {
-        this.playQueue.push(buffer);
+        this.source = this.audioContext.createBufferSource();
+        this.source.buffer = buffer;
+        this.source.connect(this.audioContext.destination);
+
+        // If the next clip time is in the past, set it to the current time
+        this.nextClipTime = Math.max(
+          this.nextClipTime,
+          this.audioContext.currentTime
+        );
+
+        // Start the source at the next clip time
+        this.source.start(this.nextClipTime);
+
+        // Schedule the next clip time
+        this.nextClipTime += buffer.duration;
+
         callback();
       });
-    }, 1);
-
-    this.playQueue = async.queue((buffer, callback) => {
-      this.source = this.audioContext.createBufferSource();
-      this.source.buffer = buffer;
-      this.source.connect(this.audioContext.destination);
-
-      // If the next clip time is in the past, set it to the current time
-      this.nextClipTime = Math.max(
-        this.nextClipTime,
-        this.audioContext.currentTime
-      );
-
-      // Start the source at the next clip time
-      this.source.start(this.nextClipTime);
-
-      // Schedule the next clip time
-      this.nextClipTime += buffer.duration;
-
-      // When this source ends, call the callback to process the next audio clip
-      this.source.onended = (e) => callback();
     }, 1);
   }
 
