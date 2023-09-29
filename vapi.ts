@@ -1,64 +1,43 @@
+import { Agent, CreateAgentDTO } from "./api";
 import {
   AudioContext,
   IAudioBufferSourceNode,
   IAudioContext,
 } from "standardized-audio-context";
-import {
-  IMediaRecorder,
-  MediaRecorder,
-  register,
-} from "extendable-media-recorder";
 
-import { Chat } from "openai/resources";
-import { connect } from "extendable-media-recorder-wav-encoder";
+import { client } from "./client";
 import { decode } from "base64-arraybuffer";
 
-export type Agent = {
-  name?: string;
-  context?: string;
-  getContextFromCallback?: boolean;
-  functions?: Chat.CompletionCreateParams.Function[];
-  callbackUrl?: string;
-  voice?: string;
-};
-
 export default class Vapi {
-  private apiToken: string;
   private audioContext: AudioContext | null = null;
   private source: IAudioBufferSourceNode<IAudioContext> | null = null;
   private started: boolean = false;
   private ws: WebSocket | null = null;
-  private mediaRecorder: IMediaRecorder | null = null;
-  private callId: string | null = null;
+  private mediaRecorder: MediaRecorder | null = null;
 
   constructor(apiToken: string) {
-    this.apiToken = apiToken;
-    connect().then((rec) => {
-      register(rec);
-    });
+    client.setSecurityData(apiToken);
   }
 
-  start(agent: Agent, startTalking = true): void {
+  start(agent: CreateAgentDTO): void {
     if (this.started) {
       return;
     }
+
     this.audioContext = new AudioContext();
     this.startRecording();
+
     this.started = true;
-    const url = "https://phone-api-dev.onrender.com/web_call";
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiToken}`,
-      },
-      body: JSON.stringify({ agent, startTalking }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        const { url, callId } = data;
-        this.callId = callId;
+
+    client.call
+      .callControllerCreateWebCall({
+        agent,
+      })
+      .then(({ data }) => {
+        const { callId, url } = data;
+
         this.ws = new WebSocket(url);
+
         this.ws.onopen = () => {
           this.ws?.send(JSON.stringify({ event: "start", callId }));
         };
@@ -77,27 +56,14 @@ export default class Vapi {
 
   private startRecording(): void {
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      this.mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/wav" });
+      this.mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "audio/webm;codecs=opus",
+      });
 
-      this.mediaRecorder.start(40);
-      this.mediaRecorder.ondataavailable = (event) => {
+      this.mediaRecorder.start(3000);
+      this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            if (reader.result) {
-              // Convert the result directly to a base64 string
-              const base64String = (reader.result as string).split(",")[1];
-
-              this.ws?.send(
-                JSON.stringify({
-                  event: "media",
-                  media: base64String,
-                  callId: this.callId,
-                })
-              );
-            }
-          };
-          reader.readAsDataURL(event.data);
+          this.ws?.send(event.data);
         }
       };
     });
