@@ -28,31 +28,31 @@ export default class Vapi {
 
     this.started = true;
 
-    // client.call
-    //   .callControllerCreateWebCall({
-    //     agent,
-    //   })
-    //   .then(({ data }) => {
-    //     const { callId, url } = data;
-    const socket = new WebSocket("ws://localhost:3001");
+    client.call
+      .callControllerCreateWebCall({
+        agent,
+      })
+      .then(({ data }) => {
+        const { callId, url } = data;
+        const socket = new WebSocket(url);
 
-    this.ws = socket;
+        this.ws = socket;
 
-    socket.onopen = () => {
-      // socket.send(JSON.stringify({ event: "start", callId }));
-      this.startRecording();
-    };
-    socket.onmessage = (event) => {
-      if (!socket) return;
-      this.onMessage(socket, event);
-    };
-    socket.onclose = () => {
-      this.stop();
-    };
-    // })
-    // .catch((error) => {
-    //   console.error(error);
-    // });
+        socket.onopen = () => {
+          socket.send(JSON.stringify({ event: "start", callId }));
+          this.startRecording();
+        };
+        socket.onmessage = (event) => {
+          if (!socket) return;
+          this.onMessage(socket, event);
+        };
+        socket.onclose = () => {
+          this.stop();
+        };
+      })
+      .catch((error) => {
+        console.error(error);
+      });
   }
 
   private startRecording(): void {
@@ -61,7 +61,7 @@ export default class Vapi {
         mimeType: "audio/webm;codecs=opus",
       });
 
-      this.mediaRecorder.start(40);
+      this.mediaRecorder.start(100);
       this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
           this.ws.send(event.data);
