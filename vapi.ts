@@ -23,9 +23,16 @@ export default class Vapi {
   constructor(apiToken: string) {
     client.setSecurityData(apiToken);
 
-    this.decodeQueue = async.queue((task, callback) => {
+    this.decodeQueue = this.createQueue();
+  }
+
+  createQueue() {
+    return async.queue<ArrayBuffer>((task, callback) => {
+      this.source = this.audioContext.createBufferSource();
+
       this.audioContext.decodeAudioData(task, (buffer) => {
-        this.source = this.audioContext.createBufferSource();
+        if (!this.source) return;
+
         this.source.buffer = buffer;
         this.source.connect(this.audioContext.destination);
 
@@ -101,6 +108,24 @@ export default class Vapi {
       const audioData = decode(data.media.payload);
       this.decodeQueue.push(audioData);
     }
+    if (data.event === "clear") {
+      this.clear();
+    }
+  }
+
+  clear(): void {
+    this.decodeQueue.kill();
+    this.decodeQueue = this.createQueue();
+
+    // Stop the source if it exists
+    if (this.source) {
+      this.source.stop();
+      this.source.disconnect();
+      this.source = null;
+    }
+
+    // Reset the next clip time
+    this.nextClipTime = 0;
   }
 
   stop(): void {
