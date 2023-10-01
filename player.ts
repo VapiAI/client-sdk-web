@@ -1,35 +1,66 @@
-class ContinuousPlayer {
+import { QueueObject, queue } from "async"; // You need to install the async package
+
+export class ContinuousPlayer {
   private audioCtx: AudioContext;
   private nextStartTime: number;
-  private isInitialized: boolean;
+  private audioQueue: QueueObject<Promise<AudioBuffer>>;
+  private crossFadeDuration: number; // Duration of the crossfade
 
-  constructor() {
+  constructor(crossFadeDuration = 0.5) {
     this.audioCtx = new AudioContext();
     this.nextStartTime = 0;
-    this.isInitialized = false;
+    this.audioQueue = this.createQueue();
+    this.crossFadeDuration = crossFadeDuration;
   }
 
-  async playChunk(audioData: ArrayBuffer) {
-    // Initialize on first chunk
-    if (!this.isInitialized) {
-      this.nextStartTime = this.audioCtx.currentTime;
-      this.isInitialized = true;
-    }
+  private createQueue() {
+    return queue(
+      async (audioPromise: Promise<AudioBuffer>, callback: Function) => {
+        const audioBuffer = await audioPromise;
+        const source = this.audioCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(this.audioCtx.destination);
 
-    // Decode the audio data
-    const audioBuffer = await this.audioCtx.decodeAudioData(audioData);
+        // Create a gain node for crossfading
+        const gainNode = this.audioCtx.createGain();
+        source.connect(gainNode);
+        gainNode.connect(this.audioCtx.destination);
 
-    // Create a new buffer source for the decoded data
-    const source = this.audioCtx.createBufferSource();
-    source.buffer = audioBuffer;
+        // Start the source at the next start time
+        source.start(this.nextStartTime);
 
-    // Connect to the destination
-    source.connect(this.audioCtx.destination);
+        // Schedule the crossfade
+        gainNode.gain.setValueAtTime(0, this.nextStartTime);
+        gainNode.gain.linearRampToValueAtTime(
+          1,
+          this.nextStartTime + this.crossFadeDuration
+        );
+        gainNode.gain.setValueAtTime(
+          1,
+          this.nextStartTime + audioBuffer.duration - this.crossFadeDuration
+        );
+        gainNode.gain.linearRampToValueAtTime(
+          0,
+          this.nextStartTime + audioBuffer.duration
+        );
 
-    // Schedule it to play immediately after the last chunk
-    source.start(this.nextStartTime);
+        source.onended = () => {
+          this.nextStartTime += audioBuffer.duration;
+          callback();
+        };
+      },
+      1
+    );
+  }
 
-    // Update the next start time
-    this.nextStartTime += audioBuffer.duration;
+  playChunk(audioData: ArrayBuffer) {
+    const decodePromise = this.audioCtx.decodeAudioData(audioData);
+    this.audioQueue.push(decodePromise);
+  }
+
+  async clear() {
+    this.audioQueue.kill();
+    this.audioQueue = this.createQueue();
+    this.nextStartTime = 0;
   }
 }
