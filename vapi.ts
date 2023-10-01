@@ -1,56 +1,39 @@
 import { Agent, CreateAgentDTO } from "./api";
-import {
-  AudioContext,
-  IAudioBufferSourceNode,
-  IAudioContext,
-} from "standardized-audio-context";
-import async, { QueueObject } from "async";
 
 import { client } from "./client";
 import { decode } from "base64-arraybuffer";
 
 export default class Vapi {
-  private audioContext: AudioContext = new AudioContext();
-  private source: IAudioBufferSourceNode<IAudioContext> | null = null;
   private started: boolean = false;
   private ws: WebSocket | null = null;
   private mediaRecorder: MediaRecorder | null = null;
-
-  private nextClipTime: number = 0;
-
-  private decodeQueue: QueueObject<ArrayBuffer>;
+  private mediaSource: MediaSource;
+  private sourceBuffer: SourceBuffer | null = null;
+  private audioQueue: ArrayBuffer[] = [];
 
   constructor(apiToken: string) {
     client.setSecurityData(apiToken);
 
-    this.decodeQueue = this.createQueue();
+    this.mediaSource = this.createMediaSource();
   }
 
-  createQueue() {
-    return async.queue<ArrayBuffer>((task, callback) => {
-      this.source = this.audioContext.createBufferSource();
+  createMediaSource(): MediaSource {
+    const source = new MediaSource();
+    const audio = document.createElement("audio");
+    audio.src = URL.createObjectURL(source);
 
-      this.audioContext.decodeAudioData(task, (buffer) => {
-        if (!this.source) return;
+    document.addEventListener("click", () => {
+      audio.play();
+    });
 
-        this.source.buffer = buffer;
-        this.source.connect(this.audioContext.destination);
-
-        // If the next clip time is in the past, set it to the current time
-        this.nextClipTime = Math.max(
-          this.nextClipTime,
-          this.audioContext.currentTime
-        );
-
-        // Start the source at the next clip time
-        this.source.start(this.nextClipTime);
-
-        // Schedule the next clip time
-        this.nextClipTime += buffer.duration;
-
-        callback();
+    source.addEventListener("sourceopen", () => {
+      this.sourceBuffer = source.addSourceBuffer('audio/webm; codecs="opus"');
+      this.sourceBuffer.addEventListener("updateend", () => {
+        this.appendNextChunk();
       });
-    }, 1);
+    });
+
+    return source;
   }
 
   start(agent: CreateAgentDTO): void {
@@ -106,32 +89,37 @@ export default class Vapi {
     const data = JSON.parse(event.data);
     if (data.event === "media") {
       const audioData = decode(data.media.payload);
-      this.decodeQueue.push(audioData);
+      this.audioQueue.push(audioData);
+      this.appendNextChunk();
     }
     if (data.event === "clear") {
       this.clear();
     }
   }
 
-  clear(): void {
-    this.decodeQueue.kill();
-    this.decodeQueue = this.createQueue();
-
-    // Stop the source if it exists
-    if (this.source) {
-      this.source.stop();
-      this.source.disconnect();
-      this.source = null;
+  private appendNextChunk(): void {
+    if (
+      this.sourceBuffer &&
+      !this.sourceBuffer.updating &&
+      this.audioQueue.length > 0
+    ) {
+      const chunk = this.audioQueue.shift();
+      if (chunk) {
+        this.sourceBuffer.appendBuffer(chunk);
+      }
     }
+  }
 
-    // Reset the next clip time
-    this.nextClipTime = 0;
+  clear(): void {
+    if (this.sourceBuffer) {
+      this.sourceBuffer.abort();
+      while (this.sourceBuffer.buffered.length > 0) {
+        this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
+      }
+    }
   }
 
   stop(): void {
-    if (this.source) {
-      this.source.stop();
-    }
     this.started = false;
     if (this.ws) {
       this.ws.close();
