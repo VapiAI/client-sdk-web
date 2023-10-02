@@ -14,7 +14,7 @@ export default class Vapi {
     client.setSecurityData(apiToken);
   }
 
-  start(agent: CreateAgentDTO): void {
+  start(agent: CreateAgentDTO | string): void {
     if (this.started) {
       return;
     }
@@ -23,7 +23,8 @@ export default class Vapi {
 
     client.call
       .callControllerCreateWebCall({
-        agent,
+        agent: typeof agent === "string" ? undefined : agent,
+        agentId: typeof agent === "string" ? agent : undefined,
       })
       .then(({ data }) => {
         const { callId, url } = data;
