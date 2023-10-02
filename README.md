@@ -1,4 +1,4 @@
-# Vapi Package
+# Vapi Web SDK
 
 This package lets you start Vapi calls directly in your webapp.
 
