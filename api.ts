@@ -9,6 +9,33 @@
  * ---------------------------------------------------------------
  */
 
+export interface PhoneCallParams {
+  callSid?: string;
+  customerPhoneNumber: string;
+  twilioPhoneNumber: string;
+  twilioAccountSid: string;
+  twilioAuthToken: string;
+}
+
+export interface Call {
+  type: "inboundPhoneCall" | "outboundPhoneCall" | "webCall";
+  id: string;
+  orgId: string;
+  createdAt: string;
+  updatedAt: string;
+  agentId?: string;
+  customerId?: string;
+  phoneNumberId?: string;
+  startedAt: string;
+  endedAt?: string;
+  transcript?: string;
+  recordingUrl?: string;
+  cost?: number;
+  summary?: string;
+  agentParams?: object;
+  callParams?: PhoneCallParams;
+}
+
 export interface OpenAIFunctionParamaters {
   type: string;
   properties: object;
@@ -80,6 +107,29 @@ export interface CreateAgentDTO {
   forwardingPhoneNumber?: string;
   /** Whether the AI should talk first when the call is connected. */
   startTalking?: boolean;
+}
+
+export interface CreateOutboundCallDto {
+  /** This is the agent that will be used for the call. To create a transient agent, use `agent` instead. */
+  agentId?: string;
+  /** This is the agent that will be used for the call. To use an existing agent, use `agentId` instead. */
+  agent?: CreateAgentDTO;
+  /** This is the phone number that will be used for the call. */
+  phoneNumberId: string;
+  /** This is the number that will be called. */
+  customerPhoneNumber: string;
+}
+
+export interface CreateWebCallDto {
+  /** This is the agent that will be used for the call. To create a transient agent, use `agent` instead. */
+  agentId?: string;
+  /** This is the agent that will be used for the call. To use an existing agent, use `agentId` instead. */
+  agent?: CreateAgentDTO;
+}
+
+export interface WebCallResponseDto {
+  url: string;
+  callId: string;
 }
 
 export interface Agent {
@@ -198,7 +248,7 @@ export interface UpdateAgentDTO {
   startTalking?: boolean;
 }
 
-export interface CreatePhoneNumberDto {
+export interface BuyPhoneNumberDto {
   /** This is the area code of the phone number to purchase. */
   areaCode: string;
   agentId?: string;
@@ -209,61 +259,24 @@ export interface PhoneNumber {
   createdAt: string;
   updatedAt: string;
   orgId: string;
+  stripeSubscriptionId?: string;
   number: string;
+  agentId?: string;
+  twilioAccountSid: string;
+  twilioAuthToken: string;
+}
+
+export interface ImportTwilioPhoneNumberDto {
+  /** This is the area code of the phone number to purchase. */
+  twilioAccountSid: string;
+  twilioAuthToken: string;
+  twilioPhoneNumber: string;
   agentId?: string;
 }
 
 export interface UpdatePhoneNumberDto {
   /** This is the agent that will be used to handle inbound calls to this phone number. */
   agentId?: string;
-}
-
-export interface PhoneCallParams {
-  callSid?: string;
-  customerPhoneNumber: string;
-  twilioPhoneNumber: string;
-}
-
-export interface Call {
-  type: "inboundPhoneCall" | "outboundPhoneCall" | "webCall";
-  id: string;
-  orgId: string;
-  createdAt: string;
-  updatedAt: string;
-  agentId?: string;
-  customerId?: string;
-  phoneNumberId?: string;
-  startedAt?: string;
-  endedAt?: string;
-  transcript?: string;
-  recordingUrl?: string;
-  cost?: number;
-  summary?: string;
-  agentParams?: object;
-  callParams?: PhoneCallParams;
-}
-
-export interface CreateOutboundCallDto {
-  /** This is the agent that will be used for the call. To create a transient agent, use `agent` instead. */
-  agentId?: string;
-  /** This is the agent that will be used for the call. To use an existing agent, use `agentId` instead. */
-  agent?: CreateAgentDTO;
-  /** This is the phone number that will be used for the call. */
-  phoneNumberId: string;
-  /** This is the number that will be called. */
-  customerPhoneNumber: string;
-}
-
-export interface CreateWebCallDto {
-  /** This is the agent that will be used for the call. To create a transient agent, use `agent` instead. */
-  agentId?: string;
-  /** This is the agent that will be used for the call. To use an existing agent, use `agentId` instead. */
-  agent?: CreateAgentDTO;
-}
-
-export interface WebCallResponseDto {
-  url: string;
-  callId: string;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -484,159 +497,13 @@ export class HttpClient<SecurityDataType = unknown> {
  * API for talking AIs
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
-  agent = {
-    /**
-     * No description
-     *
-     * @name AgentControllerCreate
-     * @request POST:/agent
-     */
-    agentControllerCreate: (data: CreateAgentDTO, params: RequestParams = {}) =>
-      this.request<Agent, any>({
-        path: `/agent`,
-        method: "POST",
-        body: data,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @name AgentControllerFindAll
-     * @request GET:/agent
-     */
-    agentControllerFindAll: (params: RequestParams = {}) =>
-      this.request<Agent[], any>({
-        path: `/agent`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @name AgentControllerFindOne
-     * @request GET:/agent/{id}
-     */
-    agentControllerFindOne: (id: string, params: RequestParams = {}) =>
-      this.request<Agent, any>({
-        path: `/agent/${id}`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @name AgentControllerUpdate
-     * @request PATCH:/agent/{id}
-     */
-    agentControllerUpdate: (id: string, data: UpdateAgentDTO, params: RequestParams = {}) =>
-      this.request<Agent, any>({
-        path: `/agent/${id}`,
-        method: "PATCH",
-        body: data,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @name AgentControllerRemove
-     * @request DELETE:/agent/{id}
-     */
-    agentControllerRemove: (id: string, params: RequestParams = {}) =>
-      this.request<void, any>({
-        path: `/agent/${id}`,
-        method: "DELETE",
-        ...params,
-      }),
-  };
-  phoneNumber = {
-    /**
-     * No description
-     *
-     * @name PhoneNumberControllerCreate
-     * @request POST:/phone-number
-     */
-    phoneNumberControllerCreate: (data: CreatePhoneNumberDto, params: RequestParams = {}) =>
-      this.request<PhoneNumber, any>({
-        path: `/phone-number`,
-        method: "POST",
-        body: data,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @name PhoneNumberControllerFindAll
-     * @request GET:/phone-number
-     */
-    phoneNumberControllerFindAll: (params: RequestParams = {}) =>
-      this.request<PhoneNumber[], any>({
-        path: `/phone-number`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @name PhoneNumberControllerFindOne
-     * @request GET:/phone-number/{id}
-     */
-    phoneNumberControllerFindOne: (id: string, params: RequestParams = {}) =>
-      this.request<PhoneNumber, any>({
-        path: `/phone-number/${id}`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @name PhoneNumberControllerUpdate
-     * @request PATCH:/phone-number/{id}
-     */
-    phoneNumberControllerUpdate: (id: string, data: UpdatePhoneNumberDto, params: RequestParams = {}) =>
-      this.request<PhoneNumber, any>({
-        path: `/phone-number/${id}`,
-        method: "PATCH",
-        body: data,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @name PhoneNumberControllerRemove
-     * @request DELETE:/phone-number/{id}
-     */
-    phoneNumberControllerRemove: (id: string, params: RequestParams = {}) =>
-      this.request<void, any>({
-        path: `/phone-number/${id}`,
-        method: "DELETE",
-        ...params,
-      }),
-  };
   call = {
     /**
      * No description
      *
+     * @tags Calls
      * @name CallControllerFindAll
+     * @summary List Calls
      * @request GET:/call
      */
     callControllerFindAll: (params: RequestParams = {}) =>
@@ -650,7 +517,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
+     * @tags Calls
      * @name CallControllerFindOne
+     * @summary Get Call
      * @request GET:/call/{id}
      */
     callControllerFindOne: (id: string, params: RequestParams = {}) =>
@@ -664,7 +533,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
+     * @tags Calls
      * @name CallControllerCreatePhoneCall
+     * @summary Create Phone Call
      * @request POST:/call/phone
      */
     callControllerCreatePhoneCall: (data: CreateOutboundCallDto, params: RequestParams = {}) =>
@@ -680,7 +551,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
+     * @tags Calls
      * @name CallControllerCreateWebCall
+     * @summary Create Web Call
      * @request POST:/call/web
      */
     callControllerCreateWebCall: (data: CreateWebCallDto, params: RequestParams = {}) =>
@@ -690,6 +563,192 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         body: data,
         type: ContentType.Json,
         format: "json",
+        ...params,
+      }),
+  };
+  agent = {
+    /**
+     * No description
+     *
+     * @tags Agents
+     * @name AgentControllerCreate
+     * @summary Create Agent
+     * @request POST:/agent
+     */
+    agentControllerCreate: (data: CreateAgentDTO, params: RequestParams = {}) =>
+      this.request<Agent, any>({
+        path: `/agent`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Agents
+     * @name AgentControllerFindAll
+     * @summary List Agents
+     * @request GET:/agent
+     */
+    agentControllerFindAll: (params: RequestParams = {}) =>
+      this.request<Agent[], any>({
+        path: `/agent`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Agents
+     * @name AgentControllerFindOne
+     * @summary Get Agent
+     * @request GET:/agent/{id}
+     */
+    agentControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Agent, any>({
+        path: `/agent/${id}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Agents
+     * @name AgentControllerUpdate
+     * @summary Update Agent
+     * @request PATCH:/agent/{id}
+     */
+    agentControllerUpdate: (id: string, data: UpdateAgentDTO, params: RequestParams = {}) =>
+      this.request<Agent, any>({
+        path: `/agent/${id}`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Agents
+     * @name AgentControllerRemove
+     * @summary Delete Agent
+     * @request DELETE:/agent/{id}
+     */
+    agentControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/agent/${id}`,
+        method: "DELETE",
+        ...params,
+      }),
+  };
+  phoneNumber = {
+    /**
+     * No description
+     *
+     * @tags Phone Numbers
+     * @name PhoneNumberControllerBuy
+     * @summary Buy Phone Number
+     * @request POST:/phone-number/buy
+     */
+    phoneNumberControllerBuy: (data: BuyPhoneNumberDto, params: RequestParams = {}) =>
+      this.request<PhoneNumber, any>({
+        path: `/phone-number/buy`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Phone Numbers
+     * @name PhoneNumberControllerImport
+     * @summary Import Twilio Number
+     * @request POST:/phone-number/import
+     */
+    phoneNumberControllerImport: (data: ImportTwilioPhoneNumberDto, params: RequestParams = {}) =>
+      this.request<PhoneNumber, any>({
+        path: `/phone-number/import`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Phone Numbers
+     * @name PhoneNumberControllerFindAll
+     * @summary List Phone Numbers
+     * @request GET:/phone-number
+     */
+    phoneNumberControllerFindAll: (params: RequestParams = {}) =>
+      this.request<PhoneNumber[], any>({
+        path: `/phone-number`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Phone Numbers
+     * @name PhoneNumberControllerFindOne
+     * @summary Get Phone Number
+     * @request GET:/phone-number/{id}
+     */
+    phoneNumberControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<PhoneNumber, any>({
+        path: `/phone-number/${id}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Phone Numbers
+     * @name PhoneNumberControllerUpdate
+     * @summary Update Phone Number
+     * @request PATCH:/phone-number/{id}
+     */
+    phoneNumberControllerUpdate: (id: string, data: UpdatePhoneNumberDto, params: RequestParams = {}) =>
+      this.request<PhoneNumber, any>({
+        path: `/phone-number/${id}`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Phone Numbers
+     * @name PhoneNumberControllerRemove
+     * @summary Delete Phone Number
+     * @request DELETE:/phone-number/{id}
+     */
+    phoneNumberControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/phone-number/${id}`,
+        method: "DELETE",
         ...params,
       }),
   };

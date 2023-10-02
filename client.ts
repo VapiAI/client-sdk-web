@@ -1,7 +1,7 @@
 import { Api } from "./api";
 
 const api = new Api({
-  baseUrl: "https://api-tv2l.onrender.com",
+  baseUrl: "https://api.vapi.ai",
   baseApiParams: {
     secure: true,
   },
