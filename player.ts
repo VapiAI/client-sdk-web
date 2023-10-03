@@ -1,10 +1,13 @@
+import async, { QueueObject } from "async";
+
 import EventEmitter from "events";
 
 export class ContinuousPlayer extends EventEmitter {
   private mediaSource: MediaSource;
   private sourceBuffer: SourceBuffer | null = null;
   private audio: HTMLAudioElement;
-  private audioQueue: ArrayBuffer[] = [];
+  private nextTimestamp: number = 0;
+  private audioQueue: QueueObject<ArrayBuffer>;
 
   constructor() {
     super();
@@ -14,13 +17,17 @@ export class ContinuousPlayer extends EventEmitter {
     this.audio.src = URL.createObjectURL(this.mediaSource);
     document.body.appendChild(this.audio);
 
+    this.audioQueue = async.queue((task, callback) => {
+      this.appendNextChunk(task, callback);
+    }, 1);
+
     this.mediaSource.addEventListener("sourceopen", () => {
       this.sourceBuffer = this.mediaSource.addSourceBuffer(
         'audio/webm; codecs="opus"'
       );
 
       this.sourceBuffer.addEventListener("updateend", () => {
-        this.appendNextChunk();
+        this.audioQueue.resume();
       });
     });
   }
@@ -31,27 +38,18 @@ export class ContinuousPlayer extends EventEmitter {
 
   playChunk(audioData: ArrayBuffer) {
     this.audioQueue.push(audioData);
-
-    this.appendNextChunk();
   }
 
-  private appendNextChunk(): void {
-    console.log("appendNextChunk", this.audioQueue.length);
-    if (
-      this.sourceBuffer &&
-      !this.sourceBuffer.updating &&
-      this.audioQueue.length > 0
-    ) {
-      const chunk = this.audioQueue.shift();
-      if (chunk) {
-        if (this.sourceBuffer.buffered.length > 0) {
-          this.sourceBuffer.timestampOffset = this.sourceBuffer.buffered.end(0);
-        }
-
-        this.sourceBuffer.appendBuffer(chunk);
-        console.log("appended", this.audioQueue.length);
-      }
+  private appendNextChunk(
+    chunk: ArrayBuffer,
+    callback: async.ErrorCallback<Error>
+  ): void {
+    if (this.sourceBuffer && !this.sourceBuffer.updating) {
+      console.log("appending", this.sourceBuffer.timestampOffset);
+      this.sourceBuffer.appendBuffer(chunk);
+      this.audioQueue.pause();
     }
+    callback(null);
   }
 
   clear(): void {
