@@ -1,17 +1,23 @@
 import { Agent, CreateAgentDTO } from "./api";
 
 import { ContinuousPlayer } from "./player";
+import EventEmitter from "events";
 import { client } from "./client";
 import { decode } from "base64-arraybuffer";
 
-export default class Vapi {
+export default class Vapi extends EventEmitter {
   private started: boolean = false;
   private ws: WebSocket | null = null;
   private mediaRecorder: MediaRecorder | null = null;
-  private player = new ContinuousPlayer();
+  private player: ContinuousPlayer;
 
   constructor(apiToken: string) {
+    super();
     client.setSecurityData(apiToken);
+    this.player = new ContinuousPlayer();
+
+    this.player.on("speech-start", () => this.emit("speech-start"));
+    this.player.on("speech-end", () => this.emit("speech-end"));
   }
 
   start(agent: CreateAgentDTO | string): void {
@@ -35,6 +41,7 @@ export default class Vapi {
         socket.onopen = () => {
           socket.send(JSON.stringify({ event: "start", callId }));
           this.startRecording();
+          this.emit("started");
         };
         socket.onmessage = (event) => {
           if (!socket) return;
@@ -89,5 +96,6 @@ export default class Vapi {
       this.mediaRecorder.stop();
     }
     this.mediaRecorder = null;
+    this.emit("stopped");
   }
 }

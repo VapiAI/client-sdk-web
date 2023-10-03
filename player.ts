@@ -1,12 +1,15 @@
 import { QueueObject, queue } from "async"; // You need to install the async package
 
-export class ContinuousPlayer {
+import EventEmitter from "events";
+
+export class ContinuousPlayer extends EventEmitter {
   private audioCtx: AudioContext;
   private nextStartTime: number;
   private audioQueue: QueueObject<Promise<AudioBuffer>>;
   private crossFadeDuration: number; // Duration of the crossfade
 
   constructor(crossFadeDuration = 0.5) {
+    super();
     this.audioCtx = new AudioContext();
     this.nextStartTime = 0;
     this.audioQueue = this.createQueue();
@@ -14,7 +17,7 @@ export class ContinuousPlayer {
   }
 
   private createQueue() {
-    return queue(
+    const q = queue(
       async (audioPromise: Promise<AudioBuffer>, callback: Function) => {
         const audioBuffer = await audioPromise;
         const source = this.audioCtx.createBufferSource();
@@ -51,6 +54,15 @@ export class ContinuousPlayer {
       },
       1
     );
+
+    q.drain(() => {
+      this.emit("speech-end");
+    });
+    q.saturated(() => {
+      this.emit("speech-start");
+    });
+
+    return q;
   }
 
   playChunk(audioData: ArrayBuffer) {
