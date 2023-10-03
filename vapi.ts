@@ -1,6 +1,5 @@
-import { Agent, CreateAgentDTO } from "./api";
-
 import { ContinuousPlayer } from "./player";
+import { CreateAssistantDTO } from "./api";
 import EventEmitter from "events";
 import { client } from "./client";
 import { decode } from "base64-arraybuffer";
@@ -20,17 +19,18 @@ export default class Vapi extends EventEmitter {
     this.player.on("speech-end", () => this.emit("speech-end"));
   }
 
-  start(agent: CreateAgentDTO | string): void {
+  start(assistant: CreateAssistantDTO | string): void {
     if (this.started) {
       return;
     }
 
     this.started = true;
+    this.player.start();
 
     client.call
       .callControllerCreateWebCall({
-        agent: typeof agent === "string" ? undefined : agent,
-        agentId: typeof agent === "string" ? agent : undefined,
+        assistant: typeof assistant === "string" ? undefined : assistant,
+        assistantId: typeof assistant === "string" ? assistant : undefined,
       })
       .then(({ data }) => {
         const { callId, url } = data;

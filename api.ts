@@ -11,6 +11,7 @@
 
 export interface PhoneCallParams {
   callSid?: string;
+  status?: string;
   customerPhoneNumber: string;
   twilioPhoneNumber: string;
   twilioAccountSid: string;
@@ -23,7 +24,7 @@ export interface Call {
   orgId: string;
   createdAt: string;
   updatedAt: string;
-  agentId?: string;
+  assistantId?: string;
   customerId?: string;
   phoneNumberId?: string;
   startedAt: string;
@@ -32,7 +33,7 @@ export interface Call {
   recordingUrl?: string;
   cost?: number;
   summary?: string;
-  agentParams?: object;
+  assistantParams?: object;
   callParams?: PhoneCallParams;
 }
 
@@ -55,7 +56,7 @@ export interface OpenAIFunction {
   parameters: OpenAIFunctionParamaters;
 }
 
-export interface CreateAgentDTO {
+export interface CreateAssistantDTO {
   /** This is the OpenAI model that will be used. */
   model?: "gpt-4-32k" | "gpt-4" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo";
   /**
@@ -83,37 +84,25 @@ export interface CreateAgentDTO {
     | "steffan"
     | "sara"
     | "jason";
-  /** This is the agent’s name, just for your own reference. */
+  /** This is the assistant’s name, just for your own reference. */
   name?: string;
   /** This is the system prompt, which sets the objective and background before the call. */
   context?: string;
-  /** These are the functions that the agent can execute during the call. */
+  /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
-  /**
-   * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports. All requests will be sent with customerPhoneNumber, botPhoneNumber, and all the agent parameters.
-   *
-   * Function Calling POST Request:
-   * When the agent wants to call a function, we'll POST your callbackURL with `name` and `arguments`.
-   * Respond with a JSON object of the result. For example: `{ result: "Hello world!" }` or `{ result: { temperature: "38 degrees" } }`. If empty, return `{}.
-   *
-   * End-of-Call Report POST Request:
-   * You'll get `transcript`, `recordingUrl` and `summary` of the call.
-   *
-   * Context Retrieval GET Request:
-   * If the agent's context isn't set, it'll ask for context before starting the call. Respond with `{ context: "You are an assistant..." }`
-   */
+  /** This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports. All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation. */
   callbackUrl?: string;
-  /** This is the number the agent will transfer to if it runs into any issues. */
+  /** This is the number the assistant will transfer to if it runs into any issues. */
   forwardingPhoneNumber?: string;
   /** Whether the AI should talk first when the call is connected. */
   startTalking?: boolean;
 }
 
 export interface CreateOutboundCallDto {
-  /** This is the agent that will be used for the call. To create a transient agent, use `agent` instead. */
-  agentId?: string;
-  /** This is the agent that will be used for the call. To use an existing agent, use `agentId` instead. */
-  agent?: CreateAgentDTO;
+  /** This is the assistant that will be used for the call. To create a transient assistant, use `assistant` instead. */
+  assistantId?: string;
+  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
   /** This is the phone number that will be used for the call. */
   phoneNumberId: string;
   /** This is the number that will be called. */
@@ -121,10 +110,10 @@ export interface CreateOutboundCallDto {
 }
 
 export interface CreateWebCallDto {
-  /** This is the agent that will be used for the call. To create a transient agent, use `agent` instead. */
-  agentId?: string;
-  /** This is the agent that will be used for the call. To use an existing agent, use `agentId` instead. */
-  agent?: CreateAgentDTO;
+  /** This is the assistant that will be used for the call. To create a transient assistant, use `assistant` instead. */
+  assistantId?: string;
+  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
 }
 
 export interface WebCallResponseDto {
@@ -132,7 +121,7 @@ export interface WebCallResponseDto {
   callId: string;
 }
 
-export interface Agent {
+export interface Assistant {
   /** This is the OpenAI model that will be used. */
   model?: "gpt-4-32k" | "gpt-4" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo";
   /**
@@ -160,41 +149,29 @@ export interface Agent {
     | "steffan"
     | "sara"
     | "jason";
-  /** Unique identifier for the agent. */
+  /** Unique identifier for the assistant. */
   id: string;
-  /** Unique identifier for the organization that this agent belongs to. */
+  /** Unique identifier for the organization that this assistant belongs to. */
   orgId: string;
-  /** ISO 8601 date-time string of when the agent was created. */
+  /** ISO 8601 date-time string of when the assistant was created. */
   createdAt: string;
-  /** ISO 8601 date-time string of when the agent was last updated. */
+  /** ISO 8601 date-time string of when the assistant was last updated. */
   updatedAt: string;
-  /** This is the agent’s name, just for your own reference. */
+  /** This is the assistant’s name, just for your own reference. */
   name?: string;
   /** This is the system prompt, which sets the objective and background before the call. */
   context?: string;
-  /** These are the functions that the agent can execute during the call. */
+  /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
-  /**
-   * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports. All requests will be sent with customerPhoneNumber, botPhoneNumber, and all the agent parameters.
-   *
-   * Function Calling POST Request:
-   * When the agent wants to call a function, we'll POST your callbackURL with `name` and `arguments`.
-   * Respond with a JSON object of the result. For example: `{ result: "Hello world!" }` or `{ result: { temperature: "38 degrees" } }`. If empty, return `{}.
-   *
-   * End-of-Call Report POST Request:
-   * You'll get `transcript`, `recordingUrl` and `summary` of the call.
-   *
-   * Context Retrieval GET Request:
-   * If the agent's context isn't set, it'll ask for context before starting the call. Respond with `{ context: "You are an assistant..." }`
-   */
+  /** This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports. All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation. */
   callbackUrl?: string;
-  /** This is the number the agent will transfer to if it runs into any issues. */
+  /** This is the number the assistant will transfer to if it runs into any issues. */
   forwardingPhoneNumber?: string;
   /** Whether the AI should talk first when the call is connected. */
   startTalking?: boolean;
 }
 
-export interface UpdateAgentDTO {
+export interface UpdateAssistantDTO {
   /** This is the OpenAI model that will be used. */
   model?: "gpt-4-32k" | "gpt-4" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo";
   /**
@@ -222,27 +199,15 @@ export interface UpdateAgentDTO {
     | "steffan"
     | "sara"
     | "jason";
-  /** This is the agent’s name, just for your own reference. */
+  /** This is the assistant’s name, just for your own reference. */
   name?: string;
   /** This is the system prompt, which sets the objective and background before the call. */
   context?: string;
-  /** These are the functions that the agent can execute during the call. */
+  /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
-  /**
-   * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports. All requests will be sent with customerPhoneNumber, botPhoneNumber, and all the agent parameters.
-   *
-   * Function Calling POST Request:
-   * When the agent wants to call a function, we'll POST your callbackURL with `name` and `arguments`.
-   * Respond with a JSON object of the result. For example: `{ result: "Hello world!" }` or `{ result: { temperature: "38 degrees" } }`. If empty, return `{}.
-   *
-   * End-of-Call Report POST Request:
-   * You'll get `transcript`, `recordingUrl` and `summary` of the call.
-   *
-   * Context Retrieval GET Request:
-   * If the agent's context isn't set, it'll ask for context before starting the call. Respond with `{ context: "You are an assistant..." }`
-   */
+  /** This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports. All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation. */
   callbackUrl?: string;
-  /** This is the number the agent will transfer to if it runs into any issues. */
+  /** This is the number the assistant will transfer to if it runs into any issues. */
   forwardingPhoneNumber?: string;
   /** Whether the AI should talk first when the call is connected. */
   startTalking?: boolean;
@@ -251,7 +216,7 @@ export interface UpdateAgentDTO {
 export interface BuyPhoneNumberDto {
   /** This is the area code of the phone number to purchase. */
   areaCode: string;
-  agentId?: string;
+  assistantId?: string;
 }
 
 export interface PhoneNumber {
@@ -261,7 +226,7 @@ export interface PhoneNumber {
   orgId: string;
   stripeSubscriptionId?: string;
   number: string;
-  agentId?: string;
+  assistantId?: string;
   twilioAccountSid: string;
   twilioAuthToken: string;
 }
@@ -271,12 +236,12 @@ export interface ImportTwilioPhoneNumberDto {
   twilioAccountSid: string;
   twilioAuthToken: string;
   twilioPhoneNumber: string;
-  agentId?: string;
+  assistantId?: string;
 }
 
 export interface UpdatePhoneNumberDto {
-  /** This is the agent that will be used to handle inbound calls to this phone number. */
-  agentId?: string;
+  /** This is the assistant that will be used to handle inbound calls to this phone number. */
+  assistantId?: string;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -494,7 +459,7 @@ export class HttpClient<SecurityDataType = unknown> {
  * @version 1.0
  * @contact
  *
- * API for talking AIs
+ * API for making voice assistants
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   call = {
@@ -566,18 +531,18 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         ...params,
       }),
   };
-  agent = {
+  assistant = {
     /**
      * No description
      *
-     * @tags Agents
-     * @name AgentControllerCreate
-     * @summary Create Agent
-     * @request POST:/agent
+     * @tags Assistants
+     * @name AssistantControllerCreate
+     * @summary Create Assistant
+     * @request POST:/assistant
      */
-    agentControllerCreate: (data: CreateAgentDTO, params: RequestParams = {}) =>
-      this.request<Agent, any>({
-        path: `/agent`,
+    assistantControllerCreate: (data: CreateAssistantDTO, params: RequestParams = {}) =>
+      this.request<Assistant, any>({
+        path: `/assistant`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -588,14 +553,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
-     * @tags Agents
-     * @name AgentControllerFindAll
-     * @summary List Agents
-     * @request GET:/agent
+     * @tags Assistants
+     * @name AssistantControllerFindAll
+     * @summary List Assistants
+     * @request GET:/assistant
      */
-    agentControllerFindAll: (params: RequestParams = {}) =>
-      this.request<Agent[], any>({
-        path: `/agent`,
+    assistantControllerFindAll: (params: RequestParams = {}) =>
+      this.request<Assistant[], any>({
+        path: `/assistant`,
         method: "GET",
         format: "json",
         ...params,
@@ -604,14 +569,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
-     * @tags Agents
-     * @name AgentControllerFindOne
-     * @summary Get Agent
-     * @request GET:/agent/{id}
+     * @tags Assistants
+     * @name AssistantControllerFindOne
+     * @summary Get Assistant
+     * @request GET:/assistant/{id}
      */
-    agentControllerFindOne: (id: string, params: RequestParams = {}) =>
-      this.request<Agent, any>({
-        path: `/agent/${id}`,
+    assistantControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Assistant, any>({
+        path: `/assistant/${id}`,
         method: "GET",
         format: "json",
         ...params,
@@ -620,14 +585,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
-     * @tags Agents
-     * @name AgentControllerUpdate
-     * @summary Update Agent
-     * @request PATCH:/agent/{id}
+     * @tags Assistants
+     * @name AssistantControllerUpdate
+     * @summary Update Assistant
+     * @request PATCH:/assistant/{id}
      */
-    agentControllerUpdate: (id: string, data: UpdateAgentDTO, params: RequestParams = {}) =>
-      this.request<Agent, any>({
-        path: `/agent/${id}`,
+    assistantControllerUpdate: (id: string, data: UpdateAssistantDTO, params: RequestParams = {}) =>
+      this.request<Assistant, any>({
+        path: `/assistant/${id}`,
         method: "PATCH",
         body: data,
         type: ContentType.Json,
@@ -638,14 +603,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
-     * @tags Agents
-     * @name AgentControllerRemove
-     * @summary Delete Agent
-     * @request DELETE:/agent/{id}
+     * @tags Assistants
+     * @name AssistantControllerRemove
+     * @summary Delete Assistant
+     * @request DELETE:/assistant/{id}
      */
-    agentControllerRemove: (id: string, params: RequestParams = {}) =>
+    assistantControllerRemove: (id: string, params: RequestParams = {}) =>
       this.request<void, any>({
-        path: `/agent/${id}`,
+        path: `/assistant/${id}`,
         method: "DELETE",
         ...params,
       }),

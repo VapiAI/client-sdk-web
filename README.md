@@ -24,7 +24,7 @@ Then, create a new instance of the Vapi class, passing your Client Token as a pa
 const vapi = new Vapi('your-api-token');
 ```
 
-You can start a new call by calling the `start` method and passing an `agent` object or `agentId`:
+You can start a new call by calling the `start` method and passing an `assistant` object or `assistantId`:
 
 ```javascript
 vapi.start({
@@ -34,7 +34,7 @@ vapi.start({
 });
 ```
 ```javascript
-vapi.start('your-agent-id');
+vapi.start('your-assistant-id');
 ```
 
 The `start` method will initiate a new call. 
