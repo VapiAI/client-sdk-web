@@ -36,6 +36,7 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   private appendNextChunk(): void {
+    console.log("appendNextChunk", this.audioQueue.length);
     if (
       this.sourceBuffer &&
       !this.sourceBuffer.updating &&
@@ -43,17 +44,29 @@ export class ContinuousPlayer extends EventEmitter {
     ) {
       const chunk = this.audioQueue.shift();
       if (chunk) {
+        if (this.sourceBuffer.buffered.length > 0) {
+          this.sourceBuffer.timestampOffset = this.sourceBuffer.buffered.end(0);
+        }
+
         this.sourceBuffer.appendBuffer(chunk);
+        console.log("appended", this.audioQueue.length);
       }
     }
   }
 
   clear(): void {
     if (this.sourceBuffer) {
-      this.sourceBuffer.abort();
-      while (this.sourceBuffer.buffered.length > 0) {
-        this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
+      if (this.sourceBuffer.updating) {
+        this.sourceBuffer.addEventListener("updateend", () => this.clear(), {
+          once: true,
+        });
+      } else {
+        this.sourceBuffer.abort();
+        while (this.sourceBuffer.buffered.length > 0) {
+          this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
+        }
       }
+      this.sourceBuffer.timestampOffset = 0;
     }
   }
 }
