@@ -21,7 +21,7 @@ import Vapi from '@vapi-ai/web';
 Then, create a new instance of the Vapi class, passing your Client Token as a parameter to the constructor:
 
 ```javascript
-const vapi = new Vapi('your-api-token');
+const vapi = new Vapi('your-web-token');
 ```
 
 You can start a new call by calling the `start` method and passing an `agent` object or `agentId`:
