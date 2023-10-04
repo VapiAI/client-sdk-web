@@ -6,7 +6,6 @@ export class ContinuousPlayer extends EventEmitter {
   private mediaSource: MediaSource;
   private sourceBuffer: SourceBuffer | null = null;
   private audio: HTMLAudioElement;
-  private nextTimestamp: number = 0;
   private audioQueue: QueueObject<ArrayBuffer>;
 
   constructor() {
@@ -25,9 +24,11 @@ export class ContinuousPlayer extends EventEmitter {
       this.sourceBuffer = this.mediaSource.addSourceBuffer(
         'audio/webm; codecs="opus"'
       );
+      this.sourceBuffer.mode = "sequence";
 
       this.sourceBuffer.addEventListener("updateend", () => {
         this.audioQueue.resume();
+        console.log("RESUMING");
       });
     });
   }
@@ -45,11 +46,10 @@ export class ContinuousPlayer extends EventEmitter {
     callback: async.ErrorCallback<Error>
   ): void {
     if (this.sourceBuffer && !this.sourceBuffer.updating) {
-      console.log("appending", this.sourceBuffer.timestampOffset);
-      this.sourceBuffer.appendBuffer(chunk);
       this.audioQueue.pause();
+      this.sourceBuffer.appendBuffer(chunk);
     }
-    callback(null);
+    callback();
   }
 
   clear(): void {
