@@ -11,7 +11,7 @@
 
 export interface PhoneCallParams {
   callSid?: string;
-  status?: string;
+  status?: string[];
   customerPhoneNumber: string;
   twilioPhoneNumber: string;
   twilioAccountSid: string;
@@ -227,8 +227,8 @@ export interface PhoneNumber {
   stripeSubscriptionId?: string;
   number: string;
   assistantId?: string;
-  twilioAccountSid: string;
-  twilioAuthToken: string;
+  twilioAccountSid?: string;
+  twilioAuthToken?: string;
 }
 
 export interface ImportTwilioPhoneNumberDto {
