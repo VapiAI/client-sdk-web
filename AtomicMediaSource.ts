@@ -39,6 +39,7 @@ class AtomicMediaSource {
         if (this.sourceBuffer) {
           this.sourceBuffer.addEventListener("updateend", () => {
             this.mediaSource.duration = Number.POSITIVE_INFINITY;
+            this.sourceBuffer!.timestampOffset = 0;
             resolve();
           });
           this.sourceBuffer.remove(0, this.mediaSource.duration);
