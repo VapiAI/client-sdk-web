@@ -58,22 +58,43 @@ export class ContinuousPlayer extends EventEmitter {
     callback();
   }
 
-  clear(): void {
+  private performOperation(operation: () => void): void {
     if (this.sourceBuffer) {
       if (this.sourceBuffer.updating) {
-        this.sourceBuffer.addEventListener("updateend", () => this.clear(), {
+        this.sourceBuffer.addEventListener("updateend", operation, {
           once: true,
         });
       } else {
-        this.sourceBuffer.abort();
-        while (
-          this.sourceBuffer.buffered.length > 0 &&
-          !this.sourceBuffer.updating
-        ) {
-          this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
-        }
-        this.sourceBuffer.timestampOffset = 0;
+        operation();
       }
+    }
+  }
+
+  private removeBuffer(): void {
+    this.performOperation(() => {
+      if (!this.sourceBuffer) return;
+      while (this.sourceBuffer.buffered.length > 0) {
+        this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
+      }
+    });
+  }
+
+  private resetTimestampOffset(): void {
+    this.performOperation(() => {
+      if (!this.sourceBuffer) return;
+      this.sourceBuffer.timestampOffset = 0;
+    });
+  }
+
+  clear(): void {
+    if (this.sourceBuffer) {
+      this.performOperation(() => {
+        if (!this.sourceBuffer) return;
+
+        this.sourceBuffer.abort();
+        this.removeBuffer();
+        this.resetTimestampOffset();
+      });
     }
   }
 }
