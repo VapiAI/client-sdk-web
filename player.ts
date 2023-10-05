@@ -58,20 +58,23 @@ export class ContinuousPlayer extends EventEmitter {
     callback();
   }
 
-  private performOperation(operation: () => void): void {
-    if (this.sourceBuffer) {
-      if (this.sourceBuffer.updating) {
-        this.sourceBuffer.addEventListener("updateend", operation, {
-          once: true,
-        });
-      } else {
-        operation();
+  private performBufferOperation(operation: () => void) {
+    return new Promise<void>((resolve) => {
+      if (!this.sourceBuffer) {
+        resolve();
+        return;
       }
-    }
+
+      this.sourceBuffer.addEventListener("updateend", () => resolve(), {
+        once: true,
+      });
+
+      operation();
+    });
   }
 
-  private removeBuffer(): void {
-    this.performOperation(() => {
+  private removeBuffer() {
+    return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
       while (this.sourceBuffer.buffered.length > 0) {
         this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
@@ -79,22 +82,23 @@ export class ContinuousPlayer extends EventEmitter {
     });
   }
 
-  private resetTimestampOffset(): void {
-    this.performOperation(() => {
+  private resetTimestampOffset() {
+    return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
       this.sourceBuffer.timestampOffset = 0;
     });
   }
 
-  clear(): void {
-    if (this.sourceBuffer) {
-      this.performOperation(() => {
-        if (!this.sourceBuffer) return;
+  private abortBuffer() {
+    return this.performBufferOperation(() => {
+      if (!this.sourceBuffer) return;
+      this.sourceBuffer.abort();
+    });
+  }
 
-        this.sourceBuffer.abort();
-        this.removeBuffer();
-        this.resetTimestampOffset();
-      });
-    }
+  async clear() {
+    await this.removeBuffer();
+    await this.abortBuffer();
+    await this.resetTimestampOffset();
   }
 }
