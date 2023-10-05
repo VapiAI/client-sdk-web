@@ -88,9 +88,9 @@ export class ContinuousPlayer extends EventEmitter {
     });
   }
 
-  async clear() {
-    await this.removeBuffer();
-    await this.abortBuffer();
-    await this.resetTimestampOffset();
+  clear() {
+    this.operationsQueue.push(() => this.abortBuffer());
+    this.operationsQueue.push(() => this.removeBuffer());
+    this.operationsQueue.push(() => this.resetTimestampOffset());
   }
 }
