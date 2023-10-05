@@ -22,9 +22,7 @@ export class ContinuousPlayer extends EventEmitter {
     this.audio.src = URL.createObjectURL(this.mediaSource);
     document.body.appendChild(this.audio);
 
-    this.operationsQueue = async.queue((task, callback) => {
-      task().then(() => callback());
-    }, 1);
+    this.operationsQueue = this.createOperationQueue();
 
     this.mediaSource.addEventListener("sourceopen", () => {
       this.mediaSource.duration = Number.POSITIVE_INFINITY;
@@ -33,6 +31,12 @@ export class ContinuousPlayer extends EventEmitter {
       );
       this.sourceBuffer.mode = "sequence";
     });
+  }
+
+  createOperationQueue() {
+    return async.queue<() => Promise<void>>((task, callback) => {
+      task().then(() => callback());
+    }, 1);
   }
 
   start() {
@@ -103,6 +107,8 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   clear() {
+    this.operationsQueue.kill();
+    this.operationsQueue = this.createOperationQueue();
     this.operationsQueue.push(() => this.abortBuffer());
     this.operationsQueue.push(() => this.removeBuffer());
     this.operationsQueue.push(() => this.resetTimestampOffset());
