@@ -46,6 +46,7 @@ class AtomicMediaSource {
           this.sourceBuffer!.addEventListener(
             "updateend",
             () => {
+              console.log("Source buffer removed");
               resolve();
             },
             { once: true }
