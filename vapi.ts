@@ -40,8 +40,6 @@ export default class Vapi extends EventEmitter {
 
         socket.onopen = () => {
           socket.send(JSON.stringify({ event: "start", callId }));
-          this.startRecording();
-          this.emit("started");
         };
         socket.onmessage = (event) => {
           if (!socket) return;
@@ -74,12 +72,18 @@ export default class Vapi extends EventEmitter {
 
   private onMessage(ws: WebSocket, event: MessageEvent): void {
     const data = JSON.parse(event.data);
-    if (data.event === "media") {
-      const audioData = decode(data.media.payload);
-      this.player.playChunk(audioData);
-    }
-    if (data.event === "clear") {
-      this.clear();
+
+    switch (data.event) {
+      case "connected":
+        this.startRecording();
+        this.emit("started");
+        break;
+      case "clear":
+        this.clear();
+        break;
+      case "media":
+        const audioData = decode(data.media.payload);
+        this.player.playChunk(audioData);
     }
   }
 
