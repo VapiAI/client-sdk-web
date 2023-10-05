@@ -76,19 +76,14 @@ export class ContinuousPlayer extends EventEmitter {
     });
   }
 
-  private removeBufferedRange() {
+  private removeBuffer() {
     return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
-      this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
+
+      if (this.sourceBuffer.buffered.length > 0) {
+        this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
+      }
     });
-  }
-
-  private async removeBuffer() {
-    if (!this.sourceBuffer) return;
-
-    while (this.sourceBuffer.buffered.length > 0) {
-      await this.removeBufferedRange();
-    }
   }
 
   private resetTimestampOffset() {
