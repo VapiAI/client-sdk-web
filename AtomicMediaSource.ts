@@ -23,6 +23,7 @@ class AtomicMediaSource {
           });
           this.sourceBuffer.appendBuffer(buffer);
         } else {
+          console.error("No source buffer");
           reject();
         }
       });
