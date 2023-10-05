@@ -33,7 +33,12 @@ class AtomicMediaSource {
   public resetBuffer() {
     this.operationsQueue.push(async () => {
       if (this.sourceBuffer) {
-        this.mediaSource.removeSourceBuffer(this.sourceBuffer);
+        await new Promise<void>((resolve) => {
+          this.mediaSource.removeSourceBuffer(this.sourceBuffer!);
+          this.mediaSource.addEventListener("sourceended", () => {
+            resolve();
+          });
+        });
       }
       this.sourceBuffer = this.mediaSource.addSourceBuffer(
         'audio/webm; codecs="opus"'
