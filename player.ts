@@ -100,16 +100,13 @@ export class ContinuousPlayer extends EventEmitter {
     });
   }
 
-  private async abortBuffer() {
-    if (!this.sourceBuffer) return;
-    // This does not emit updateend
-    this.sourceBuffer.abort();
-  }
-
   clear() {
+    if (!this.sourceBuffer) return;
+    this.sourceBuffer.abort();
+
     this.operationsQueue.kill();
     this.operationsQueue = this.createOperationQueue();
-    this.operationsQueue.push(() => this.abortBuffer());
+
     this.operationsQueue.push(() => this.removeBuffer());
     this.operationsQueue.push(() => this.resetTimestampOffset());
   }
