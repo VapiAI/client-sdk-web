@@ -44,15 +44,23 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   private performBufferOperation(operation: () => void) {
+    console.log("performBufferOperation");
     return new Promise<void>((resolve) => {
       if (!this.sourceBuffer) {
         resolve();
         return;
       }
 
-      this.sourceBuffer.addEventListener("updateend", () => resolve(), {
-        once: true,
-      });
+      this.sourceBuffer.addEventListener(
+        "updateend",
+        () => {
+          console.log("update end");
+          resolve();
+        },
+        {
+          once: true,
+        }
+      );
 
       operation();
     });
