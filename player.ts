@@ -28,6 +28,6 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   clear() {
-    this.atomic.resetBuffer();
+    // this.atomic.clearBuffer();
   }
 }
