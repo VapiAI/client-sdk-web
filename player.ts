@@ -14,13 +14,11 @@ export class ContinuousPlayer extends EventEmitter {
 
     this.audio = document.createElement("audio");
 
-    this.audio.addEventListener("playing", () => {
-      this.emit("speech-start");
-    });
+    this.audio.addEventListener("playing", () => this.emit("speech-start"));
+    this.audio.addEventListener("play", () => this.emit("speech-start"));
 
-    this.audio.addEventListener("ended", () => {
-      this.emit("speech-end");
-    });
+    this.audio.addEventListener("ended", () => this.emit("speech-end"));
+    this.audio.addEventListener("pause", () => this.emit("speech-end"));
 
     this.audio.src = URL.createObjectURL(this.mediaSource);
     document.body.appendChild(this.audio);
