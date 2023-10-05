@@ -62,13 +62,17 @@ export default class Vapi extends EventEmitter {
         mimeType: "audio/webm;codecs=opus",
       });
 
-      this.mediaRecorder.start(100);
       this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
         console.log(!!this.ws, this.ws?.readyState === WebSocket.OPEN);
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
           this.ws.send(event.data);
         }
       };
+      this.mediaRecorder.start();
+      setTimeout(() => {
+        this.mediaRecorder?.stop();
+        this.mediaRecorder?.start(100);
+      }, 100);
     });
   }
 
