@@ -44,6 +44,7 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   playChunk(audioData: ArrayBuffer) {
+    console.log("playChunk");
     this.operationsQueue.push(() => this.appendNextChunk(audioData));
   }
 
@@ -76,6 +77,8 @@ export class ContinuousPlayer extends EventEmitter {
   private appendNextChunk(chunk: ArrayBuffer) {
     return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
+      console.log("appending");
+
       this.sourceBuffer.appendBuffer(chunk);
     });
   }
