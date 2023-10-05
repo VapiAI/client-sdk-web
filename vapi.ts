@@ -64,6 +64,7 @@ export default class Vapi extends EventEmitter {
 
       this.mediaRecorder.start(100);
       this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
+        console.log(!!this.ws, this.ws?.readyState === WebSocket.OPEN);
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
           this.ws.send(event.data);
         }
