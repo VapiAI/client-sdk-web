@@ -81,7 +81,10 @@ export class ContinuousPlayer extends EventEmitter {
       if (!this.sourceBuffer) return;
 
       if (this.sourceBuffer.buffered.length > 0) {
-        this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
+        this.sourceBuffer.remove(
+          0,
+          this.sourceBuffer.buffered.end(this.sourceBuffer.buffered.length - 1)
+        );
       }
     });
   }
