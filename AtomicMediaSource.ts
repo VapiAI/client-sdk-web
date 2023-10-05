@@ -32,9 +32,9 @@ class AtomicMediaSource {
 
   public resetBuffer() {
     this.operationsQueue.push(async () => {
-      if (!this.sourceBuffer) return;
-
-      this.mediaSource.removeSourceBuffer(this.sourceBuffer);
+      if (this.sourceBuffer) {
+        this.mediaSource.removeSourceBuffer(this.sourceBuffer);
+      }
       this.sourceBuffer = this.mediaSource.addSourceBuffer(
         'audio/webm; codecs="opus"'
       );
