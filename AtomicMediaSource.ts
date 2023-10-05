@@ -25,11 +25,15 @@ class AtomicMediaSource {
 
       return new Promise((resolve, reject) => {
         if (this.sourceBuffer) {
-          this.sourceBuffer.addEventListener("updateend", () => {
-            console.log("APPEND OP END");
+          this.sourceBuffer.addEventListener(
+            "updateend",
+            () => {
+              console.log("APPEND OP END");
 
-            resolve();
-          });
+              resolve();
+            },
+            { once: true }
+          );
           this.sourceBuffer.appendBuffer(buffer);
         } else {
           reject();
@@ -45,10 +49,14 @@ class AtomicMediaSource {
 
       return new Promise((resolve, reject) => {
         if (this.sourceBuffer) {
-          this.sourceBuffer.addEventListener("updateend", () => {
-            console.log("CLEAR OP END");
-            resolve();
-          });
+          this.sourceBuffer.addEventListener(
+            "updateend",
+            () => {
+              console.log("CLEAR OP END");
+              resolve();
+            },
+            { once: true }
+          );
           this.sourceBuffer.remove(0, this.mediaSource.duration);
         } else {
           reject();
