@@ -44,25 +44,28 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   private performBufferOperation(operation: () => void) {
-    console.log("performBufferOperation");
     return new Promise<void>((resolve) => {
       if (!this.sourceBuffer) {
         resolve();
         return;
       }
 
-      this.sourceBuffer.addEventListener(
-        "updateend",
-        () => {
-          console.log("update end");
-          resolve();
-        },
-        {
-          once: true,
-        }
-      );
+      if (this.sourceBuffer.updating) {
+        this.sourceBuffer.addEventListener(
+          "updateend",
+          () => {
+            operation();
+            resolve();
+          },
+          {
+            once: true,
+          }
+        );
+        return;
+      }
 
       operation();
+      resolve();
     });
   }
 
@@ -102,7 +105,6 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   clear() {
-    console.log("oyoiyo");
     this.operationsQueue.push(() => this.abortBuffer());
     this.operationsQueue.push(() => this.removeBuffer());
     this.operationsQueue.push(() => this.resetTimestampOffset());
