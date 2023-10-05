@@ -67,25 +67,28 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   private appendNextChunk(chunk: ArrayBuffer) {
-    console.log("appendNextChunk");
     return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
       this.sourceBuffer.appendBuffer(chunk);
     });
   }
 
-  private removeBuffer() {
-    console.log("removeBuffer");
+  private removeBufferedRange() {
     return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
-      while (this.sourceBuffer.buffered.length > 0) {
-        this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
-      }
+      this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
     });
   }
 
+  private async removeBuffer() {
+    if (!this.sourceBuffer) return;
+
+    while (this.sourceBuffer.buffered.length > 0) {
+      await this.removeBufferedRange();
+    }
+  }
+
   private resetTimestampOffset() {
-    console.log("resetTimestampOffset");
     return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
       this.sourceBuffer.timestampOffset = 0;
