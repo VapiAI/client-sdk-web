@@ -7,13 +7,17 @@ export class ContinuousPlayer extends EventEmitter {
 
   constructor() {
     super();
-    this.atomic = new AtomicMediaSource();
 
     this.audio = document.createElement("audio");
 
     this.audio.addEventListener("playing", () => this.emit("speech-start"));
     this.audio.addEventListener("play", () => this.emit("speech-start"));
     this.audio.addEventListener("waiting", () => this.emit("speech-end"));
+
+    this.atomic = new AtomicMediaSource();
+    this.atomic.on("audio-loaded", () => {
+      this.audio.play();
+    });
 
     this.audio.src = URL.createObjectURL(this.atomic.mediaSource);
     document.body.appendChild(this.audio);

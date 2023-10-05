@@ -1,11 +1,14 @@
 import async, { QueueObject } from "async";
 
-class AtomicMediaSource {
+import EventEmitter from "events";
+
+class AtomicMediaSource extends EventEmitter {
   mediaSource: MediaSource;
   private sourceBuffer: SourceBuffer | null = null;
   private operationsQueue: QueueObject<() => Promise<void>>;
 
   constructor() {
+    super();
     this.mediaSource = new MediaSource();
     this.operationsQueue = this.createOperationQueue();
 
@@ -19,17 +22,13 @@ class AtomicMediaSource {
   }
 
   public appendBuffer(buffer: ArrayBuffer) {
-    console.log("APPEND OP PUSHED");
     this.operationsQueue.push(() => {
-      console.log("APPEND OP START");
-
       return new Promise((resolve, reject) => {
         if (this.sourceBuffer) {
           this.sourceBuffer.addEventListener(
             "updateend",
             () => {
-              console.log("APPEND OP END");
-
+              this.emit("audio-loaded");
               resolve();
             },
             { once: true }
