@@ -66,11 +66,14 @@ export class ContinuousPlayer extends EventEmitter {
         });
       } else {
         this.sourceBuffer.abort();
-        while (this.sourceBuffer.buffered.length > 0) {
+        while (
+          this.sourceBuffer.buffered.length > 0 &&
+          !this.sourceBuffer.updating
+        ) {
           this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
         }
+        this.sourceBuffer.timestampOffset = 0;
       }
-      this.sourceBuffer.timestampOffset = 0;
     }
   }
 }
