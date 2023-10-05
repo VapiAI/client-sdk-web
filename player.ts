@@ -92,12 +92,10 @@ export class ContinuousPlayer extends EventEmitter {
     });
   }
 
-  private abortBuffer() {
-    console.log("abortBuffer");
-    return this.performBufferOperation(() => {
-      if (!this.sourceBuffer) return;
-      this.sourceBuffer.abort();
-    });
+  private async abortBuffer() {
+    if (!this.sourceBuffer) return;
+    // This does not emit updateend
+    this.sourceBuffer.abort();
   }
 
   clear() {
