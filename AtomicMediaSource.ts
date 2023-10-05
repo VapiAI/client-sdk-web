@@ -9,18 +9,26 @@ class AtomicMediaSource {
     this.mediaSource = new MediaSource();
     this.operationsQueue = this.createOperationQueue();
 
-    this.mediaSource.addEventListener("sourceopen", () => {
-      this.resetBuffer();
-    });
+    this.mediaSource.addEventListener(
+      "sourceopen",
+      () => {
+        this.resetBuffer();
+      },
+      { once: true }
+    );
   }
 
   public appendBuffer(buffer: ArrayBuffer) {
     this.operationsQueue.push(() => {
       return new Promise((resolve, reject) => {
         if (this.sourceBuffer) {
-          this.sourceBuffer.addEventListener("updateend", () => {
-            resolve();
-          });
+          this.sourceBuffer.addEventListener(
+            "updateend",
+            () => {
+              resolve();
+            },
+            { once: true }
+          );
           this.sourceBuffer.appendBuffer(buffer);
         } else {
           console.error("No source buffer");
@@ -35,9 +43,13 @@ class AtomicMediaSource {
       if (this.sourceBuffer) {
         await new Promise<void>((resolve) => {
           this.mediaSource.removeSourceBuffer(this.sourceBuffer!);
-          this.mediaSource.addEventListener("sourceended", () => {
-            resolve();
-          });
+          this.sourceBuffer!.addEventListener(
+            "updateend",
+            () => {
+              resolve();
+            },
+            { once: true }
+          );
         });
       }
       this.sourceBuffer = this.mediaSource.addSourceBuffer(
