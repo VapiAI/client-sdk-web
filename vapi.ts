@@ -59,7 +59,7 @@ export default class Vapi extends EventEmitter {
   private startRecording(): void {
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
       this.mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm",
+        mimeType: "audio/webm;codecs=opus",
       });
 
       this.mediaRecorder.start(100);
