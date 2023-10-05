@@ -23,7 +23,7 @@ export class ContinuousPlayer extends EventEmitter {
     this.mediaSource.addEventListener("sourceopen", () => {
       this.mediaSource.duration = Number.POSITIVE_INFINITY;
       this.sourceBuffer = this.mediaSource.addSourceBuffer(
-        'audio/ogg; codecs="opus"'
+        'audio/webm; codecs="opus"'
       );
       this.sourceBuffer.mode = "sequence";
 
