@@ -59,6 +59,7 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   private appendNextChunk(chunk: ArrayBuffer) {
+    console.log("appendNextChunk");
     return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
       this.sourceBuffer.appendBuffer(chunk);
@@ -66,6 +67,7 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   private removeBuffer() {
+    console.log("removeBuffer");
     return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
       while (this.sourceBuffer.buffered.length > 0) {
@@ -75,6 +77,7 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   private resetTimestampOffset() {
+    console.log("resetTimestampOffset");
     return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
       this.sourceBuffer.timestampOffset = 0;
@@ -82,6 +85,7 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   private abortBuffer() {
+    console.log("abortBuffer");
     return this.performBufferOperation(() => {
       if (!this.sourceBuffer) return;
       this.sourceBuffer.abort();
@@ -89,6 +93,7 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   clear() {
+    console.log("oyoiyo");
     this.operationsQueue.push(() => this.abortBuffer());
     this.operationsQueue.push(() => this.removeBuffer());
     this.operationsQueue.push(() => this.resetTimestampOffset());
