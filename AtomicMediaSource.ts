@@ -31,13 +31,15 @@ class AtomicMediaSource {
   }
 
   public resetBuffer() {
-    if (!this.sourceBuffer) return;
+    this.operationsQueue.push(async () => {
+      if (!this.sourceBuffer) return;
 
-    this.mediaSource.removeSourceBuffer(this.sourceBuffer);
-    this.sourceBuffer = this.mediaSource.addSourceBuffer(
-      'audio/webm; codecs="opus"'
-    );
-    this.sourceBuffer.mode = "sequence";
+      this.mediaSource.removeSourceBuffer(this.sourceBuffer);
+      this.sourceBuffer = this.mediaSource.addSourceBuffer(
+        'audio/webm; codecs="opus"'
+      );
+      this.sourceBuffer.mode = "sequence";
+    });
   }
 
   private createOperationQueue() {
