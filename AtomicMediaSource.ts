@@ -25,6 +25,7 @@ class AtomicMediaSource {
           this.sourceBuffer.addEventListener("updateend", () => {
             resolve();
           });
+          console.log("APPEND");
           this.sourceBuffer.appendBuffer(buffer);
         } else {
           reject();
