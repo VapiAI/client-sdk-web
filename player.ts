@@ -6,7 +6,7 @@ export class ContinuousPlayer extends EventEmitter {
   private mediaSource: MediaSource;
   private sourceBuffer: SourceBuffer | null = null;
   private audio: HTMLAudioElement;
-  private audioQueue: QueueObject<ArrayBuffer>;
+  private operationsQueue: QueueObject<() => Promise<void>>;
 
   constructor() {
     super();
@@ -22,8 +22,8 @@ export class ContinuousPlayer extends EventEmitter {
     this.audio.src = URL.createObjectURL(this.mediaSource);
     document.body.appendChild(this.audio);
 
-    this.audioQueue = async.queue((task, callback) => {
-      this.appendNextChunk(task, callback);
+    this.operationsQueue = async.queue((task, callback) => {
+      task().then(() => callback());
     }, 1);
 
     this.mediaSource.addEventListener("sourceopen", () => {
@@ -32,10 +32,6 @@ export class ContinuousPlayer extends EventEmitter {
         'audio/webm; codecs="opus"'
       );
       this.sourceBuffer.mode = "sequence";
-
-      this.sourceBuffer.addEventListener("updateend", () => {
-        this.audioQueue.resume();
-      });
     });
   }
 
@@ -44,18 +40,7 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   playChunk(audioData: ArrayBuffer) {
-    this.audioQueue.push(audioData);
-  }
-
-  private appendNextChunk(
-    chunk: ArrayBuffer,
-    callback: async.ErrorCallback<Error>
-  ): void {
-    if (this.sourceBuffer && !this.sourceBuffer.updating) {
-      this.audioQueue.pause();
-      this.sourceBuffer.appendBuffer(chunk);
-    }
-    callback();
+    this.operationsQueue.push(() => this.appendNextChunk(audioData));
   }
 
   private performBufferOperation(operation: () => void) {
@@ -70,6 +55,13 @@ export class ContinuousPlayer extends EventEmitter {
       });
 
       operation();
+    });
+  }
+
+  private appendNextChunk(chunk: ArrayBuffer) {
+    return this.performBufferOperation(() => {
+      if (!this.sourceBuffer) return;
+      this.sourceBuffer.appendBuffer(chunk);
     });
   }
 
@@ -97,8 +89,8 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   async clear() {
-    // await this.removeBuffer();
-    // await this.abortBuffer();
-    // await this.resetTimestampOffset();
+    await this.removeBuffer();
+    await this.abortBuffer();
+    await this.resetTimestampOffset();
   }
 }
