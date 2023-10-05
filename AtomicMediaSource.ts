@@ -51,8 +51,7 @@ class AtomicMediaSource extends EventEmitter {
             },
             { once: true }
           );
-          this.sourceBuffer.timestampOffset = 0;
-          this.sourceBuffer.remove(0, this.mediaSource.duration);
+          this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
         } else {
           reject();
         }
