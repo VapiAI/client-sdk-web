@@ -34,6 +34,13 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   playChunk(audioData: ArrayBuffer) {
+    this.atomic.sourceBuffer?.addEventListener(
+      "updateend",
+      () => {
+        this.audio.play().catch((error) => console.error("Play error:", error));
+      },
+      { once: true }
+    );
     this.atomic.appendBuffer(audioData);
   }
 

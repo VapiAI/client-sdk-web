@@ -4,7 +4,7 @@ import EventEmitter from "events";
 
 class AtomicMediaSource extends EventEmitter {
   mediaSource: MediaSource;
-  private sourceBuffer: SourceBuffer | null = null;
+  sourceBuffer: SourceBuffer | null = null;
   private operationsQueue: QueueObject<() => Promise<void>>;
 
   constructor() {
@@ -28,7 +28,6 @@ class AtomicMediaSource extends EventEmitter {
           this.sourceBuffer.addEventListener(
             "updateend",
             () => {
-              this.emit("audio-loaded");
               resolve();
             },
             { once: true }
@@ -42,16 +41,12 @@ class AtomicMediaSource extends EventEmitter {
   }
 
   public clearBuffer() {
-    console.log("CLEAR OP PUSHED");
     this.operationsQueue.push(() => {
-      console.log("CLEAR OP START");
-
       return new Promise((resolve, reject) => {
         if (this.sourceBuffer) {
           this.sourceBuffer.addEventListener(
             "updateend",
             () => {
-              console.log("CLEAR OP END");
               resolve();
             },
             { once: true }
