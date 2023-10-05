@@ -10,11 +10,7 @@ class AtomicMediaSource {
     this.operationsQueue = this.createOperationQueue();
 
     this.mediaSource.addEventListener("sourceopen", () => {
-      this.mediaSource.duration = Number.POSITIVE_INFINITY;
-      this.sourceBuffer = this.mediaSource.addSourceBuffer(
-        'audio/webm; codecs="opus"'
-      );
-      this.sourceBuffer.mode = "sequence";
+      this.resetBuffer();
     });
   }
 
@@ -33,21 +29,14 @@ class AtomicMediaSource {
     });
   }
 
-  public clearBuffer() {
-    this.operationsQueue.push(() => {
-      return new Promise((resolve, reject) => {
-        if (this.sourceBuffer) {
-          this.sourceBuffer.addEventListener("updateend", () => {
-            this.mediaSource.duration = Number.POSITIVE_INFINITY;
-            this.sourceBuffer!.timestampOffset = 0;
-            resolve();
-          });
-          this.sourceBuffer.remove(0, this.mediaSource.duration);
-        } else {
-          reject();
-        }
-      });
-    });
+  public resetBuffer() {
+    if (!this.sourceBuffer) return;
+
+    this.mediaSource.removeSourceBuffer(this.sourceBuffer);
+    this.sourceBuffer = this.mediaSource.addSourceBuffer(
+      'audio/webm; codecs="opus"'
+    );
+    this.sourceBuffer.mode = "sequence";
   }
 
   private createOperationQueue() {
