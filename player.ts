@@ -13,17 +13,12 @@ export class ContinuousPlayer extends EventEmitter {
     this.audio.addEventListener("playing", () => this.emit("speech-start"));
     this.audio.addEventListener("play", () => this.emit("speech-start"));
     this.audio.addEventListener("canplay", () => {
-      console.log("CAN PLAY");
       this.audio.play();
     });
 
     this.audio.addEventListener("waiting", () => this.emit("speech-end"));
 
     this.atomic = new AtomicMediaSource();
-    this.atomic.on("audio-loaded", () => {
-      console.log("AUDIO LOADED");
-      this.audio.play();
-    });
 
     this.audio.src = URL.createObjectURL(this.atomic.mediaSource);
     document.body.appendChild(this.audio);
@@ -45,6 +40,7 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   clear() {
-    // this.atomic.clearBuffer();
+    this.audio.pause();
+    this.atomic.clearBuffer();
   }
 }
