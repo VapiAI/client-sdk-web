@@ -101,12 +101,10 @@ export class ContinuousPlayer extends EventEmitter {
   }
 
   clear() {
-    if (!this.sourceBuffer) return;
-    this.sourceBuffer.abort();
-
-    this.operationsQueue.kill();
-    this.operationsQueue = this.createOperationQueue();
-
+    // if (!this.sourceBuffer) return;
+    // this.sourceBuffer.abort();
+    // this.operationsQueue.kill();
+    // this.operationsQueue = this.createOperationQueue();
     // this.operationsQueue.push(() => this.removeBuffer());
     // this.operationsQueue.push(() => this.resetTimestampOffset());
   }
