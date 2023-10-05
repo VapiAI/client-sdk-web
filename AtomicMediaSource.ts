@@ -47,11 +47,17 @@ class AtomicMediaSource extends EventEmitter {
           this.sourceBuffer.addEventListener(
             "updateend",
             () => {
+              this.mediaSource.duration = Number.POSITIVE_INFINITY;
+              this.sourceBuffer = this.mediaSource.addSourceBuffer(
+                'audio/webm; codecs="opus"'
+              );
+              this.sourceBuffer.mode = "sequence";
               resolve();
             },
             { once: true }
           );
-          this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
+
+          this.mediaSource.removeSourceBuffer(this.sourceBuffer);
         } else {
           reject();
         }
