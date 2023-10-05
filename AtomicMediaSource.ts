@@ -19,13 +19,17 @@ class AtomicMediaSource {
   }
 
   public appendBuffer(buffer: ArrayBuffer) {
+    console.log("APPEND OP PUSHED");
     this.operationsQueue.push(() => {
+      console.log("APPEND OP START");
+
       return new Promise((resolve, reject) => {
         if (this.sourceBuffer) {
           this.sourceBuffer.addEventListener("updateend", () => {
+            console.log("APPEND OP END");
+
             resolve();
           });
-          console.log("APPEND");
           this.sourceBuffer.appendBuffer(buffer);
         } else {
           reject();
@@ -35,10 +39,14 @@ class AtomicMediaSource {
   }
 
   public clearBuffer() {
+    console.log("CLEAR OP PUSHED");
     this.operationsQueue.push(() => {
+      console.log("CLEAR OP START");
+
       return new Promise((resolve, reject) => {
         if (this.sourceBuffer) {
           this.sourceBuffer.addEventListener("updateend", () => {
+            console.log("CLEAR OP END");
             resolve();
           });
           this.sourceBuffer.remove(0, this.mediaSource.duration);
