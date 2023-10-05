@@ -1,7 +1,7 @@
 import { Api } from "./api";
 
 const api = new Api({
-  baseUrl: process.env.API_URL ?? "https://api.vapi.ai",
+  baseUrl: "https://api.vapi.ai",
   baseApiParams: {
     secure: true,
   },

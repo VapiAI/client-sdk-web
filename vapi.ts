@@ -10,8 +10,9 @@ export default class Vapi extends EventEmitter {
   private mediaRecorder: MediaRecorder | null = null;
   private player: ContinuousPlayer;
 
-  constructor(apiToken: string) {
+  constructor(apiToken: string, apiBaseUrl?: string) {
     super();
+    client.baseUrl = apiBaseUrl ?? "https://api.vapi.ai";
     client.setSecurityData(apiToken);
     this.player = new ContinuousPlayer();
 
