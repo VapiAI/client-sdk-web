@@ -68,11 +68,7 @@ export default class Vapi extends EventEmitter {
           this.ws.send(event.data);
         }
       };
-      this.mediaRecorder.start();
-      setTimeout(() => {
-        this.mediaRecorder?.stop();
-        this.mediaRecorder?.start(100);
-      }, 100);
+      this.mediaRecorder.start(100);
     });
   }
 
