@@ -107,7 +107,7 @@ export class ContinuousPlayer extends EventEmitter {
     this.operationsQueue.kill();
     this.operationsQueue = this.createOperationQueue();
 
-    this.operationsQueue.push(() => this.removeBuffer());
-    this.operationsQueue.push(() => this.resetTimestampOffset());
+    // this.operationsQueue.push(() => this.removeBuffer());
+    // this.operationsQueue.push(() => this.resetTimestampOffset());
   }
 }
