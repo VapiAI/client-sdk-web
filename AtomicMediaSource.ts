@@ -16,6 +16,8 @@ function getMediaSource() {
   if (window.MediaSource) {
     return new window.MediaSource();
   }
+
+  return null;
 }
 
 class AtomicMediaSource extends EventEmitter {
@@ -27,6 +29,12 @@ class AtomicMediaSource extends EventEmitter {
     super();
     this.mediaSource = getMediaSource();
     this.operationsQueue = this.createOperationQueue();
+
+    if (!this.mediaSource) {
+      console.error("MediaSource is not supported in your browser.");
+      // Display a message to the user, or handle this situation in another way
+      return;
+    }
 
     this.mediaSource.addEventListener("sourceopen", () => {
       this.mediaSource.duration = Number.POSITIVE_INFINITY;
