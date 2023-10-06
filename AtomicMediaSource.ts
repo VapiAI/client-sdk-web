@@ -19,7 +19,7 @@ function getMediaSource() {
 }
 
 class AtomicMediaSource extends EventEmitter {
-  mediaSource: MediaSource;
+  mediaSource: any;
   sourceBuffer: SourceBuffer | null = null;
   private operationsQueue: QueueObject<() => Promise<void>>;
 
@@ -33,7 +33,9 @@ class AtomicMediaSource extends EventEmitter {
       this.sourceBuffer = this.mediaSource.addSourceBuffer(
         'audio/webm; codecs="opus"'
       );
-      this.sourceBuffer.mode = "sequence";
+      if (this.sourceBuffer) {
+        this.sourceBuffer.mode = "sequence";
+      }
     });
   }
 
