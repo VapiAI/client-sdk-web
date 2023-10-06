@@ -41,25 +41,24 @@ class AtomicMediaSource extends EventEmitter {
   }
 
   public clearBuffer() {
-    this.operationsQueue.push(() => {
-      return new Promise((resolve, reject) => {
-        if (this.sourceBuffer) {
-          this.sourceBuffer.addEventListener(
-            "updateend",
-            () => {
-              resolve();
-            },
-            { once: true }
-          );
-
-          if (this.sourceBuffer.buffered.length > 0) {
-            this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
-          }
-        } else {
-          reject();
-        }
-      });
-    });
+    // this.operationsQueue.push(() => {
+    //   return new Promise((resolve, reject) => {
+    //     if (this.sourceBuffer) {
+    //       this.sourceBuffer.addEventListener(
+    //         "updateend",
+    //         () => {
+    //           resolve();
+    //         },
+    //         { once: true }
+    //       );
+    //       if (this.sourceBuffer.buffered.length > 0) {
+    //         this.sourceBuffer.remove(0, this.sourceBuffer.buffered.end(0));
+    //       }
+    //     } else {
+    //       reject();
+    //     }
+    //   });
+    // });
   }
 
   private createOperationQueue() {
