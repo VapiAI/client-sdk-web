@@ -2,6 +2,22 @@ import async, { QueueObject } from "async";
 
 import EventEmitter from "events";
 
+declare global {
+  interface Window {
+    ManagedMediaSource: any;
+  }
+}
+
+// ManagedMediaSource needed for iOS Safari
+function getMediaSource() {
+  if (window.ManagedMediaSource) {
+    return new window.ManagedMediaSource();
+  }
+  if (window.MediaSource) {
+    return new window.MediaSource();
+  }
+}
+
 class AtomicMediaSource extends EventEmitter {
   mediaSource: MediaSource;
   sourceBuffer: SourceBuffer | null = null;
@@ -9,7 +25,7 @@ class AtomicMediaSource extends EventEmitter {
 
   constructor() {
     super();
-    this.mediaSource = new MediaSource();
+    this.mediaSource = getMediaSource();
     this.operationsQueue = this.createOperationQueue();
 
     this.mediaSource.addEventListener("sourceopen", () => {
