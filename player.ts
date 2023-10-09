@@ -2,45 +2,26 @@ import AtomicMediaSource from "./AtomicMediaSource";
 import EventEmitter from "events";
 
 export class ContinuousPlayer extends EventEmitter {
-  private atomic: AtomicMediaSource;
-  private audio: HTMLAudioElement;
+  private audioCtx: AudioContext;
+  private source: AudioBufferSourceNode | null = null;
 
   constructor() {
     super();
 
-    this.audio = document.createElement("audio");
-
-    this.audio.addEventListener("playing", () => this.emit("speech-start"));
-    this.audio.addEventListener("play", () => this.emit("speech-start"));
-    this.audio.addEventListener("canplay", () => {
-      this.audio.play();
-    });
-
-    this.audio.addEventListener("waiting", () => this.emit("speech-end"));
-
-    this.atomic = new AtomicMediaSource();
-
-    this.audio.src = URL.createObjectURL(this.atomic.mediaSource);
-    document.body.appendChild(this.audio);
+    this.audioCtx = new AudioContext();
   }
 
-  start() {
-    this.audio.play();
+  start() {}
+
+  async playChunk(audioData: ArrayBuffer) {
+    const audioBuffer = await this.audioCtx.decodeAudioData(audioData);
+    this.source = this.audioCtx.createBufferSource();
+    this.source.buffer = audioBuffer;
+    this.source.connect(this.audioCtx.destination);
+    this.source.start();
+    this.emit("speech-start");
+    this.source.onended = () => this.emit("speech-end");
   }
 
-  playChunk(audioData: ArrayBuffer) {
-    this.atomic.sourceBuffer?.addEventListener(
-      "updateend",
-      () => {
-        this.audio.play().catch((error) => console.error("Play error:", error));
-      },
-      { once: true }
-    );
-    this.atomic.appendBuffer(audioData);
-  }
-
-  clear() {
-    this.audio.pause();
-    this.atomic.clearBuffer();
-  }
+  clear() {}
 }
