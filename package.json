@@ -24,7 +24,8 @@
   "dependencies": {
     "async": "^3.2.4",
     "base64-arraybuffer": "^1.0.2",
-    "events": "^3.3.0"
+    "events": "^3.3.0",
+    "standardized-audio-context": "^25.3.57"
   },
   "devDependencies": {
     "@types/async": "^3.2.21",
