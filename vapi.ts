@@ -1,57 +1,23 @@
-import { Assistant, CreateAssistantDTO } from "./api";
-import {
-  AudioContext,
-  IAudioBufferSourceNode,
-  IAudioContext,
-} from "standardized-audio-context";
-import async, { QueueObject } from "async";
-
+import { ContinuousPlayer } from "./player";
+import { CreateAssistantDTO } from "./api";
+import EventEmitter from "events";
 import { client } from "./client";
 import { decode } from "base64-arraybuffer";
 
-export default class Vapi {
-  private audioContext: AudioContext = new AudioContext();
-  private source: IAudioBufferSourceNode<IAudioContext> | null = null;
+export default class Vapi extends EventEmitter {
   private started: boolean = false;
   private ws: WebSocket | null = null;
   private mediaRecorder: MediaRecorder | null = null;
+  private player: ContinuousPlayer;
 
-  private nextClipTime: number = 0;
-
-  private decodeQueue: QueueObject<ArrayBuffer>;
-
-  constructor(apiToken: string, apiUrl?: string) {
+  constructor(apiToken: string, apiBaseUrl?: string) {
+    super();
+    client.baseUrl = apiBaseUrl ?? "https://api.vapi.ai";
     client.setSecurityData(apiToken);
-    client.baseUrl = apiUrl ?? "https://api.vapi.ai";
+    this.player = new ContinuousPlayer();
 
-    this.decodeQueue = this.createQueue();
-  }
-
-  createQueue() {
-    return async.queue<ArrayBuffer>((task, callback) => {
-      this.source = this.audioContext.createBufferSource();
-
-      this.audioContext.decodeAudioData(task, (buffer) => {
-        if (!this.source) return;
-
-        this.source.buffer = buffer;
-        this.source.connect(this.audioContext.destination);
-
-        // If the next clip time is in the past, set it to the current time
-        this.nextClipTime = Math.max(
-          this.nextClipTime,
-          this.audioContext.currentTime
-        );
-
-        // Start the source at the next clip time
-        this.source.start(this.nextClipTime);
-
-        // Schedule the next clip time
-        this.nextClipTime += buffer.duration;
-
-        callback();
-      });
-    }, 1);
+    this.player.on("speech-start", () => this.emit("speech-start"));
+    this.player.on("speech-end", () => this.emit("speech-end"));
   }
 
   start(assistant: CreateAssistantDTO | string): void {
@@ -60,11 +26,12 @@ export default class Vapi {
     }
 
     this.started = true;
+    this.player.start();
 
     client.call
       .callControllerCreateWebCall({
+        assistant: typeof assistant === "string" ? undefined : assistant,
         assistantId: typeof assistant === "string" ? assistant : undefined,
-        assistant: typeof assistant === "object" ? assistant : undefined,
       })
       .then(({ data }) => {
         const { callId, url } = data;
@@ -74,7 +41,6 @@ export default class Vapi {
 
         socket.onopen = () => {
           socket.send(JSON.stringify({ event: "start", callId }));
-          this.startRecording();
         };
         socket.onmessage = (event) => {
           if (!socket) return;
@@ -95,45 +61,37 @@ export default class Vapi {
         mimeType: "audio/webm;codecs=opus",
       });
 
-      this.mediaRecorder.start(100);
       this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
           this.ws.send(event.data);
         }
       };
+      this.mediaRecorder.start(100);
     });
   }
 
   private onMessage(ws: WebSocket, event: MessageEvent): void {
     const data = JSON.parse(event.data);
-    if (data.event === "media") {
-      const audioData = decode(data.media.payload);
-      this.decodeQueue.push(audioData);
-    }
-    if (data.event === "clear") {
-      this.clear();
+
+    switch (data.event) {
+      case "connected":
+        this.startRecording();
+        this.emit("started");
+        break;
+      case "clear":
+        this.clear();
+        break;
+      case "media":
+        const audioData = decode(data.media.payload);
+        this.player.playChunk(audioData);
     }
   }
 
   clear(): void {
-    this.decodeQueue.kill();
-    this.decodeQueue = this.createQueue();
-
-    // Stop the source if it exists
-    if (this.source) {
-      this.source.stop();
-      this.source.disconnect();
-      this.source = null;
-    }
-
-    // Reset the next clip time
-    this.nextClipTime = 0;
+    this.player.clear();
   }
 
   stop(): void {
-    if (this.source) {
-      this.source.stop();
-    }
     this.started = false;
     if (this.ws) {
       this.ws.close();
@@ -143,5 +101,6 @@ export default class Vapi {
       this.mediaRecorder.stop();
     }
     this.mediaRecorder = null;
+    this.emit("stopped");
   }
 }
