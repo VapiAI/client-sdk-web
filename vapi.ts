@@ -20,8 +20,9 @@ export default class Vapi {
 
   private decodeQueue: QueueObject<ArrayBuffer>;
 
-  constructor(apiToken: string) {
+  constructor(apiToken: string, apiUrl?: string) {
     client.setSecurityData(apiToken);
+    client.baseUrl = apiUrl ?? "https://api.vapi.ai";
 
     this.decodeQueue = this.createQueue();
   }
