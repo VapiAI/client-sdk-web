@@ -47,6 +47,9 @@ export default class Vapi extends EventEmitter {
           console.log(e);
         });
         this.call.startRemoteParticipantsAudioLevelObserver();
+        setInterval(() => {
+          console.log(this.call?.getRemoteParticipantsAudioLevel());
+        }, 500);
       })
       .catch((error) => {
         console.error(error);
