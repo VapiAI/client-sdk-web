@@ -46,9 +46,7 @@ export default class Vapi extends EventEmitter {
   }
 
   private handleSpeakerChange(speaker: any) {
-    console.log(speaker);
-    console.log(this.call?.participants());
-    if (speaker?.userId === this.call?.participants()?.local?.user_id) {
+    if (speaker?.peerId === this.call?.participants()?.local?.user_id) {
       this.emit("speech-end");
     } else {
       this.emit("speech-start");
