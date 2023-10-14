@@ -39,8 +39,9 @@ export default class Vapi extends EventEmitter {
         this.call.iframe()?.style.setProperty("display", "none");
         this.call.join({ url });
 
-        this.call.on("active-speaker-change", (e) =>
-          this.handleSpeakerChange(e)
+        this.call.on(
+          "active-speaker-change",
+          (e) => e && this.handleSpeakerChange(e)
         );
       })
       .catch((error) => {
