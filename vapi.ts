@@ -43,6 +43,8 @@ export default class Vapi extends EventEmitter {
           "active-speaker-change",
           (e) => e && this.handleSpeakerChange(e)
         );
+
+        console.log("adding");
         this.call.startRemoteParticipantsAudioLevelObserver().then(() => {
           console.log("started");
           this.call?.on("remote-participants-audio-level", (e) => {
