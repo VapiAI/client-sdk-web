@@ -22,15 +22,11 @@
   },
   "homepage": "https://github.com/VapiAI/snippet#readme",
   "dependencies": {
-    "async": "^3.2.4",
-    "base64-arraybuffer": "^1.0.2",
-    "events": "^3.3.0",
-    "standardized-audio-context": "^25.3.57"
+    "@daily-co/daily-js": "^0.52.0",
+    "events": "^3.3.0"
   },
   "devDependencies": {
-    "@types/async": "^3.2.21",
     "@types/node": "^20.6.0",
-    "@types/ws": "^8.5.5",
     "swagger-typescript-api": "^13.0.3"
   }
 }
