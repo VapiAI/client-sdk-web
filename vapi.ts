@@ -35,8 +35,8 @@ export default class Vapi extends EventEmitter {
         });
         this.call.iframe()?.style.setProperty("display", "none");
         this.call.join({ url });
-        this.call.on("joined-meeting", () => {
-          console.log("JOINED");
+        this.call.on("active-speaker-change", (speaker) => {
+          console.log(speaker);
         });
       })
       .catch((error) => {
