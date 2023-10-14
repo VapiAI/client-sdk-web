@@ -35,13 +35,26 @@ export default class Vapi extends EventEmitter {
         });
         this.call.iframe()?.style.setProperty("display", "none");
         this.call.join({ url });
-        this.call.on("active-speaker-change", (speaker) => {
-          console.log(speaker);
-        });
+
+        this.call.on(
+          "remote-participants-audio-level",
+          ({ participantsAudioLevel }) =>
+            this.handleParticipantsAudioLevel(participantsAudioLevel)
+        );
+        this.call.startRemoteParticipantsAudioLevelObserver(500);
       })
       .catch((error) => {
         console.error(error);
       });
+  }
+
+  private handleParticipantsAudioLevel(participantsAudioLevel: any[]) {
+    if (!participantsAudioLevel) return;
+    const level = Object.values(participantsAudioLevel).reduce(
+      (a, b) => a + b,
+      0
+    );
+    console.log(level);
   }
 
   stop(): void {
