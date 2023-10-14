@@ -36,24 +36,21 @@ export default class Vapi extends EventEmitter {
         this.call.iframe()?.style.setProperty("display", "none");
         this.call.join({ url });
 
-        this.call.on(
-          "remote-participants-audio-level",
-          (participantsAudioLevel) =>
-            this.handleParticipantsAudioLevel(participantsAudioLevel)
+        this.call.on("active-speaker-change", (e) =>
+          this.handleSpeakerChange(e)
         );
-        this.call.startRemoteParticipantsAudioLevelObserver(500);
       })
       .catch((error) => {
         console.error(error);
       });
   }
 
-  private handleParticipantsAudioLevel(participantsAudioLevel: any[]) {
-    const level = Object.values(participantsAudioLevel).reduce(
-      (a, b) => a + b,
-      0
-    );
-    console.log(level);
+  private handleSpeakerChange(speaker: any) {
+    if (speaker?.userId === this.call?.participants()?.local?.user_id) {
+      this.emit("speech-end");
+    } else {
+      this.emit("speech-start");
+    }
   }
 
   stop(): void {
