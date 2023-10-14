@@ -30,9 +30,12 @@ export default class Vapi extends EventEmitter {
         const { url } = data;
 
         this.call = DailyIframe.createCallObject({
-          url,
           audioSource: true,
           videoSource: false,
+        });
+        this.call.join({ url });
+        this.call.on("joined-meeting", () => {
+          console.log("JOINED");
         });
       })
       .catch((error) => {
