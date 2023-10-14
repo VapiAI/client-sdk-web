@@ -1,4 +1,7 @@
-import DailyIframe, { DailyCall } from "@daily-co/daily-js";
+import DailyIframe, {
+  DailyCall,
+  DailyEventObjectActiveSpeakerChange,
+} from "@daily-co/daily-js";
 
 import { CreateAssistantDTO } from "./api";
 import EventEmitter from "events";
@@ -45,8 +48,8 @@ export default class Vapi extends EventEmitter {
       });
   }
 
-  private handleSpeakerChange(speaker: any) {
-    if (speaker?.peerId === this.call?.participants()?.local?.user_id) {
+  private handleSpeakerChange(e: DailyEventObjectActiveSpeakerChange) {
+    if (e.activeSpeaker.peerId === this.call?.participants()?.local?.user_id) {
       this.emit("speech-end");
     } else {
       this.emit("speech-start");
