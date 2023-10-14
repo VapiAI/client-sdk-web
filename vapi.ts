@@ -29,7 +29,7 @@ export default class Vapi extends EventEmitter {
       .then(({ data }) => {
         const { url } = data;
 
-        this.call = DailyIframe.createCallObject({
+        this.call = DailyIframe.createFrame({
           audioSource: true,
           videoSource: false,
         });
