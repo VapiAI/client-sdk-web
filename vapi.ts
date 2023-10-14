@@ -33,6 +33,7 @@ export default class Vapi extends EventEmitter {
           audioSource: true,
           videoSource: false,
         });
+        this.call.iframe()?.style.setProperty("display", "none");
         this.call.join({ url });
         this.call.on("joined-meeting", () => {
           console.log("JOINED");
