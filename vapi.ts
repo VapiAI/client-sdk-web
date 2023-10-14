@@ -38,7 +38,7 @@ export default class Vapi extends EventEmitter {
 
         this.call.on(
           "remote-participants-audio-level",
-          ({ participantsAudioLevel }) =>
+          (participantsAudioLevel) =>
             this.handleParticipantsAudioLevel(participantsAudioLevel)
         );
         this.call.startRemoteParticipantsAudioLevelObserver(500);
@@ -49,7 +49,6 @@ export default class Vapi extends EventEmitter {
   }
 
   private handleParticipantsAudioLevel(participantsAudioLevel: any[]) {
-    if (!participantsAudioLevel) return;
     const level = Object.values(participantsAudioLevel).reduce(
       (a, b) => a + b,
       0
