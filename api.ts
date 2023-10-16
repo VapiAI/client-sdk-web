@@ -67,7 +67,14 @@ export interface CreateAssistantDTO {
    * Basic Voices: davis, jenny, aria, steffan, sara, and jason.
    */
   voice?:
+    | "davis"
+    | "jenny"
+    | "aria"
+    | "steffan"
+    | "sara"
+    | "jason"
     | "burt"
+    | "andrea"
     | "phillip"
     | "steve"
     | "joseph"
@@ -77,13 +84,7 @@ export interface CreateAssistantDTO {
     | "drew"
     | "paul"
     | "mrb"
-    | "matilda"
-    | "davis"
-    | "jenny"
-    | "aria"
-    | "steffan"
-    | "sara"
-    | "jason";
+    | "matilda";
   /** This is the assistant’s name, just for your own reference. */
   name?: string;
   /** This is the system prompt, which sets the objective and background before the call. */
@@ -94,8 +95,12 @@ export interface CreateAssistantDTO {
   callbackUrl?: string;
   /** This is the number the assistant will transfer to if it runs into any issues. */
   forwardingPhoneNumber?: string;
-  /** Whether the AI should talk first when the call is connected. */
-  startTalking?: boolean;
+  /** This is the first message that the assistant will say. If unspecified, it will wait for the user to speak. */
+  firstMessage?: string;
+  /** Whether the call should be recorded. */
+  recordingEnabled?: boolean;
+  /** Whether to leave a voicemail if a phone call isn't picked up. */
+  voicemailEnabled?: boolean;
 }
 
 export interface CreateOutboundCallDto {
@@ -132,7 +137,14 @@ export interface Assistant {
    * Basic Voices: davis, jenny, aria, steffan, sara, and jason.
    */
   voice?:
+    | "davis"
+    | "jenny"
+    | "aria"
+    | "steffan"
+    | "sara"
+    | "jason"
     | "burt"
+    | "andrea"
     | "phillip"
     | "steve"
     | "joseph"
@@ -142,13 +154,7 @@ export interface Assistant {
     | "drew"
     | "paul"
     | "mrb"
-    | "matilda"
-    | "davis"
-    | "jenny"
-    | "aria"
-    | "steffan"
-    | "sara"
-    | "jason";
+    | "matilda";
   /** Unique identifier for the assistant. */
   id: string;
   /** Unique identifier for the organization that this assistant belongs to. */
@@ -167,8 +173,12 @@ export interface Assistant {
   callbackUrl?: string;
   /** This is the number the assistant will transfer to if it runs into any issues. */
   forwardingPhoneNumber?: string;
-  /** Whether the AI should talk first when the call is connected. */
-  startTalking?: boolean;
+  /** This is the first message that the assistant will say. If unspecified, it will wait for the user to speak. */
+  firstMessage?: string;
+  /** Whether the call should be recorded. */
+  recordingEnabled?: boolean;
+  /** Whether to leave a voicemail if a phone call isn't picked up. */
+  voicemailEnabled?: boolean;
 }
 
 export interface UpdateAssistantDTO {
@@ -182,7 +192,14 @@ export interface UpdateAssistantDTO {
    * Basic Voices: davis, jenny, aria, steffan, sara, and jason.
    */
   voice?:
+    | "davis"
+    | "jenny"
+    | "aria"
+    | "steffan"
+    | "sara"
+    | "jason"
     | "burt"
+    | "andrea"
     | "phillip"
     | "steve"
     | "joseph"
@@ -192,13 +209,7 @@ export interface UpdateAssistantDTO {
     | "drew"
     | "paul"
     | "mrb"
-    | "matilda"
-    | "davis"
-    | "jenny"
-    | "aria"
-    | "steffan"
-    | "sara"
-    | "jason";
+    | "matilda";
   /** This is the assistant’s name, just for your own reference. */
   name?: string;
   /** This is the system prompt, which sets the objective and background before the call. */
@@ -209,8 +220,12 @@ export interface UpdateAssistantDTO {
   callbackUrl?: string;
   /** This is the number the assistant will transfer to if it runs into any issues. */
   forwardingPhoneNumber?: string;
-  /** Whether the AI should talk first when the call is connected. */
-  startTalking?: boolean;
+  /** This is the first message that the assistant will say. If unspecified, it will wait for the user to speak. */
+  firstMessage?: string;
+  /** Whether the call should be recorded. */
+  recordingEnabled?: boolean;
+  /** Whether to leave a voicemail if a phone call isn't picked up. */
+  voicemailEnabled?: boolean;
 }
 
 export interface BuyPhoneNumberDto {
