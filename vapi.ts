@@ -58,6 +58,7 @@ export default class Vapi extends EventEmitter {
     const isSpeaking = Object.values(e.participantsAudioLevel).some(
       (v) => v > 0
     );
+    console.log(Object.values(e.participantsAudioLevel));
     if (isSpeaking === this.speaking) return;
 
     if (isSpeaking) {
