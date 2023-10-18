@@ -11,6 +11,7 @@ import { client } from "./client";
 export default class Vapi extends EventEmitter {
   private started: boolean = false;
   private call: DailyCall | null = null;
+  private speakingTimeout: NodeJS.Timeout | null = null;
 
   constructor(apiToken: string, apiBaseUrl?: string) {
     super();
@@ -53,11 +54,20 @@ export default class Vapi extends EventEmitter {
   private handleRemoteParticipantsAudioLevel(
     e: DailyEventObjectRemoteParticipantsAudioLevel
   ) {
-    const volume = Object.values(e.participantsAudioLevel).reduce(
-      (acc, curr) => acc + curr,
-      0
+    const isSpeaking = Object.values(e.participantsAudioLevel).some(
+      (v) => v > 0.01
     );
-    this.emit("speech-volume", volume);
+    if (!isSpeaking) return;
+
+    if (this.speakingTimeout) {
+      clearTimeout(this.speakingTimeout);
+    } else {
+      this.emit("speech-start");
+    }
+
+    this.speakingTimeout = setTimeout(() => {
+      this.emit("speech-end");
+    }, 500);
   }
 
   stop(): void {
