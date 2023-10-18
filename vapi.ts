@@ -55,7 +55,7 @@ export default class Vapi extends EventEmitter {
     e: DailyEventObjectRemoteParticipantsAudioLevel
   ) {
     const isSpeaking = Object.values(e.participantsAudioLevel).some(
-      (v) => v > 0.005
+      (v) => v > 0.01
     );
     if (!isSpeaking) return;
 
