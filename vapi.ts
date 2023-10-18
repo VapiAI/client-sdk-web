@@ -1,6 +1,7 @@
 import DailyIframe, {
   DailyCall,
   DailyEventObjectActiveSpeakerChange,
+  DailyEventObjectRemoteParticipantsAudioLevel,
 } from "@daily-co/daily-js";
 
 import { CreateAssistantDTO } from "./api";
@@ -10,6 +11,7 @@ import { client } from "./client";
 export default class Vapi extends EventEmitter {
   private started: boolean = false;
   private call: DailyCall | null = null;
+  private speaking = false;
 
   constructor(apiToken: string, apiBaseUrl?: string) {
     super();
@@ -40,21 +42,31 @@ export default class Vapi extends EventEmitter {
         await this.call.join({ url });
 
         this.call.startRemoteParticipantsAudioLevelObserver(500);
-        this.call.on("remote-participants-audio-level", (e) => {
-          console.log(e);
-        });
+        this.call.on(
+          "remote-participants-audio-level",
+          this.handleRemoteParticipantsAudioLevel
+        );
       })
       .catch((error) => {
         console.error(error);
       });
   }
 
-  private handleSpeakerChange(e: DailyEventObjectActiveSpeakerChange) {
-    if (e.activeSpeaker.peerId === this.call?.participants()?.local?.user_id) {
-      this.emit("speech-end");
-    } else {
+  private handleRemoteParticipantsAudioLevel(
+    e: DailyEventObjectRemoteParticipantsAudioLevel
+  ) {
+    const isSpeaking = Object.values(e.participantsAudioLevel).some(
+      (v) => v > 0
+    );
+    if (isSpeaking === this.speaking) return;
+
+    if (isSpeaking) {
       this.emit("speech-start");
+    } else {
+      this.emit("speech-end");
     }
+
+    this.speaking = isSpeaking;
   }
 
   stop(): void {
