@@ -29,7 +29,7 @@ export default class Vapi extends EventEmitter {
         assistant: typeof assistant === "string" ? undefined : assistant,
         assistantId: typeof assistant === "string" ? assistant : undefined,
       })
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         const { url } = data;
 
         this.call = DailyIframe.createFrame({
@@ -37,14 +37,9 @@ export default class Vapi extends EventEmitter {
           videoSource: false,
         });
         this.call.iframe()?.style.setProperty("display", "none");
-        this.call.join({ url });
+        await this.call.join({ url });
 
-        this.call.on(
-          "active-speaker-change",
-          (e) => e && this.handleSpeakerChange(e)
-        );
-
-        this.call.startRemoteParticipantsAudioLevelObserver();
+        this.call.startRemoteParticipantsAudioLevelObserver(500);
         this.call.on("remote-participants-audio-level", (e) => {
           console.log(e);
         });
