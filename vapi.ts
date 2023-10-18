@@ -42,9 +42,8 @@ export default class Vapi extends EventEmitter {
         await this.call.join({ url });
 
         this.call.startRemoteParticipantsAudioLevelObserver();
-        this.call.on(
-          "remote-participants-audio-level",
-          this.handleRemoteParticipantsAudioLevel
+        this.call.on("remote-participants-audio-level", (e) =>
+          this.handleRemoteParticipantsAudioLevel(e)
         );
       })
       .catch((error) => {
@@ -58,7 +57,7 @@ export default class Vapi extends EventEmitter {
     const isSpeaking = Object.values(e.participantsAudioLevel).some(
       (v) => v > 0.01
     );
-    console.log(isSpeaking);
+    console.log(isSpeaking, this.speaking);
     if (isSpeaking === this.speaking) return;
 
     if (isSpeaking) {
