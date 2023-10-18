@@ -62,8 +62,10 @@ export default class Vapi extends EventEmitter {
     if (isSpeaking === this.speaking) return;
 
     if (isSpeaking) {
+      console.log("start");
       this.emit("speech-start");
     } else {
+      console.log("end");
       this.emit("speech-end");
     }
 
