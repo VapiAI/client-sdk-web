@@ -39,6 +39,14 @@ export default class Vapi extends EventEmitter {
           videoSource: false,
         });
         this.call.iframe()?.style.setProperty("display", "none");
+
+        this.call.on("joined-meeting", () => {
+          this.emit("call-started");
+        });
+        this.call.on("left-meeting", () => {
+          this.emit("call-stopped");
+        });
+
         await this.call.join({ url });
 
         this.call.startRemoteParticipantsAudioLevelObserver();
