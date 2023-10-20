@@ -47,10 +47,7 @@ export default class Vapi extends EventEmitter {
           this.emit("call-end");
         });
 
-        setTimeout(() => {
-          if (!this.call) return;
-          this.call.join({ url });
-        }, 7000);
+        await this.call.join({ url });
 
         this.call.startRemoteParticipantsAudioLevelObserver();
         this.call.on("remote-participants-audio-level", (e) =>
