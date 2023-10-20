@@ -41,10 +41,10 @@ export default class Vapi extends EventEmitter {
         this.call.iframe()?.style.setProperty("display", "none");
 
         this.call.on("joined-meeting", () => {
-          this.emit("call-started");
+          this.emit("call-start");
         });
         this.call.on("left-meeting", () => {
-          this.emit("call-stopped");
+          this.emit("call-end");
         });
 
         await this.call.join({ url });

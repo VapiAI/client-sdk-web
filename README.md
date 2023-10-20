@@ -47,6 +47,31 @@ vapi.stop();
 
 This will stop the recording and close the connection.
 
+## Events
+
+You can listen to the following events:
+
+```javascript
+vapi.on('speech-start', () => {
+  console.log('Speech has started');
+});
+
+vapi.on('speech-end', () => {
+  console.log('Speech has ended');
+});
+
+vapi.on('call-start', () => {
+  console.log('Call has started');
+});
+
+vapi.on('call-end', () => {
+  console.log('Call has stopped');
+});
+```
+
+These events allow you to react to changes in the state of the call or speech.
+
+
 ## License
 
 ```
