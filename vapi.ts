@@ -45,6 +45,10 @@ export default class Vapi extends EventEmitter {
           this.emit("call-end");
         });
 
+        this.call.on("error", () => {
+          // Don't print to console
+        });
+
         this.call.on("participant-updated", (e) =>
           this.handleParticipantUpdated(e)
         );
