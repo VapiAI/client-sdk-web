@@ -1,6 +1,7 @@
 import DailyIframe, {
   DailyCall,
   DailyEventObjectActiveSpeakerChange,
+  DailyEventObjectParticipant,
   DailyEventObjectRemoteParticipantsAudioLevel,
 } from "@daily-co/daily-js";
 
@@ -47,6 +48,10 @@ export default class Vapi extends EventEmitter {
           this.emit("call-end");
         });
 
+        this.call.on("participant-updated", (e) =>
+          this.handleParticipantUpdated(e)
+        );
+
         await this.call.join({ url });
 
         this.call.startRemoteParticipantsAudioLevelObserver();
@@ -57,6 +62,16 @@ export default class Vapi extends EventEmitter {
       .catch((error) => {
         console.error(error);
       });
+  }
+
+  private handleParticipantUpdated(e: DailyEventObjectParticipant | undefined) {
+    if (
+      e &&
+      e.participant.user_name === "Vapi Speaker" &&
+      e.participant.tracks.audio.state === "playable"
+    ) {
+      this.call?.sendAppMessage("playable");
+    }
   }
 
   private handleRemoteParticipantsAudioLevel(
