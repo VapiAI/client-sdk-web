@@ -62,7 +62,6 @@ export default class Vapi extends EventEmitter {
   }
 
   private handleParticipantUpdated(e: DailyEventObjectParticipant | undefined) {
-    console.log(e);
     if (
       e &&
       e.participant.user_name === "Vapi Speaker" &&
