@@ -41,9 +41,6 @@ export default class Vapi extends EventEmitter {
         });
         this.call.iframe()?.style.setProperty("display", "none");
 
-        this.call.on("joined-meeting", () => {
-          this.emit("call-start");
-        });
         this.call.on("left-meeting", () => {
           this.emit("call-end");
         });
@@ -71,6 +68,7 @@ export default class Vapi extends EventEmitter {
       e.participant.tracks.audio.state === "playable"
     ) {
       this.call?.sendAppMessage("playable");
+      this.emit("call-start");
     }
   }
 
