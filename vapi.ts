@@ -9,6 +9,29 @@ import { CreateAssistantDTO } from "./api";
 import EventEmitter from "events";
 import { client } from "./client";
 
+function destroyAudioPlayer(participantId: string) {
+  const player = document.querySelector(
+    `audio[data-participant-id="${participantId}"]`
+  );
+  player?.remove();
+}
+async function startPlayer(player: HTMLAudioElement, track: any) {
+  player.muted = false;
+  player.autoplay = true;
+  if (track != null) {
+    player.srcObject = new MediaStream([track]);
+    await player.play();
+  }
+}
+async function buildAudioPlayer(track: any, participantId: string) {
+  const audioContainer = document.getElementById("audio-container");
+  const player = document.createElement("audio");
+  player.dataset.participantId = participantId;
+  audioContainer?.appendChild(player);
+  await startPlayer(player, track);
+  return player;
+}
+
 export default class Vapi extends EventEmitter {
   private started: boolean = false;
   private call: DailyCall | null = null;
@@ -45,13 +68,24 @@ export default class Vapi extends EventEmitter {
           this.emit("call-end");
         });
 
+        this.call.on("participant-left", (e) => {
+          if (!e) return;
+          destroyAudioPlayer(e.participant.session_id);
+        });
+
         this.call.on("error", () => {
           // Don't print to console
         });
 
-        this.call.on("track-started", (e) => {
+        this.call.on("track-started", async (e) => {
           console.log("TRACK");
           console.log(e);
+
+          if (!e) return;
+          if (e.track.kind === "audio" && e.participant) {
+            await buildAudioPlayer(e.track, e.participant.session_id);
+          }
+
           if (e?.participant?.user_name !== "Vapi Speaker") return;
           this.call?.sendAppMessage("playable");
           this.emit("call-start");
@@ -60,7 +94,6 @@ export default class Vapi extends EventEmitter {
         this.call.on("participant-joined", (e) => {
           console.log("JOINED");
           console.log(e);
-          if (e?.participant.user_name !== "Vapi Speaker") return;
 
           this.call?.updateParticipant(e?.participant.session_id ?? "", {
             setSubscribedTracks: {
