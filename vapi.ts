@@ -62,7 +62,7 @@ export default class Vapi extends EventEmitter {
           console.log(e);
           if (e?.participant.user_name !== "Vapi Speaker") return;
 
-          this.call?.updateParticipant(e?.participant.user_id ?? "", {
+          this.call?.updateParticipant(e?.participant.session_id ?? "", {
             setSubscribedTracks: {
               audio: true,
               video: false,
