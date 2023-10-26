@@ -24,10 +24,9 @@ async function startPlayer(player: HTMLAudioElement, track: any) {
   }
 }
 async function buildAudioPlayer(track: any, participantId: string) {
-  const audioContainer = document.getElementById("audio-container");
   const player = document.createElement("audio");
   player.dataset.participantId = participantId;
-  audioContainer?.appendChild(player);
+  document.body.appendChild(player);
   await startPlayer(player, track);
   return player;
 }
