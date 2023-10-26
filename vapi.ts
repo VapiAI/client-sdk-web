@@ -31,10 +31,8 @@ async function buildAudioPlayer(track: any, participantId: string) {
   return player;
 }
 function subscribeToTracks(e: DailyEventObjectParticipant, call: DailyCall) {
-  console.log(e);
-  if (e.participant.user_id === "local") {
-    return;
-  }
+  if (e.participant.local) return;
+
   call.updateParticipant(e.participant.session_id, {
     setSubscribedTracks: {
       audio: true,
@@ -89,10 +87,11 @@ export default class Vapi extends EventEmitter {
         });
 
         this.call.on("track-started", async (e) => {
-          if (!e) return;
-          if (e.track.kind === "audio" && e.participant) {
-            await buildAudioPlayer(e.track, e.participant.session_id);
-          }
+          if (!e || !e.participant) return;
+          if (e.participant?.local) return;
+          if (e.track.kind !== "audio") return;
+
+          await buildAudioPlayer(e.track, e.participant.session_id);
 
           if (e?.participant?.user_name !== "Vapi Speaker") return;
           this.call?.sendAppMessage("playable");
