@@ -88,9 +88,6 @@ export default class Vapi extends EventEmitter {
         });
 
         this.call.on("track-started", async (e) => {
-          console.log("TRACK");
-          console.log(e);
-
           if (!e) return;
           if (e.track.kind === "audio" && e.participant) {
             await buildAudioPlayer(e.track, e.participant.session_id);
@@ -102,6 +99,7 @@ export default class Vapi extends EventEmitter {
         });
 
         this.call.on("participant-joined", (e) => {
+          if (!e) return;
           subscribeToTracks(e, this.call);
         });
 
