@@ -62,29 +62,46 @@ export interface CreateAssistantDTO {
   /**
    * This is the voice that will be used.
    *
-   * Pro Voices: steve, joseph, myra, paula, drew, phillip, paul, and mrb.
+   * Pro Voices: `*-11labs`, `*-playht`, `*-rimeai`
    *
-   * Basic Voices: davis, jenny, aria, steffan, sara, and jason.
+   * Basic Voices: `*-azure`
    */
   voice?:
-    | "davis"
-    | "jenny"
-    | "aria"
-    | "steffan"
-    | "sara"
-    | "jason"
-    | "burt"
-    | "andrea"
-    | "phillip"
-    | "steve"
-    | "joseph"
-    | "myra"
-    | "paula"
-    | "ryan"
-    | "drew"
-    | "paul"
-    | "mrb"
-    | "matilda";
+    | "davis-azure"
+    | "jenny-azure"
+    | "aria-azure"
+    | "steffan-azure"
+    | "sara-azure"
+    | "jason-azure"
+    | "burt-11labs"
+    | "andrea-11labs"
+    | "phillip-11labs"
+    | "steve-11labs"
+    | "joseph-11labs"
+    | "myra-11labs"
+    | "paula-11labs"
+    | "ryan-11labs"
+    | "drew-11labs"
+    | "paul-11labs"
+    | "mrb-11labs"
+    | "matilda-11labs"
+    | "jennifer-playht"
+    | "melissa-playht"
+    | "will-playht"
+    | "jack-playht"
+    | "ruby-playht"
+    | "davis-playht"
+    | "donna-playht"
+    | "kai-rimeai"
+    | "zion-rimeai"
+    | "xavier-rimeai"
+    | "marty-rimeai"
+    | "hudson-rimeai"
+    | "savannah-rimeai"
+    | "colette-rimeai"
+    | "daphne-rimeai"
+    | "aurora-rimeai"
+    | "nova-rimeai";
   /** This is the assistant’s name, just for your own reference. */
   name?: string;
   /** This is the system prompt, which sets the objective and background before the call. */
@@ -123,7 +140,6 @@ export interface CreateWebCallDto {
 
 export interface WebCallResponseDto {
   url: string;
-  callId: string;
 }
 
 export interface Assistant {
@@ -132,29 +148,46 @@ export interface Assistant {
   /**
    * This is the voice that will be used.
    *
-   * Pro Voices: steve, joseph, myra, paula, drew, phillip, paul, and mrb.
+   * Pro Voices: `*-11labs`, `*-playht`, `*-rimeai`
    *
-   * Basic Voices: davis, jenny, aria, steffan, sara, and jason.
+   * Basic Voices: `*-azure`
    */
   voice?:
-    | "davis"
-    | "jenny"
-    | "aria"
-    | "steffan"
-    | "sara"
-    | "jason"
-    | "burt"
-    | "andrea"
-    | "phillip"
-    | "steve"
-    | "joseph"
-    | "myra"
-    | "paula"
-    | "ryan"
-    | "drew"
-    | "paul"
-    | "mrb"
-    | "matilda";
+    | "davis-azure"
+    | "jenny-azure"
+    | "aria-azure"
+    | "steffan-azure"
+    | "sara-azure"
+    | "jason-azure"
+    | "burt-11labs"
+    | "andrea-11labs"
+    | "phillip-11labs"
+    | "steve-11labs"
+    | "joseph-11labs"
+    | "myra-11labs"
+    | "paula-11labs"
+    | "ryan-11labs"
+    | "drew-11labs"
+    | "paul-11labs"
+    | "mrb-11labs"
+    | "matilda-11labs"
+    | "jennifer-playht"
+    | "melissa-playht"
+    | "will-playht"
+    | "jack-playht"
+    | "ruby-playht"
+    | "davis-playht"
+    | "donna-playht"
+    | "kai-rimeai"
+    | "zion-rimeai"
+    | "xavier-rimeai"
+    | "marty-rimeai"
+    | "hudson-rimeai"
+    | "savannah-rimeai"
+    | "colette-rimeai"
+    | "daphne-rimeai"
+    | "aurora-rimeai"
+    | "nova-rimeai";
   /** Unique identifier for the assistant. */
   id: string;
   /** Unique identifier for the organization that this assistant belongs to. */
@@ -187,29 +220,46 @@ export interface UpdateAssistantDTO {
   /**
    * This is the voice that will be used.
    *
-   * Pro Voices: steve, joseph, myra, paula, drew, phillip, paul, and mrb.
+   * Pro Voices: `*-11labs`, `*-playht`, `*-rimeai`
    *
-   * Basic Voices: davis, jenny, aria, steffan, sara, and jason.
+   * Basic Voices: `*-azure`
    */
   voice?:
-    | "davis"
-    | "jenny"
-    | "aria"
-    | "steffan"
-    | "sara"
-    | "jason"
-    | "burt"
-    | "andrea"
-    | "phillip"
-    | "steve"
-    | "joseph"
-    | "myra"
-    | "paula"
-    | "ryan"
-    | "drew"
-    | "paul"
-    | "mrb"
-    | "matilda";
+    | "davis-azure"
+    | "jenny-azure"
+    | "aria-azure"
+    | "steffan-azure"
+    | "sara-azure"
+    | "jason-azure"
+    | "burt-11labs"
+    | "andrea-11labs"
+    | "phillip-11labs"
+    | "steve-11labs"
+    | "joseph-11labs"
+    | "myra-11labs"
+    | "paula-11labs"
+    | "ryan-11labs"
+    | "drew-11labs"
+    | "paul-11labs"
+    | "mrb-11labs"
+    | "matilda-11labs"
+    | "jennifer-playht"
+    | "melissa-playht"
+    | "will-playht"
+    | "jack-playht"
+    | "ruby-playht"
+    | "davis-playht"
+    | "donna-playht"
+    | "kai-rimeai"
+    | "zion-rimeai"
+    | "xavier-rimeai"
+    | "marty-rimeai"
+    | "hudson-rimeai"
+    | "savannah-rimeai"
+    | "colette-rimeai"
+    | "daphne-rimeai"
+    | "aurora-rimeai"
+    | "nova-rimeai";
   /** This is the assistant’s name, just for your own reference. */
   name?: string;
   /** This is the system prompt, which sets the objective and background before the call. */
