@@ -49,11 +49,24 @@ export default class Vapi extends EventEmitter {
           // Don't print to console
         });
 
-        this.call.on("participant-updated", (e) =>
-          this.handleParticipantUpdated(e)
-        );
+        this.call.on("track-started", (e) => {
+          if (e?.participant?.user_name !== "Vapi Speaker") return;
+          this.call?.sendAppMessage("playable");
+          this.emit("call-start");
+        });
 
-        await this.call.join({ url });
+        this.call.on("participant-joined", (e) => {
+          if (e?.participant.user_name !== "Vapi Speaker") return;
+
+          this.call?.updateParticipant(e?.participant.user_id ?? "", {
+            setSubscribedTracks: {
+              audio: true,
+              video: false,
+            },
+          });
+        });
+
+        await this.call.join({ url, subscribeToTracksAutomatically: false });
 
         this.call.startRemoteParticipantsAudioLevelObserver();
         this.call.on("remote-participants-audio-level", (e) =>
@@ -63,17 +76,6 @@ export default class Vapi extends EventEmitter {
       .catch((error) => {
         console.error(error);
       });
-  }
-
-  private handleParticipantUpdated(e: DailyEventObjectParticipant | undefined) {
-    if (
-      e &&
-      e.participant.user_name === "Vapi Speaker" &&
-      e.participant.tracks.audio.state === "playable"
-    ) {
-      this.call?.sendAppMessage("playable");
-      this.emit("call-start");
-    }
   }
 
   private handleRemoteParticipantsAudioLevel(
