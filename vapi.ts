@@ -30,6 +30,17 @@ async function buildAudioPlayer(track: any, participantId: string) {
   await startPlayer(player, track);
   return player;
 }
+function subscribeToTracks(participantId: string, call: DailyCall) {
+  if (participantId === "local") {
+    return;
+  }
+  call.updateParticipant(participantId, {
+    setSubscribedTracks: {
+      audio: true,
+      video: false,
+    },
+  });
+}
 
 export default class Vapi extends EventEmitter {
   private started: boolean = false;
@@ -91,15 +102,7 @@ export default class Vapi extends EventEmitter {
         });
 
         this.call.on("participant-joined", (e) => {
-          console.log("JOINED");
-          console.log(e);
-
-          this.call?.updateParticipant(e?.participant.session_id ?? "", {
-            setSubscribedTracks: {
-              audio: true,
-              video: false,
-            },
-          });
+          subscribeToTracks(e, this.call);
         });
 
         await this.call.join({ url, subscribeToTracksAutomatically: false });
