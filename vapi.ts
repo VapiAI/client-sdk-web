@@ -103,7 +103,7 @@ export default class Vapi extends EventEmitter {
           subscribeToTracks(e, this.call);
         });
 
-        await this.call.join({ url });
+        await this.call.join({ url, subscribeToTracksAutomatically: false });
 
         this.call.startRemoteParticipantsAudioLevelObserver();
         this.call.on("remote-participants-audio-level", (e) =>
