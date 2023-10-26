@@ -50,12 +50,16 @@ export default class Vapi extends EventEmitter {
         });
 
         this.call.on("track-started", (e) => {
+          console.log("TRACK");
+          console.log(e);
           if (e?.participant?.user_name !== "Vapi Speaker") return;
           this.call?.sendAppMessage("playable");
           this.emit("call-start");
         });
 
         this.call.on("participant-joined", (e) => {
+          console.log("JOINED");
+          console.log(e);
           if (e?.participant.user_name !== "Vapi Speaker") return;
 
           this.call?.updateParticipant(e?.participant.user_id ?? "", {
