@@ -101,7 +101,7 @@ export default class Vapi extends EventEmitter {
 
         this.call.on("participant-joined", (e) => {
           if (!e || !this.call) return;
-          subscribeToTracks(e.participant.session_id, this.call);
+          subscribeToTracks(e, this.call);
         });
 
         await this.call.join({ url, subscribeToTracksAutomatically: false });
