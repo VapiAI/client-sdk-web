@@ -30,12 +30,12 @@ async function buildAudioPlayer(track: any, participantId: string) {
   await startPlayer(player, track);
   return player;
 }
-function subscribeToTracks(sessionId: string, call: DailyCall) {
-  console.log(sessionId);
-  if (sessionId === "local") {
+function subscribeToTracks(e: DailyEventObjectParticipant, call: DailyCall) {
+  console.log(e);
+  if (e.participant.user_id === "local") {
     return;
   }
-  call.updateParticipant(sessionId, {
+  call.updateParticipant(e.participant.session_id, {
     setSubscribedTracks: {
       audio: true,
       video: false,
