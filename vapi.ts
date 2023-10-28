@@ -83,7 +83,7 @@ export default class Vapi extends EventEmitter {
         });
 
         this.call.on("error", () => {
-          this.emit("call-end");
+          // Ignore error
         });
 
         this.call.on("track-started", async (e) => {
