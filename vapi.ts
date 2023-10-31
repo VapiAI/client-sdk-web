@@ -119,9 +119,8 @@ export default class Vapi extends EventEmitter {
         });
       })
       .catch((res) => {
-        const msg = res.error.message ?? "An unknown error occured.";
-        console.error(msg);
-        this.emit("error", msg);
+        console.error(res.error);
+        this.emit("error", res.error);
       });
   }
 
