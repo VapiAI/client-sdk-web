@@ -109,6 +109,14 @@ export default class Vapi extends EventEmitter {
         this.call.on("remote-participants-audio-level", (e) =>
           this.handleRemoteParticipantsAudioLevel(e)
         );
+
+        this.call.updateInputSettings({
+          audio: {
+            processor: {
+              type: "noise-cancellation",
+            },
+          },
+        });
       })
       .catch((error) => {
         console.error(error);
