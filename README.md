@@ -67,6 +67,10 @@ vapi.on('call-start', () => {
 vapi.on('call-end', () => {
   console.log('Call has stopped');
 });
+
+vapi.on('error', (e) => {
+  console.error(e)
+});
 ```
 
 These events allow you to react to changes in the state of the call or speech.
