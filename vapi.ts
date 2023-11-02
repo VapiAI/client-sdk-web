@@ -121,6 +121,7 @@ export default class Vapi extends EventEmitter {
       .catch((res) => {
         console.error(res.error);
         this.emit("error", res.error);
+        this.started = false;
       });
   }
 
