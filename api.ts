@@ -9,34 +9,6 @@
  * ---------------------------------------------------------------
  */
 
-export interface PhoneCallParams {
-  callSid?: string;
-  status?: string[];
-  customerPhoneNumber: string;
-  twilioPhoneNumber: string;
-  twilioAccountSid: string;
-  twilioAuthToken: string;
-}
-
-export interface Call {
-  type: "inboundPhoneCall" | "outboundPhoneCall" | "webCall";
-  id: string;
-  orgId: string;
-  createdAt: string;
-  updatedAt: string;
-  assistantId?: string;
-  customerId?: string;
-  phoneNumberId?: string;
-  startedAt: string;
-  endedAt?: string;
-  transcript?: string;
-  recordingUrl?: string;
-  cost?: number;
-  summary?: string;
-  assistantParams?: object;
-  callParams?: PhoneCallParams;
-}
-
 export interface OpenAIFunctionParamaters {
   type: string;
   properties: object;
@@ -44,12 +16,19 @@ export interface OpenAIFunctionParamaters {
 }
 
 export interface OpenAIFunction {
-  /** This is the the name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64. */
+  /**
+   * This is the the name of the function to be called.
+   *
+   * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
+   * @maxLength 64
+   */
   name: string;
-  /** This is a description of what the function does, used by the AI to choose when and how to call the function. */
+  /** This is the description of what the function does, used by the AI to choose when and how to call the function. */
   description?: string;
   /**
-   * These are the parameters the functions accepts, described as a JSON Schema object. See the [OpenAI guide](https://platform.openai.com/docs/guides/gpt/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema) for documentation about the format.
+   * These are the parameters the functions accepts, described as a JSON Schema object.
+   *
+   * See the [OpenAI guide](https://platform.openai.com/docs/guides/gpt/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema) for documentation about the format.
    *
    * To describe a function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
    */
@@ -62,17 +41,18 @@ export interface CreateAssistantDTO {
   /**
    * This is the voice that will be used.
    *
-   * Pro Voices: `*-11labs`, `*-playht`, `*-rimeai`
+   * Pro Voices: `*-11labs`, `*-playht`
    *
-   * Basic Voices: `*-azure`
+   * Basic Voices: `*-rimeai`, `*-azure`
    */
   voice?:
-    | "davis-azure"
-    | "jenny-azure"
-    | "aria-azure"
-    | "steffan-azure"
-    | "sara-azure"
-    | "jason-azure"
+    | "jennifer-playht"
+    | "melissa-playht"
+    | "will-playht"
+    | "jack-playht"
+    | "ruby-playht"
+    | "davis-playht"
+    | "donna-playht"
     | "burt-11labs"
     | "andrea-11labs"
     | "phillip-11labs"
@@ -85,13 +65,6 @@ export interface CreateAssistantDTO {
     | "paul-11labs"
     | "mrb-11labs"
     | "matilda-11labs"
-    | "jennifer-playht"
-    | "melissa-playht"
-    | "will-playht"
-    | "jack-playht"
-    | "ruby-playht"
-    | "davis-playht"
-    | "donna-playht"
     | "kai-rimeai"
     | "zion-rimeai"
     | "xavier-rimeai"
@@ -101,45 +74,198 @@ export interface CreateAssistantDTO {
     | "colette-rimeai"
     | "daphne-rimeai"
     | "aurora-rimeai"
-    | "nova-rimeai";
-  /** This is the assistant’s name, just for your own reference. */
+    | "nova-rimeai"
+    | "davis-azure"
+    | "jenny-azure"
+    | "aria-azure"
+    | "steffan-azure"
+    | "sara-azure"
+    | "jason-azure";
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 40
+   */
   name?: string;
-  /** This is the system prompt, which sets the objective and background before the call. */
+  /** This sets the objective and understanding for the assistant. */
   context?: string;
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
-  /** This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports. All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation. */
+  /**
+   * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports.
+   *
+   * All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation.
+   */
   callbackUrl?: string;
-  /** This is the number the assistant will transfer to if it runs into any issues. */
+  /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
-  /** This is the first message that the assistant will say. If unspecified, it will wait for the user to speak. */
+  /**
+   * This is the first message that the assistant will say.
+   *
+   * If unspecified, it will wait for the user to speak.
+   * @maxLength 280
+   */
   firstMessage?: string;
-  /** Whether the call should be recorded. */
+  /** This sets whether calls are recorded for the assistant. */
   recordingEnabled?: boolean;
-  /** Whether to leave a voicemail if a phone call isn't picked up. */
+  /** This sets whether assistant leaves voicemails when call is not picked up. */
   voicemailEnabled?: boolean;
 }
 
-export interface CreateOutboundCallDto {
-  /** This is the assistant that will be used for the call. To create a transient assistant, use `assistant` instead. */
+export interface CreateCustomerDTO {
+  /** This is the number of the customer. */
+  number?: string;
+  /**
+   * This is the name of the customer. This is just for your own reference.
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface ImportTwilioPhoneNumberDTO {
+  /** These are the digits of the phone number you own on your Twilio. */
+  twilioPhoneNumber: string;
+  /** This is your Twilio Account SID that will be used to handle this phone number. */
+  twilioAccountSid: string;
+  /** This is the Twilio Auth Token that will be used to handle this phone number. */
+  twilioAuthToken: string;
+  /**
+   * This is the name of the phone number. This is just for your own reference.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the assistant that will be used for incoming calls to this phone number.
+   *
+   * If this is not set, then the phone number will not handle incoming calls.
+   */
+  assistantId?: string;
+}
+
+export interface Call {
+  type?: "inboundPhoneCall" | "outboundPhoneCall" | "webCall";
+  /** This is the unique identifier for the call. */
+  id: string;
+  /** This is the unique identifier for the org that this call belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the call was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the call was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the call was started.
+   * @format date-time
+   */
+  startedAt?: string;
+  /**
+   * This is the ISO 8601 date-time string of when the call was ended.
+   * @format date-time
+   */
+  endedAt?: string;
+  /** This is the cost of the call in USD. */
+  cost?: number;
+  /** This is the transcript of the call. */
+  transcript?: string;
+  /** This is the URL of the recording of the call. */
+  recordingUrl?: string;
+  /** This is the summary of the call. */
+  summary?: string;
+  /**
+   * This is the callSid of the phone call.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  twilioCallSid?: string;
+  /**
+   * This is the current status of the call.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  twilioCallStatus?: string;
+  /**
+   * This is the URL of the call that the assistant will join.
+   *
+   * Only relevant for `webCall` type.
+   */
+  webCallUrl?: string;
+  /** This is set if the call experienced an error. */
+  error?: string;
+  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
   assistant?: CreateAssistantDTO;
-  /** This is the phone number that will be used for the call. */
-  phoneNumberId: string;
-  /** This is the number that will be called. */
-  customerPhoneNumber: string;
+  /**
+   * This is the customer that will be called. To call a transient customer , use `customer` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  customerId?: string;
+  /**
+   * This is the customer that will be called. To call an existing customer, use `customerId` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  customer?: CreateCustomerDTO;
+  /**
+   * This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  phoneNumberId?: string;
+  /**
+   * This is the phone number that will be used for the call. To use an existing number, use `phoneNumberId` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  phoneNumber?: ImportTwilioPhoneNumberDTO;
 }
 
-export interface CreateWebCallDto {
-  /** This is the assistant that will be used for the call. To create a transient assistant, use `assistant` instead. */
+export interface CreateOutboundCallDTO {
+  /**
+   * Use `customer` instead.
+   * @deprecated
+   */
+  customerPhoneNumber?: string;
+  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
   assistant?: CreateAssistantDTO;
+  /**
+   * This is the customer that will be called. To call a transient customer , use `customer` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  customerId?: string;
+  /**
+   * This is the customer that will be called. To call an existing customer, use `customerId` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  customer?: CreateCustomerDTO;
+  /**
+   * This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  phoneNumberId?: string;
+  /**
+   * This is the phone number that will be used for the call. To use an existing number, use `phoneNumberId` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  phoneNumber?: ImportTwilioPhoneNumberDTO;
 }
 
-export interface WebCallResponseDto {
-  url: string;
+export interface CreateWebCallDTO {
+  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
+  assistantId?: string;
+  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
 }
 
 export interface Assistant {
@@ -148,17 +274,18 @@ export interface Assistant {
   /**
    * This is the voice that will be used.
    *
-   * Pro Voices: `*-11labs`, `*-playht`, `*-rimeai`
+   * Pro Voices: `*-11labs`, `*-playht`
    *
-   * Basic Voices: `*-azure`
+   * Basic Voices: `*-rimeai`, `*-azure`
    */
   voice?:
-    | "davis-azure"
-    | "jenny-azure"
-    | "aria-azure"
-    | "steffan-azure"
-    | "sara-azure"
-    | "jason-azure"
+    | "jennifer-playht"
+    | "melissa-playht"
+    | "will-playht"
+    | "jack-playht"
+    | "ruby-playht"
+    | "davis-playht"
+    | "donna-playht"
     | "burt-11labs"
     | "andrea-11labs"
     | "phillip-11labs"
@@ -171,13 +298,6 @@ export interface Assistant {
     | "paul-11labs"
     | "mrb-11labs"
     | "matilda-11labs"
-    | "jennifer-playht"
-    | "melissa-playht"
-    | "will-playht"
-    | "jack-playht"
-    | "ruby-playht"
-    | "davis-playht"
-    | "donna-playht"
     | "kai-rimeai"
     | "zion-rimeai"
     | "xavier-rimeai"
@@ -187,31 +307,55 @@ export interface Assistant {
     | "colette-rimeai"
     | "daphne-rimeai"
     | "aurora-rimeai"
-    | "nova-rimeai";
-  /** Unique identifier for the assistant. */
-  id: string;
-  /** Unique identifier for the organization that this assistant belongs to. */
-  orgId: string;
-  /** ISO 8601 date-time string of when the assistant was created. */
-  createdAt: string;
-  /** ISO 8601 date-time string of when the assistant was last updated. */
-  updatedAt: string;
-  /** This is the assistant’s name, just for your own reference. */
+    | "nova-rimeai"
+    | "davis-azure"
+    | "jenny-azure"
+    | "aria-azure"
+    | "steffan-azure"
+    | "sara-azure"
+    | "jason-azure";
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 40
+   */
   name?: string;
-  /** This is the system prompt, which sets the objective and background before the call. */
+  /** This sets the objective and understanding for the assistant. */
   context?: string;
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
-  /** This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports. All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation. */
+  /**
+   * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports.
+   *
+   * All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation.
+   */
   callbackUrl?: string;
-  /** This is the number the assistant will transfer to if it runs into any issues. */
+  /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
-  /** This is the first message that the assistant will say. If unspecified, it will wait for the user to speak. */
+  /**
+   * This is the first message that the assistant will say.
+   *
+   * If unspecified, it will wait for the user to speak.
+   * @maxLength 280
+   */
   firstMessage?: string;
-  /** Whether the call should be recorded. */
+  /** This sets whether calls are recorded for the assistant. */
   recordingEnabled?: boolean;
-  /** Whether to leave a voicemail if a phone call isn't picked up. */
+  /** This sets whether assistant leaves voicemails when call is not picked up. */
   voicemailEnabled?: boolean;
+  /** This is the unique identifier for the assistant. */
+  id: string;
+  /** This is the unique identifier for the org that this assistant belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
 }
 
 export interface UpdateAssistantDTO {
@@ -220,17 +364,18 @@ export interface UpdateAssistantDTO {
   /**
    * This is the voice that will be used.
    *
-   * Pro Voices: `*-11labs`, `*-playht`, `*-rimeai`
+   * Pro Voices: `*-11labs`, `*-playht`
    *
-   * Basic Voices: `*-azure`
+   * Basic Voices: `*-rimeai`, `*-azure`
    */
   voice?:
-    | "davis-azure"
-    | "jenny-azure"
-    | "aria-azure"
-    | "steffan-azure"
-    | "sara-azure"
-    | "jason-azure"
+    | "jennifer-playht"
+    | "melissa-playht"
+    | "will-playht"
+    | "jack-playht"
+    | "ruby-playht"
+    | "davis-playht"
+    | "donna-playht"
     | "burt-11labs"
     | "andrea-11labs"
     | "phillip-11labs"
@@ -243,13 +388,6 @@ export interface UpdateAssistantDTO {
     | "paul-11labs"
     | "mrb-11labs"
     | "matilda-11labs"
-    | "jennifer-playht"
-    | "melissa-playht"
-    | "will-playht"
-    | "jack-playht"
-    | "ruby-playht"
-    | "davis-playht"
-    | "donna-playht"
     | "kai-rimeai"
     | "zion-rimeai"
     | "xavier-rimeai"
@@ -259,53 +397,122 @@ export interface UpdateAssistantDTO {
     | "colette-rimeai"
     | "daphne-rimeai"
     | "aurora-rimeai"
-    | "nova-rimeai";
-  /** This is the assistant’s name, just for your own reference. */
+    | "nova-rimeai"
+    | "davis-azure"
+    | "jenny-azure"
+    | "aria-azure"
+    | "steffan-azure"
+    | "sara-azure"
+    | "jason-azure";
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 40
+   */
   name?: string;
-  /** This is the system prompt, which sets the objective and background before the call. */
+  /** This sets the objective and understanding for the assistant. */
   context?: string;
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
-  /** This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports. All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation. */
+  /**
+   * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports.
+   *
+   * All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation.
+   */
   callbackUrl?: string;
-  /** This is the number the assistant will transfer to if it runs into any issues. */
+  /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
-  /** This is the first message that the assistant will say. If unspecified, it will wait for the user to speak. */
+  /**
+   * This is the first message that the assistant will say.
+   *
+   * If unspecified, it will wait for the user to speak.
+   * @maxLength 280
+   */
   firstMessage?: string;
-  /** Whether the call should be recorded. */
+  /** This sets whether calls are recorded for the assistant. */
   recordingEnabled?: boolean;
-  /** Whether to leave a voicemail if a phone call isn't picked up. */
+  /** This sets whether assistant leaves voicemails when call is not picked up. */
   voicemailEnabled?: boolean;
 }
 
-export interface BuyPhoneNumberDto {
-  /** This is the area code of the phone number to purchase. */
+export interface BuyPhoneNumberDTO {
+  /**
+   * This is the area code of the phone number to purchase.
+   * @minLength 3
+   * @maxLength 3
+   */
   areaCode: string;
+  /**
+   * This is the name of the phone number. This is just for your own reference.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the assistant that will be used for incoming calls to this phone number.
+   *
+   * If this is not set, then the phone number will not handle incoming calls.
+   */
   assistantId?: string;
 }
 
 export interface PhoneNumber {
+  /** This is the unique identifier for the phone number. */
   id: string;
-  createdAt: string;
-  updatedAt: string;
+  /** This is the unique identifier for the org that this phone number belongs to. */
   orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the phone number was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the phone number was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /** This is the subscription for the phone number. */
   stripeSubscriptionId?: string;
+  /** This is the subscription's status. */
+  stripeSubscriptionStatus?: string;
+  /** This is the subscription's current period start. */
+  stripeSubscriptionCurrentPeriodStart?: string;
+  /** These are the digits of the phone number. */
   number: string;
-  assistantId?: string;
+  /**
+   * This is the Twilio Account SID for the phone number.
+   *
+   * This is for numbers not bought on Vapi.
+   */
   twilioAccountSid?: string;
+  /**
+   * This is the Twilio Auth Token for the phone number.
+   *
+   * This is for numbers not bought on Vapi.
+   */
   twilioAuthToken?: string;
-}
-
-export interface ImportTwilioPhoneNumberDto {
-  /** This is the area code of the phone number to purchase. */
-  twilioAccountSid: string;
-  twilioAuthToken: string;
-  twilioPhoneNumber: string;
+  /**
+   * This is the name of the phone number. This is just for your own reference.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the assistant that will be used for incoming calls to this phone number.
+   *
+   * If this is not set, then the phone number will not handle incoming calls.
+   */
   assistantId?: string;
 }
 
-export interface UpdatePhoneNumberDto {
-  /** This is the assistant that will be used to handle inbound calls to this phone number. */
+export interface UpdatePhoneNumberDTO {
+  /**
+   * This is the name of the phone number. This is just for your own reference.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the assistant that will be used for incoming calls to this phone number.
+   *
+   * If this is not set, then the phone number will not handle incoming calls.
+   */
   assistantId?: string;
 }
 
@@ -535,11 +742,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name CallControllerFindAll
      * @summary List Calls
      * @request GET:/call
+     * @secure
      */
     callControllerFindAll: (params: RequestParams = {}) =>
       this.request<Call[], any>({
         path: `/call`,
         method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),
@@ -551,11 +760,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name CallControllerFindOne
      * @summary Get Call
      * @request GET:/call/{id}
+     * @secure
      */
     callControllerFindOne: (id: string, params: RequestParams = {}) =>
       this.request<Call, any>({
         path: `/call/${id}`,
         method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),
@@ -567,12 +778,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name CallControllerCreatePhoneCall
      * @summary Create Phone Call
      * @request POST:/call/phone
+     * @secure
      */
-    callControllerCreatePhoneCall: (data: CreateOutboundCallDto, params: RequestParams = {}) =>
+    callControllerCreatePhoneCall: (data: CreateOutboundCallDTO, params: RequestParams = {}) =>
       this.request<Call, any>({
         path: `/call/phone`,
         method: "POST",
         body: data,
+        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -585,12 +798,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name CallControllerCreateWebCall
      * @summary Create Web Call
      * @request POST:/call/web
+     * @secure
      */
-    callControllerCreateWebCall: (data: CreateWebCallDto, params: RequestParams = {}) =>
-      this.request<WebCallResponseDto, any>({
+    callControllerCreateWebCall: (data: CreateWebCallDTO, params: RequestParams = {}) =>
+      this.request<Call, any>({
         path: `/call/web`,
         method: "POST",
         body: data,
+        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -604,12 +819,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name AssistantControllerCreate
      * @summary Create Assistant
      * @request POST:/assistant
+     * @secure
      */
     assistantControllerCreate: (data: CreateAssistantDTO, params: RequestParams = {}) =>
       this.request<Assistant, any>({
         path: `/assistant`,
         method: "POST",
         body: data,
+        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -622,11 +839,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name AssistantControllerFindAll
      * @summary List Assistants
      * @request GET:/assistant
+     * @secure
      */
     assistantControllerFindAll: (params: RequestParams = {}) =>
       this.request<Assistant[], any>({
         path: `/assistant`,
         method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),
@@ -638,11 +857,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name AssistantControllerFindOne
      * @summary Get Assistant
      * @request GET:/assistant/{id}
+     * @secure
      */
     assistantControllerFindOne: (id: string, params: RequestParams = {}) =>
       this.request<Assistant, any>({
         path: `/assistant/${id}`,
         method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),
@@ -654,12 +875,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name AssistantControllerUpdate
      * @summary Update Assistant
      * @request PATCH:/assistant/{id}
+     * @secure
      */
     assistantControllerUpdate: (id: string, data: UpdateAssistantDTO, params: RequestParams = {}) =>
       this.request<Assistant, any>({
         path: `/assistant/${id}`,
         method: "PATCH",
         body: data,
+        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -672,11 +895,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name AssistantControllerRemove
      * @summary Delete Assistant
      * @request DELETE:/assistant/{id}
+     * @secure
      */
     assistantControllerRemove: (id: string, params: RequestParams = {}) =>
-      this.request<void, any>({
+      this.request<Assistant, any>({
         path: `/assistant/${id}`,
         method: "DELETE",
+        secure: true,
+        format: "json",
         ...params,
       }),
   };
@@ -688,12 +914,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name PhoneNumberControllerBuy
      * @summary Buy Phone Number
      * @request POST:/phone-number/buy
+     * @secure
      */
-    phoneNumberControllerBuy: (data: BuyPhoneNumberDto, params: RequestParams = {}) =>
+    phoneNumberControllerBuy: (data: BuyPhoneNumberDTO, params: RequestParams = {}) =>
       this.request<PhoneNumber, any>({
         path: `/phone-number/buy`,
         method: "POST",
         body: data,
+        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -706,12 +934,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name PhoneNumberControllerImport
      * @summary Import Twilio Number
      * @request POST:/phone-number/import
+     * @secure
      */
-    phoneNumberControllerImport: (data: ImportTwilioPhoneNumberDto, params: RequestParams = {}) =>
+    phoneNumberControllerImport: (data: ImportTwilioPhoneNumberDTO, params: RequestParams = {}) =>
       this.request<PhoneNumber, any>({
         path: `/phone-number/import`,
         method: "POST",
         body: data,
+        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -724,11 +954,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name PhoneNumberControllerFindAll
      * @summary List Phone Numbers
      * @request GET:/phone-number
+     * @secure
      */
     phoneNumberControllerFindAll: (params: RequestParams = {}) =>
       this.request<PhoneNumber[], any>({
         path: `/phone-number`,
         method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),
@@ -740,11 +972,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name PhoneNumberControllerFindOne
      * @summary Get Phone Number
      * @request GET:/phone-number/{id}
+     * @secure
      */
     phoneNumberControllerFindOne: (id: string, params: RequestParams = {}) =>
       this.request<PhoneNumber, any>({
         path: `/phone-number/${id}`,
         method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),
@@ -756,12 +990,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name PhoneNumberControllerUpdate
      * @summary Update Phone Number
      * @request PATCH:/phone-number/{id}
+     * @secure
      */
-    phoneNumberControllerUpdate: (id: string, data: UpdatePhoneNumberDto, params: RequestParams = {}) =>
+    phoneNumberControllerUpdate: (id: string, data: UpdatePhoneNumberDTO, params: RequestParams = {}) =>
       this.request<PhoneNumber, any>({
         path: `/phone-number/${id}`,
         method: "PATCH",
         body: data,
+        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -774,11 +1010,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name PhoneNumberControllerRemove
      * @summary Delete Phone Number
      * @request DELETE:/phone-number/{id}
+     * @secure
      */
     phoneNumberControllerRemove: (id: string, params: RequestParams = {}) =>
       this.request<void, any>({
         path: `/phone-number/${id}`,
         method: "DELETE",
+        secure: true,
         ...params,
       }),
   };

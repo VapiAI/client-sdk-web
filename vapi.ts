@@ -65,7 +65,7 @@ export default class Vapi extends EventEmitter {
         assistantId: typeof assistant === "string" ? assistant : undefined,
       })
       .then(async ({ data }) => {
-        const { url } = data;
+        const { webCallUrl } = data;
 
         this.call = DailyIframe.createCallObject({
           audioSource: true,
@@ -103,7 +103,10 @@ export default class Vapi extends EventEmitter {
           subscribeToTracks(e, this.call);
         });
 
-        await this.call.join({ url, subscribeToTracksAutomatically: false });
+        await this.call.join({
+          url: webCallUrl,
+          subscribeToTracksAutomatically: false,
+        });
 
         this.call.startRemoteParticipantsAudioLevelObserver();
         this.call.on("remote-participants-audio-level", (e) =>
