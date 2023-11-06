@@ -43,7 +43,7 @@ export interface CreateAssistantDTO {
    *
    * Pro Voices: `*-11labs`, `*-playht`
    *
-   * Basic Voices: `*-rimeai`, `*-azure`
+   * Basic Voices: `*-rimeai`
    */
   voice?:
     | "jennifer-playht"
@@ -74,13 +74,7 @@ export interface CreateAssistantDTO {
     | "colette-rimeai"
     | "daphne-rimeai"
     | "aurora-rimeai"
-    | "nova-rimeai"
-    | "davis-azure"
-    | "jenny-azure"
-    | "aria-azure"
-    | "steffan-azure"
-    | "sara-azure"
-    | "jason-azure";
+    | "nova-rimeai";
   /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 40
@@ -276,7 +270,7 @@ export interface Assistant {
    *
    * Pro Voices: `*-11labs`, `*-playht`
    *
-   * Basic Voices: `*-rimeai`, `*-azure`
+   * Basic Voices: `*-rimeai`
    */
   voice?:
     | "jennifer-playht"
@@ -307,13 +301,7 @@ export interface Assistant {
     | "colette-rimeai"
     | "daphne-rimeai"
     | "aurora-rimeai"
-    | "nova-rimeai"
-    | "davis-azure"
-    | "jenny-azure"
-    | "aria-azure"
-    | "steffan-azure"
-    | "sara-azure"
-    | "jason-azure";
+    | "nova-rimeai";
   /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 40
@@ -366,7 +354,7 @@ export interface UpdateAssistantDTO {
    *
    * Pro Voices: `*-11labs`, `*-playht`
    *
-   * Basic Voices: `*-rimeai`, `*-azure`
+   * Basic Voices: `*-rimeai`
    */
   voice?:
     | "jennifer-playht"
@@ -397,13 +385,7 @@ export interface UpdateAssistantDTO {
     | "colette-rimeai"
     | "daphne-rimeai"
     | "aurora-rimeai"
-    | "nova-rimeai"
-    | "davis-azure"
-    | "jenny-azure"
-    | "aria-azure"
-    | "steffan-azure"
-    | "sara-azure"
-    | "jason-azure";
+    | "nova-rimeai";
   /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 40
