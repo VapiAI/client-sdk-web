@@ -146,7 +146,7 @@ export default class Vapi extends EventEmitter {
     this.speakingTimeout = setTimeout(() => {
       this.emit("speech-end");
       this.speakingTimeout = null;
-    }, 500);
+    }, 1000);
   }
 
   stop(): void {
