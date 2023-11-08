@@ -68,6 +68,10 @@ vapi.on('call-end', () => {
   console.log('Call has stopped');
 });
 
+vapi.on('volume-level', (volume) => {
+  console.log(`Assistant volume level: ${volume}`);
+});
+
 vapi.on('error', (e) => {
   console.error(e)
 });
