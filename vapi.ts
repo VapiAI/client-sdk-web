@@ -41,7 +41,57 @@ function subscribeToTracks(e: DailyEventObjectParticipant, call: DailyCall) {
   });
 }
 
-export default class Vapi extends EventEmitter {
+type VapiEventNames =
+  | "call-end"
+  | "call-start"
+  | "volume-level"
+  | "speech-start"
+  | "speech-end"
+  | "error";
+type VapiEventListeners = {
+  "call-end": () => void;
+  "call-start": () => void;
+  "volume-level": (volume: number) => void;
+  "speech-start": () => void;
+  "speech-end": () => void;
+  error: (error: any) => void;
+};
+
+class VapiEventEmitter extends EventEmitter {
+  on<E extends VapiEventNames>(
+    event: E,
+    listener: VapiEventListeners[E]
+  ): this {
+    super.on(event, listener);
+    return this;
+  }
+  once<E extends VapiEventNames>(
+    event: E,
+    listener: VapiEventListeners[E]
+  ): this {
+    super.once(event, listener);
+    return this;
+  }
+  emit<E extends VapiEventNames>(
+    event: E,
+    ...args: Parameters<VapiEventListeners[E]>
+  ): boolean {
+    return super.emit(event, ...args);
+  }
+  removeListener<E extends VapiEventNames>(
+    event: E,
+    listener: VapiEventListeners[E]
+  ): this {
+    super.removeListener(event, listener);
+    return this;
+  }
+  removeAllListeners(event?: VapiEventNames): this {
+    super.removeAllListeners(event);
+    return this;
+  }
+}
+
+export default class Vapi extends VapiEventEmitter {
   private started: boolean = false;
   private call: DailyCall | null = null;
   private speakingTimeout: NodeJS.Timeout | null = null;
