@@ -1,3 +1,4 @@
+import { Call, CreateAssistantDTO } from "./api";
 import DailyIframe, {
   DailyCall,
   DailyEventObjectActiveSpeakerChange,
@@ -5,7 +6,6 @@ import DailyIframe, {
   DailyEventObjectRemoteParticipantsAudioLevel,
 } from "@daily-co/daily-js";
 
-import { CreateAssistantDTO } from "./api";
 import EventEmitter from "events";
 import { client } from "./client";
 
@@ -102,80 +102,82 @@ export default class Vapi extends VapiEventEmitter {
     client.setSecurityData(apiToken);
   }
 
-  start(assistant: CreateAssistantDTO | string): void {
+  async start(assistant: CreateAssistantDTO | string): Promise<Call | null> {
     if (this.started) {
-      return;
+      return null;
     }
 
     this.started = true;
 
-    client.call
-      .callControllerCreateWebCall({
-        assistant: typeof assistant === "string" ? undefined : assistant,
-        assistantId: typeof assistant === "string" ? assistant : undefined,
-      })
-      .then(async ({ data }) => {
-        const { webCallUrl } = data;
+    try {
+      const webCall = (
+        await client.call.callControllerCreateWebCall({
+          assistant: typeof assistant === "string" ? undefined : assistant,
+          assistantId: typeof assistant === "string" ? assistant : undefined,
+        })
+      ).data;
 
-        this.call = DailyIframe.createCallObject({
-          audioSource: true,
-          videoSource: false,
-        });
-        this.call.iframe()?.style.setProperty("display", "none");
-
-        this.call.on("left-meeting", () => {
-          this.emit("call-end");
-        });
-
-        this.call.on("participant-left", (e) => {
-          if (!e) return;
-          destroyAudioPlayer(e.participant.session_id);
-        });
-
-        this.call.on("error", () => {
-          // Ignore error
-        });
-
-        this.call.on("track-started", async (e) => {
-          if (!e || !e.participant) return;
-          if (e.participant?.local) return;
-          if (e.track.kind !== "audio") return;
-
-          await buildAudioPlayer(e.track, e.participant.session_id);
-
-          if (e?.participant?.user_name !== "Vapi Speaker") return;
-          this.call?.sendAppMessage("playable");
-          this.emit("call-start");
-        });
-
-        this.call.on("participant-joined", (e) => {
-          if (!e || !this.call) return;
-          subscribeToTracks(e, this.call);
-        });
-
-        await this.call.join({
-          url: webCallUrl,
-          subscribeToTracksAutomatically: false,
-        });
-
-        this.call.startRemoteParticipantsAudioLevelObserver(100);
-        this.call.on("remote-participants-audio-level", (e) =>
-          this.handleRemoteParticipantsAudioLevel(e)
-        );
-
-        this.call.updateInputSettings({
-          audio: {
-            processor: {
-              type: "noise-cancellation",
-            },
-          },
-        });
-      })
-      .catch((res) => {
-        console.error(res.error);
-        this.emit("error", res.error);
-        this.started = false;
+      this.call = DailyIframe.createCallObject({
+        audioSource: true,
+        videoSource: false,
       });
+      this.call.iframe()?.style.setProperty("display", "none");
+
+      this.call.on("left-meeting", () => {
+        this.emit("call-end");
+      });
+
+      this.call.on("participant-left", (e) => {
+        if (!e) return;
+        destroyAudioPlayer(e.participant.session_id);
+      });
+
+      this.call.on("error", () => {
+        // Ignore error
+      });
+
+      this.call.on("track-started", async (e) => {
+        if (!e || !e.participant) return;
+        if (e.participant?.local) return;
+        if (e.track.kind !== "audio") return;
+
+        await buildAudioPlayer(e.track, e.participant.session_id);
+
+        if (e?.participant?.user_name !== "Vapi Speaker") return;
+        this.call?.sendAppMessage("playable");
+        this.emit("call-start");
+      });
+
+      this.call.on("participant-joined", (e) => {
+        if (!e || !this.call) return;
+        subscribeToTracks(e, this.call);
+      });
+
+      await this.call.join({
+        url: webCall.webCallUrl,
+        subscribeToTracksAutomatically: false,
+      });
+
+      this.call.startRemoteParticipantsAudioLevelObserver(100);
+      this.call.on("remote-participants-audio-level", (e) =>
+        this.handleRemoteParticipantsAudioLevel(e)
+      );
+
+      this.call.updateInputSettings({
+        audio: {
+          processor: {
+            type: "noise-cancellation",
+          },
+        },
+      });
+
+      return webCall;
+    } catch (e) {
+      console.error(e);
+      this.emit("error", e);
+      this.started = false;
+      return null;
+    }
   }
 
   private handleRemoteParticipantsAudioLevel(
