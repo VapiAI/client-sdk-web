@@ -125,6 +125,7 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on("left-meeting", () => {
         this.emit("call-end");
+        this.started = false;
       });
 
       this.call.on("participant-left", (e) => {
