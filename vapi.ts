@@ -102,6 +102,13 @@ export default class Vapi extends VapiEventEmitter {
     client.setSecurityData(apiToken);
   }
 
+  private cleanup() {
+    this.started = false;
+    this.call?.destroy();
+    this.call = null;
+    this.speakingTimeout = null;
+  }
+
   async start(assistant: CreateAssistantDTO | string): Promise<Call | null> {
     if (this.started) {
       return null;
@@ -125,7 +132,7 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on("left-meeting", () => {
         this.emit("call-end");
-        this.started = false;
+        this.cleanup();
       });
 
       this.call.on("participant-left", (e) => {
@@ -176,7 +183,7 @@ export default class Vapi extends VapiEventEmitter {
     } catch (e) {
       console.error(e);
       this.emit("error", e);
-      this.started = false;
+      this.cleanup();
       return null;
     }
   }
