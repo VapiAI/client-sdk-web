@@ -9,9 +9,15 @@
  * ---------------------------------------------------------------
  */
 
-export interface OpenAIFunctionParamaters {
-  type: string;
-  properties: object;
+export interface OpenAIFunctionParameterProperty {
+  type: "string" | "number" | "boolean";
+  enum?: string[];
+  description?: string;
+}
+
+export interface OpenAIFunctionParameters {
+  type: "object";
+  properties: Record<string, OpenAIFunctionParameterProperty>;
   required?: string[];
 }
 
@@ -23,6 +29,8 @@ export interface OpenAIFunction {
    * @maxLength 64
    */
   name: string;
+  /** Setting async: true will cause the function to be called asynchronously, meaning that the Assistant will not wait for the function to return before continuing. */
+  async?: boolean;
   /** This is the description of what the function does, used by the AI to choose when and how to call the function. */
   description?: string;
   /**
@@ -32,12 +40,12 @@ export interface OpenAIFunction {
    *
    * To describe a function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
    */
-  parameters: OpenAIFunctionParamaters;
+  parameters: OpenAIFunctionParameters;
 }
 
 export interface CreateAssistantDTO {
   /** This is the OpenAI model that will be used. */
-  model?: "gpt-4-32k" | "gpt-4" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo";
+  model?: "gpt-4" | "gpt-3.5-turbo";
   /**
    * This is the voice that will be used.
    *
@@ -90,18 +98,30 @@ export interface CreateAssistantDTO {
    * All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation.
    */
   callbackUrl?: string;
+  /**
+   * If you are using a custom LLM, this is the URL Vapi will use instead of hitting OpenAI.
+   *
+   * A POST request will be sent with an array of messages, and the response should be like so:
+   *
+   * ```
+   * { message: "Oh hey! How are..." }
+   * ```
+   */
+  customLlmUrl?: string;
   /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
   /**
    * This is the first message that the assistant will say.
    *
    * If unspecified, it will wait for the user to speak.
-   * @maxLength 280
+   * @maxLength 400
    */
   firstMessage?: string;
-  /** This sets whether calls are recorded for the assistant. */
+  /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
+  interruptionsEnabled?: boolean;
+  /** This sets whether calls are recorded for the assistant. Defaults to true. */
   recordingEnabled?: boolean;
-  /** This sets whether assistant leaves voicemails when call is not picked up. */
+  /** This sets whether assistant leaves voicemails when call is not picked up. Defaults to true. */
   voicemailEnabled?: boolean;
 }
 
@@ -264,7 +284,7 @@ export interface CreateWebCallDTO {
 
 export interface Assistant {
   /** This is the OpenAI model that will be used. */
-  model?: "gpt-4-32k" | "gpt-4" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo";
+  model?: "gpt-4" | "gpt-3.5-turbo";
   /**
    * This is the voice that will be used.
    *
@@ -317,18 +337,30 @@ export interface Assistant {
    * All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation.
    */
   callbackUrl?: string;
+  /**
+   * If you are using a custom LLM, this is the URL Vapi will use instead of hitting OpenAI.
+   *
+   * A POST request will be sent with an array of messages, and the response should be like so:
+   *
+   * ```
+   * { message: "Oh hey! How are..." }
+   * ```
+   */
+  customLlmUrl?: string;
   /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
   /**
    * This is the first message that the assistant will say.
    *
    * If unspecified, it will wait for the user to speak.
-   * @maxLength 280
+   * @maxLength 400
    */
   firstMessage?: string;
-  /** This sets whether calls are recorded for the assistant. */
+  /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
+  interruptionsEnabled?: boolean;
+  /** This sets whether calls are recorded for the assistant. Defaults to true. */
   recordingEnabled?: boolean;
-  /** This sets whether assistant leaves voicemails when call is not picked up. */
+  /** This sets whether assistant leaves voicemails when call is not picked up. Defaults to true. */
   voicemailEnabled?: boolean;
   /** This is the unique identifier for the assistant. */
   id: string;
@@ -348,7 +380,7 @@ export interface Assistant {
 
 export interface UpdateAssistantDTO {
   /** This is the OpenAI model that will be used. */
-  model?: "gpt-4-32k" | "gpt-4" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo";
+  model?: "gpt-4" | "gpt-3.5-turbo";
   /**
    * This is the voice that will be used.
    *
@@ -401,18 +433,30 @@ export interface UpdateAssistantDTO {
    * All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation.
    */
   callbackUrl?: string;
+  /**
+   * If you are using a custom LLM, this is the URL Vapi will use instead of hitting OpenAI.
+   *
+   * A POST request will be sent with an array of messages, and the response should be like so:
+   *
+   * ```
+   * { message: "Oh hey! How are..." }
+   * ```
+   */
+  customLlmUrl?: string;
   /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
   /**
    * This is the first message that the assistant will say.
    *
    * If unspecified, it will wait for the user to speak.
-   * @maxLength 280
+   * @maxLength 400
    */
   firstMessage?: string;
-  /** This sets whether calls are recorded for the assistant. */
+  /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
+  interruptionsEnabled?: boolean;
+  /** This sets whether calls are recorded for the assistant. Defaults to true. */
   recordingEnabled?: boolean;
-  /** This sets whether assistant leaves voicemails when call is not picked up. */
+  /** This sets whether assistant leaves voicemails when call is not picked up. Defaults to true. */
   voicemailEnabled?: boolean;
 }
 
@@ -544,7 +588,7 @@ export enum ContentType {
 }
 
 export class HttpClient<SecurityDataType = unknown> {
-  public baseUrl: string = "";
+  public baseUrl: string = "https://api.vapi.ai";
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private abortControllers = new Map<CancelToken, AbortController>();
@@ -711,9 +755,10 @@ export class HttpClient<SecurityDataType = unknown> {
 /**
  * @title Vapi API
  * @version 1.0
+ * @baseUrl https://api.vapi.ai
  * @contact
  *
- * API for making voice assistants
+ * API for building voice assistants
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   call = {
