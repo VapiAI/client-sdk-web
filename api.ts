@@ -117,12 +117,17 @@ export interface CreateAssistantDTO {
    * @maxLength 400
    */
   firstMessage?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 400
+   */
+  voicemailMessage?: string;
   /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
   interruptionsEnabled?: boolean;
   /** This sets whether calls are recorded for the assistant. Defaults to true. */
   recordingEnabled?: boolean;
-  /** This sets whether assistant leaves voicemails when call is not picked up. Defaults to true. */
-  voicemailEnabled?: boolean;
 }
 
 export interface CreateCustomerDTO {
@@ -356,12 +361,17 @@ export interface Assistant {
    * @maxLength 400
    */
   firstMessage?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 400
+   */
+  voicemailMessage?: string;
   /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
   interruptionsEnabled?: boolean;
   /** This sets whether calls are recorded for the assistant. Defaults to true. */
   recordingEnabled?: boolean;
-  /** This sets whether assistant leaves voicemails when call is not picked up. Defaults to true. */
-  voicemailEnabled?: boolean;
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -452,12 +462,17 @@ export interface UpdateAssistantDTO {
    * @maxLength 400
    */
   firstMessage?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 400
+   */
+  voicemailMessage?: string;
   /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
   interruptionsEnabled?: boolean;
   /** This sets whether calls are recorded for the assistant. Defaults to true. */
   recordingEnabled?: boolean;
-  /** This sets whether assistant leaves voicemails when call is not picked up. Defaults to true. */
-  voicemailEnabled?: boolean;
 }
 
 export interface BuyPhoneNumberDTO {
