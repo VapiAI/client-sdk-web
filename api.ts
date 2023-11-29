@@ -150,6 +150,8 @@ export interface CreateAssistantDTO {
   recordingEnabled?: boolean;
   /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
   endCallFunctionEnabled?: boolean;
+  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. */
+  fillersEnabled?: boolean;
 }
 
 export interface CreateCustomerDTO {
@@ -416,6 +418,8 @@ export interface Assistant {
   recordingEnabled?: boolean;
   /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
   endCallFunctionEnabled?: boolean;
+  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. */
+  fillersEnabled?: boolean;
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -539,6 +543,8 @@ export interface UpdateAssistantDTO {
   recordingEnabled?: boolean;
   /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
   endCallFunctionEnabled?: boolean;
+  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. */
+  fillersEnabled?: boolean;
 }
 
 export interface BuyPhoneNumberDTO {
@@ -580,7 +586,10 @@ export interface PhoneNumber {
   stripeSubscriptionId?: string;
   /** This is the subscription's status. */
   stripeSubscriptionStatus?: string;
-  /** This is the subscription's current period start. */
+  /**
+   * This is the subscription's current period start.
+   * @format date-time
+   */
   stripeSubscriptionCurrentPeriodStart?: string;
   /** These are the digits of the phone number. */
   number: string;
