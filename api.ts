@@ -84,6 +84,26 @@ export interface CreateAssistantDTO {
     | "aurora-rimeai"
     | "nova-rimeai";
   /**
+   * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
+   * When using a language other than `en-*`, only `*-11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
+   */
+  language?:
+    | "en"
+    | "en-US"
+    | "en-AU"
+    | "en-GB"
+    | "en-NZ"
+    | "en-IN"
+    | "fr"
+    | "fr-CA"
+    | "de"
+    | "hi"
+    | "hi-Latn"
+    | "pt"
+    | "pt-BR"
+    | "es"
+    | "es-419";
+  /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 40
    */
@@ -128,6 +148,8 @@ export interface CreateAssistantDTO {
   interruptionsEnabled?: boolean;
   /** This sets whether calls are recorded for the assistant. Defaults to true. */
   recordingEnabled?: boolean;
+  /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
+  endCallFunctionEnabled?: boolean;
 }
 
 export interface CreateCustomerDTO {
@@ -328,6 +350,26 @@ export interface Assistant {
     | "aurora-rimeai"
     | "nova-rimeai";
   /**
+   * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
+   * When using a language other than `en-*`, only `*-11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
+   */
+  language?:
+    | "en"
+    | "en-US"
+    | "en-AU"
+    | "en-GB"
+    | "en-NZ"
+    | "en-IN"
+    | "fr"
+    | "fr-CA"
+    | "de"
+    | "hi"
+    | "hi-Latn"
+    | "pt"
+    | "pt-BR"
+    | "es"
+    | "es-419";
+  /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 40
    */
@@ -372,6 +414,8 @@ export interface Assistant {
   interruptionsEnabled?: boolean;
   /** This sets whether calls are recorded for the assistant. Defaults to true. */
   recordingEnabled?: boolean;
+  /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
+  endCallFunctionEnabled?: boolean;
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -429,6 +473,26 @@ export interface UpdateAssistantDTO {
     | "aurora-rimeai"
     | "nova-rimeai";
   /**
+   * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
+   * When using a language other than `en-*`, only `*-11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
+   */
+  language?:
+    | "en"
+    | "en-US"
+    | "en-AU"
+    | "en-GB"
+    | "en-NZ"
+    | "en-IN"
+    | "fr"
+    | "fr-CA"
+    | "de"
+    | "hi"
+    | "hi-Latn"
+    | "pt"
+    | "pt-BR"
+    | "es"
+    | "es-419";
+  /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 40
    */
@@ -473,6 +537,8 @@ export interface UpdateAssistantDTO {
   interruptionsEnabled?: boolean;
   /** This sets whether calls are recorded for the assistant. Defaults to true. */
   recordingEnabled?: boolean;
+  /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
+  endCallFunctionEnabled?: boolean;
 }
 
 export interface BuyPhoneNumberDTO {
