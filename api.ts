@@ -85,7 +85,15 @@ export interface CreateAssistantDTO {
     | "colette-rimeai"
     | "daphne-rimeai"
     | "aurora-rimeai"
-    | "nova-rimeai";
+    | "nova-rimeai"
+    | "apollo-beta"
+    | "orion-beta"
+    | "aurora-beta"
+    | "asteria-beta"
+    | "stella-beta"
+    | "artemis-beta"
+    | "andromeda-beta"
+    | "atlas-beta";
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `*-11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
@@ -108,7 +116,7 @@ export interface CreateAssistantDTO {
     | "es-419";
   /**
    * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 40
+   * @maxLength 100
    */
   name?: string;
   /** This sets the objective and understanding for the assistant. */
@@ -118,7 +126,7 @@ export interface CreateAssistantDTO {
   /**
    * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports.
    *
-   * All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation.
+   * All requests will be sent with the `call` object among other things relevant to that callback. You can find more details in the Function Calling documentation.
    */
   callbackUrl?: string;
   /**
@@ -149,11 +157,11 @@ export interface CreateAssistantDTO {
   voicemailMessage?: string;
   /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
   interruptionsEnabled?: boolean;
-  /** This sets whether calls are recorded for the assistant. Defaults to true. */
+  /** This sets whether the assistant's calls are recorded. Defaults to true. */
   recordingEnabled?: boolean;
   /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
   endCallFunctionEnabled?: boolean;
-  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. */
+  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
 }
 
@@ -356,7 +364,15 @@ export interface Assistant {
     | "colette-rimeai"
     | "daphne-rimeai"
     | "aurora-rimeai"
-    | "nova-rimeai";
+    | "nova-rimeai"
+    | "apollo-beta"
+    | "orion-beta"
+    | "aurora-beta"
+    | "asteria-beta"
+    | "stella-beta"
+    | "artemis-beta"
+    | "andromeda-beta"
+    | "atlas-beta";
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `*-11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
@@ -379,7 +395,7 @@ export interface Assistant {
     | "es-419";
   /**
    * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 40
+   * @maxLength 100
    */
   name?: string;
   /** This sets the objective and understanding for the assistant. */
@@ -389,7 +405,7 @@ export interface Assistant {
   /**
    * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports.
    *
-   * All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation.
+   * All requests will be sent with the `call` object among other things relevant to that callback. You can find more details in the Function Calling documentation.
    */
   callbackUrl?: string;
   /**
@@ -420,11 +436,11 @@ export interface Assistant {
   voicemailMessage?: string;
   /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
   interruptionsEnabled?: boolean;
-  /** This sets whether calls are recorded for the assistant. Defaults to true. */
+  /** This sets whether the assistant's calls are recorded. Defaults to true. */
   recordingEnabled?: boolean;
   /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
   endCallFunctionEnabled?: boolean;
-  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. */
+  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
   /** This is the unique identifier for the assistant. */
   id: string;
@@ -484,7 +500,15 @@ export interface UpdateAssistantDTO {
     | "colette-rimeai"
     | "daphne-rimeai"
     | "aurora-rimeai"
-    | "nova-rimeai";
+    | "nova-rimeai"
+    | "apollo-beta"
+    | "orion-beta"
+    | "aurora-beta"
+    | "asteria-beta"
+    | "stella-beta"
+    | "artemis-beta"
+    | "andromeda-beta"
+    | "atlas-beta";
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `*-11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
@@ -507,7 +531,7 @@ export interface UpdateAssistantDTO {
     | "es-419";
   /**
    * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 40
+   * @maxLength 100
    */
   name?: string;
   /** This sets the objective and understanding for the assistant. */
@@ -517,7 +541,7 @@ export interface UpdateAssistantDTO {
   /**
    * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports.
    *
-   * All requests will be sent with customerPhoneNumber and all the assistant parameters. You can find more details in the Function Calling documentation.
+   * All requests will be sent with the `call` object among other things relevant to that callback. You can find more details in the Function Calling documentation.
    */
   callbackUrl?: string;
   /**
@@ -548,11 +572,11 @@ export interface UpdateAssistantDTO {
   voicemailMessage?: string;
   /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
   interruptionsEnabled?: boolean;
-  /** This sets whether calls are recorded for the assistant. Defaults to true. */
+  /** This sets whether the assistant's calls are recorded. Defaults to true. */
   recordingEnabled?: boolean;
   /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
   endCallFunctionEnabled?: boolean;
-  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. */
+  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
 }
 
