@@ -163,6 +163,8 @@ export interface CreateAssistantDTO {
   endCallFunctionEnabled?: boolean;
   /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
+  /** These keywords are passed to the transcription model to help it pick up use-case specific words. */
+  keywords?: string[];
 }
 
 export interface CreateCustomerDTO {
@@ -442,6 +444,8 @@ export interface Assistant {
   endCallFunctionEnabled?: boolean;
   /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
+  /** These keywords are passed to the transcription model to help it pick up use-case specific words. */
+  keywords?: string[];
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -578,6 +582,8 @@ export interface UpdateAssistantDTO {
   endCallFunctionEnabled?: boolean;
   /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
+  /** These keywords are passed to the transcription model to help it pick up use-case specific words. */
+  keywords?: string[];
 }
 
 export interface BuyPhoneNumberDTO {
@@ -711,7 +717,7 @@ export enum ContentType {
 }
 
 export class HttpClient<SecurityDataType = unknown> {
-  public baseUrl: string = "https://api.vapi.ai";
+  public baseUrl: string = "https://hugely-stirred-krill.ngrok-free.app";
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private abortControllers = new Map<CancelToken, AbortController>();
@@ -878,7 +884,7 @@ export class HttpClient<SecurityDataType = unknown> {
 /**
  * @title Vapi API
  * @version 1.0
- * @baseUrl https://api.vapi.ai
+ * @baseUrl https://hugely-stirred-krill.ngrok-free.app
  * @contact
  *
  * API for building voice assistants
