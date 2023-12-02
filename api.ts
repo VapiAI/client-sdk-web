@@ -717,7 +717,7 @@ export enum ContentType {
 }
 
 export class HttpClient<SecurityDataType = unknown> {
-  public baseUrl: string = "https://hugely-stirred-krill.ngrok-free.app";
+  public baseUrl: string = "https://api.vapi.ai";
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private abortControllers = new Map<CancelToken, AbortController>();
@@ -884,7 +884,7 @@ export class HttpClient<SecurityDataType = unknown> {
 /**
  * @title Vapi API
  * @version 1.0
- * @baseUrl https://hugely-stirred-krill.ngrok-free.app
+ * @baseUrl https://api.vapi.ai
  * @contact
  *
  * API for building voice assistants
