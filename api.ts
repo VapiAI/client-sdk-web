@@ -155,6 +155,13 @@ export interface CreateAssistantDTO {
    * @maxLength 400
    */
   voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 400
+   */
+  endCallMessage?: string;
   /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
   interruptionsEnabled?: boolean;
   /** This sets whether the assistant's calls are recorded. Defaults to true. */
@@ -163,7 +170,7 @@ export interface CreateAssistantDTO {
   endCallFunctionEnabled?: boolean;
   /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
-  /** These keywords are passed to the transcription model to help it pick up use-case specific words. */
+  /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
 }
 
@@ -436,6 +443,13 @@ export interface Assistant {
    * @maxLength 400
    */
   voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 400
+   */
+  endCallMessage?: string;
   /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
   interruptionsEnabled?: boolean;
   /** This sets whether the assistant's calls are recorded. Defaults to true. */
@@ -444,7 +458,7 @@ export interface Assistant {
   endCallFunctionEnabled?: boolean;
   /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
-  /** These keywords are passed to the transcription model to help it pick up use-case specific words. */
+  /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
   /** This is the unique identifier for the assistant. */
   id: string;
@@ -574,6 +588,13 @@ export interface UpdateAssistantDTO {
    * @maxLength 400
    */
   voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 400
+   */
+  endCallMessage?: string;
   /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
   interruptionsEnabled?: boolean;
   /** This sets whether the assistant's calls are recorded. Defaults to true. */
@@ -582,7 +603,7 @@ export interface UpdateAssistantDTO {
   endCallFunctionEnabled?: boolean;
   /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
-  /** These keywords are passed to the transcription model to help it pick up use-case specific words. */
+  /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
 }
 
