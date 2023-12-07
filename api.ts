@@ -9,6 +9,67 @@
  * ---------------------------------------------------------------
  */
 
+export interface BetaVoice {
+  /**
+   * This is the voice provider that will be used.
+   *
+   * Pro Voices: `11labs`, `playht`
+   *
+   * Basic Voices: `rimeai`, `beta`
+   */
+  provider: "beta";
+  /** This is the provider-specific ID that will be used. */
+  voiceId: string;
+}
+
+export interface CustomModel {
+  /**
+   * This is the provider that will be used for the model. Currently, only OpenAI and Custom LLM URLs are supported.
+   *
+   * If you have your own LLM, you can use the URL of your LLM endpoint here.
+   */
+  provider: "custom";
+  /** These are the options that will be passed to the provider. */
+  url: string;
+  /** This sets the objective and understanding for the assistant. */
+  systemPrompt?: string;
+}
+
+export interface DeepgramTranscriber {
+  /** This is the transcription provider that will be used. Currently, only Deepgram is supported. */
+  provider: "deepgram";
+  /** This is the Deepgram model that will be used. A list of models can be found here: https://developers.deepgram.com/docs/models-languages-overview */
+  model?:
+    | "nova-2"
+    | "nova-2-general"
+    | "nova-2-meeting"
+    | "nova-2-phonecall"
+    | "nova-2-finance"
+    | "nova-2-conversationalai"
+    | "nova-2-voicemail"
+    | "nova-2-video"
+    | "nova-2-medical"
+    | "nova-2-drivethru"
+    | "nova-2-automotive"
+    | "nova-2-custom"
+    | string;
+  /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
+  keywords?: string[];
+}
+
+export interface ElevenLabsVoice {
+  /**
+   * This is the voice provider that will be used.
+   *
+   * Pro Voices: `11labs`, `playht`
+   *
+   * Basic Voices: `rimeai`, `beta`
+   */
+  provider: "11labs";
+  /** This is the provider-specific ID that will be used. */
+  voiceId: string;
+}
+
 export interface OpenAIFunctionParameterProperty {
   type: "string" | "number" | "boolean";
   enum?: string[];
@@ -43,16 +104,59 @@ export interface OpenAIFunction {
   parameters: OpenAIFunctionParameters;
 }
 
-export interface CreateAssistantDTO {
-  /** This is the OpenAI model that will be used. */
-  model?: "gpt-4" | "gpt-3.5-turbo";
+export interface OpenAIModel {
   /**
-   * This is the voice that will be used.
+   * This is the provider that will be used for the model. Currently, only OpenAI and Custom LLM URLs are supported.
    *
-   * Pro Voices: `*-11labs`, `*-playht`
-   *
-   * Basic Voices: `*-rimeai`
+   * If you have your own LLM, you can use the URL of your LLM endpoint here.
    */
+  provider: "openai";
+  /** This is the OpenAI model that will be used. */
+  model: "gpt-4" | "gpt-3.5-turbo";
+  /** This sets the objective and understanding for the assistant. */
+  systemPrompt?: string;
+  /** This is the temperature that will be used for OpenAI calls. */
+  temperature?: number;
+  /** These are the functions that the assistant can execute during the call. */
+  functions?: OpenAIFunction[];
+}
+
+export interface PlayHTVoice {
+  /**
+   * This is the voice provider that will be used.
+   *
+   * Pro Voices: `11labs`, `playht`
+   *
+   * Basic Voices: `rimeai`, `beta`
+   */
+  provider: "playht";
+  /** This is the provider-specific ID that will be used. */
+  voiceId: string;
+}
+
+export interface RimeAIVoice {
+  /**
+   * This is the voice provider that will be used.
+   *
+   * Pro Voices: `11labs`, `playht`
+   *
+   * Basic Voices: `rimeai`, `beta`
+   */
+  provider: "rimeai";
+  /** This is the provider-specific ID that will be used. */
+  voiceId: string;
+}
+
+export interface CreateAssistantDTO {
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | ({
+        provider: "openai";
+      } & OpenAIModel)
+    | ({
+        provider: "custom";
+      } & CustomModel);
+  /** These are the options for the assistant's voice. */
   voice?:
     | "jennifer-playht"
     | "melissa-playht"
@@ -93,10 +197,14 @@ export interface CreateAssistantDTO {
     | "stella-beta"
     | "artemis-beta"
     | "andromeda-beta"
-    | "atlas-beta";
+    | "atlas-beta"
+    | ElevenLabsVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | BetaVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
-   * When using a language other than `en-*`, only `*-11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
+   * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
    */
   language?:
     | "en"
@@ -115,44 +223,51 @@ export interface CreateAssistantDTO {
     | "es"
     | "es-419";
   /**
+   * Use `model.systemPrompt` instead.
+   * @deprecated
+   */
+  context?: string;
+  /**
+   * Use `model.functions` instead.
+   * @deprecated
+   */
+  functions?: OpenAIFunction[];
+  /**
+   * Add a Server URL to your Org on the Account page in the dashboard instead.
+   * @deprecated
+   */
+  callbackUrl?: string;
+  /**
+   * Use `model.url` instead.
+   * @deprecated
+   */
+  customLlmUrl?: string;
+  /**
+   * Use `transcriber.keywords` instead.
+   * @deprecated
+   */
+  keywords?: string[];
+  /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 100
    */
   name?: string;
-  /** This sets the objective and understanding for the assistant. */
-  context?: string;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
-  /**
-   * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports.
-   *
-   * All requests will be sent with the `call` object among other things relevant to that callback. You can find more details in the Function Calling documentation.
-   */
-  callbackUrl?: string;
-  /**
-   * If you are using a custom LLM, this is the URL Vapi will use instead of hitting OpenAI.
-   *
-   * A POST request will be sent with an array of messages, and the response should be like so:
-   *
-   * ```
-   * { message: "Oh hey! How are..." }
-   * ```
-   */
-  customLlmUrl?: string;
+  /** These are the options for the assistant's transcriber. */
+  transcriber?: DeepgramTranscriber;
   /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
   /**
    * This is the first message that the assistant will say.
    *
    * If unspecified, it will wait for the user to speak.
-   * @maxLength 400
+   * @maxLength 1000
    */
   firstMessage?: string;
   /**
    * This is the message that the assistant will say if the call is forwarded to voicemail.
    *
    * If unspecified, it will hang up.
-   * @maxLength 400
+   * @maxLength 1000
    */
   voicemailMessage?: string;
   /**
@@ -170,8 +285,300 @@ export interface CreateAssistantDTO {
   endCallFunctionEnabled?: boolean;
   /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
-  /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
+}
+
+export interface Assistant {
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | ({
+        provider: "openai";
+      } & OpenAIModel)
+    | ({
+        provider: "custom";
+      } & CustomModel);
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | "jennifer-playht"
+    | "melissa-playht"
+    | "will-playht"
+    | "chris-playht"
+    | "matt-playht"
+    | "jack-playht"
+    | "ruby-playht"
+    | "davis-playht"
+    | "donna-playht"
+    | "michael-playht"
+    | "burt-11labs"
+    | "andrea-11labs"
+    | "phillip-11labs"
+    | "steve-11labs"
+    | "joseph-11labs"
+    | "myra-11labs"
+    | "paula-11labs"
+    | "ryan-11labs"
+    | "drew-11labs"
+    | "paul-11labs"
+    | "mrb-11labs"
+    | "matilda-11labs"
+    | "kai-rimeai"
+    | "zion-rimeai"
+    | "xavier-rimeai"
+    | "marty-rimeai"
+    | "hudson-rimeai"
+    | "savannah-rimeai"
+    | "colette-rimeai"
+    | "daphne-rimeai"
+    | "aurora-rimeai"
+    | "nova-rimeai"
+    | "apollo-beta"
+    | "orion-beta"
+    | "aurora-beta"
+    | "asteria-beta"
+    | "stella-beta"
+    | "artemis-beta"
+    | "andromeda-beta"
+    | "atlas-beta"
+    | ElevenLabsVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | BetaVoice;
+  /**
+   * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
+   * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
+   */
+  language?:
+    | "en"
+    | "en-US"
+    | "en-AU"
+    | "en-GB"
+    | "en-NZ"
+    | "en-IN"
+    | "fr"
+    | "fr-CA"
+    | "de"
+    | "hi"
+    | "hi-Latn"
+    | "pt"
+    | "pt-BR"
+    | "es"
+    | "es-419";
+  /**
+   * Use `model.systemPrompt` instead.
+   * @deprecated
+   */
+  context?: string;
+  /**
+   * Use `model.functions` instead.
+   * @deprecated
+   */
+  functions?: OpenAIFunction[];
+  /**
+   * Add a Server URL to your Org on the Account page in the dashboard instead.
+   * @deprecated
+   */
+  callbackUrl?: string;
+  /**
+   * Use `model.url` instead.
+   * @deprecated
+   */
+  customLlmUrl?: string;
+  /**
+   * Use `transcriber.keywords` instead.
+   * @deprecated
+   */
   keywords?: string[];
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 100
+   */
+  name?: string;
+  /** These are the options for the assistant's transcriber. */
+  transcriber?: DeepgramTranscriber;
+  /** This is the number to forward to if assistant runs into issues. */
+  forwardingPhoneNumber?: string;
+  /**
+   * This is the first message that the assistant will say.
+   *
+   * If unspecified, it will wait for the user to speak.
+   * @maxLength 1000
+   */
+  firstMessage?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 400
+   */
+  endCallMessage?: string;
+  /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
+  interruptionsEnabled?: boolean;
+  /** This sets whether the assistant's calls are recorded. Defaults to true. */
+  recordingEnabled?: boolean;
+  /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
+  endCallFunctionEnabled?: boolean;
+  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
+  fillersEnabled?: boolean;
+  /** This is the unique identifier for the assistant. */
+  id: string;
+  /** This is the unique identifier for the org that this assistant belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface UpdateAssistantDTO {
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | ({
+        provider: "openai";
+      } & OpenAIModel)
+    | ({
+        provider: "custom";
+      } & CustomModel);
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | "jennifer-playht"
+    | "melissa-playht"
+    | "will-playht"
+    | "chris-playht"
+    | "matt-playht"
+    | "jack-playht"
+    | "ruby-playht"
+    | "davis-playht"
+    | "donna-playht"
+    | "michael-playht"
+    | "burt-11labs"
+    | "andrea-11labs"
+    | "phillip-11labs"
+    | "steve-11labs"
+    | "joseph-11labs"
+    | "myra-11labs"
+    | "paula-11labs"
+    | "ryan-11labs"
+    | "drew-11labs"
+    | "paul-11labs"
+    | "mrb-11labs"
+    | "matilda-11labs"
+    | "kai-rimeai"
+    | "zion-rimeai"
+    | "xavier-rimeai"
+    | "marty-rimeai"
+    | "hudson-rimeai"
+    | "savannah-rimeai"
+    | "colette-rimeai"
+    | "daphne-rimeai"
+    | "aurora-rimeai"
+    | "nova-rimeai"
+    | "apollo-beta"
+    | "orion-beta"
+    | "aurora-beta"
+    | "asteria-beta"
+    | "stella-beta"
+    | "artemis-beta"
+    | "andromeda-beta"
+    | "atlas-beta"
+    | ElevenLabsVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | BetaVoice;
+  /**
+   * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
+   * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
+   */
+  language?:
+    | "en"
+    | "en-US"
+    | "en-AU"
+    | "en-GB"
+    | "en-NZ"
+    | "en-IN"
+    | "fr"
+    | "fr-CA"
+    | "de"
+    | "hi"
+    | "hi-Latn"
+    | "pt"
+    | "pt-BR"
+    | "es"
+    | "es-419";
+  /**
+   * Use `model.systemPrompt` instead.
+   * @deprecated
+   */
+  context?: string;
+  /**
+   * Use `model.functions` instead.
+   * @deprecated
+   */
+  functions?: OpenAIFunction[];
+  /**
+   * Add a Server URL to your Org on the Account page in the dashboard instead.
+   * @deprecated
+   */
+  callbackUrl?: string;
+  /**
+   * Use `model.url` instead.
+   * @deprecated
+   */
+  customLlmUrl?: string;
+  /**
+   * Use `transcriber.keywords` instead.
+   * @deprecated
+   */
+  keywords?: string[];
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 100
+   */
+  name?: string;
+  /** These are the options for the assistant's transcriber. */
+  transcriber?: DeepgramTranscriber;
+  /** This is the number to forward to if assistant runs into issues. */
+  forwardingPhoneNumber?: string;
+  /**
+   * This is the first message that the assistant will say.
+   *
+   * If unspecified, it will wait for the user to speak.
+   * @maxLength 1000
+   */
+  firstMessage?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 400
+   */
+  endCallMessage?: string;
+  /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
+  interruptionsEnabled?: boolean;
+  /** This sets whether the assistant's calls are recorded. Defaults to true. */
+  recordingEnabled?: boolean;
+  /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
+  endCallFunctionEnabled?: boolean;
+  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
+  fillersEnabled?: boolean;
 }
 
 export interface CreateCustomerDTO {
@@ -205,7 +612,34 @@ export interface ImportTwilioPhoneNumberDTO {
 }
 
 export interface Call {
+  /** This is the type of call. */
   type?: "inboundPhoneCall" | "outboundPhoneCall" | "webCall";
+  /**
+   * Use `status` instead.
+   * @deprecated
+   */
+  twilioCallStatus?: string;
+  /** This is the status of the call. */
+  status?: "queued" | "ringing" | "in-progress" | "forwarding" | "ended";
+  /** This is the explanation for how the call ended. */
+  endedReason?:
+    | "assistant-ended"
+    | "assistant-error"
+    | "assistant-join-timeout"
+    | "busy"
+    | "canceled"
+    | "customer-ended"
+    | "forwarded"
+    | "max-duration-timeout"
+    | "no-answer"
+    | "no-server-available"
+    | "server-shutdown"
+    | "silence-timeout"
+    | "twilio-call-error"
+    | "twilio-websocket-close"
+    | "twilio-websocket-error"
+    | "unknown-error"
+    | "voicemail";
   /** This is the unique identifier for the call. */
   id: string;
   /** This is the unique identifier for the org that this call belongs to. */
@@ -245,19 +679,11 @@ export interface Call {
    */
   twilioCallSid?: string;
   /**
-   * This is the current status of the call.
-   *
-   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
-   */
-  twilioCallStatus?: string;
-  /**
    * This is the URL of the call that the assistant will join.
    *
    * Only relevant for `webCall` type.
    */
   webCallUrl?: string;
-  /** This is set if the call experienced an error. */
-  error?: string;
   /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
@@ -329,282 +755,6 @@ export interface CreateWebCallDTO {
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
   assistant?: CreateAssistantDTO;
-}
-
-export interface Assistant {
-  /** This is the OpenAI model that will be used. */
-  model?: "gpt-4" | "gpt-3.5-turbo";
-  /**
-   * This is the voice that will be used.
-   *
-   * Pro Voices: `*-11labs`, `*-playht`
-   *
-   * Basic Voices: `*-rimeai`
-   */
-  voice?:
-    | "jennifer-playht"
-    | "melissa-playht"
-    | "will-playht"
-    | "chris-playht"
-    | "matt-playht"
-    | "jack-playht"
-    | "ruby-playht"
-    | "davis-playht"
-    | "donna-playht"
-    | "michael-playht"
-    | "burt-11labs"
-    | "andrea-11labs"
-    | "phillip-11labs"
-    | "steve-11labs"
-    | "joseph-11labs"
-    | "myra-11labs"
-    | "paula-11labs"
-    | "ryan-11labs"
-    | "drew-11labs"
-    | "paul-11labs"
-    | "mrb-11labs"
-    | "matilda-11labs"
-    | "kai-rimeai"
-    | "zion-rimeai"
-    | "xavier-rimeai"
-    | "marty-rimeai"
-    | "hudson-rimeai"
-    | "savannah-rimeai"
-    | "colette-rimeai"
-    | "daphne-rimeai"
-    | "aurora-rimeai"
-    | "nova-rimeai"
-    | "apollo-beta"
-    | "orion-beta"
-    | "aurora-beta"
-    | "asteria-beta"
-    | "stella-beta"
-    | "artemis-beta"
-    | "andromeda-beta"
-    | "atlas-beta";
-  /**
-   * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
-   * When using a language other than `en-*`, only `*-11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
-   */
-  language?:
-    | "en"
-    | "en-US"
-    | "en-AU"
-    | "en-GB"
-    | "en-NZ"
-    | "en-IN"
-    | "fr"
-    | "fr-CA"
-    | "de"
-    | "hi"
-    | "hi-Latn"
-    | "pt"
-    | "pt-BR"
-    | "es"
-    | "es-419";
-  /**
-   * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 100
-   */
-  name?: string;
-  /** This sets the objective and understanding for the assistant. */
-  context?: string;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
-  /**
-   * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports.
-   *
-   * All requests will be sent with the `call` object among other things relevant to that callback. You can find more details in the Function Calling documentation.
-   */
-  callbackUrl?: string;
-  /**
-   * If you are using a custom LLM, this is the URL Vapi will use instead of hitting OpenAI.
-   *
-   * A POST request will be sent with an array of messages, and the response should be like so:
-   *
-   * ```
-   * { message: "Oh hey! How are..." }
-   * ```
-   */
-  customLlmUrl?: string;
-  /** This is the number to forward to if assistant runs into issues. */
-  forwardingPhoneNumber?: string;
-  /**
-   * This is the first message that the assistant will say.
-   *
-   * If unspecified, it will wait for the user to speak.
-   * @maxLength 400
-   */
-  firstMessage?: string;
-  /**
-   * This is the message that the assistant will say if the call is forwarded to voicemail.
-   *
-   * If unspecified, it will hang up.
-   * @maxLength 400
-   */
-  voicemailMessage?: string;
-  /**
-   * This is the message that the assistant will say if it ends the call.
-   *
-   * If unspecified, it will hang up without saying anything.
-   * @maxLength 400
-   */
-  endCallMessage?: string;
-  /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
-  interruptionsEnabled?: boolean;
-  /** This sets whether the assistant's calls are recorded. Defaults to true. */
-  recordingEnabled?: boolean;
-  /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
-  endCallFunctionEnabled?: boolean;
-  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
-  fillersEnabled?: boolean;
-  /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
-  keywords?: string[];
-  /** This is the unique identifier for the assistant. */
-  id: string;
-  /** This is the unique identifier for the org that this assistant belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-}
-
-export interface UpdateAssistantDTO {
-  /** This is the OpenAI model that will be used. */
-  model?: "gpt-4" | "gpt-3.5-turbo";
-  /**
-   * This is the voice that will be used.
-   *
-   * Pro Voices: `*-11labs`, `*-playht`
-   *
-   * Basic Voices: `*-rimeai`
-   */
-  voice?:
-    | "jennifer-playht"
-    | "melissa-playht"
-    | "will-playht"
-    | "chris-playht"
-    | "matt-playht"
-    | "jack-playht"
-    | "ruby-playht"
-    | "davis-playht"
-    | "donna-playht"
-    | "michael-playht"
-    | "burt-11labs"
-    | "andrea-11labs"
-    | "phillip-11labs"
-    | "steve-11labs"
-    | "joseph-11labs"
-    | "myra-11labs"
-    | "paula-11labs"
-    | "ryan-11labs"
-    | "drew-11labs"
-    | "paul-11labs"
-    | "mrb-11labs"
-    | "matilda-11labs"
-    | "kai-rimeai"
-    | "zion-rimeai"
-    | "xavier-rimeai"
-    | "marty-rimeai"
-    | "hudson-rimeai"
-    | "savannah-rimeai"
-    | "colette-rimeai"
-    | "daphne-rimeai"
-    | "aurora-rimeai"
-    | "nova-rimeai"
-    | "apollo-beta"
-    | "orion-beta"
-    | "aurora-beta"
-    | "asteria-beta"
-    | "stella-beta"
-    | "artemis-beta"
-    | "andromeda-beta"
-    | "atlas-beta";
-  /**
-   * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
-   * When using a language other than `en-*`, only `*-11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
-   */
-  language?:
-    | "en"
-    | "en-US"
-    | "en-AU"
-    | "en-GB"
-    | "en-NZ"
-    | "en-IN"
-    | "fr"
-    | "fr-CA"
-    | "de"
-    | "hi"
-    | "hi-Latn"
-    | "pt"
-    | "pt-BR"
-    | "es"
-    | "es-419";
-  /**
-   * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 100
-   */
-  name?: string;
-  /** This sets the objective and understanding for the assistant. */
-  context?: string;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
-  /**
-   * This is the URL Vapi will send GET / POST requests for retrieving context, function calling, and end-of-call reports.
-   *
-   * All requests will be sent with the `call` object among other things relevant to that callback. You can find more details in the Function Calling documentation.
-   */
-  callbackUrl?: string;
-  /**
-   * If you are using a custom LLM, this is the URL Vapi will use instead of hitting OpenAI.
-   *
-   * A POST request will be sent with an array of messages, and the response should be like so:
-   *
-   * ```
-   * { message: "Oh hey! How are..." }
-   * ```
-   */
-  customLlmUrl?: string;
-  /** This is the number to forward to if assistant runs into issues. */
-  forwardingPhoneNumber?: string;
-  /**
-   * This is the first message that the assistant will say.
-   *
-   * If unspecified, it will wait for the user to speak.
-   * @maxLength 400
-   */
-  firstMessage?: string;
-  /**
-   * This is the message that the assistant will say if the call is forwarded to voicemail.
-   *
-   * If unspecified, it will hang up.
-   * @maxLength 400
-   */
-  voicemailMessage?: string;
-  /**
-   * This is the message that the assistant will say if it ends the call.
-   *
-   * If unspecified, it will hang up without saying anything.
-   * @maxLength 400
-   */
-  endCallMessage?: string;
-  /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
-  interruptionsEnabled?: boolean;
-  /** This sets whether the assistant's calls are recorded. Defaults to true. */
-  recordingEnabled?: boolean;
-  /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
-  endCallFunctionEnabled?: boolean;
-  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
-  fillersEnabled?: boolean;
-  /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
-  keywords?: string[];
 }
 
 export interface BuyPhoneNumberDTO {
@@ -911,83 +1061,6 @@ export class HttpClient<SecurityDataType = unknown> {
  * API for building voice assistants
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
-  call = {
-    /**
-     * No description
-     *
-     * @tags Calls
-     * @name CallControllerFindAll
-     * @summary List Calls
-     * @request GET:/call
-     * @secure
-     */
-    callControllerFindAll: (params: RequestParams = {}) =>
-      this.request<Call[], any>({
-        path: `/call`,
-        method: "GET",
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Calls
-     * @name CallControllerFindOne
-     * @summary Get Call
-     * @request GET:/call/{id}
-     * @secure
-     */
-    callControllerFindOne: (id: string, params: RequestParams = {}) =>
-      this.request<Call, any>({
-        path: `/call/${id}`,
-        method: "GET",
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Calls
-     * @name CallControllerCreatePhoneCall
-     * @summary Create Phone Call
-     * @request POST:/call/phone
-     * @secure
-     */
-    callControllerCreatePhoneCall: (data: CreateOutboundCallDTO, params: RequestParams = {}) =>
-      this.request<Call, any>({
-        path: `/call/phone`,
-        method: "POST",
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Calls
-     * @name CallControllerCreateWebCall
-     * @summary Create Web Call
-     * @request POST:/call/web
-     * @secure
-     */
-    callControllerCreateWebCall: (data: CreateWebCallDTO, params: RequestParams = {}) =>
-      this.request<Call, any>({
-        path: `/call/web`,
-        method: "POST",
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-  };
   assistant = {
     /**
      * No description
@@ -1079,6 +1152,83 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         path: `/assistant/${id}`,
         method: "DELETE",
         secure: true,
+        format: "json",
+        ...params,
+      }),
+  };
+  call = {
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallControllerFindAll
+     * @summary List Calls
+     * @request GET:/call
+     * @secure
+     */
+    callControllerFindAll: (params: RequestParams = {}) =>
+      this.request<Call[], any>({
+        path: `/call`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallControllerFindOne
+     * @summary Get Call
+     * @request GET:/call/{id}
+     * @secure
+     */
+    callControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Call, any>({
+        path: `/call/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallControllerCreatePhoneCall
+     * @summary Create Phone Call
+     * @request POST:/call/phone
+     * @secure
+     */
+    callControllerCreatePhoneCall: (data: CreateOutboundCallDTO, params: RequestParams = {}) =>
+      this.request<Call, any>({
+        path: `/call/phone`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallControllerCreateWebCall
+     * @summary Create Web Call
+     * @request POST:/call/web
+     * @secure
+     */
+    callControllerCreateWebCall: (data: CreateWebCallDTO, params: RequestParams = {}) =>
+      this.request<Call, any>({
+        path: `/call/web`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
