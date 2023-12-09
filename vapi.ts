@@ -174,6 +174,7 @@ export default class Vapi extends VapiEventEmitter {
       this.call.on("remote-participants-audio-level", (e) =>
         this.handleRemoteParticipantsAudioLevel(e)
       );
+      console.log("yo");
       this.call.on("app-message", (e) => this.onAppMessage(e));
 
       this.call.updateInputSettings({
