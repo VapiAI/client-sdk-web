@@ -29,7 +29,7 @@ export interface CustomModel {
    * If you have your own LLM, you can use the URL of your LLM endpoint here.
    */
   provider: "custom";
-  /** These are the options that will be passed to the provider. */
+  /** These is the URL we'll POST during the conversation. */
   url: string;
   /** This sets the objective and understanding for the assistant. */
   systemPrompt?: string;
@@ -115,7 +115,11 @@ export interface OpenAIModel {
   model: "gpt-4" | "gpt-3.5-turbo";
   /** This sets the objective and understanding for the assistant. */
   systemPrompt?: string;
-  /** This is the temperature that will be used for OpenAI calls. */
+  /**
+   * This is the temperature that will be used for OpenAI calls.
+   * @min 0
+   * @max 2
+   */
   temperature?: number;
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
@@ -148,15 +152,19 @@ export interface RimeAIVoice {
 }
 
 export interface CreateAssistantDTO {
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 100
+   */
+  name?: string;
+  /** These are the options for the assistant's transcriber. */
+  transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
-  model?:
-    | ({
-        provider: "openai";
-      } & OpenAIModel)
-    | ({
-        provider: "custom";
-      } & CustomModel);
-  /** These are the options for the assistant's voice. */
+  model?: "0" | "1" | "2" | OpenAIModel | CustomModel;
+  /**
+   * These are the options for the assistant's voice.
+   * @default "jennifer-playht"
+   */
   voice?:
     | "jennifer-playht"
     | "melissa-playht"
@@ -222,38 +230,6 @@ export interface CreateAssistantDTO {
     | "pt-BR"
     | "es"
     | "es-419";
-  /**
-   * Use `model.systemPrompt` instead.
-   * @deprecated
-   */
-  context?: string;
-  /**
-   * Use `model.functions` instead.
-   * @deprecated
-   */
-  functions?: OpenAIFunction[];
-  /**
-   * Add a Server URL to your Org on the Account page in the dashboard instead.
-   * @deprecated
-   */
-  callbackUrl?: string;
-  /**
-   * Use `model.url` instead.
-   * @deprecated
-   */
-  customLlmUrl?: string;
-  /**
-   * Use `transcriber.keywords` instead.
-   * @deprecated
-   */
-  keywords?: string[];
-  /**
-   * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 100
-   */
-  name?: string;
-  /** These are the options for the assistant's transcriber. */
-  transcriber?: DeepgramTranscriber;
   /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
   /**
@@ -261,6 +237,7 @@ export interface CreateAssistantDTO {
    *
    * If unspecified, it will wait for the user to speak.
    * @maxLength 1000
+   * @default "Hey there!"
    */
   firstMessage?: string;
   /**
@@ -288,15 +265,19 @@ export interface CreateAssistantDTO {
 }
 
 export interface Assistant {
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 100
+   */
+  name?: string;
+  /** These are the options for the assistant's transcriber. */
+  transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
-  model?:
-    | ({
-        provider: "openai";
-      } & OpenAIModel)
-    | ({
-        provider: "custom";
-      } & CustomModel);
-  /** These are the options for the assistant's voice. */
+  model?: "0" | "1" | "2" | OpenAIModel | CustomModel;
+  /**
+   * These are the options for the assistant's voice.
+   * @default "jennifer-playht"
+   */
   voice?:
     | "jennifer-playht"
     | "melissa-playht"
@@ -362,38 +343,6 @@ export interface Assistant {
     | "pt-BR"
     | "es"
     | "es-419";
-  /**
-   * Use `model.systemPrompt` instead.
-   * @deprecated
-   */
-  context?: string;
-  /**
-   * Use `model.functions` instead.
-   * @deprecated
-   */
-  functions?: OpenAIFunction[];
-  /**
-   * Add a Server URL to your Org on the Account page in the dashboard instead.
-   * @deprecated
-   */
-  callbackUrl?: string;
-  /**
-   * Use `model.url` instead.
-   * @deprecated
-   */
-  customLlmUrl?: string;
-  /**
-   * Use `transcriber.keywords` instead.
-   * @deprecated
-   */
-  keywords?: string[];
-  /**
-   * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 100
-   */
-  name?: string;
-  /** These are the options for the assistant's transcriber. */
-  transcriber?: DeepgramTranscriber;
   /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
   /**
@@ -401,6 +350,7 @@ export interface Assistant {
    *
    * If unspecified, it will wait for the user to speak.
    * @maxLength 1000
+   * @default "Hey there!"
    */
   firstMessage?: string;
   /**
@@ -442,15 +392,19 @@ export interface Assistant {
 }
 
 export interface UpdateAssistantDTO {
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 100
+   */
+  name?: string;
+  /** These are the options for the assistant's transcriber. */
+  transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
-  model?:
-    | ({
-        provider: "openai";
-      } & OpenAIModel)
-    | ({
-        provider: "custom";
-      } & CustomModel);
-  /** These are the options for the assistant's voice. */
+  model?: "0" | "1" | "2" | OpenAIModel | CustomModel;
+  /**
+   * These are the options for the assistant's voice.
+   * @default "jennifer-playht"
+   */
   voice?:
     | "jennifer-playht"
     | "melissa-playht"
@@ -516,38 +470,6 @@ export interface UpdateAssistantDTO {
     | "pt-BR"
     | "es"
     | "es-419";
-  /**
-   * Use `model.systemPrompt` instead.
-   * @deprecated
-   */
-  context?: string;
-  /**
-   * Use `model.functions` instead.
-   * @deprecated
-   */
-  functions?: OpenAIFunction[];
-  /**
-   * Add a Server URL to your Org on the Account page in the dashboard instead.
-   * @deprecated
-   */
-  callbackUrl?: string;
-  /**
-   * Use `model.url` instead.
-   * @deprecated
-   */
-  customLlmUrl?: string;
-  /**
-   * Use `transcriber.keywords` instead.
-   * @deprecated
-   */
-  keywords?: string[];
-  /**
-   * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 100
-   */
-  name?: string;
-  /** These are the options for the assistant's transcriber. */
-  transcriber?: DeepgramTranscriber;
   /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
   /**
@@ -555,6 +477,7 @@ export interface UpdateAssistantDTO {
    *
    * If unspecified, it will wait for the user to speak.
    * @maxLength 1000
+   * @default "Hey there!"
    */
   firstMessage?: string;
   /**
@@ -614,30 +537,26 @@ export interface ImportTwilioPhoneNumberDTO {
 export interface Call {
   /** This is the type of call. */
   type?: "inboundPhoneCall" | "outboundPhoneCall" | "webCall";
-  /**
-   * Use `status` instead.
-   * @deprecated
-   */
-  twilioCallStatus?: string;
   /** This is the status of the call. */
   status?: "queued" | "ringing" | "in-progress" | "forwarding" | "ended";
   /** This is the explanation for how the call ended. */
   endedReason?:
-    | "assistant-ended"
+    | "assistant-ended-call"
     | "assistant-error"
-    | "assistant-join-timeout"
-    | "busy"
-    | "canceled"
-    | "customer-ended"
-    | "forwarded"
-    | "max-duration-timeout"
-    | "no-answer"
+    | "assistant-forwarded-call"
+    | "assistant-join-timed-out"
+    | "assistant-not-found"
+    | "manually-canceled"
+    | "customer-busy"
+    | "customer-ended-call"
+    | "customer-did-not-answer"
+    | "db-error"
+    | "exceeded-max-duration"
     | "no-server-available"
     | "server-shutdown"
-    | "silence-timeout"
-    | "twilio-call-error"
-    | "twilio-websocket-close"
-    | "twilio-websocket-error"
+    | "silence-timed-out"
+    | "twilio-failed-to-connect-call"
+    | "twilio-closed-websocket"
     | "unknown-error"
     | "voicemail";
   /** This is the unique identifier for the call. */
@@ -715,11 +634,6 @@ export interface Call {
 }
 
 export interface CreateOutboundCallDTO {
-  /**
-   * Use `customer` instead.
-   * @deprecated
-   */
-  customerPhoneNumber?: string;
   /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
@@ -755,6 +669,111 @@ export interface CreateWebCallDTO {
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
   assistant?: CreateAssistantDTO;
+}
+
+export interface CreateTwilioCredentialDTO {
+  provider: "twilio";
+  /** This is hidden in the API responses. */
+  authToken: string;
+  accountSid: string;
+}
+
+export interface CreateDeepgramCredentialDTO {
+  provider: "deepgram";
+  /** This is hidden in the API responses. */
+  apiKey: string;
+}
+
+export interface CreateAzureCredentialDTO {
+  provider: "azure-openai";
+  /** This is hidden in the API responses. */
+  openAIKey: string;
+  openAIEndpoint: string;
+}
+
+export interface CreateElevenLabsCredentialDTO {
+  provider: "11labs";
+  /** This is hidden in the API responses. */
+  apiKey: string;
+}
+
+export interface CreatePlayHTCredentialDTO {
+  provider: "playht";
+  /** This is hidden in the API responses. */
+  apiKey: string;
+  userId: string;
+}
+
+export interface CreateRimeAICredentialDTO {
+  provider: "rimeai";
+  /** This is hidden in the API responses. */
+  apiKey: string;
+}
+
+export interface UpdateTwilioCredentialDTO {
+  provider: "twilio";
+  /** This is hidden in the API responses. */
+  authToken: string;
+  accountSid: string;
+}
+
+export interface UpdateDeepgramCredentialDTO {
+  provider: "deepgram";
+  /** This is hidden in the API responses. */
+  apiKey: string;
+}
+
+export interface UpdateAzureCredentialDTO {
+  provider: "azure-openai";
+  /** This is hidden in the API responses. */
+  openAIKey: string;
+  openAIEndpoint: string;
+}
+
+export interface UpdateElevenLabsCredentialDTO {
+  provider: "11labs";
+  /** This is hidden in the API responses. */
+  apiKey: string;
+}
+
+export interface UpdatePlayHTCredentialDTO {
+  provider: "playht";
+  /** This is hidden in the API responses. */
+  apiKey: string;
+  userId: string;
+}
+
+export interface UpdateRimeAICredentialDTO {
+  provider: "rimeai";
+  /** This is hidden in the API responses. */
+  apiKey: string;
+}
+
+export interface Credential {
+  /** This is hidden in the API responses. */
+  authToken?: string;
+  /** This is hidden in the API responses. */
+  apiKey?: string;
+  /** This is hidden in the API responses. */
+  openAIKey?: string;
+  provider: "twilio" | "deepgram" | "azure-openai" | "11labs" | "playht" | "rimeai";
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  accountSid?: string;
+  openAIEndpoint?: string;
+  userId?: string;
 }
 
 export interface BuyPhoneNumberDTO {
@@ -1233,6 +1252,144 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         ...params,
       }),
   };
+  credential = {
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerCreate
+     * @summary Create Credential
+     * @request POST:/credential
+     * @secure
+     */
+    credentialControllerCreate: (
+      data:
+        | ({
+            provider: "twilio";
+          } & CreateTwilioCredentialDTO)
+        | ({
+            provider: "deepgram";
+          } & CreateDeepgramCredentialDTO)
+        | ({
+            provider: "azure-openai";
+          } & CreateAzureCredentialDTO)
+        | ({
+            provider: "11labs";
+          } & CreateElevenLabsCredentialDTO)
+        | ({
+            provider: "playht";
+          } & CreatePlayHTCredentialDTO)
+        | ({
+            provider: "rimeai";
+          } & CreateRimeAICredentialDTO),
+      params: RequestParams = {},
+    ) =>
+      this.request<Credential, any>({
+        path: `/credential`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerFindAll
+     * @summary List Credentials
+     * @request GET:/credential
+     * @secure
+     */
+    credentialControllerFindAll: (params: RequestParams = {}) =>
+      this.request<Credential[], any>({
+        path: `/credential`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerFindOne
+     * @summary Get Credential
+     * @request GET:/credential/{id}
+     * @secure
+     */
+    credentialControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Credential, any>({
+        path: `/credential/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerUpdate
+     * @summary Update Credential
+     * @request PUT:/credential/{id}
+     * @secure
+     */
+    credentialControllerUpdate: (
+      id: string,
+      data:
+        | ({
+            provider: "twilio";
+          } & UpdateTwilioCredentialDTO)
+        | ({
+            provider: "deepgram";
+          } & UpdateDeepgramCredentialDTO)
+        | ({
+            provider: "azure-openai";
+          } & UpdateAzureCredentialDTO)
+        | ({
+            provider: "11labs";
+          } & UpdateElevenLabsCredentialDTO)
+        | ({
+            provider: "playht";
+          } & UpdatePlayHTCredentialDTO)
+        | ({
+            provider: "rimeai";
+          } & UpdateRimeAICredentialDTO),
+      params: RequestParams = {},
+    ) =>
+      this.request<Credential, any>({
+        path: `/credential/${id}`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerRemove
+     * @summary Delete Credential
+     * @request DELETE:/credential/{id}
+     * @secure
+     */
+    credentialControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Credential, any>({
+        path: `/credential/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+  };
   phoneNumber = {
     /**
      * No description
@@ -1340,10 +1497,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     phoneNumberControllerRemove: (id: string, params: RequestParams = {}) =>
-      this.request<void, any>({
+      this.request<PhoneNumber, any>({
         path: `/phone-number/${id}`,
         method: "DELETE",
         secure: true,
+        format: "json",
         ...params,
       }),
   };
