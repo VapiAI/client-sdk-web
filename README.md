@@ -72,6 +72,11 @@ vapi.on('volume-level', (volume) => {
   console.log(`Assistant volume level: ${volume}`);
 });
 
+// Function calls and transcripts will be sent via messages
+vapi.on('message', (message) => {
+  console.log(message);
+});
+
 vapi.on('error', (e) => {
   console.error(e)
 });

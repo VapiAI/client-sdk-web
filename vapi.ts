@@ -2,6 +2,7 @@ import { Call, CreateAssistantDTO } from "./api";
 import DailyIframe, {
   DailyCall,
   DailyEventObjectActiveSpeakerChange,
+  DailyEventObjectAppMessage,
   DailyEventObjectParticipant,
   DailyEventObjectRemoteParticipantsAudioLevel,
 } from "@daily-co/daily-js";
@@ -47,13 +48,16 @@ type VapiEventNames =
   | "volume-level"
   | "speech-start"
   | "speech-end"
+  | "message"
   | "error";
+
 type VapiEventListeners = {
   "call-end": () => void;
   "call-start": () => void;
   "volume-level": (volume: number) => void;
   "speech-start": () => void;
   "speech-end": () => void;
+  message: (message: any) => void;
   error: (error: any) => void;
 };
 
@@ -170,6 +174,7 @@ export default class Vapi extends VapiEventEmitter {
       this.call.on("remote-participants-audio-level", (e) =>
         this.handleRemoteParticipantsAudioLevel(e)
       );
+      this.call.on("app-message", (e) => this.onAppMessage(e));
 
       this.call.updateInputSettings({
         audio: {
@@ -185,6 +190,16 @@ export default class Vapi extends VapiEventEmitter {
       this.emit("error", e);
       this.cleanup();
       return null;
+    }
+  }
+
+  private onAppMessage(e?: DailyEventObjectAppMessage) {
+    if (!e) return;
+    try {
+      const parsedMessage = JSON.parse(e.data);
+      this.emit("message", parsedMessage);
+    } catch (e) {
+      console.error(e);
     }
   }
 
