@@ -9,15 +9,15 @@
  * ---------------------------------------------------------------
  */
 
-export interface BetaVoice {
+export interface DeepgramVoice {
   /**
    * This is the voice provider that will be used.
    *
-   * Pro Voices: `11labs`, `playht`
+   * Pro Voices: `11labs`, `playht`, `openai`
    *
-   * Basic Voices: `rimeai`, `beta`
+   * Basic Voices: `rimeai`, `deepgram`
    */
-  provider: "beta";
+  provider: "deepgram";
   /** This is the provider-specific ID that will be used. */
   voiceId: string;
 }
@@ -63,9 +63,17 @@ export interface ElevenLabsVoice {
    *
    * Pro Voices: `11labs`, `playht`
    *
-   * Basic Voices: `rimeai`, `beta`
+   * Basic Voices: `rimeai`, `deepgram`
    */
   provider: "11labs";
+  /** Defines the stability for voice settings. */
+  stability?: number;
+  /** Defines the similarity boost for voice settings. */
+  similarityBoost?: number;
+  /** Defines the style for voice settings. */
+  style?: boolean;
+  /** Defines the use speaker boost for voice settings. */
+  useSpeakerBoost?: boolean;
   /** This is the provider-specific ID that will be used. */
   voiceId: string;
 }
@@ -129,11 +137,43 @@ export interface PlayHTVoice {
   /**
    * This is the voice provider that will be used.
    *
-   * Pro Voices: `11labs`, `playht`
+   * Pro Voices: `11labs`, `playht`, `openai`
    *
-   * Basic Voices: `rimeai`, `beta`
+   * Basic Voices: `rimeai`, `deepgram`
    */
   provider: "playht";
+  /**
+   * This is the speed multiplier that will be used.
+   * @min 0
+   * @max 5
+   */
+  speed?: number;
+  /**
+   * A floating point number between 0, inclusive, and 2, inclusive. If equal to null or not provided, the model's default temperature will be used. The temperature parameter controls variance. Lower temperatures result in more predictable results, higher temperatures allow each run to vary more, so the voice may sound less like the baseline voice.
+   * @min 0.1
+   * @max 2
+   */
+  temperature?: number;
+  /** An emotion to be applied to the speech. */
+  emotion?: "female_happy" | "female_sad" | "female_angry" | "female_fearful" | "female_disgust" | "female_surprised";
+  /**
+   * A number between 1 and 6. Use lower numbers to reduce how unique your chosen voice will be compared to other voices.
+   * @min 1
+   * @max 6
+   */
+  voiceGuidance?: number;
+  /**
+   * A number between 1 and 30. Use lower numbers to to reduce how strong your chosen emotion will be. Higher numbers will create a very emotional performance.
+   * @min 1
+   * @max 30
+   */
+  styleGuidance?: number;
+  /**
+   * A number between 1 and 2. This number influences how closely the generated speech adheres to the input text. Use lower values to create more fluid speech, but with a higher chance of deviating from the input text. Higher numbers will make the generated speech more accurate to the input text, ensuring that the words spoken align closely with the provided text.
+   * @min 1
+   * @max 2
+   */
+  textGuidance?: number;
   /** This is the provider-specific ID that will be used. */
   voiceId: string;
 }
@@ -142,11 +182,35 @@ export interface RimeAIVoice {
   /**
    * This is the voice provider that will be used.
    *
-   * Pro Voices: `11labs`, `playht`
+   * Pro Voices: `11labs`, `playht`, `openai`
    *
-   * Basic Voices: `rimeai`, `beta`
+   * Basic Voices: `rimeai`, `deepgram`
    */
   provider: "rimeai";
+  /**
+   * This is the speed multiplier that will be used.
+   * @min 0
+   */
+  speed?: number;
+  /** This is the provider-specific ID that will be used. */
+  voiceId: string;
+}
+
+export interface OpenAIVoice {
+  /**
+   * This is the voice provider that will be used.
+   *
+   * Pro Voices: `11labs`, `playht`, `openai`
+   *
+   * Basic Voices: `rimeai`, `deepgram`
+   */
+  provider: "openai";
+  /**
+   * This is the speed multiplier that will be used.
+   * @min 0.25
+   * @max 4
+   */
+  speed?: number;
   /** This is the provider-specific ID that will be used. */
   voiceId: string;
 }
@@ -160,7 +224,7 @@ export interface CreateAssistantDTO {
   /** These are the options for the assistant's transcriber. */
   transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
-  model?: "0" | "1" | "2" | OpenAIModel | CustomModel;
+  model?: "gpt-4" | "gpt-3.5-turbo" | "custom" | OpenAIModel | CustomModel;
   /**
    * These are the options for the assistant's voice.
    * @default "jennifer-playht"
@@ -198,18 +262,24 @@ export interface CreateAssistantDTO {
     | "daphne-rimeai"
     | "aurora-rimeai"
     | "nova-rimeai"
-    | "apollo-beta"
-    | "orion-beta"
-    | "aurora-beta"
-    | "asteria-beta"
-    | "stella-beta"
-    | "artemis-beta"
-    | "andromeda-beta"
-    | "atlas-beta"
+    | "aurora-deepgram"
+    | "asteria-deepgram"
+    | "artemis-deepgram"
+    | "andromeda-deepgram"
+    | "stella-deepgram"
+    | "orion-deepgram"
+    | "atlas-deepgram"
+    | "alloy-openai"
+    | "echo-openai"
+    | "fable-openai"
+    | "onyx-openai"
+    | "nova-openai"
+    | "shimmer-openai"
     | ElevenLabsVoice
     | PlayHTVoice
     | RimeAIVoice
-    | BetaVoice;
+    | DeepgramVoice
+    | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
@@ -262,6 +332,8 @@ export interface CreateAssistantDTO {
   endCallFunctionEnabled?: boolean;
   /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
+  /** This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients. */
+  liveTranscriptsEnabled?: boolean;
 }
 
 export interface Assistant {
@@ -273,7 +345,7 @@ export interface Assistant {
   /** These are the options for the assistant's transcriber. */
   transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
-  model?: "0" | "1" | "2" | OpenAIModel | CustomModel;
+  model?: "gpt-4" | "gpt-3.5-turbo" | "custom" | OpenAIModel | CustomModel;
   /**
    * These are the options for the assistant's voice.
    * @default "jennifer-playht"
@@ -311,18 +383,24 @@ export interface Assistant {
     | "daphne-rimeai"
     | "aurora-rimeai"
     | "nova-rimeai"
-    | "apollo-beta"
-    | "orion-beta"
-    | "aurora-beta"
-    | "asteria-beta"
-    | "stella-beta"
-    | "artemis-beta"
-    | "andromeda-beta"
-    | "atlas-beta"
+    | "aurora-deepgram"
+    | "asteria-deepgram"
+    | "artemis-deepgram"
+    | "andromeda-deepgram"
+    | "stella-deepgram"
+    | "orion-deepgram"
+    | "atlas-deepgram"
+    | "alloy-openai"
+    | "echo-openai"
+    | "fable-openai"
+    | "onyx-openai"
+    | "nova-openai"
+    | "shimmer-openai"
     | ElevenLabsVoice
     | PlayHTVoice
     | RimeAIVoice
-    | BetaVoice;
+    | DeepgramVoice
+    | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
@@ -375,6 +453,8 @@ export interface Assistant {
   endCallFunctionEnabled?: boolean;
   /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
+  /** This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients. */
+  liveTranscriptsEnabled?: boolean;
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -400,7 +480,7 @@ export interface UpdateAssistantDTO {
   /** These are the options for the assistant's transcriber. */
   transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
-  model?: "0" | "1" | "2" | OpenAIModel | CustomModel;
+  model?: "gpt-4" | "gpt-3.5-turbo" | "custom" | OpenAIModel | CustomModel;
   /**
    * These are the options for the assistant's voice.
    * @default "jennifer-playht"
@@ -438,18 +518,24 @@ export interface UpdateAssistantDTO {
     | "daphne-rimeai"
     | "aurora-rimeai"
     | "nova-rimeai"
-    | "apollo-beta"
-    | "orion-beta"
-    | "aurora-beta"
-    | "asteria-beta"
-    | "stella-beta"
-    | "artemis-beta"
-    | "andromeda-beta"
-    | "atlas-beta"
+    | "aurora-deepgram"
+    | "asteria-deepgram"
+    | "artemis-deepgram"
+    | "andromeda-deepgram"
+    | "stella-deepgram"
+    | "orion-deepgram"
+    | "atlas-deepgram"
+    | "alloy-openai"
+    | "echo-openai"
+    | "fable-openai"
+    | "onyx-openai"
+    | "nova-openai"
+    | "shimmer-openai"
     | ElevenLabsVoice
     | PlayHTVoice
     | RimeAIVoice
-    | BetaVoice;
+    | DeepgramVoice
+    | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
@@ -502,6 +588,8 @@ export interface UpdateAssistantDTO {
   endCallFunctionEnabled?: boolean;
   /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
   fillersEnabled?: boolean;
+  /** This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients. */
+  liveTranscriptsEnabled?: boolean;
 }
 
 export interface CreateCustomerDTO {
@@ -591,6 +679,8 @@ export interface Call {
   recordingUrl?: string;
   /** This is the summary of the call. */
   summary?: string;
+  /** These are the messages that were spoken during the call. */
+  messages?: object[];
   /**
    * This is the callSid of the phone call.
    *
@@ -671,92 +761,10 @@ export interface CreateWebCallDTO {
   assistant?: CreateAssistantDTO;
 }
 
-export interface CreateTwilioCredentialDTO {
+export interface TwilioCredential {
   provider: "twilio";
-  /** This is hidden in the API responses. */
+  /** This is not returned in the API. */
   authToken: string;
-  accountSid: string;
-}
-
-export interface CreateDeepgramCredentialDTO {
-  provider: "deepgram";
-  /** This is hidden in the API responses. */
-  apiKey: string;
-}
-
-export interface CreateAzureCredentialDTO {
-  provider: "azure-openai";
-  /** This is hidden in the API responses. */
-  openAIKey: string;
-  openAIEndpoint: string;
-}
-
-export interface CreateElevenLabsCredentialDTO {
-  provider: "11labs";
-  /** This is hidden in the API responses. */
-  apiKey: string;
-}
-
-export interface CreatePlayHTCredentialDTO {
-  provider: "playht";
-  /** This is hidden in the API responses. */
-  apiKey: string;
-  userId: string;
-}
-
-export interface CreateRimeAICredentialDTO {
-  provider: "rimeai";
-  /** This is hidden in the API responses. */
-  apiKey: string;
-}
-
-export interface UpdateTwilioCredentialDTO {
-  provider: "twilio";
-  /** This is hidden in the API responses. */
-  authToken: string;
-  accountSid: string;
-}
-
-export interface UpdateDeepgramCredentialDTO {
-  provider: "deepgram";
-  /** This is hidden in the API responses. */
-  apiKey: string;
-}
-
-export interface UpdateAzureCredentialDTO {
-  provider: "azure-openai";
-  /** This is hidden in the API responses. */
-  openAIKey: string;
-  openAIEndpoint: string;
-}
-
-export interface UpdateElevenLabsCredentialDTO {
-  provider: "11labs";
-  /** This is hidden in the API responses. */
-  apiKey: string;
-}
-
-export interface UpdatePlayHTCredentialDTO {
-  provider: "playht";
-  /** This is hidden in the API responses. */
-  apiKey: string;
-  userId: string;
-}
-
-export interface UpdateRimeAICredentialDTO {
-  provider: "rimeai";
-  /** This is hidden in the API responses. */
-  apiKey: string;
-}
-
-export interface Credential {
-  /** This is hidden in the API responses. */
-  authToken?: string;
-  /** This is hidden in the API responses. */
-  apiKey?: string;
-  /** This is hidden in the API responses. */
-  openAIKey?: string;
-  provider: "twilio" | "deepgram" | "azure-openai" | "11labs" | "playht" | "rimeai";
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -771,9 +779,187 @@ export interface Credential {
    * @format date-time
    */
   updatedAt: string;
-  accountSid?: string;
-  openAIEndpoint?: string;
-  userId?: string;
+  accountSid: string;
+}
+
+export interface DeepgramCredential {
+  provider: "deepgram";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface AzureOpenAICredential {
+  provider: "azure-openai";
+  /** This is not returned in the API. */
+  openAIKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  openAIEndpoint: string;
+}
+
+export interface ElevenLabsCredential {
+  provider: "11labs";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface PlayHTCredential {
+  provider: "playht";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  userId: string;
+}
+
+export interface RimeAICredential {
+  provider: "rimeai";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface CreateTwilioCredentialDTO {
+  provider: "twilio";
+  /** This is not returned in the API. */
+  authToken: string;
+  accountSid: string;
+}
+
+export interface CreateDeepgramCredentialDTO {
+  provider: "deepgram";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateAzureOpenAICredentialDTO {
+  provider: "azure-openai";
+  /** This is not returned in the API. */
+  openAIKey: string;
+  openAIEndpoint: string;
+}
+
+export interface CreateElevenLabsCredentialDTO {
+  provider: "11labs";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreatePlayHTCredentialDTO {
+  provider: "playht";
+  /** This is not returned in the API. */
+  apiKey: string;
+  userId: string;
+}
+
+export interface CreateRimeAICredentialDTO {
+  provider: "rimeai";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateTwilioCredentialDTO {
+  provider: "twilio";
+  /** This is not returned in the API. */
+  authToken: string;
+  accountSid: string;
+}
+
+export interface UpdateDeepgramCredentialDTO {
+  provider: "deepgram";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateAzureOpenAICredentialDTO {
+  provider: "azure-openai";
+  /** This is not returned in the API. */
+  openAIKey: string;
+  openAIEndpoint: string;
+}
+
+export interface UpdateElevenLabsCredentialDTO {
+  provider: "11labs";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdatePlayHTCredentialDTO {
+  provider: "playht";
+  /** This is not returned in the API. */
+  apiKey: string;
+  userId: string;
+}
+
+export interface UpdateRimeAICredentialDTO {
+  provider: "rimeai";
+  /** This is not returned in the API. */
+  apiKey: string;
 }
 
 export interface BuyPhoneNumberDTO {
@@ -1272,7 +1458,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & CreateDeepgramCredentialDTO)
         | ({
             provider: "azure-openai";
-          } & CreateAzureCredentialDTO)
+          } & CreateAzureOpenAICredentialDTO)
         | ({
             provider: "11labs";
           } & CreateElevenLabsCredentialDTO)
@@ -1284,7 +1470,27 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & CreateRimeAICredentialDTO),
       params: RequestParams = {},
     ) =>
-      this.request<Credential, any>({
+      this.request<
+        | ({
+            provider: "twilio";
+          } & TwilioCredential)
+        | ({
+            provider: "deepgram";
+          } & DeepgramCredential)
+        | ({
+            provider: "azure-openai";
+          } & AzureOpenAICredential)
+        | ({
+            provider: "11labs";
+          } & ElevenLabsCredential)
+        | ({
+            provider: "playht";
+          } & PlayHTCredential)
+        | ({
+            provider: "rimeai";
+          } & RimeAICredential),
+        any
+      >({
         path: `/credential`,
         method: "POST",
         body: data,
@@ -1304,7 +1510,29 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     credentialControllerFindAll: (params: RequestParams = {}) =>
-      this.request<Credential[], any>({
+      this.request<
+        (
+          | ({
+              provider: "twilio";
+            } & TwilioCredential)
+          | ({
+              provider: "deepgram";
+            } & DeepgramCredential)
+          | ({
+              provider: "azure-openai";
+            } & AzureOpenAICredential)
+          | ({
+              provider: "11labs";
+            } & ElevenLabsCredential)
+          | ({
+              provider: "playht";
+            } & PlayHTCredential)
+          | ({
+              provider: "rimeai";
+            } & RimeAICredential)
+        )[],
+        any
+      >({
         path: `/credential`,
         method: "GET",
         secure: true,
@@ -1322,7 +1550,27 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     credentialControllerFindOne: (id: string, params: RequestParams = {}) =>
-      this.request<Credential, any>({
+      this.request<
+        | ({
+            provider: "twilio";
+          } & TwilioCredential)
+        | ({
+            provider: "deepgram";
+          } & DeepgramCredential)
+        | ({
+            provider: "azure-openai";
+          } & AzureOpenAICredential)
+        | ({
+            provider: "11labs";
+          } & ElevenLabsCredential)
+        | ({
+            provider: "playht";
+          } & PlayHTCredential)
+        | ({
+            provider: "rimeai";
+          } & RimeAICredential),
+        any
+      >({
         path: `/credential/${id}`,
         method: "GET",
         secure: true,
@@ -1350,7 +1598,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & UpdateDeepgramCredentialDTO)
         | ({
             provider: "azure-openai";
-          } & UpdateAzureCredentialDTO)
+          } & UpdateAzureOpenAICredentialDTO)
         | ({
             provider: "11labs";
           } & UpdateElevenLabsCredentialDTO)
@@ -1362,7 +1610,27 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & UpdateRimeAICredentialDTO),
       params: RequestParams = {},
     ) =>
-      this.request<Credential, any>({
+      this.request<
+        | ({
+            provider: "twilio";
+          } & TwilioCredential)
+        | ({
+            provider: "deepgram";
+          } & DeepgramCredential)
+        | ({
+            provider: "azure-openai";
+          } & AzureOpenAICredential)
+        | ({
+            provider: "11labs";
+          } & ElevenLabsCredential)
+        | ({
+            provider: "playht";
+          } & PlayHTCredential)
+        | ({
+            provider: "rimeai";
+          } & RimeAICredential),
+        any
+      >({
         path: `/credential/${id}`,
         method: "PUT",
         body: data,
@@ -1382,7 +1650,27 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     credentialControllerRemove: (id: string, params: RequestParams = {}) =>
-      this.request<Credential, any>({
+      this.request<
+        | ({
+            provider: "twilio";
+          } & TwilioCredential)
+        | ({
+            provider: "deepgram";
+          } & DeepgramCredential)
+        | ({
+            provider: "azure-openai";
+          } & AzureOpenAICredential)
+        | ({
+            provider: "11labs";
+          } & ElevenLabsCredential)
+        | ({
+            provider: "playht";
+          } & PlayHTCredential)
+        | ({
+            provider: "rimeai";
+          } & RimeAICredential),
+        any
+      >({
         path: `/credential/${id}`,
         method: "DELETE",
         secure: true,
