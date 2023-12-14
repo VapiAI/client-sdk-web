@@ -217,7 +217,9 @@ export default class Vapi extends VapiEventEmitter {
     this.emit("volume-level", Math.min(1, speechLevel / 0.15));
 
     const isSpeaking = speechLevel > this.averageSpeechLevel * 1.5;
-    if (!isSpeaking) return;
+    const hasStoppedSpeaking = speechLevel < this.averageSpeechLevel * 0.5;
+
+    if (!isSpeaking && !hasStoppedSpeaking) return;
 
     if (this.speakingTimeout) {
       clearTimeout(this.speakingTimeout);
