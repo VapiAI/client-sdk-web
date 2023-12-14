@@ -215,7 +215,7 @@ export default class Vapi extends VapiEventEmitter {
     );
     this.averageSpeechLevel =
       this.averageSpeechLevel * 0.95 + speechLevel * 0.05;
-    this.speechLevel = this.speechLevel * 0.8 + speechLevel * 0.2;
+    this.speechLevel = this.speechLevel * 0.9 + speechLevel * 0.1;
 
     this.emit("volume-level", Math.min(1, speechLevel / 0.15));
 
