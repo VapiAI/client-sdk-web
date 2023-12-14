@@ -100,8 +100,6 @@ export default class Vapi extends VapiEventEmitter {
   private call: DailyCall | null = null;
   private speakingTimeout: NodeJS.Timeout | null = null;
   private averageSpeechLevel: number = 0;
-  private speechLevel: number = 0;
-  private isSpeaking: boolean = false;
 
   constructor(apiToken: string, apiBaseUrl?: string) {
     super();
@@ -215,24 +213,25 @@ export default class Vapi extends VapiEventEmitter {
     );
     this.averageSpeechLevel =
       this.averageSpeechLevel * 0.95 + speechLevel * 0.05;
-    this.speechLevel = this.speechLevel * 0.92 + speechLevel * 0.08;
 
     this.emit("volume-level", Math.min(1, speechLevel / 0.15));
 
-    const hasStartedSpeaking = this.speechLevel > this.averageSpeechLevel * 1.5;
-    const hasStoppedSpeaking = this.speechLevel < this.averageSpeechLevel * 0.5;
+    const isSpeaking = speechLevel > this.averageSpeechLevel * 1.5;
+    const hasStoppedSpeaking = speechLevel < this.averageSpeechLevel * 0.5;
 
-    if (!this.isSpeaking && hasStartedSpeaking) {
-      this.isSpeaking = true;
+    if (!isSpeaking && !hasStoppedSpeaking) return;
+
+    if (this.speakingTimeout) {
+      clearTimeout(this.speakingTimeout);
+      this.speakingTimeout = null;
+    } else {
       this.emit("speech-start");
-      return;
     }
 
-    if (this.isSpeaking && hasStoppedSpeaking) {
-      this.isSpeaking = false;
+    this.speakingTimeout = setTimeout(() => {
       this.emit("speech-end");
-      return;
-    }
+      this.speakingTimeout = null;
+    }, 1000);
   }
 
   stop(): void {
