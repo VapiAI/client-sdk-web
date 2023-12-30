@@ -15,24 +15,132 @@ export interface DeepgramVoice {
    *
    * Pro Voices: `11labs`, `playht`, `openai`
    *
-   * Basic Voices: `rimeai`, `deepgram`
+   * Basic Voices: `rime-ai`, `deepgram`
    */
   provider: "deepgram";
   /** This is the provider-specific ID that will be used. */
-  voiceId: string;
+  voiceId: "aurora" | "asteria" | "artemis" | "andromeda" | "stella" | "orion" | "atlas" | string;
 }
 
-export interface CustomModel {
+export interface OpenAIFunction {
   /**
-   * This is the provider that will be used for the model. Currently, only OpenAI and Custom LLM URLs are supported.
+   * This is the the name of the function to be called.
    *
-   * If you have your own LLM, you can use the URL of your LLM endpoint here.
+   * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
+   * @maxLength 64
    */
-  provider: "custom";
-  /** These is the URL we'll POST during the conversation. */
-  url: string;
+  name: string;
+  /** Setting async: true will cause the function to be called asynchronously, meaning that the Assistant will not wait for the function to return before continuing. */
+  async?: boolean;
+  /** This is the description of what the function does, used by the AI to choose when and how to call the function. */
+  description?: string;
+  /**
+   * These are the parameters the functions accepts, described as a JSON Schema object.
+   *
+   * See the [OpenAI guide](https://platform.openai.com/docs/guides/gpt/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema) for documentation about the format.
+   *
+   * To describe a function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
+   */
+  parameters: object;
+}
+
+export interface TogetherAIModel {
+  provider: "together-ai";
+  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  model: string;
   /** This sets the objective and understanding for the assistant. */
   systemPrompt?: string;
+  /**
+   * This is the temperature that will be used for calls. Default is 1.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /** These are the functions that the assistant can execute during the call. */
+  functions?: OpenAIFunction[];
+}
+
+export interface AnyscaleModel {
+  provider: "anyscale";
+  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  model: string;
+  /** This sets the objective and understanding for the assistant. */
+  systemPrompt?: string;
+  /**
+   * This is the temperature that will be used for calls. Default is 1.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /** These are the functions that the assistant can execute during the call. */
+  functions?: OpenAIFunction[];
+}
+
+export interface OpenRouterModel {
+  provider: "openrouter";
+  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  model: string;
+  /** This sets the objective and understanding for the assistant. */
+  systemPrompt?: string;
+  /**
+   * This is the temperature that will be used for calls. Default is 1.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /** These are the functions that the assistant can execute during the call. */
+  functions?: OpenAIFunction[];
+}
+
+export interface PerplexityAIModel {
+  provider: "perplexity-ai";
+  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  model: string;
+  /** This sets the objective and understanding for the assistant. */
+  systemPrompt?: string;
+  /**
+   * This is the temperature that will be used for calls. Default is 1.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /** These are the functions that the assistant can execute during the call. */
+  functions?: OpenAIFunction[];
+}
+
+export interface DeepInfraModel {
+  provider: "deepinfra";
+  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  model: string;
+  /** This sets the objective and understanding for the assistant. */
+  systemPrompt?: string;
+  /**
+   * This is the temperature that will be used for calls. Default is 1.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /** These are the functions that the assistant can execute during the call. */
+  functions?: OpenAIFunction[];
+}
+
+export interface CustomLLMModel {
+  /** This is the provider that will be used for the model. Any service, including your own server, that is compatible with the OpenAI API can be used. */
+  provider: "custom-llm";
+  /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
+  url: string;
+  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  model: string;
+  /** This sets the objective and understanding for the assistant. */
+  systemPrompt?: string;
+  /**
+   * This is the temperature that will be used for calls. Default is 1.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /** These are the functions that the assistant can execute during the call. */
+  functions?: OpenAIFunction[];
 }
 
 export interface DeepgramTranscriber {
@@ -63,68 +171,60 @@ export interface ElevenLabsVoice {
    *
    * Pro Voices: `11labs`, `playht`
    *
-   * Basic Voices: `rimeai`, `deepgram`
+   * Basic Voices: `rime-ai`, `deepgram`
    */
   provider: "11labs";
-  /** Defines the stability for voice settings. */
+  /** This is the provider-specific ID that will be used. Ensure the Voice is present in your 11Labs Voice Library. */
+  voiceId:
+    | "burt"
+    | "andrea"
+    | "phillip"
+    | "steve"
+    | "joseph"
+    | "myra"
+    | "paula"
+    | "ryan"
+    | "drew"
+    | "paul"
+    | "mrb"
+    | "matilda"
+    | "mark"
+    | string;
+  /**
+   * Defines the stability for voice settings.
+   * @min 0
+   * @max 1
+   * @default null
+   */
   stability?: number;
-  /** Defines the similarity boost for voice settings. */
+  /**
+   * Defines the similarity boost for voice settings.
+   * @min 0
+   * @max 1
+   * @default null
+   */
   similarityBoost?: number;
-  /** Defines the style for voice settings. */
+  /**
+   * Defines the style for voice settings.
+   * @default null
+   */
   style?: boolean;
-  /** Defines the use speaker boost for voice settings. */
+  /**
+   * Defines the use speaker boost for voice settings.
+   * @default null
+   */
   useSpeakerBoost?: boolean;
-  /** This is the provider-specific ID that will be used. */
-  voiceId: string;
-}
-
-export interface OpenAIFunctionParameterProperty {
-  type: "string" | "number" | "boolean";
-  enum?: string[];
-  description?: string;
-}
-
-export interface OpenAIFunctionParameters {
-  type: "object";
-  properties: Record<string, OpenAIFunctionParameterProperty>;
-  required?: string[];
-}
-
-export interface OpenAIFunction {
-  /**
-   * This is the the name of the function to be called.
-   *
-   * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
-   * @maxLength 64
-   */
-  name: string;
-  /** Setting async: true will cause the function to be called asynchronously, meaning that the Assistant will not wait for the function to return before continuing. */
-  async?: boolean;
-  /** This is the description of what the function does, used by the AI to choose when and how to call the function. */
-  description?: string;
-  /**
-   * These are the parameters the functions accepts, described as a JSON Schema object.
-   *
-   * See the [OpenAI guide](https://platform.openai.com/docs/guides/gpt/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema) for documentation about the format.
-   *
-   * To describe a function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
-   */
-  parameters: OpenAIFunctionParameters;
 }
 
 export interface OpenAIModel {
-  /**
-   * This is the provider that will be used for the model. Currently, only OpenAI and Custom LLM URLs are supported.
-   *
-   * If you have your own LLM, you can use the URL of your LLM endpoint here.
-   */
+  /** This is the provider that will be used for the model. */
   provider: "openai";
   /** This is the OpenAI model that will be used. */
   model: "gpt-4" | "gpt-3.5-turbo";
   /** This sets the objective and understanding for the assistant. */
   systemPrompt?: string;
   /**
-   * This is the temperature that will be used for OpenAI calls.
+   * This is the temperature that will be used for calls. Default is 1.
    * @min 0
    * @max 2
    */
@@ -139,43 +239,62 @@ export interface PlayHTVoice {
    *
    * Pro Voices: `11labs`, `playht`, `openai`
    *
-   * Basic Voices: `rimeai`, `deepgram`
+   * Basic Voices: `rime-ai`, `deepgram`
    */
   provider: "playht";
+  /** This is the provider-specific ID that will be used. */
+  voiceId:
+    | "jennifer"
+    | "melissa"
+    | "will"
+    | "chris"
+    | "matt"
+    | "jack"
+    | "ruby"
+    | "davis"
+    | "donna"
+    | "michael"
+    | string;
   /**
    * This is the speed multiplier that will be used.
    * @min 0
    * @max 5
+   * @default null
    */
   speed?: number;
   /**
    * A floating point number between 0, inclusive, and 2, inclusive. If equal to null or not provided, the model's default temperature will be used. The temperature parameter controls variance. Lower temperatures result in more predictable results, higher temperatures allow each run to vary more, so the voice may sound less like the baseline voice.
    * @min 0.1
    * @max 2
+   * @default null
    */
   temperature?: number;
-  /** An emotion to be applied to the speech. */
+  /**
+   * An emotion to be applied to the speech.
+   * @default null
+   */
   emotion?: "female_happy" | "female_sad" | "female_angry" | "female_fearful" | "female_disgust" | "female_surprised";
   /**
    * A number between 1 and 6. Use lower numbers to reduce how unique your chosen voice will be compared to other voices.
    * @min 1
    * @max 6
+   * @default null
    */
   voiceGuidance?: number;
   /**
    * A number between 1 and 30. Use lower numbers to to reduce how strong your chosen emotion will be. Higher numbers will create a very emotional performance.
    * @min 1
    * @max 30
+   * @default null
    */
   styleGuidance?: number;
   /**
    * A number between 1 and 2. This number influences how closely the generated speech adheres to the input text. Use lower values to create more fluid speech, but with a higher chance of deviating from the input text. Higher numbers will make the generated speech more accurate to the input text, ensuring that the words spoken align closely with the provided text.
    * @min 1
    * @max 2
+   * @default null
    */
   textGuidance?: number;
-  /** This is the provider-specific ID that will be used. */
-  voiceId: string;
 }
 
 export interface RimeAIVoice {
@@ -184,16 +303,28 @@ export interface RimeAIVoice {
    *
    * Pro Voices: `11labs`, `playht`, `openai`
    *
-   * Basic Voices: `rimeai`, `deepgram`
+   * Basic Voices: `rime-ai`, `deepgram`
    */
-  provider: "rimeai";
+  provider: "rime-ai";
+  /** This is the provider-specific ID that will be used. */
+  voiceId:
+    | "kai"
+    | "zion"
+    | "xavier"
+    | "marty"
+    | "hudson"
+    | "savannah"
+    | "colette"
+    | "daphne"
+    | "aurora"
+    | "nova"
+    | string;
   /**
    * This is the speed multiplier that will be used.
    * @min 0
+   * @default null
    */
   speed?: number;
-  /** This is the provider-specific ID that will be used. */
-  voiceId: string;
 }
 
 export interface OpenAIVoice {
@@ -202,87 +333,50 @@ export interface OpenAIVoice {
    *
    * Pro Voices: `11labs`, `playht`, `openai`
    *
-   * Basic Voices: `rimeai`, `deepgram`
+   * Basic Voices: `rime-ai`, `deepgram`
    */
   provider: "openai";
+  /** This is the provider-specific ID that will be used. */
+  voiceId: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" | string;
   /**
    * This is the speed multiplier that will be used.
    * @min 0.25
    * @max 4
+   * @default null
    */
   speed?: number;
-  /** This is the provider-specific ID that will be used. */
-  voiceId: string;
 }
 
 export interface CreateAssistantDTO {
   /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 100
+   * @default null
    */
   name?: string;
-  /** These are the options for the assistant's transcriber. */
+  /**
+   * These are the options for the assistant's transcriber.
+   * @default null
+   */
   transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
-  model?: "gpt-4" | "gpt-3.5-turbo" | "custom" | OpenAIModel | CustomModel;
+  model?:
+    | OpenAIModel
+    | TogetherAIModel
+    | AnyscaleModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | DeepInfraModel
+    | CustomLLMModel;
   /**
    * These are the options for the assistant's voice.
-   * @default "jennifer-playht"
+   * @default {"provider":"playht","voiceId":"jennifer"}
    */
-  voice?:
-    | "jennifer-playht"
-    | "melissa-playht"
-    | "will-playht"
-    | "chris-playht"
-    | "matt-playht"
-    | "jack-playht"
-    | "ruby-playht"
-    | "davis-playht"
-    | "donna-playht"
-    | "michael-playht"
-    | "burt-11labs"
-    | "andrea-11labs"
-    | "phillip-11labs"
-    | "steve-11labs"
-    | "joseph-11labs"
-    | "myra-11labs"
-    | "paula-11labs"
-    | "ryan-11labs"
-    | "drew-11labs"
-    | "paul-11labs"
-    | "mrb-11labs"
-    | "matilda-11labs"
-    | "kai-rimeai"
-    | "zion-rimeai"
-    | "xavier-rimeai"
-    | "marty-rimeai"
-    | "hudson-rimeai"
-    | "savannah-rimeai"
-    | "colette-rimeai"
-    | "daphne-rimeai"
-    | "aurora-rimeai"
-    | "nova-rimeai"
-    | "aurora-deepgram"
-    | "asteria-deepgram"
-    | "artemis-deepgram"
-    | "andromeda-deepgram"
-    | "stella-deepgram"
-    | "orion-deepgram"
-    | "atlas-deepgram"
-    | "alloy-openai"
-    | "echo-openai"
-    | "fable-openai"
-    | "onyx-openai"
-    | "nova-openai"
-    | "shimmer-openai"
-    | ElevenLabsVoice
-    | PlayHTVoice
-    | RimeAIVoice
-    | DeepgramVoice
-    | OpenAIVoice;
+  voice?: ElevenLabsVoice | PlayHTVoice | RimeAIVoice | DeepgramVoice | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
+   * @default null
    */
   language?:
     | "en"
@@ -303,7 +397,7 @@ export interface CreateAssistantDTO {
   /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
   /**
-   * This is the first message that the assistant will say.
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
    * If unspecified, it will wait for the user to speak.
    * @maxLength 1000
@@ -315,6 +409,7 @@ export interface CreateAssistantDTO {
    *
    * If unspecified, it will hang up.
    * @maxLength 1000
+   * @default null
    */
   voicemailMessage?: string;
   /**
@@ -322,88 +417,73 @@ export interface CreateAssistantDTO {
    *
    * If unspecified, it will hang up without saying anything.
    * @maxLength 400
+   * @default null
    */
   endCallMessage?: string;
-  /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
+  /**
+   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
+   * @default null
+   */
   interruptionsEnabled?: boolean;
-  /** This sets whether the assistant's calls are recorded. Defaults to true. */
+  /**
+   * This sets whether the assistant's calls are recorded. Defaults to true.
+   * @default null
+   */
   recordingEnabled?: boolean;
-  /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
+  /**
+   * This sets whether the assistant will be able to hang up the call. Defaults to false.
+   * @default null
+   */
   endCallFunctionEnabled?: boolean;
-  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
+  /**
+   * This sets whether the assistant will use fillers like Well..., Okay cool..., etc. This will modify your prompt slightly, which could result in differing completions. Defaults to false.
+   * @default null
+   */
   fillersEnabled?: boolean;
-  /** This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients. */
+  /**
+   * This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients.
+   * @default null
+   */
   liveTranscriptsEnabled?: boolean;
+  /**
+   * How many seconds of silence to wait before ending the call. Defaults to 30.
+   * @min 10
+   * @max 600
+   * @default null
+   */
+  silenceTimeoutSeconds?: number;
 }
 
 export interface Assistant {
   /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 100
+   * @default null
    */
   name?: string;
-  /** These are the options for the assistant's transcriber. */
+  /**
+   * These are the options for the assistant's transcriber.
+   * @default null
+   */
   transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
-  model?: "gpt-4" | "gpt-3.5-turbo" | "custom" | OpenAIModel | CustomModel;
+  model?:
+    | OpenAIModel
+    | TogetherAIModel
+    | AnyscaleModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | DeepInfraModel
+    | CustomLLMModel;
   /**
    * These are the options for the assistant's voice.
-   * @default "jennifer-playht"
+   * @default {"provider":"playht","voiceId":"jennifer"}
    */
-  voice?:
-    | "jennifer-playht"
-    | "melissa-playht"
-    | "will-playht"
-    | "chris-playht"
-    | "matt-playht"
-    | "jack-playht"
-    | "ruby-playht"
-    | "davis-playht"
-    | "donna-playht"
-    | "michael-playht"
-    | "burt-11labs"
-    | "andrea-11labs"
-    | "phillip-11labs"
-    | "steve-11labs"
-    | "joseph-11labs"
-    | "myra-11labs"
-    | "paula-11labs"
-    | "ryan-11labs"
-    | "drew-11labs"
-    | "paul-11labs"
-    | "mrb-11labs"
-    | "matilda-11labs"
-    | "kai-rimeai"
-    | "zion-rimeai"
-    | "xavier-rimeai"
-    | "marty-rimeai"
-    | "hudson-rimeai"
-    | "savannah-rimeai"
-    | "colette-rimeai"
-    | "daphne-rimeai"
-    | "aurora-rimeai"
-    | "nova-rimeai"
-    | "aurora-deepgram"
-    | "asteria-deepgram"
-    | "artemis-deepgram"
-    | "andromeda-deepgram"
-    | "stella-deepgram"
-    | "orion-deepgram"
-    | "atlas-deepgram"
-    | "alloy-openai"
-    | "echo-openai"
-    | "fable-openai"
-    | "onyx-openai"
-    | "nova-openai"
-    | "shimmer-openai"
-    | ElevenLabsVoice
-    | PlayHTVoice
-    | RimeAIVoice
-    | DeepgramVoice
-    | OpenAIVoice;
+  voice?: ElevenLabsVoice | PlayHTVoice | RimeAIVoice | DeepgramVoice | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
+   * @default null
    */
   language?:
     | "en"
@@ -424,7 +504,7 @@ export interface Assistant {
   /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
   /**
-   * This is the first message that the assistant will say.
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
    * If unspecified, it will wait for the user to speak.
    * @maxLength 1000
@@ -436,6 +516,7 @@ export interface Assistant {
    *
    * If unspecified, it will hang up.
    * @maxLength 1000
+   * @default null
    */
   voicemailMessage?: string;
   /**
@@ -443,18 +524,41 @@ export interface Assistant {
    *
    * If unspecified, it will hang up without saying anything.
    * @maxLength 400
+   * @default null
    */
   endCallMessage?: string;
-  /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
+  /**
+   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
+   * @default null
+   */
   interruptionsEnabled?: boolean;
-  /** This sets whether the assistant's calls are recorded. Defaults to true. */
+  /**
+   * This sets whether the assistant's calls are recorded. Defaults to true.
+   * @default null
+   */
   recordingEnabled?: boolean;
-  /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
+  /**
+   * This sets whether the assistant will be able to hang up the call. Defaults to false.
+   * @default null
+   */
   endCallFunctionEnabled?: boolean;
-  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
+  /**
+   * This sets whether the assistant will use fillers like Well..., Okay cool..., etc. This will modify your prompt slightly, which could result in differing completions. Defaults to false.
+   * @default null
+   */
   fillersEnabled?: boolean;
-  /** This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients. */
+  /**
+   * This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients.
+   * @default null
+   */
   liveTranscriptsEnabled?: boolean;
+  /**
+   * How many seconds of silence to wait before ending the call. Defaults to 30.
+   * @min 10
+   * @max 600
+   * @default null
+   */
+  silenceTimeoutSeconds?: number;
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -475,70 +579,32 @@ export interface UpdateAssistantDTO {
   /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 100
+   * @default null
    */
   name?: string;
-  /** These are the options for the assistant's transcriber. */
+  /**
+   * These are the options for the assistant's transcriber.
+   * @default null
+   */
   transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
-  model?: "gpt-4" | "gpt-3.5-turbo" | "custom" | OpenAIModel | CustomModel;
+  model?:
+    | OpenAIModel
+    | TogetherAIModel
+    | AnyscaleModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | DeepInfraModel
+    | CustomLLMModel;
   /**
    * These are the options for the assistant's voice.
-   * @default "jennifer-playht"
+   * @default {"provider":"playht","voiceId":"jennifer"}
    */
-  voice?:
-    | "jennifer-playht"
-    | "melissa-playht"
-    | "will-playht"
-    | "chris-playht"
-    | "matt-playht"
-    | "jack-playht"
-    | "ruby-playht"
-    | "davis-playht"
-    | "donna-playht"
-    | "michael-playht"
-    | "burt-11labs"
-    | "andrea-11labs"
-    | "phillip-11labs"
-    | "steve-11labs"
-    | "joseph-11labs"
-    | "myra-11labs"
-    | "paula-11labs"
-    | "ryan-11labs"
-    | "drew-11labs"
-    | "paul-11labs"
-    | "mrb-11labs"
-    | "matilda-11labs"
-    | "kai-rimeai"
-    | "zion-rimeai"
-    | "xavier-rimeai"
-    | "marty-rimeai"
-    | "hudson-rimeai"
-    | "savannah-rimeai"
-    | "colette-rimeai"
-    | "daphne-rimeai"
-    | "aurora-rimeai"
-    | "nova-rimeai"
-    | "aurora-deepgram"
-    | "asteria-deepgram"
-    | "artemis-deepgram"
-    | "andromeda-deepgram"
-    | "stella-deepgram"
-    | "orion-deepgram"
-    | "atlas-deepgram"
-    | "alloy-openai"
-    | "echo-openai"
-    | "fable-openai"
-    | "onyx-openai"
-    | "nova-openai"
-    | "shimmer-openai"
-    | ElevenLabsVoice
-    | PlayHTVoice
-    | RimeAIVoice
-    | DeepgramVoice
-    | OpenAIVoice;
+  voice?: ElevenLabsVoice | PlayHTVoice | RimeAIVoice | DeepgramVoice | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
+   * @default null
    */
   language?:
     | "en"
@@ -559,7 +625,7 @@ export interface UpdateAssistantDTO {
   /** This is the number to forward to if assistant runs into issues. */
   forwardingPhoneNumber?: string;
   /**
-   * This is the first message that the assistant will say.
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
    * If unspecified, it will wait for the user to speak.
    * @maxLength 1000
@@ -571,6 +637,7 @@ export interface UpdateAssistantDTO {
    *
    * If unspecified, it will hang up.
    * @maxLength 1000
+   * @default null
    */
   voicemailMessage?: string;
   /**
@@ -578,18 +645,41 @@ export interface UpdateAssistantDTO {
    *
    * If unspecified, it will hang up without saying anything.
    * @maxLength 400
+   * @default null
    */
   endCallMessage?: string;
-  /** This sets whether the user can interrupt the assistant while it's speaking. Defaults to true. */
+  /**
+   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
+   * @default null
+   */
   interruptionsEnabled?: boolean;
-  /** This sets whether the assistant's calls are recorded. Defaults to true. */
+  /**
+   * This sets whether the assistant's calls are recorded. Defaults to true.
+   * @default null
+   */
   recordingEnabled?: boolean;
-  /** This sets whether the assistant will be able to hang up the call. Defaults to false. */
+  /**
+   * This sets whether the assistant will be able to hang up the call. Defaults to false.
+   * @default null
+   */
   endCallFunctionEnabled?: boolean;
-  /** This sets whether the assistant will use fillers like Well..., Okay cool..., etc. Defaults to true when using gpt-4. Else, defaults to false. */
+  /**
+   * This sets whether the assistant will use fillers like Well..., Okay cool..., etc. This will modify your prompt slightly, which could result in differing completions. Defaults to false.
+   * @default null
+   */
   fillersEnabled?: boolean;
-  /** This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients. */
+  /**
+   * This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients.
+   * @default null
+   */
   liveTranscriptsEnabled?: boolean;
+  /**
+   * How many seconds of silence to wait before ending the call. Defaults to 30.
+   * @min 10
+   * @max 600
+   * @default null
+   */
+  silenceTimeoutSeconds?: number;
 }
 
 export interface CreateCustomerDTO {
@@ -634,13 +724,27 @@ export interface Call {
     | "assistant-forwarded-call"
     | "assistant-join-timed-out"
     | "assistant-not-found"
-    | "manually-canceled"
     | "customer-busy"
     | "customer-ended-call"
     | "customer-did-not-answer"
     | "db-error"
     | "exceeded-max-duration"
+    | "manually-canceled"
     | "no-server-available"
+    | "pipeline-error-custom-llm-response-was-invalid"
+    | "pipeline-error-custom-llm-request-failed"
+    | "pipeline-error-extra-function-failed"
+    | "pipeline-error-first-message-failed"
+    | "pipeline-error-function-filler-failed"
+    | "pipeline-error-function-failed"
+    | "pipeline-error-llm-failed"
+    | "pipeline-error-openai-voice-failed"
+    | "pipeline-error-deepgram-transcriber-failed"
+    | "pipeline-error-deepgram-voice-failed"
+    | "pipeline-error-eleven-labs-voice-failed"
+    | "pipeline-error-eleven-labs-voice-not-found"
+    | "pipeline-error-playht-voice-failed"
+    | "pipeline-error-rime-ai-voice-failed"
     | "server-shutdown"
     | "silence-timed-out"
     | "twilio-failed-to-connect-call"
@@ -802,27 +906,6 @@ export interface DeepgramCredential {
   updatedAt: string;
 }
 
-export interface AzureOpenAICredential {
-  provider: "azure-openai";
-  /** This is not returned in the API. */
-  openAIKey: string;
-  /** This is the unique identifier for the credential. */
-  id: string;
-  /** This is the unique identifier for the org that this credential belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the credential was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-  openAIEndpoint: string;
-}
-
 export interface ElevenLabsCredential {
   provider: "11labs";
   /** This is not returned in the API. */
@@ -865,7 +948,147 @@ export interface PlayHTCredential {
 }
 
 export interface RimeAICredential {
-  provider: "rimeai";
+  provider: "rime-ai";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface OpenAICredential {
+  provider: "openai";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface TogetherAICredential {
+  provider: "together-ai";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface AnyscaleCredential {
+  provider: "anyscale";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface OpenRouterCredential {
+  provider: "openrouter";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface PerplexityAICredential {
+  provider: "perplexity-ai";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface DeepInfraCredential {
+  provider: "deepinfra";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface CustomLLMCredential {
+  provider: "custom-llm";
   /** This is not returned in the API. */
   apiKey: string;
   /** This is the unique identifier for the credential. */
@@ -897,11 +1120,46 @@ export interface CreateDeepgramCredentialDTO {
   apiKey: string;
 }
 
-export interface CreateAzureOpenAICredentialDTO {
-  provider: "azure-openai";
+export interface CreateOpenAICredentialDTO {
+  provider: "openai";
   /** This is not returned in the API. */
-  openAIKey: string;
-  openAIEndpoint: string;
+  apiKey: string;
+}
+
+export interface CreateTogetherAICredentialDTO {
+  provider: "together-ai";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateAnyscaleCredentialDTO {
+  provider: "anyscale";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateOpenRouterCredentialDTO {
+  provider: "openrouter";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreatePerplexityAICredentialDTO {
+  provider: "perplexity-ai";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateDeepInfraCredentialDTO {
+  provider: "deepinfra";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateCustomLLMCredentialDTO {
+  provider: "custom-llm";
+  /** This is not returned in the API. */
+  apiKey: string;
 }
 
 export interface CreateElevenLabsCredentialDTO {
@@ -918,7 +1176,7 @@ export interface CreatePlayHTCredentialDTO {
 }
 
 export interface CreateRimeAICredentialDTO {
-  provider: "rimeai";
+  provider: "rime-ai";
   /** This is not returned in the API. */
   apiKey: string;
 }
@@ -936,11 +1194,46 @@ export interface UpdateDeepgramCredentialDTO {
   apiKey: string;
 }
 
-export interface UpdateAzureOpenAICredentialDTO {
-  provider: "azure-openai";
+export interface UpdateOpenAICredentialDTO {
+  provider: "openai";
   /** This is not returned in the API. */
-  openAIKey: string;
-  openAIEndpoint: string;
+  apiKey: string;
+}
+
+export interface UpdateTogetherAICredentialDTO {
+  provider: "together-ai";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateAnyscaleCredentialDTO {
+  provider: "anyscale";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateOpenRouterCredentialDTO {
+  provider: "openrouter";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdatePerplexityAICredentialDTO {
+  provider: "perplexity-ai";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateDeepInfraCredentialDTO {
+  provider: "deepinfra";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateCustomLLMCredentialDTO {
+  provider: "custom-llm";
+  /** This is not returned in the API. */
+  apiKey: string;
 }
 
 export interface UpdateElevenLabsCredentialDTO {
@@ -957,7 +1250,7 @@ export interface UpdatePlayHTCredentialDTO {
 }
 
 export interface UpdateRimeAICredentialDTO {
-  provider: "rimeai";
+  provider: "rime-ai";
   /** This is not returned in the API. */
   apiKey: string;
 }
@@ -1457,8 +1750,26 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "deepgram";
           } & CreateDeepgramCredentialDTO)
         | ({
-            provider: "azure-openai";
-          } & CreateAzureOpenAICredentialDTO)
+            provider: "openai";
+          } & CreateOpenAICredentialDTO)
+        | ({
+            provider: "together-ai";
+          } & CreateTogetherAICredentialDTO)
+        | ({
+            provider: "anyscale";
+          } & CreateAnyscaleCredentialDTO)
+        | ({
+            provider: "openrouter";
+          } & CreateOpenRouterCredentialDTO)
+        | ({
+            provider: "perplexity-ai";
+          } & CreatePerplexityAICredentialDTO)
+        | ({
+            provider: "deepinfra";
+          } & CreateDeepInfraCredentialDTO)
+        | ({
+            provider: "custom-llm";
+          } & CreateCustomLLMCredentialDTO)
         | ({
             provider: "11labs";
           } & CreateElevenLabsCredentialDTO)
@@ -1466,7 +1777,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "playht";
           } & CreatePlayHTCredentialDTO)
         | ({
-            provider: "rimeai";
+            provider: "rime-ai";
           } & CreateRimeAICredentialDTO),
       params: RequestParams = {},
     ) =>
@@ -1478,8 +1789,26 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "deepgram";
           } & DeepgramCredential)
         | ({
-            provider: "azure-openai";
-          } & AzureOpenAICredential)
+            provider: "openai";
+          } & OpenAICredential)
+        | ({
+            provider: "together-ai";
+          } & TogetherAICredential)
+        | ({
+            provider: "anyscale";
+          } & AnyscaleCredential)
+        | ({
+            provider: "openrouter";
+          } & OpenRouterCredential)
+        | ({
+            provider: "perplexity-ai";
+          } & PerplexityAICredential)
+        | ({
+            provider: "deepinfra";
+          } & DeepInfraCredential)
+        | ({
+            provider: "custom-llm";
+          } & CustomLLMCredential)
         | ({
             provider: "11labs";
           } & ElevenLabsCredential)
@@ -1487,7 +1816,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "playht";
           } & PlayHTCredential)
         | ({
-            provider: "rimeai";
+            provider: "rime-ai";
           } & RimeAICredential),
         any
       >({
@@ -1519,8 +1848,26 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
               provider: "deepgram";
             } & DeepgramCredential)
           | ({
-              provider: "azure-openai";
-            } & AzureOpenAICredential)
+              provider: "openai";
+            } & OpenAICredential)
+          | ({
+              provider: "together-ai";
+            } & TogetherAICredential)
+          | ({
+              provider: "anyscale";
+            } & AnyscaleCredential)
+          | ({
+              provider: "openrouter";
+            } & OpenRouterCredential)
+          | ({
+              provider: "perplexity-ai";
+            } & PerplexityAICredential)
+          | ({
+              provider: "deepinfra";
+            } & DeepInfraCredential)
+          | ({
+              provider: "custom-llm";
+            } & CustomLLMCredential)
           | ({
               provider: "11labs";
             } & ElevenLabsCredential)
@@ -1528,7 +1875,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
               provider: "playht";
             } & PlayHTCredential)
           | ({
-              provider: "rimeai";
+              provider: "rime-ai";
             } & RimeAICredential)
         )[],
         any
@@ -1558,8 +1905,26 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "deepgram";
           } & DeepgramCredential)
         | ({
-            provider: "azure-openai";
-          } & AzureOpenAICredential)
+            provider: "openai";
+          } & OpenAICredential)
+        | ({
+            provider: "together-ai";
+          } & TogetherAICredential)
+        | ({
+            provider: "anyscale";
+          } & AnyscaleCredential)
+        | ({
+            provider: "openrouter";
+          } & OpenRouterCredential)
+        | ({
+            provider: "perplexity-ai";
+          } & PerplexityAICredential)
+        | ({
+            provider: "deepinfra";
+          } & DeepInfraCredential)
+        | ({
+            provider: "custom-llm";
+          } & CustomLLMCredential)
         | ({
             provider: "11labs";
           } & ElevenLabsCredential)
@@ -1567,7 +1932,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "playht";
           } & PlayHTCredential)
         | ({
-            provider: "rimeai";
+            provider: "rime-ai";
           } & RimeAICredential),
         any
       >({
@@ -1597,8 +1962,26 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "deepgram";
           } & UpdateDeepgramCredentialDTO)
         | ({
-            provider: "azure-openai";
-          } & UpdateAzureOpenAICredentialDTO)
+            provider: "openai";
+          } & UpdateOpenAICredentialDTO)
+        | ({
+            provider: "together-ai";
+          } & UpdateTogetherAICredentialDTO)
+        | ({
+            provider: "anyscale";
+          } & UpdateAnyscaleCredentialDTO)
+        | ({
+            provider: "openrouter";
+          } & UpdateOpenRouterCredentialDTO)
+        | ({
+            provider: "perplexity-ai";
+          } & UpdatePerplexityAICredentialDTO)
+        | ({
+            provider: "deepinfra";
+          } & UpdateDeepInfraCredentialDTO)
+        | ({
+            provider: "custom-llm";
+          } & UpdateCustomLLMCredentialDTO)
         | ({
             provider: "11labs";
           } & UpdateElevenLabsCredentialDTO)
@@ -1606,7 +1989,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "playht";
           } & UpdatePlayHTCredentialDTO)
         | ({
-            provider: "rimeai";
+            provider: "rime-ai";
           } & UpdateRimeAICredentialDTO),
       params: RequestParams = {},
     ) =>
@@ -1618,8 +2001,26 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "deepgram";
           } & DeepgramCredential)
         | ({
-            provider: "azure-openai";
-          } & AzureOpenAICredential)
+            provider: "openai";
+          } & OpenAICredential)
+        | ({
+            provider: "together-ai";
+          } & TogetherAICredential)
+        | ({
+            provider: "anyscale";
+          } & AnyscaleCredential)
+        | ({
+            provider: "openrouter";
+          } & OpenRouterCredential)
+        | ({
+            provider: "perplexity-ai";
+          } & PerplexityAICredential)
+        | ({
+            provider: "deepinfra";
+          } & DeepInfraCredential)
+        | ({
+            provider: "custom-llm";
+          } & CustomLLMCredential)
         | ({
             provider: "11labs";
           } & ElevenLabsCredential)
@@ -1627,7 +2028,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "playht";
           } & PlayHTCredential)
         | ({
-            provider: "rimeai";
+            provider: "rime-ai";
           } & RimeAICredential),
         any
       >({
@@ -1658,8 +2059,26 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "deepgram";
           } & DeepgramCredential)
         | ({
-            provider: "azure-openai";
-          } & AzureOpenAICredential)
+            provider: "openai";
+          } & OpenAICredential)
+        | ({
+            provider: "together-ai";
+          } & TogetherAICredential)
+        | ({
+            provider: "anyscale";
+          } & AnyscaleCredential)
+        | ({
+            provider: "openrouter";
+          } & OpenRouterCredential)
+        | ({
+            provider: "perplexity-ai";
+          } & PerplexityAICredential)
+        | ({
+            provider: "deepinfra";
+          } & DeepInfraCredential)
+        | ({
+            provider: "custom-llm";
+          } & CustomLLMCredential)
         | ({
             provider: "11labs";
           } & ElevenLabsCredential)
@@ -1667,7 +2086,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: "playht";
           } & PlayHTCredential)
         | ({
-            provider: "rimeai";
+            provider: "rime-ai";
           } & RimeAICredential),
         any
       >({
