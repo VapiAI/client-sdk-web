@@ -28,8 +28,12 @@ You can start a new call by calling the `start` method and passing an `assistant
 
 ```javascript
 vapi.start({
-  context: "You are a shopping assistant...",
-  voice: "steve",
+  model: {
+    provider: "openai",
+    model: "gpt-3.5-turbo",
+    systemPrompt: "You're an assistant..."
+  },
+  voice: "jennifer-playht",
   ...
 });
 ```
