@@ -440,11 +440,10 @@ export interface CreateAssistantDTO {
    * @default null
    */
   fillersEnabled?: boolean;
-  /**
-   * This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients.
-   * @default null
-   */
-  liveTranscriptsEnabled?: boolean;
+  /** These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call'] */
+  clientMessages?: "function-call" | "transcript" | "hang";
+  /** These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call'] */
+  serverMessages?: "end-of-call-report" | "function-call" | "status-update" | "transcript" | "hang";
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    * @min 10
@@ -452,6 +451,13 @@ export interface CreateAssistantDTO {
    * @default null
    */
   silenceTimeoutSeconds?: number;
+  /**
+   * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
+   * @min 0
+   * @max 10
+   * @default null
+   */
+  responseDelaySeconds?: number;
 }
 
 export interface Assistant {
@@ -547,11 +553,10 @@ export interface Assistant {
    * @default null
    */
   fillersEnabled?: boolean;
-  /**
-   * This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients.
-   * @default null
-   */
-  liveTranscriptsEnabled?: boolean;
+  /** These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call'] */
+  clientMessages?: "function-call" | "transcript" | "hang";
+  /** These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call'] */
+  serverMessages?: "end-of-call-report" | "function-call" | "status-update" | "transcript" | "hang";
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    * @min 10
@@ -559,6 +564,13 @@ export interface Assistant {
    * @default null
    */
   silenceTimeoutSeconds?: number;
+  /**
+   * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
+   * @min 0
+   * @max 10
+   * @default null
+   */
+  responseDelaySeconds?: number;
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -668,11 +680,10 @@ export interface UpdateAssistantDTO {
    * @default null
    */
   fillersEnabled?: boolean;
-  /**
-   * This sets whether the assistant will send live transcriptions to the Server URL and/or Vapi clients.
-   * @default null
-   */
-  liveTranscriptsEnabled?: boolean;
+  /** These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call'] */
+  clientMessages?: "function-call" | "transcript" | "hang";
+  /** These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call'] */
+  serverMessages?: "end-of-call-report" | "function-call" | "status-update" | "transcript" | "hang";
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    * @min 10
@@ -680,6 +691,13 @@ export interface UpdateAssistantDTO {
    * @default null
    */
   silenceTimeoutSeconds?: number;
+  /**
+   * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
+   * @min 0
+   * @max 10
+   * @default null
+   */
+  responseDelaySeconds?: number;
 }
 
 export interface CreateCustomerDTO {
@@ -751,6 +769,13 @@ export interface Call {
     | "twilio-closed-websocket"
     | "unknown-error"
     | "voicemail";
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   * @min 10
+   * @max 3600
+   * @default null
+   */
+  maxDurationSeconds?: number;
   /** This is the unique identifier for the call. */
   id: string;
   /** This is the unique identifier for the org that this call belongs to. */
@@ -828,6 +853,13 @@ export interface Call {
 }
 
 export interface CreateOutboundCallDTO {
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   * @min 10
+   * @max 3600
+   * @default null
+   */
+  maxDurationSeconds?: number;
   /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
@@ -1107,6 +1139,26 @@ export interface CustomLLMCredential {
   updatedAt: string;
 }
 
+export interface RunpodCredential {
+  provider: "runpod";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
 export interface CreateTwilioCredentialDTO {
   provider: "twilio";
   /** This is not returned in the API. */
@@ -1181,6 +1233,12 @@ export interface CreateRimeAICredentialDTO {
   apiKey: string;
 }
 
+export interface CreateRunpodCredentialDTO {
+  provider: "runpod";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
 export interface UpdateTwilioCredentialDTO {
   provider: "twilio";
   /** This is not returned in the API. */
@@ -1251,6 +1309,12 @@ export interface UpdatePlayHTCredentialDTO {
 
 export interface UpdateRimeAICredentialDTO {
   provider: "rime-ai";
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateRunpodCredentialDTO {
+  provider: "runpod";
   /** This is not returned in the API. */
   apiKey: string;
 }
@@ -1640,6 +1704,26 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags Assistants
+     * @name AssistantControllerReplace
+     * @summary Replace Assistant
+     * @request PUT:/assistant/{id}
+     * @secure
+     */
+    assistantControllerReplace: (id: string, data: UpdateAssistantDTO, params: RequestParams = {}) =>
+      this.request<Assistant, any>({
+        path: `/assistant/${id}`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
      * @name AssistantControllerRemove
      * @summary Delete Assistant
      * @request DELETE:/assistant/{id}
@@ -1778,7 +1862,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & CreatePlayHTCredentialDTO)
         | ({
             provider: "rime-ai";
-          } & CreateRimeAICredentialDTO),
+          } & CreateRimeAICredentialDTO)
+        | ({
+            provider: "runpod";
+          } & CreateRunpodCredentialDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -1817,7 +1904,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & PlayHTCredential)
         | ({
             provider: "rime-ai";
-          } & RimeAICredential),
+          } & RimeAICredential)
+        | ({
+            provider: "runpod";
+          } & RunpodCredential),
         any
       >({
         path: `/credential`,
@@ -1877,6 +1967,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           | ({
               provider: "rime-ai";
             } & RimeAICredential)
+          | ({
+              provider: "runpod";
+            } & RunpodCredential)
         )[],
         any
       >({
@@ -1933,7 +2026,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & PlayHTCredential)
         | ({
             provider: "rime-ai";
-          } & RimeAICredential),
+          } & RimeAICredential)
+        | ({
+            provider: "runpod";
+          } & RunpodCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -1990,7 +2086,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & UpdatePlayHTCredentialDTO)
         | ({
             provider: "rime-ai";
-          } & UpdateRimeAICredentialDTO),
+          } & UpdateRimeAICredentialDTO)
+        | ({
+            provider: "runpod";
+          } & UpdateRunpodCredentialDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -2029,7 +2128,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & PlayHTCredential)
         | ({
             provider: "rime-ai";
-          } & RimeAICredential),
+          } & RimeAICredential)
+        | ({
+            provider: "runpod";
+          } & RunpodCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -2087,7 +2189,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & PlayHTCredential)
         | ({
             provider: "rime-ai";
-          } & RimeAICredential),
+          } & RimeAICredential)
+        | ({
+            provider: "runpod";
+          } & RunpodCredential),
         any
       >({
         path: `/credential/${id}`,
