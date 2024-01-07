@@ -1,6 +1,6 @@
 {
   "name": "@vapi-ai/web",
-  "version": "1.0.251",
+  "version": "1.0.252",
   "description": "",
   "main": "dist/vapi.js",
   "types": "dist/vapi.d.ts",
