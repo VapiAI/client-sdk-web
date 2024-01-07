@@ -244,7 +244,7 @@ export default class Vapi extends VapiEventEmitter {
     this.call = null;
   }
 
-  sendMessage(message: VapiClientToServerMessage): void {
+  send(message: VapiClientToServerMessage): void {
     this.call?.sendAppMessage(JSON.stringify(message));
   }
 }
