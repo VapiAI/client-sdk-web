@@ -1,12 +1,12 @@
 import { Call, CreateAssistantDTO } from "./api";
 import DailyIframe, {
   DailyCall,
-  DailyEventObjectActiveSpeakerChange,
   DailyEventObjectAppMessage,
   DailyEventObjectParticipant,
   DailyEventObjectRemoteParticipantsAudioLevel,
 } from "@daily-co/daily-js";
 
+import type { ChatCompletionMessageParam } from "openai/resources";
 import EventEmitter from "events";
 import { client } from "./client";
 
@@ -41,6 +41,13 @@ function subscribeToTracks(e: DailyEventObjectParticipant, call: DailyCall) {
     },
   });
 }
+
+export interface AddMessageMessage {
+  type: "add-message";
+  message: ChatCompletionMessageParam;
+}
+
+type VapiClientToServerMessage = AddMessageMessage;
 
 type VapiEventNames =
   | "call-end"
@@ -237,7 +244,7 @@ export default class Vapi extends VapiEventEmitter {
     this.call = null;
   }
 
-  send(message: any): void {
+  send(message: VapiClientToServerMessage): void {
     this.call?.sendAppMessage(JSON.stringify(message));
   }
 }

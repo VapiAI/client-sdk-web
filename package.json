@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.6.0",
+    "openai": "^4.24.1",
     "swagger-typescript-api": "^13.0.3"
   }
 }
