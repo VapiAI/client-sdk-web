@@ -165,7 +165,6 @@ export default class Vapi extends VapiEventEmitter {
 
         if (e?.participant?.user_name !== "Vapi Speaker") return;
         this.call?.sendAppMessage("playable");
-        this.emit("call-start");
       });
 
       this.call.on("participant-joined", (e) => {
@@ -204,6 +203,9 @@ export default class Vapi extends VapiEventEmitter {
   private onAppMessage(e?: DailyEventObjectAppMessage) {
     if (!e) return;
     try {
+      if (e.data === "listening") {
+        return this.emit("call-start");
+      }
       const parsedMessage = JSON.parse(e.data);
       this.emit("message", parsedMessage);
     } catch (e) {
