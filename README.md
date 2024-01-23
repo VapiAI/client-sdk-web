@@ -33,7 +33,10 @@ vapi.start({
     model: "gpt-3.5-turbo",
     systemPrompt: "You're an assistant..."
   },
-  voice: "jennifer-playht",
+   voice: {
+    provider: "11labs",
+    voiceId: "burt",
+  },
   ...
 });
 ```
