@@ -19,7 +19,15 @@ export interface DeepgramVoice {
    */
   provider: "deepgram";
   /** This is the provider-specific ID that will be used. */
-  voiceId: "aurora" | "asteria" | "artemis" | "andromeda" | "stella" | "orion" | "atlas" | string;
+  voiceId:
+    | "aurora"
+    | "asteria"
+    | "artemis"
+    | "andromeda"
+    | "stella"
+    | "orion"
+    | "atlas"
+    | string;
 }
 
 export interface OpenAIFunction {
@@ -273,7 +281,13 @@ export interface PlayHTVoice {
    * An emotion to be applied to the speech.
    * @default null
    */
-  emotion?: "female_happy" | "female_sad" | "female_angry" | "female_fearful" | "female_disgust" | "female_surprised";
+  emotion?:
+    | "female_happy"
+    | "female_sad"
+    | "female_angry"
+    | "female_fearful"
+    | "female_disgust"
+    | "female_surprised";
   /**
    * A number between 1 and 6. Use lower numbers to reduce how unique your chosen voice will be compared to other voices.
    * @min 1
@@ -372,7 +386,12 @@ export interface CreateAssistantDTO {
    * These are the options for the assistant's voice.
    * @default {"provider":"playht","voiceId":"jennifer"}
    */
-  voice?: ElevenLabsVoice | PlayHTVoice | RimeAIVoice | DeepgramVoice | OpenAIVoice;
+  voice?:
+    | ElevenLabsVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | DeepgramVoice
+    | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
@@ -443,7 +462,12 @@ export interface CreateAssistantDTO {
   /** These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call'] */
   clientMessages?: "function-call" | "transcript" | "hang";
   /** These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call'] */
-  serverMessages?: "end-of-call-report" | "function-call" | "status-update" | "transcript" | "hang";
+  serverMessages?:
+    | "end-of-call-report"
+    | "function-call"
+    | "status-update"
+    | "transcript"
+    | "hang";
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    * @min 10
@@ -485,7 +509,12 @@ export interface Assistant {
    * These are the options for the assistant's voice.
    * @default {"provider":"playht","voiceId":"jennifer"}
    */
-  voice?: ElevenLabsVoice | PlayHTVoice | RimeAIVoice | DeepgramVoice | OpenAIVoice;
+  voice?:
+    | ElevenLabsVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | DeepgramVoice
+    | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
@@ -554,9 +583,21 @@ export interface Assistant {
    */
   fillersEnabled?: boolean;
   /** These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call'] */
-  clientMessages?: "function-call" | "transcript" | "hang";
+  clientMessages?: (
+    | "function-call"
+    | "transcript"
+    | "hang"
+    | "speech-update"
+    | "status-update"
+  )[];
   /** These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call'] */
-  serverMessages?: "end-of-call-report" | "function-call" | "status-update" | "transcript" | "hang";
+  serverMessages?: (
+    | "end-of-call-report"
+    | "function-call"
+    | "status-update"
+    | "transcript"
+    | "hang"
+  )[];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    * @min 10
@@ -612,7 +653,12 @@ export interface UpdateAssistantDTO {
    * These are the options for the assistant's voice.
    * @default {"provider":"playht","voiceId":"jennifer"}
    */
-  voice?: ElevenLabsVoice | PlayHTVoice | RimeAIVoice | DeepgramVoice | OpenAIVoice;
+  voice?:
+    | ElevenLabsVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | DeepgramVoice
+    | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
@@ -683,7 +729,12 @@ export interface UpdateAssistantDTO {
   /** These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call'] */
   clientMessages?: "function-call" | "transcript" | "hang";
   /** These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call'] */
-  serverMessages?: "end-of-call-report" | "function-call" | "status-update" | "transcript" | "hang";
+  serverMessages?:
+    | "end-of-call-report"
+    | "function-call"
+    | "status-update"
+    | "transcript"
+    | "hang";
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    * @min 10
@@ -1426,16 +1477,22 @@ export interface FullRequestParams extends Omit<RequestInit, "body"> {
   cancelToken?: CancelToken;
 }
 
-export type RequestParams = Omit<FullRequestParams, "body" | "method" | "query" | "path">;
+export type RequestParams = Omit<
+  FullRequestParams,
+  "body" | "method" | "query" | "path"
+>;
 
 export interface ApiConfig<SecurityDataType = unknown> {
   baseUrl?: string;
   baseApiParams?: Omit<RequestParams, "baseUrl" | "cancelToken" | "signal">;
-  securityWorker?: (securityData: SecurityDataType | null) => Promise<RequestParams | void> | RequestParams | void;
+  securityWorker?: (
+    securityData: SecurityDataType | null
+  ) => Promise<RequestParams | void> | RequestParams | void;
   customFetch?: typeof fetch;
 }
 
-export interface HttpResponse<D extends unknown, E extends unknown = unknown> extends Response {
+export interface HttpResponse<D extends unknown, E extends unknown = unknown>
+  extends Response {
   data: D;
   error: E;
 }
@@ -1454,7 +1511,8 @@ export class HttpClient<SecurityDataType = unknown> {
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private abortControllers = new Map<CancelToken, AbortController>();
-  private customFetch = (...fetchParams: Parameters<typeof fetch>) => fetch(...fetchParams);
+  private customFetch = (...fetchParams: Parameters<typeof fetch>) =>
+    fetch(...fetchParams);
 
   private baseApiParams: RequestParams = {
     credentials: "same-origin",
@@ -1473,7 +1531,9 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected encodeQueryParam(key: string, value: any) {
     const encodedKey = encodeURIComponent(key);
-    return `${encodedKey}=${encodeURIComponent(typeof value === "number" ? value : `${value}`)}`;
+    return `${encodedKey}=${encodeURIComponent(
+      typeof value === "number" ? value : `${value}`
+    )}`;
   }
 
   protected addQueryParam(query: QueryParamsType, key: string) {
@@ -1487,9 +1547,15 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected toQueryString(rawQuery?: QueryParamsType): string {
     const query = rawQuery || {};
-    const keys = Object.keys(query).filter((key) => "undefined" !== typeof query[key]);
+    const keys = Object.keys(query).filter(
+      (key) => "undefined" !== typeof query[key]
+    );
     return keys
-      .map((key) => (Array.isArray(query[key]) ? this.addArrayQueryParam(query, key) : this.addQueryParam(query, key)))
+      .map((key) =>
+        Array.isArray(query[key])
+          ? this.addArrayQueryParam(query, key)
+          : this.addQueryParam(query, key)
+      )
       .join("&");
   }
 
@@ -1500,8 +1566,13 @@ export class HttpClient<SecurityDataType = unknown> {
 
   private contentFormatters: Record<ContentType, (input: any) => any> = {
     [ContentType.Json]: (input: any) =>
-      input !== null && (typeof input === "object" || typeof input === "string") ? JSON.stringify(input) : input,
-    [ContentType.Text]: (input: any) => (input !== null && typeof input !== "string" ? JSON.stringify(input) : input),
+      input !== null && (typeof input === "object" || typeof input === "string")
+        ? JSON.stringify(input)
+        : input,
+    [ContentType.Text]: (input: any) =>
+      input !== null && typeof input !== "string"
+        ? JSON.stringify(input)
+        : input,
     [ContentType.FormData]: (input: any) =>
       Object.keys(input || {}).reduce((formData, key) => {
         const property = input[key];
@@ -1511,14 +1582,17 @@ export class HttpClient<SecurityDataType = unknown> {
             ? property
             : typeof property === "object" && property !== null
             ? JSON.stringify(property)
-            : `${property}`,
+            : `${property}`
         );
         return formData;
       }, new FormData()),
     [ContentType.UrlEncoded]: (input: any) => this.toQueryString(input),
   };
 
-  protected mergeRequestParams(params1: RequestParams, params2?: RequestParams): RequestParams {
+  protected mergeRequestParams(
+    params1: RequestParams,
+    params2?: RequestParams
+  ): RequestParams {
     return {
       ...this.baseApiParams,
       ...params1,
@@ -1531,7 +1605,9 @@ export class HttpClient<SecurityDataType = unknown> {
     };
   }
 
-  protected createAbortSignal = (cancelToken: CancelToken): AbortSignal | undefined => {
+  protected createAbortSignal = (
+    cancelToken: CancelToken
+  ): AbortSignal | undefined => {
     if (this.abortControllers.has(cancelToken)) {
       const abortController = this.abortControllers.get(cancelToken);
       if (abortController) {
@@ -1575,15 +1651,28 @@ export class HttpClient<SecurityDataType = unknown> {
     const payloadFormatter = this.contentFormatters[type || ContentType.Json];
     const responseFormat = format || requestParams.format;
 
-    return this.customFetch(`${baseUrl || this.baseUrl || ""}${path}${queryString ? `?${queryString}` : ""}`, {
-      ...requestParams,
-      headers: {
-        ...(requestParams.headers || {}),
-        ...(type && type !== ContentType.FormData ? { "Content-Type": type } : {}),
-      },
-      signal: (cancelToken ? this.createAbortSignal(cancelToken) : requestParams.signal) || null,
-      body: typeof body === "undefined" || body === null ? null : payloadFormatter(body),
-    }).then(async (response) => {
+    return this.customFetch(
+      `${baseUrl || this.baseUrl || ""}${path}${
+        queryString ? `?${queryString}` : ""
+      }`,
+      {
+        ...requestParams,
+        headers: {
+          ...(requestParams.headers || {}),
+          ...(type && type !== ContentType.FormData
+            ? { "Content-Type": type }
+            : {}),
+        },
+        signal:
+          (cancelToken
+            ? this.createAbortSignal(cancelToken)
+            : requestParams.signal) || null,
+        body:
+          typeof body === "undefined" || body === null
+            ? null
+            : payloadFormatter(body),
+      }
+    ).then(async (response) => {
       const r = response as HttpResponse<T, E>;
       r.data = null as unknown as T;
       r.error = null as unknown as E;
@@ -1622,7 +1711,9 @@ export class HttpClient<SecurityDataType = unknown> {
  *
  * API for building voice assistants
  */
-export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
+export class Api<
+  SecurityDataType extends unknown,
+> extends HttpClient<SecurityDataType> {
   assistant = {
     /**
      * No description
@@ -1633,7 +1724,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request POST:/assistant
      * @secure
      */
-    assistantControllerCreate: (data: CreateAssistantDTO, params: RequestParams = {}) =>
+    assistantControllerCreate: (
+      data: CreateAssistantDTO,
+      params: RequestParams = {}
+    ) =>
       this.request<Assistant, any>({
         path: `/assistant`,
         method: "POST",
@@ -1689,7 +1783,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request PATCH:/assistant/{id}
      * @secure
      */
-    assistantControllerUpdate: (id: string, data: UpdateAssistantDTO, params: RequestParams = {}) =>
+    assistantControllerUpdate: (
+      id: string,
+      data: UpdateAssistantDTO,
+      params: RequestParams = {}
+    ) =>
       this.request<Assistant, any>({
         path: `/assistant/${id}`,
         method: "PATCH",
@@ -1709,7 +1807,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request PUT:/assistant/{id}
      * @secure
      */
-    assistantControllerReplace: (id: string, data: UpdateAssistantDTO, params: RequestParams = {}) =>
+    assistantControllerReplace: (
+      id: string,
+      data: UpdateAssistantDTO,
+      params: RequestParams = {}
+    ) =>
       this.request<Assistant, any>({
         path: `/assistant/${id}`,
         method: "PUT",
@@ -1784,7 +1886,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request POST:/call/phone
      * @secure
      */
-    callControllerCreatePhoneCall: (data: CreateOutboundCallDTO, params: RequestParams = {}) =>
+    callControllerCreatePhoneCall: (
+      data: CreateOutboundCallDTO,
+      params: RequestParams = {}
+    ) =>
       this.request<Call, any>({
         path: `/call/phone`,
         method: "POST",
@@ -1804,7 +1909,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request POST:/call/web
      * @secure
      */
-    callControllerCreateWebCall: (data: CreateWebCallDTO, params: RequestParams = {}) =>
+    callControllerCreateWebCall: (
+      data: CreateWebCallDTO,
+      params: RequestParams = {}
+    ) =>
       this.request<Call, any>({
         path: `/call/web`,
         method: "POST",
@@ -1866,7 +1974,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | ({
             provider: "runpod";
           } & CreateRunpodCredentialDTO),
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         | ({
@@ -2090,7 +2198,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | ({
             provider: "runpod";
           } & UpdateRunpodCredentialDTO),
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         | ({
@@ -2212,7 +2320,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request POST:/phone-number/buy
      * @secure
      */
-    phoneNumberControllerBuy: (data: BuyPhoneNumberDTO, params: RequestParams = {}) =>
+    phoneNumberControllerBuy: (
+      data: BuyPhoneNumberDTO,
+      params: RequestParams = {}
+    ) =>
       this.request<PhoneNumber, any>({
         path: `/phone-number/buy`,
         method: "POST",
@@ -2232,7 +2343,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request POST:/phone-number/import
      * @secure
      */
-    phoneNumberControllerImport: (data: ImportTwilioPhoneNumberDTO, params: RequestParams = {}) =>
+    phoneNumberControllerImport: (
+      data: ImportTwilioPhoneNumberDTO,
+      params: RequestParams = {}
+    ) =>
       this.request<PhoneNumber, any>({
         path: `/phone-number/import`,
         method: "POST",
@@ -2288,7 +2402,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request PATCH:/phone-number/{id}
      * @secure
      */
-    phoneNumberControllerUpdate: (id: string, data: UpdatePhoneNumberDTO, params: RequestParams = {}) =>
+    phoneNumberControllerUpdate: (
+      id: string,
+      data: UpdatePhoneNumberDTO,
+      params: RequestParams = {}
+    ) =>
       this.request<PhoneNumber, any>({
         path: `/phone-number/${id}`,
         method: "PATCH",
