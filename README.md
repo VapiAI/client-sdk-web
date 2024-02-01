@@ -46,6 +46,21 @@ vapi.start('your-assistant-id');
 
 The `start` method will initiate a new call. 
 
+You can also send text messages to the assistant aside from the audio input using the `send` method and passing appropriate `role` and `content`.
+
+```javascript
+vapi.send({
+  type: "add-message",
+  message: {
+    role: "system",
+    content: "The user has pressed the button, say peanuts",
+  },
+});
+
+```
+
+Possible values for the role are `system`, `user`, `assistant`, `tool` or `function`.
+
 You can stop the session by calling the `stop` method:
 
 ```javascript
