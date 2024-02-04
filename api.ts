@@ -10,24 +10,94 @@
  */
 
 export interface DeepgramVoice {
-  /**
-   * This is the voice provider that will be used.
-   *
-   * Pro Voices: `11labs`, `playht`, `openai`
-   *
-   * Basic Voices: `rime-ai`, `deepgram`
-   */
+  /** This is the voice provider that will be used. */
   provider: "deepgram";
   /** This is the provider-specific ID that will be used. */
-  voiceId:
-    | "aurora"
-    | "asteria"
-    | "artemis"
-    | "andromeda"
-    | "stella"
-    | "orion"
-    | "atlas"
-    | string;
+  voiceId: "asteria" | "luna" | "hera" | "athena" | "varun" | "leo" | "perseus" | "helios" | "angus" | string;
+}
+
+export interface JsonSchema {
+  type: "string" | "number" | "integer" | "boolean" | "array" | "object";
+  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
+  items?: object;
+  /** This is an array of type JsonSchema. However, Swagger doesn't support circular references. */
+  prefixItems?: object;
+  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
+  contains?: object;
+  /** This is a map of string to JsonSchema. However, Swagger doesn't support circular references. */
+  properties?: object;
+  /** This is a map of string to JsonSchema objects. However, Swagger doesn't support circular references. */
+  patternProperties?: object;
+  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
+  additionalProperties?: object;
+  /** This is a map of string to JsonSchema objects. However, Swagger doesn't support circular references. */
+  dependentSchemas?: object;
+  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
+  propertyNames?: object;
+  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
+  unevaluatedProperties?: object;
+  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
+  const?: object;
+  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
+  not?: object;
+  /** This is an array of type JsonSchema. However, Swagger doesn't support circular references. */
+  oneOf?: object;
+  /** This is an array of type JsonSchema. However, Swagger doesn't support circular references. */
+  anyOf?: object;
+  /** This is an array of type JsonSchema. However, Swagger doesn't support circular references. */
+  allOf?: object;
+  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
+  if?: object;
+  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
+  then?: object;
+  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
+  else?: object;
+  title?: string;
+  description?: string;
+  multipleOf?: number;
+  maximum?: number;
+  exclusiveMaximum?: number;
+  minimum?: number;
+  exclusiveMinimum?: number;
+  maxLength?: number;
+  /** @min 0 */
+  minLength?: number;
+  pattern?: string;
+  format?: string;
+  maxItems?: number;
+  /** @min 0 */
+  minItems?: number;
+  minContains?: number;
+  maxContains?: number;
+  maxProperties?: number;
+  /** @min 0 */
+  minProperties?: number;
+  required?: object[];
+  dependentRequired?: object;
+  enum?: object[];
+  $id?: string;
+  $ref?: string;
+  $schema?: string;
+  $comment?: string;
+  default?: object;
+  examples?: object[];
+  readOnly?: boolean;
+  writeOnly?: boolean;
+  contentEncoding?: string;
+  contentMediaType?: string;
+}
+
+export interface OpenAIFunctionParameters {
+  /** This must be set to 'object'. It instructs the model to return a JSON object containing the function call properties. */
+  type: "object";
+  /**
+   * This provides a description of the properties required by the function.
+   * JSON Schema can be used to specify expectations for each property.
+   * Refer to [this doc](https://ajv.js.org/json-schema.html#json-data-type) for a comprehensive guide on JSON Schema.
+   */
+  properties: Record<string, JsonSchema>;
+  /** This specifies the properties that are required by the function. */
+  required?: string[];
 }
 
 export interface OpenAIFunction {
@@ -36,6 +106,7 @@ export interface OpenAIFunction {
    *
    * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
    * @maxLength 64
+   * @pattern /^[a-zA-Z0-9_-]{1,64}$/
    */
   name: string;
   /** Setting async: true will cause the function to be called asynchronously, meaning that the Assistant will not wait for the function to return before continuing. */
@@ -45,91 +116,121 @@ export interface OpenAIFunction {
   /**
    * These are the parameters the functions accepts, described as a JSON Schema object.
    *
-   * See the [OpenAI guide](https://platform.openai.com/docs/guides/gpt/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema) for documentation about the format.
+   * See the [OpenAI guide](https://platform.openai.com/docs/guides/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema) for documentation about the format.
    *
-   * To describe a function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
+   * Omitting parameters defines a function with an empty parameter list.
    */
-  parameters: object;
+  parameters?: OpenAIFunctionParameters;
 }
 
 export interface TogetherAIModel {
   provider: "together-ai";
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
-  /** This sets the objective and understanding for the assistant. */
-  systemPrompt?: string;
   /**
    * This is the temperature that will be used for calls. Default is 1.
    * @min 0
    * @max 2
    */
   temperature?: number;
+  /** This is the starting state for the conversation. */
+  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 1000
+   */
+  maxTokens?: number;
 }
 
 export interface AnyscaleModel {
   provider: "anyscale";
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
-  /** This sets the objective and understanding for the assistant. */
-  systemPrompt?: string;
   /**
    * This is the temperature that will be used for calls. Default is 1.
    * @min 0
    * @max 2
    */
   temperature?: number;
+  /** This is the starting state for the conversation. */
+  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 1000
+   */
+  maxTokens?: number;
 }
 
 export interface OpenRouterModel {
   provider: "openrouter";
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
-  /** This sets the objective and understanding for the assistant. */
-  systemPrompt?: string;
   /**
    * This is the temperature that will be used for calls. Default is 1.
    * @min 0
    * @max 2
    */
   temperature?: number;
+  /** This is the starting state for the conversation. */
+  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 1000
+   */
+  maxTokens?: number;
 }
 
 export interface PerplexityAIModel {
   provider: "perplexity-ai";
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
-  /** This sets the objective and understanding for the assistant. */
-  systemPrompt?: string;
   /**
    * This is the temperature that will be used for calls. Default is 1.
    * @min 0
    * @max 2
    */
   temperature?: number;
+  /** This is the starting state for the conversation. */
+  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 1000
+   */
+  maxTokens?: number;
 }
 
 export interface DeepInfraModel {
   provider: "deepinfra";
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
-  /** This sets the objective and understanding for the assistant. */
-  systemPrompt?: string;
   /**
    * This is the temperature that will be used for calls. Default is 1.
    * @min 0
    * @max 2
    */
   temperature?: number;
+  /** This is the starting state for the conversation. */
+  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 1000
+   */
+  maxTokens?: number;
 }
 
 export interface CustomLLMModel {
@@ -139,16 +240,44 @@ export interface CustomLLMModel {
   url: string;
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
-  /** This sets the objective and understanding for the assistant. */
-  systemPrompt?: string;
   /**
    * This is the temperature that will be used for calls. Default is 1.
    * @min 0
    * @max 2
    */
   temperature?: number;
+  /** This is the starting state for the conversation. */
+  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 1000
+   */
+  maxTokens?: number;
+}
+
+export interface GroqModel {
+  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  model: "mixtral-8x7b-32768";
+  provider: "groq";
+  /**
+   * This is the temperature that will be used for calls. Default is 1.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /** This is the starting state for the conversation. */
+  messages: object[];
+  /** These are the functions that the assistant can execute during the call. */
+  functions?: OpenAIFunction[];
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 1000
+   */
+  maxTokens?: number;
 }
 
 export interface DeepgramTranscriber {
@@ -174,17 +303,12 @@ export interface DeepgramTranscriber {
 }
 
 export interface ElevenLabsVoice {
-  /**
-   * This is the voice provider that will be used.
-   *
-   * Pro Voices: `11labs`, `playht`
-   *
-   * Basic Voices: `rime-ai`, `deepgram`
-   */
+  /** This is the voice provider that will be used. */
   provider: "11labs";
   /** This is the provider-specific ID that will be used. Ensure the Voice is present in your 11Labs Voice Library. */
   voiceId:
     | "burt"
+    | "marissa"
     | "andrea"
     | "phillip"
     | "steve"
@@ -202,24 +326,26 @@ export interface ElevenLabsVoice {
    * Defines the stability for voice settings.
    * @min 0
    * @max 1
-   * @default null
+   * @example 0.5
    */
   stability?: number;
   /**
    * Defines the similarity boost for voice settings.
    * @min 0
    * @max 1
-   * @default null
+   * @example 0.75
    */
   similarityBoost?: number;
   /**
    * Defines the style for voice settings.
-   * @default null
+   * @min 0
+   * @max 1
+   * @example 0
    */
-  style?: boolean;
+  style?: number;
   /**
    * Defines the use speaker boost for voice settings.
-   * @default null
+   * @example false
    */
   useSpeakerBoost?: boolean;
 }
@@ -229,26 +355,26 @@ export interface OpenAIModel {
   provider: "openai";
   /** This is the OpenAI model that will be used. */
   model: "gpt-4" | "gpt-3.5-turbo";
-  /** This sets the objective and understanding for the assistant. */
-  systemPrompt?: string;
   /**
    * This is the temperature that will be used for calls. Default is 1.
    * @min 0
    * @max 2
    */
   temperature?: number;
+  /** This is the starting state for the conversation. */
+  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 1000
+   */
+  maxTokens?: number;
 }
 
 export interface PlayHTVoice {
-  /**
-   * This is the voice provider that will be used.
-   *
-   * Pro Voices: `11labs`, `playht`, `openai`
-   *
-   * Basic Voices: `rime-ai`, `deepgram`
-   */
+  /** This is the voice provider that will be used. */
   provider: "playht";
   /** This is the provider-specific ID that will be used. */
   voiceId:
@@ -267,58 +393,46 @@ export interface PlayHTVoice {
    * This is the speed multiplier that will be used.
    * @min 0
    * @max 5
-   * @default null
+   * @example null
    */
   speed?: number;
   /**
-   * A floating point number between 0, inclusive, and 2, inclusive. If equal to null or not provided, the model's default temperature will be used. The temperature parameter controls variance. Lower temperatures result in more predictable results, higher temperatures allow each run to vary more, so the voice may sound less like the baseline voice.
+   * A floating point number between 0, exclusive, and 2, inclusive. If equal to null or not provided, the model's default temperature will be used. The temperature parameter controls variance. Lower temperatures result in more predictable results, higher temperatures allow each run to vary more, so the voice may sound less like the baseline voice.
    * @min 0.1
    * @max 2
-   * @default null
+   * @example null
    */
   temperature?: number;
   /**
    * An emotion to be applied to the speech.
-   * @default null
+   * @example null
    */
-  emotion?:
-    | "female_happy"
-    | "female_sad"
-    | "female_angry"
-    | "female_fearful"
-    | "female_disgust"
-    | "female_surprised";
+  emotion?: "female_happy" | "female_sad" | "female_angry" | "female_fearful" | "female_disgust" | "female_surprised";
   /**
    * A number between 1 and 6. Use lower numbers to reduce how unique your chosen voice will be compared to other voices.
    * @min 1
    * @max 6
-   * @default null
+   * @example null
    */
   voiceGuidance?: number;
   /**
    * A number between 1 and 30. Use lower numbers to to reduce how strong your chosen emotion will be. Higher numbers will create a very emotional performance.
    * @min 1
    * @max 30
-   * @default null
+   * @example null
    */
   styleGuidance?: number;
   /**
    * A number between 1 and 2. This number influences how closely the generated speech adheres to the input text. Use lower values to create more fluid speech, but with a higher chance of deviating from the input text. Higher numbers will make the generated speech more accurate to the input text, ensuring that the words spoken align closely with the provided text.
    * @min 1
    * @max 2
-   * @default null
+   * @example null
    */
   textGuidance?: number;
 }
 
 export interface RimeAIVoice {
-  /**
-   * This is the voice provider that will be used.
-   *
-   * Pro Voices: `11labs`, `playht`, `openai`
-   *
-   * Basic Voices: `rime-ai`, `deepgram`
-   */
+  /** This is the voice provider that will be used. */
   provider: "rime-ai";
   /** This is the provider-specific ID that will be used. */
   voiceId:
@@ -336,19 +450,13 @@ export interface RimeAIVoice {
   /**
    * This is the speed multiplier that will be used.
    * @min 0
-   * @default null
+   * @example null
    */
   speed?: number;
 }
 
 export interface OpenAIVoice {
-  /**
-   * This is the voice provider that will be used.
-   *
-   * Pro Voices: `11labs`, `playht`, `openai`
-   *
-   * Basic Voices: `rime-ai`, `deepgram`
-   */
+  /** This is the voice provider that will be used. */
   provider: "openai";
   /** This is the provider-specific ID that will be used. */
   voiceId: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" | string;
@@ -356,23 +464,19 @@ export interface OpenAIVoice {
    * This is the speed multiplier that will be used.
    * @min 0.25
    * @max 4
-   * @default null
+   * @example null
    */
   speed?: number;
 }
 
+export interface AzureVoice {
+  /** This is the voice provider that will be used. */
+  provider: "azure";
+  /** This is the provider-specific ID that will be used. */
+  voiceId: "andrew" | "brian" | "emma" | string;
+}
+
 export interface CreateAssistantDTO {
-  /**
-   * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 100
-   * @default null
-   */
-  name?: string;
-  /**
-   * These are the options for the assistant's transcriber.
-   * @default null
-   */
-  transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | OpenAIModel
@@ -381,21 +485,16 @@ export interface CreateAssistantDTO {
     | OpenRouterModel
     | PerplexityAIModel
     | DeepInfraModel
+    | GroqModel
     | CustomLLMModel;
   /**
    * These are the options for the assistant's voice.
    * @default {"provider":"playht","voiceId":"jennifer"}
    */
-  voice?:
-    | ElevenLabsVoice
-    | PlayHTVoice
-    | RimeAIVoice
-    | DeepgramVoice
-    | OpenAIVoice;
+  voice?: AzureVoice | ElevenLabsVoice | PlayHTVoice | RimeAIVoice | DeepgramVoice | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
-   * @default null
    */
   language?:
     | "en"
@@ -413,14 +512,80 @@ export interface CreateAssistantDTO {
     | "pt-BR"
     | "es"
     | "es-419";
-  /** This is the number to forward to if assistant runs into issues. */
+  /**
+   * This is the number to forward to if assistant runs into issues.
+   * @example null
+   */
   forwardingPhoneNumber?: string;
+  /**
+   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
+   * @example true
+   */
+  interruptionsEnabled?: boolean;
+  /**
+   * This sets whether the assistant's calls are recorded. Defaults to true.
+   * @example true
+   */
+  recordingEnabled?: boolean;
+  /**
+   * This sets whether the assistant will be able to hang up the call. Defaults to false.
+   * @example false
+   */
+  endCallFunctionEnabled?: boolean;
+  /**
+   * This sets whether the assistant can dial digits on the keypad. Defaults to false.
+   * @default null
+   */
+  dialKeypadFunctionEnabled?: boolean;
+  /**
+   * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call', 'speech-update', 'metadata', 'conversation-update']
+   * @example ["transcript","hang","function-call","speech-update","metadata","conversation-update"]
+   */
+  clientMessages?:
+    | "status-update"
+    | "speech-update"
+    | "transcript"
+    | "hang"
+    | "function-call"
+    | "metadata"
+    | "conversation-update";
+  /**
+   * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call']
+   * @example ["end-of-call-report","status-update","hang","function-call"]
+   */
+  serverMessages?:
+    | "status-update"
+    | "transcript"
+    | "hang"
+    | "function-call"
+    | "end-of-call-report"
+    | "conversation-update";
+  /**
+   * How many seconds of silence to wait before ending the call. Defaults to 30.
+   * @min 10
+   * @max 600
+   * @example 30
+   */
+  silenceTimeoutSeconds?: number;
+  /**
+   * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
+   * @min 0
+   * @max 2
+   * @example 0.4
+   */
+  responseDelaySeconds?: number;
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 100
+   */
+  name?: string;
+  /** These are the options for the assistant's transcriber. */
+  transcriber?: DeepgramTranscriber;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
    * If unspecified, it will wait for the user to speak.
    * @maxLength 1000
-   * @default "Hey there!"
    */
   firstMessage?: string;
   /**
@@ -428,7 +593,6 @@ export interface CreateAssistantDTO {
    *
    * If unspecified, it will hang up.
    * @maxLength 1000
-   * @default null
    */
   voicemailMessage?: string;
   /**
@@ -436,66 +600,27 @@ export interface CreateAssistantDTO {
    *
    * If unspecified, it will hang up without saying anything.
    * @maxLength 400
-   * @default null
    */
   endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
   /**
-   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
-   * @default null
+   * This is the URL Vapi will communicate with via HTTP GET and POST Requests. This is used for retrieving context, function calling, and end-of-call reports.
+   *
+   * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org.
    */
-  interruptionsEnabled?: boolean;
+  serverUrl?: string;
   /**
-   * This sets whether the assistant's calls are recorded. Defaults to true.
-   * @default null
+   * This is the secret you can set that Vapi will send with every request to your server. Will be sent as a header called x-vapi-secret.
+   *
+   * This overrides the serverUrlSecret set on the org.
    */
-  recordingEnabled?: boolean;
-  /**
-   * This sets whether the assistant will be able to hang up the call. Defaults to false.
-   * @default null
-   */
-  endCallFunctionEnabled?: boolean;
-  /**
-   * This sets whether the assistant will use fillers like Well..., Okay cool..., etc. This will modify your prompt slightly, which could result in differing completions. Defaults to false.
-   * @default null
-   */
-  fillersEnabled?: boolean;
-  /** These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call'] */
-  clientMessages?: "function-call" | "transcript" | "hang";
-  /** These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call'] */
-  serverMessages?:
-    | "end-of-call-report"
-    | "function-call"
-    | "status-update"
-    | "transcript"
-    | "hang";
-  /**
-   * How many seconds of silence to wait before ending the call. Defaults to 30.
-   * @min 10
-   * @max 600
-   * @default null
-   */
-  silenceTimeoutSeconds?: number;
-  /**
-   * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
-   * @min 0
-   * @max 10
-   * @default null
-   */
-  responseDelaySeconds?: number;
+  serverUrlSecret?: string;
 }
 
 export interface Assistant {
-  /**
-   * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 100
-   * @default null
-   */
-  name?: string;
-  /**
-   * These are the options for the assistant's transcriber.
-   * @default null
-   */
-  transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | OpenAIModel
@@ -504,21 +629,16 @@ export interface Assistant {
     | OpenRouterModel
     | PerplexityAIModel
     | DeepInfraModel
+    | GroqModel
     | CustomLLMModel;
   /**
    * These are the options for the assistant's voice.
    * @default {"provider":"playht","voiceId":"jennifer"}
    */
-  voice?:
-    | ElevenLabsVoice
-    | PlayHTVoice
-    | RimeAIVoice
-    | DeepgramVoice
-    | OpenAIVoice;
+  voice?: AzureVoice | ElevenLabsVoice | PlayHTVoice | RimeAIVoice | DeepgramVoice | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
-   * @default null
    */
   language?:
     | "en"
@@ -536,14 +656,80 @@ export interface Assistant {
     | "pt-BR"
     | "es"
     | "es-419";
-  /** This is the number to forward to if assistant runs into issues. */
+  /**
+   * This is the number to forward to if assistant runs into issues.
+   * @example null
+   */
   forwardingPhoneNumber?: string;
+  /**
+   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
+   * @example true
+   */
+  interruptionsEnabled?: boolean;
+  /**
+   * This sets whether the assistant's calls are recorded. Defaults to true.
+   * @example true
+   */
+  recordingEnabled?: boolean;
+  /**
+   * This sets whether the assistant will be able to hang up the call. Defaults to false.
+   * @example false
+   */
+  endCallFunctionEnabled?: boolean;
+  /**
+   * This sets whether the assistant can dial digits on the keypad. Defaults to false.
+   * @default null
+   */
+  dialKeypadFunctionEnabled?: boolean;
+  /**
+   * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call', 'speech-update', 'metadata', 'conversation-update']
+   * @example ["transcript","hang","function-call","speech-update","metadata","conversation-update"]
+   */
+  clientMessages?:
+    | "status-update"
+    | "speech-update"
+    | "transcript"
+    | "hang"
+    | "function-call"
+    | "metadata"
+    | "conversation-update";
+  /**
+   * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call']
+   * @example ["end-of-call-report","status-update","hang","function-call"]
+   */
+  serverMessages?:
+    | "status-update"
+    | "transcript"
+    | "hang"
+    | "function-call"
+    | "end-of-call-report"
+    | "conversation-update";
+  /**
+   * How many seconds of silence to wait before ending the call. Defaults to 30.
+   * @min 10
+   * @max 600
+   * @example 30
+   */
+  silenceTimeoutSeconds?: number;
+  /**
+   * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
+   * @min 0
+   * @max 2
+   * @example 0.4
+   */
+  responseDelaySeconds?: number;
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 100
+   */
+  name?: string;
+  /** These are the options for the assistant's transcriber. */
+  transcriber?: DeepgramTranscriber;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
    * If unspecified, it will wait for the user to speak.
    * @maxLength 1000
-   * @default "Hey there!"
    */
   firstMessage?: string;
   /**
@@ -551,7 +737,6 @@ export interface Assistant {
    *
    * If unspecified, it will hang up.
    * @maxLength 1000
-   * @default null
    */
   voicemailMessage?: string;
   /**
@@ -559,59 +744,24 @@ export interface Assistant {
    *
    * If unspecified, it will hang up without saying anything.
    * @maxLength 400
-   * @default null
    */
   endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
   /**
-   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
-   * @default null
+   * This is the URL Vapi will communicate with via HTTP GET and POST Requests. This is used for retrieving context, function calling, and end-of-call reports.
+   *
+   * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org.
    */
-  interruptionsEnabled?: boolean;
+  serverUrl?: string;
   /**
-   * This sets whether the assistant's calls are recorded. Defaults to true.
-   * @default null
+   * This is the secret you can set that Vapi will send with every request to your server. Will be sent as a header called x-vapi-secret.
+   *
+   * This overrides the serverUrlSecret set on the org.
    */
-  recordingEnabled?: boolean;
-  /**
-   * This sets whether the assistant will be able to hang up the call. Defaults to false.
-   * @default null
-   */
-  endCallFunctionEnabled?: boolean;
-  /**
-   * This sets whether the assistant will use fillers like Well..., Okay cool..., etc. This will modify your prompt slightly, which could result in differing completions. Defaults to false.
-   * @default null
-   */
-  fillersEnabled?: boolean;
-  /** These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call'] */
-  clientMessages?: (
-    | "function-call"
-    | "transcript"
-    | "hang"
-    | "speech-update"
-    | "status-update"
-  )[];
-  /** These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call'] */
-  serverMessages?: (
-    | "end-of-call-report"
-    | "function-call"
-    | "status-update"
-    | "transcript"
-    | "hang"
-  )[];
-  /**
-   * How many seconds of silence to wait before ending the call. Defaults to 30.
-   * @min 10
-   * @max 600
-   * @default null
-   */
-  silenceTimeoutSeconds?: number;
-  /**
-   * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
-   * @min 0
-   * @max 10
-   * @default null
-   */
-  responseDelaySeconds?: number;
+  serverUrlSecret?: string;
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -629,17 +779,6 @@ export interface Assistant {
 }
 
 export interface UpdateAssistantDTO {
-  /**
-   * This is the name of the assistant. This is just for your own reference.
-   * @maxLength 100
-   * @default null
-   */
-  name?: string;
-  /**
-   * These are the options for the assistant's transcriber.
-   * @default null
-   */
-  transcriber?: DeepgramTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | OpenAIModel
@@ -648,21 +787,16 @@ export interface UpdateAssistantDTO {
     | OpenRouterModel
     | PerplexityAIModel
     | DeepInfraModel
+    | GroqModel
     | CustomLLMModel;
   /**
    * These are the options for the assistant's voice.
    * @default {"provider":"playht","voiceId":"jennifer"}
    */
-  voice?:
-    | ElevenLabsVoice
-    | PlayHTVoice
-    | RimeAIVoice
-    | DeepgramVoice
-    | OpenAIVoice;
+  voice?: AzureVoice | ElevenLabsVoice | PlayHTVoice | RimeAIVoice | DeepgramVoice | OpenAIVoice;
   /**
    * This sets the spoken language of the user. The assistant will do its best to respond in the same language.
    * When using a language other than `en-*`, only `11labs` voices will pronounce the words correctly. There will also be ~1sec of additional latency.
-   * @default null
    */
   language?:
     | "en"
@@ -680,14 +814,80 @@ export interface UpdateAssistantDTO {
     | "pt-BR"
     | "es"
     | "es-419";
-  /** This is the number to forward to if assistant runs into issues. */
+  /**
+   * This is the number to forward to if assistant runs into issues.
+   * @example null
+   */
   forwardingPhoneNumber?: string;
+  /**
+   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
+   * @example true
+   */
+  interruptionsEnabled?: boolean;
+  /**
+   * This sets whether the assistant's calls are recorded. Defaults to true.
+   * @example true
+   */
+  recordingEnabled?: boolean;
+  /**
+   * This sets whether the assistant will be able to hang up the call. Defaults to false.
+   * @example false
+   */
+  endCallFunctionEnabled?: boolean;
+  /**
+   * This sets whether the assistant can dial digits on the keypad. Defaults to false.
+   * @default null
+   */
+  dialKeypadFunctionEnabled?: boolean;
+  /**
+   * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call', 'speech-update', 'metadata', 'conversation-update']
+   * @example ["transcript","hang","function-call","speech-update","metadata","conversation-update"]
+   */
+  clientMessages?:
+    | "status-update"
+    | "speech-update"
+    | "transcript"
+    | "hang"
+    | "function-call"
+    | "metadata"
+    | "conversation-update";
+  /**
+   * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call']
+   * @example ["end-of-call-report","status-update","hang","function-call"]
+   */
+  serverMessages?:
+    | "status-update"
+    | "transcript"
+    | "hang"
+    | "function-call"
+    | "end-of-call-report"
+    | "conversation-update";
+  /**
+   * How many seconds of silence to wait before ending the call. Defaults to 30.
+   * @min 10
+   * @max 600
+   * @example 30
+   */
+  silenceTimeoutSeconds?: number;
+  /**
+   * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
+   * @min 0
+   * @max 2
+   * @example 0.4
+   */
+  responseDelaySeconds?: number;
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 100
+   */
+  name?: string;
+  /** These are the options for the assistant's transcriber. */
+  transcriber?: DeepgramTranscriber;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
    * If unspecified, it will wait for the user to speak.
    * @maxLength 1000
-   * @default "Hey there!"
    */
   firstMessage?: string;
   /**
@@ -695,7 +895,6 @@ export interface UpdateAssistantDTO {
    *
    * If unspecified, it will hang up.
    * @maxLength 1000
-   * @default null
    */
   voicemailMessage?: string;
   /**
@@ -703,52 +902,24 @@ export interface UpdateAssistantDTO {
    *
    * If unspecified, it will hang up without saying anything.
    * @maxLength 400
-   * @default null
    */
   endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
   /**
-   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
-   * @default null
+   * This is the URL Vapi will communicate with via HTTP GET and POST Requests. This is used for retrieving context, function calling, and end-of-call reports.
+   *
+   * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org.
    */
-  interruptionsEnabled?: boolean;
+  serverUrl?: string;
   /**
-   * This sets whether the assistant's calls are recorded. Defaults to true.
-   * @default null
+   * This is the secret you can set that Vapi will send with every request to your server. Will be sent as a header called x-vapi-secret.
+   *
+   * This overrides the serverUrlSecret set on the org.
    */
-  recordingEnabled?: boolean;
-  /**
-   * This sets whether the assistant will be able to hang up the call. Defaults to false.
-   * @default null
-   */
-  endCallFunctionEnabled?: boolean;
-  /**
-   * This sets whether the assistant will use fillers like Well..., Okay cool..., etc. This will modify your prompt slightly, which could result in differing completions. Defaults to false.
-   * @default null
-   */
-  fillersEnabled?: boolean;
-  /** These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call'] */
-  clientMessages?: "function-call" | "transcript" | "hang";
-  /** These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call'] */
-  serverMessages?:
-    | "end-of-call-report"
-    | "function-call"
-    | "status-update"
-    | "transcript"
-    | "hang";
-  /**
-   * How many seconds of silence to wait before ending the call. Defaults to 30.
-   * @min 10
-   * @max 600
-   * @default null
-   */
-  silenceTimeoutSeconds?: number;
-  /**
-   * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
-   * @min 0
-   * @max 10
-   * @default null
-   */
-  responseDelaySeconds?: number;
+  serverUrlSecret?: string;
 }
 
 export interface CreateCustomerDTO {
@@ -759,6 +930,11 @@ export interface CreateCustomerDTO {
    * @maxLength 40
    */
   name?: string;
+  /**
+   * This is the extension that will be dialed after the call is answered.
+   * @maxLength 30
+   */
+  extension?: string;
 }
 
 export interface ImportTwilioPhoneNumberDTO {
@@ -788,43 +964,54 @@ export interface Call {
   status?: "queued" | "ringing" | "in-progress" | "forwarding" | "ended";
   /** This is the explanation for how the call ended. */
   endedReason?:
-    | "assistant-ended-call"
     | "assistant-error"
-    | "assistant-forwarded-call"
-    | "assistant-join-timed-out"
     | "assistant-not-found"
-    | "customer-busy"
-    | "customer-ended-call"
-    | "customer-did-not-answer"
     | "db-error"
-    | "exceeded-max-duration"
-    | "manually-canceled"
     | "no-server-available"
-    | "pipeline-error-custom-llm-response-was-invalid"
-    | "pipeline-error-custom-llm-request-failed"
     | "pipeline-error-extra-function-failed"
     | "pipeline-error-first-message-failed"
     | "pipeline-error-function-filler-failed"
     | "pipeline-error-function-failed"
-    | "pipeline-error-llm-failed"
+    | "pipeline-error-openai-llm-failed"
+    | "pipeline-error-azure-openai-llm-failed"
+    | "pipeline-error-together-ai-llm-failed"
+    | "pipeline-error-anyscale-llm-failed"
+    | "pipeline-error-openrouter-llm-failed"
+    | "pipeline-error-perplexity-ai-llm-failed"
+    | "pipeline-error-deepinfra-llm-failed"
+    | "pipeline-error-runpod-llm-failed"
+    | "pipeline-error-groq-llm-failed"
     | "pipeline-error-openai-voice-failed"
     | "pipeline-error-deepgram-transcriber-failed"
     | "pipeline-error-deepgram-voice-failed"
     | "pipeline-error-eleven-labs-voice-failed"
     | "pipeline-error-eleven-labs-voice-not-found"
+    | "pipeline-error-eleven-labs-quota-exceeded"
     | "pipeline-error-playht-voice-failed"
+    | "pipeline-error-azure-voice-failed"
     | "pipeline-error-rime-ai-voice-failed"
     | "server-shutdown"
-    | "silence-timed-out"
-    | "twilio-failed-to-connect-call"
     | "twilio-closed-websocket"
+    | "twilio-failed-to-connect-call"
     | "unknown-error"
+    | "assistant-ended-call"
+    | "assistant-said-end-call-phrase"
+    | "assistant-forwarded-call"
+    | "assistant-join-timed-out"
+    | "customer-busy"
+    | "customer-ended-call"
+    | "customer-did-not-answer"
+    | "customer-did-not-give-microphone-permission"
+    | "exceeded-max-duration"
+    | "manually-canceled"
+    | "pipeline-error-custom-llm-llm-failed"
+    | "silence-timed-out"
     | "voicemail";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    * @min 10
    * @max 3600
-   * @default null
+   * @example 1800
    */
   maxDurationSeconds?: number;
   /** This is the unique identifier for the call. */
@@ -853,10 +1040,14 @@ export interface Call {
   endedAt?: string;
   /** This is the cost of the call in USD. */
   cost?: number;
+  /** This is the cost of the call in USD. */
+  costBreakdown?: object;
   /** This is the transcript of the call. */
   transcript?: string;
   /** This is the URL of the recording of the call. */
   recordingUrl?: string;
+  /** This is the URL of the recording of the call in two channels. */
+  stereoRecordingUrl?: string;
   /** This is the summary of the call. */
   summary?: string;
   /** These are the messages that were spoken during the call. */
@@ -901,6 +1092,8 @@ export interface Call {
    * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
    */
   phoneNumber?: ImportTwilioPhoneNumberDTO;
+  /** This is the metadata associated with the call. */
+  metadata?: object;
 }
 
 export interface CreateOutboundCallDTO {
@@ -908,7 +1101,7 @@ export interface CreateOutboundCallDTO {
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    * @min 10
    * @max 3600
-   * @default null
+   * @example 1800
    */
   maxDurationSeconds?: number;
   /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
@@ -939,6 +1132,8 @@ export interface CreateOutboundCallDTO {
    * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
    */
   phoneNumber?: ImportTwilioPhoneNumberDTO;
+  /** This is the metadata associated with the call. */
+  metadata?: object;
 }
 
 export interface CreateWebCallDTO {
@@ -946,6 +1141,8 @@ export interface CreateWebCallDTO {
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
   assistant?: CreateAssistantDTO;
+  /** This is the metadata associated with the call. */
+  metadata?: object;
 }
 
 export interface TwilioCredential {
@@ -1477,22 +1674,16 @@ export interface FullRequestParams extends Omit<RequestInit, "body"> {
   cancelToken?: CancelToken;
 }
 
-export type RequestParams = Omit<
-  FullRequestParams,
-  "body" | "method" | "query" | "path"
->;
+export type RequestParams = Omit<FullRequestParams, "body" | "method" | "query" | "path">;
 
 export interface ApiConfig<SecurityDataType = unknown> {
   baseUrl?: string;
   baseApiParams?: Omit<RequestParams, "baseUrl" | "cancelToken" | "signal">;
-  securityWorker?: (
-    securityData: SecurityDataType | null
-  ) => Promise<RequestParams | void> | RequestParams | void;
+  securityWorker?: (securityData: SecurityDataType | null) => Promise<RequestParams | void> | RequestParams | void;
   customFetch?: typeof fetch;
 }
 
-export interface HttpResponse<D extends unknown, E extends unknown = unknown>
-  extends Response {
+export interface HttpResponse<D extends unknown, E extends unknown = unknown> extends Response {
   data: D;
   error: E;
 }
@@ -1511,8 +1702,7 @@ export class HttpClient<SecurityDataType = unknown> {
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private abortControllers = new Map<CancelToken, AbortController>();
-  private customFetch = (...fetchParams: Parameters<typeof fetch>) =>
-    fetch(...fetchParams);
+  private customFetch = (...fetchParams: Parameters<typeof fetch>) => fetch(...fetchParams);
 
   private baseApiParams: RequestParams = {
     credentials: "same-origin",
@@ -1531,9 +1721,7 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected encodeQueryParam(key: string, value: any) {
     const encodedKey = encodeURIComponent(key);
-    return `${encodedKey}=${encodeURIComponent(
-      typeof value === "number" ? value : `${value}`
-    )}`;
+    return `${encodedKey}=${encodeURIComponent(typeof value === "number" ? value : `${value}`)}`;
   }
 
   protected addQueryParam(query: QueryParamsType, key: string) {
@@ -1547,15 +1735,9 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected toQueryString(rawQuery?: QueryParamsType): string {
     const query = rawQuery || {};
-    const keys = Object.keys(query).filter(
-      (key) => "undefined" !== typeof query[key]
-    );
+    const keys = Object.keys(query).filter((key) => "undefined" !== typeof query[key]);
     return keys
-      .map((key) =>
-        Array.isArray(query[key])
-          ? this.addArrayQueryParam(query, key)
-          : this.addQueryParam(query, key)
-      )
+      .map((key) => (Array.isArray(query[key]) ? this.addArrayQueryParam(query, key) : this.addQueryParam(query, key)))
       .join("&");
   }
 
@@ -1566,13 +1748,8 @@ export class HttpClient<SecurityDataType = unknown> {
 
   private contentFormatters: Record<ContentType, (input: any) => any> = {
     [ContentType.Json]: (input: any) =>
-      input !== null && (typeof input === "object" || typeof input === "string")
-        ? JSON.stringify(input)
-        : input,
-    [ContentType.Text]: (input: any) =>
-      input !== null && typeof input !== "string"
-        ? JSON.stringify(input)
-        : input,
+      input !== null && (typeof input === "object" || typeof input === "string") ? JSON.stringify(input) : input,
+    [ContentType.Text]: (input: any) => (input !== null && typeof input !== "string" ? JSON.stringify(input) : input),
     [ContentType.FormData]: (input: any) =>
       Object.keys(input || {}).reduce((formData, key) => {
         const property = input[key];
@@ -1582,17 +1759,14 @@ export class HttpClient<SecurityDataType = unknown> {
             ? property
             : typeof property === "object" && property !== null
             ? JSON.stringify(property)
-            : `${property}`
+            : `${property}`,
         );
         return formData;
       }, new FormData()),
     [ContentType.UrlEncoded]: (input: any) => this.toQueryString(input),
   };
 
-  protected mergeRequestParams(
-    params1: RequestParams,
-    params2?: RequestParams
-  ): RequestParams {
+  protected mergeRequestParams(params1: RequestParams, params2?: RequestParams): RequestParams {
     return {
       ...this.baseApiParams,
       ...params1,
@@ -1605,9 +1779,7 @@ export class HttpClient<SecurityDataType = unknown> {
     };
   }
 
-  protected createAbortSignal = (
-    cancelToken: CancelToken
-  ): AbortSignal | undefined => {
+  protected createAbortSignal = (cancelToken: CancelToken): AbortSignal | undefined => {
     if (this.abortControllers.has(cancelToken)) {
       const abortController = this.abortControllers.get(cancelToken);
       if (abortController) {
@@ -1651,28 +1823,15 @@ export class HttpClient<SecurityDataType = unknown> {
     const payloadFormatter = this.contentFormatters[type || ContentType.Json];
     const responseFormat = format || requestParams.format;
 
-    return this.customFetch(
-      `${baseUrl || this.baseUrl || ""}${path}${
-        queryString ? `?${queryString}` : ""
-      }`,
-      {
-        ...requestParams,
-        headers: {
-          ...(requestParams.headers || {}),
-          ...(type && type !== ContentType.FormData
-            ? { "Content-Type": type }
-            : {}),
-        },
-        signal:
-          (cancelToken
-            ? this.createAbortSignal(cancelToken)
-            : requestParams.signal) || null,
-        body:
-          typeof body === "undefined" || body === null
-            ? null
-            : payloadFormatter(body),
-      }
-    ).then(async (response) => {
+    return this.customFetch(`${baseUrl || this.baseUrl || ""}${path}${queryString ? `?${queryString}` : ""}`, {
+      ...requestParams,
+      headers: {
+        ...(requestParams.headers || {}),
+        ...(type && type !== ContentType.FormData ? { "Content-Type": type } : {}),
+      },
+      signal: (cancelToken ? this.createAbortSignal(cancelToken) : requestParams.signal) || null,
+      body: typeof body === "undefined" || body === null ? null : payloadFormatter(body),
+    }).then(async (response) => {
       const r = response as HttpResponse<T, E>;
       r.data = null as unknown as T;
       r.error = null as unknown as E;
@@ -1711,9 +1870,7 @@ export class HttpClient<SecurityDataType = unknown> {
  *
  * API for building voice assistants
  */
-export class Api<
-  SecurityDataType extends unknown,
-> extends HttpClient<SecurityDataType> {
+export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   assistant = {
     /**
      * No description
@@ -1724,10 +1881,7 @@ export class Api<
      * @request POST:/assistant
      * @secure
      */
-    assistantControllerCreate: (
-      data: CreateAssistantDTO,
-      params: RequestParams = {}
-    ) =>
+    assistantControllerCreate: (data: CreateAssistantDTO, params: RequestParams = {}) =>
       this.request<Assistant, any>({
         path: `/assistant`,
         method: "POST",
@@ -1747,10 +1901,61 @@ export class Api<
      * @request GET:/assistant
      * @secure
      */
-    assistantControllerFindAll: (params: RequestParams = {}) =>
+    assistantControllerFindAll: (
+      query?: {
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<Assistant[], any>({
         path: `/assistant`,
         method: "GET",
+        query: query,
         secure: true,
         format: "json",
         ...params,
@@ -1783,11 +1988,7 @@ export class Api<
      * @request PATCH:/assistant/{id}
      * @secure
      */
-    assistantControllerUpdate: (
-      id: string,
-      data: UpdateAssistantDTO,
-      params: RequestParams = {}
-    ) =>
+    assistantControllerUpdate: (id: string, data: UpdateAssistantDTO, params: RequestParams = {}) =>
       this.request<Assistant, any>({
         path: `/assistant/${id}`,
         method: "PATCH",
@@ -1807,11 +2008,7 @@ export class Api<
      * @request PUT:/assistant/{id}
      * @secure
      */
-    assistantControllerReplace: (
-      id: string,
-      data: UpdateAssistantDTO,
-      params: RequestParams = {}
-    ) =>
+    assistantControllerReplace: (id: string, data: UpdateAssistantDTO, params: RequestParams = {}) =>
       this.request<Assistant, any>({
         path: `/assistant/${id}`,
         method: "PUT",
@@ -1850,10 +2047,61 @@ export class Api<
      * @request GET:/call
      * @secure
      */
-    callControllerFindAll: (params: RequestParams = {}) =>
+    callControllerFindAll: (
+      query?: {
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<Call[], any>({
         path: `/call`,
         method: "GET",
+        query: query,
         secure: true,
         format: "json",
         ...params,
@@ -1886,10 +2134,7 @@ export class Api<
      * @request POST:/call/phone
      * @secure
      */
-    callControllerCreatePhoneCall: (
-      data: CreateOutboundCallDTO,
-      params: RequestParams = {}
-    ) =>
+    callControllerCreatePhoneCall: (data: CreateOutboundCallDTO, params: RequestParams = {}) =>
       this.request<Call, any>({
         path: `/call/phone`,
         method: "POST",
@@ -1909,10 +2154,7 @@ export class Api<
      * @request POST:/call/web
      * @secure
      */
-    callControllerCreateWebCall: (
-      data: CreateWebCallDTO,
-      params: RequestParams = {}
-    ) =>
+    callControllerCreateWebCall: (data: CreateWebCallDTO, params: RequestParams = {}) =>
       this.request<Call, any>({
         path: `/call/web`,
         method: "POST",
@@ -1974,7 +2216,7 @@ export class Api<
         | ({
             provider: "runpod";
           } & CreateRunpodCredentialDTO),
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.request<
         | ({
@@ -2036,7 +2278,57 @@ export class Api<
      * @request GET:/credential
      * @secure
      */
-    credentialControllerFindAll: (params: RequestParams = {}) =>
+    credentialControllerFindAll: (
+      query?: {
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<
         (
           | ({
@@ -2083,6 +2375,7 @@ export class Api<
       >({
         path: `/credential`,
         method: "GET",
+        query: query,
         secure: true,
         format: "json",
         ...params,
@@ -2198,7 +2491,7 @@ export class Api<
         | ({
             provider: "runpod";
           } & UpdateRunpodCredentialDTO),
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.request<
         | ({
@@ -2320,10 +2613,7 @@ export class Api<
      * @request POST:/phone-number/buy
      * @secure
      */
-    phoneNumberControllerBuy: (
-      data: BuyPhoneNumberDTO,
-      params: RequestParams = {}
-    ) =>
+    phoneNumberControllerBuy: (data: BuyPhoneNumberDTO, params: RequestParams = {}) =>
       this.request<PhoneNumber, any>({
         path: `/phone-number/buy`,
         method: "POST",
@@ -2343,10 +2633,7 @@ export class Api<
      * @request POST:/phone-number/import
      * @secure
      */
-    phoneNumberControllerImport: (
-      data: ImportTwilioPhoneNumberDTO,
-      params: RequestParams = {}
-    ) =>
+    phoneNumberControllerImport: (data: ImportTwilioPhoneNumberDTO, params: RequestParams = {}) =>
       this.request<PhoneNumber, any>({
         path: `/phone-number/import`,
         method: "POST",
@@ -2366,10 +2653,61 @@ export class Api<
      * @request GET:/phone-number
      * @secure
      */
-    phoneNumberControllerFindAll: (params: RequestParams = {}) =>
+    phoneNumberControllerFindAll: (
+      query?: {
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<PhoneNumber[], any>({
         path: `/phone-number`,
         method: "GET",
+        query: query,
         secure: true,
         format: "json",
         ...params,
@@ -2402,11 +2740,7 @@ export class Api<
      * @request PATCH:/phone-number/{id}
      * @secure
      */
-    phoneNumberControllerUpdate: (
-      id: string,
-      data: UpdatePhoneNumberDTO,
-      params: RequestParams = {}
-    ) =>
+    phoneNumberControllerUpdate: (id: string, data: UpdatePhoneNumberDTO, params: RequestParams = {}) =>
       this.request<PhoneNumber, any>({
         path: `/phone-number/${id}`,
         method: "PATCH",
