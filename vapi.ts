@@ -56,7 +56,9 @@ type VapiEventNames =
   | "speech-start"
   | "speech-end"
   | "message"
-  | "error";
+  | "error"
+  | "audio-muted"
+  | "audio-unmuted";
 
 type VapiEventListeners = {
   "call-end": () => void;
@@ -66,6 +68,8 @@ type VapiEventListeners = {
   "speech-end": () => void;
   message: (message: any) => void;
   error: (error: any) => void;
+  "audio-muted": () => void;
+  "audio-unmuted": () => void;
 };
 
 class VapiEventEmitter extends EventEmitter {
