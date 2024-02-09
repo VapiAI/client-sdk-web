@@ -204,14 +204,31 @@ export default class Vapi extends VapiEventEmitter {
     }
   }
 
+  private muteUnmuteLocalAudio(enable: boolean) {
+    if (this.call) {
+      this.call.setLocalAudio(enable);
+    }
+  }
+
   private onAppMessage(e?: DailyEventObjectAppMessage) {
     if (!e) return;
     try {
       if (e.data === "listening") {
         return this.emit("call-start");
+      } else if (e.data == "mute-audio") {
+        this.muteUnmuteLocalAudio(false);
+        return this.emit("audio-muted")
+      } else if (e.data == "unmute-audio") {
+        this.muteUnmuteLocalAudio(true);
+        return this.emit("audio-unmuted");
+      } else {
+        try {
+          const parsedMessage = JSON.parse(e.data);
+          this.emit("message", parsedMessage);
+        } catch (parseError) {
+          console.log("Error parsing message data: ", parseError); 
+        }
       }
-      const parsedMessage = JSON.parse(e.data);
-      this.emit("message", parsedMessage);
     } catch (e) {
       console.error(e);
     }
