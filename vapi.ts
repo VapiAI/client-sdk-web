@@ -258,14 +258,54 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   private setMuted(mute: boolean) {
-    if (this.call) {
-      this.call.setLocalAudio(mute);
+    try {
+      if (!this.call) {
+        throw new Error('Call object is not available.');
+      }
+      this.call.setLocalAudio(!mute);
+    } catch (error) {
+      console.error("Error in setMuted:", error);
+      throw error; // Rethrow the error to allow it to be caught in tests or higher up in the call stack.
     }
   }
+  
+  /*
+  private setMuted(mute: boolean) {
+    try {
+      if (this.call) {
+        this.call.setLocalAudio(!mute)
+      } else {
+        throw new Error('Call object is not available.');
+      }
+    } catch (error) {
+      console.error("Error in toggleMute:", error);
+    }
+  }
+  */
 
   public toggleMute() {
-    const isCurrentlyMuted = this.call?.localAudio() === false;
-    this.setMuted(!isCurrentlyMuted);
+    try {
+      if (!this.call) {
+        throw new Error('Call object is not available.');
+      }
+      const isCurrentlyMuted = this.call.localAudio() === false;
+      this.setMuted(!isCurrentlyMuted);
+    } catch (error) {
+      console.error("Error in toggleMute:", error);
+      throw error; 
+    }
   }
-  
+  /*
+  public toggleMute() {
+    try {
+      if (!this.call) {
+        throw new Error('Call object is not available');
+      }
+      const isCurrentlyMuted = this.call.localAudio() === false;
+      this.setMuted(!isCurrentlyMuted);
+    } catch (error) {
+      console.error("Error in toggleMute: ", error);
+    }
+  }
+  */   
 }

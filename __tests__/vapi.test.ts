@@ -2,29 +2,52 @@ import Vapi from '../vapi'; // Adjust the import path based on your project stru
 
 describe('Vapi', () => {
   let vapi: Vapi;
-  let mockEmit: jest.SpyInstance;
+  let mockCall: any;
 
   beforeEach(() => {
-    vapi = new Vapi('dummyToken');
-    // Mock the muteUnmuteLocalAudio method
-    jest.spyOn(vapi as any, 'muteUnmuteLocalAudio').mockImplementation(() => {});
-    // Spy on the emit method to assert it's called correctly
-    mockEmit = jest.spyOn(vapi, 'emit');
+    // Mock the DailyCall object
+    mockCall = {
+      setLocalAudio: jest.fn(),
+      localAudio: jest.fn(),
+    };
+    // Initialize Vapi instance and inject the mock
+    vapi = new Vapi('dummy_token');
+    vapi['call'] = mockCall; // Assuming you have a way to set this for testing
   });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
+  describe('setMuted', () => {
+    it('should mute the audio', () => {
+      vapi['setMuted'](true);
+      expect(mockCall.setLocalAudio).toHaveBeenCalledWith(false);
+    });
+
+    it('should unmute the audio', () => {
+      vapi['setMuted'](false);
+      expect(mockCall.setLocalAudio).toHaveBeenCalledWith(true);
+    });
+
+    it('should handle errors when call object is not available', () => {
+      vapi['call'] = null; // Simulate call object not being available
+      expect(() => vapi['setMuted'](true)).toThrow('Call object is not available.');
+    });
   });
 
-  it('should mute the audio and emit "audio-muted" on "mute-audio" message', () => {
-    vapi['onAppMessage']({ data: 'mute-audio' } as any); // Simulate receiving a mute-audio message
-    expect((vapi as any).muteUnmuteLocalAudio).toHaveBeenCalledWith(false);
-    expect(mockEmit).toHaveBeenCalledWith('audio-muted');
-  });
+  describe('toggleMute', () => {
+    it('should toggle audio from unmuted to muted', () => {
+      mockCall.localAudio.mockReturnValue(true); // Initially not muted
+      vapi.toggleMute();
+      expect(mockCall.setLocalAudio).toHaveBeenCalledWith(false); // Should mute
+    });
 
-  it('should unmute the audio and emit "audio-unmuted" on "unmute-audio" message', () => {
-    vapi['onAppMessage']({ data: 'unmute-audio' } as any); // Simulate receiving an unmute-audio message
-    expect((vapi as any).muteUnmuteLocalAudio).toHaveBeenCalledWith(true);
-    expect(mockEmit).toHaveBeenCalledWith('audio-unmuted');
+    it('should toggle audio from muted to unmuted', () => {
+      mockCall.localAudio.mockReturnValue(false); // Initially muted
+      vapi.toggleMute();
+      expect(mockCall.setLocalAudio).toHaveBeenCalledWith(true); // Should unmute
+    });
+
+    it('should handle errors when call object is not available', () => {
+      vapi['call'] = null; // Simulate call object not being available
+      expect(() => vapi.toggleMute()).toThrow('Call object is not available.');
+    });
   });
 });
