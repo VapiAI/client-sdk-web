@@ -16,6 +16,13 @@ export interface DeepgramVoice {
   voiceId: "asteria" | "luna" | "hera" | "athena" | "varun" | "leo" | "perseus" | "helios" | "angus" | string;
 }
 
+export interface OpenAIMessage {
+  content: string | null;
+  role: object;
+  function_call?: object;
+  tool_calls?: object[];
+}
+
 export interface JsonSchema {
   type: "string" | "number" | "integer" | "boolean" | "array" | "object";
   /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
@@ -124,17 +131,17 @@ export interface OpenAIFunction {
 }
 
 export interface TogetherAIModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
   provider: "together-ai";
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 1.
+   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
    * @min 0
    * @max 2
    */
   temperature?: number;
-  /** This is the starting state for the conversation. */
-  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
   /**
@@ -146,17 +153,17 @@ export interface TogetherAIModel {
 }
 
 export interface AnyscaleModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
   provider: "anyscale";
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 1.
+   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
    * @min 0
    * @max 2
    */
   temperature?: number;
-  /** This is the starting state for the conversation. */
-  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
   /**
@@ -168,17 +175,17 @@ export interface AnyscaleModel {
 }
 
 export interface OpenRouterModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
   provider: "openrouter";
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 1.
+   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
    * @min 0
    * @max 2
    */
   temperature?: number;
-  /** This is the starting state for the conversation. */
-  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
   /**
@@ -190,17 +197,17 @@ export interface OpenRouterModel {
 }
 
 export interface PerplexityAIModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
   provider: "perplexity-ai";
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 1.
+   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
    * @min 0
    * @max 2
    */
   temperature?: number;
-  /** This is the starting state for the conversation. */
-  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
   /**
@@ -212,17 +219,17 @@ export interface PerplexityAIModel {
 }
 
 export interface DeepInfraModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
   provider: "deepinfra";
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 1.
+   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
    * @min 0
    * @max 2
    */
   temperature?: number;
-  /** This is the starting state for the conversation. */
-  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
   /**
@@ -234,6 +241,8 @@ export interface DeepInfraModel {
 }
 
 export interface CustomLLMModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
   /** This is the provider that will be used for the model. Any service, including your own server, that is compatible with the OpenAI API can be used. */
   provider: "custom-llm";
   /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
@@ -241,13 +250,11 @@ export interface CustomLLMModel {
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 1.
+   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
    * @min 0
    * @max 2
    */
   temperature?: number;
-  /** This is the starting state for the conversation. */
-  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
   /**
@@ -259,17 +266,17 @@ export interface CustomLLMModel {
 }
 
 export interface GroqModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: "mixtral-8x7b-32768";
   provider: "groq";
   /**
-   * This is the temperature that will be used for calls. Default is 1.
+   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
    * @min 0
    * @max 2
    */
   temperature?: number;
-  /** This is the starting state for the conversation. */
-  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
   /**
@@ -310,6 +317,7 @@ export interface ElevenLabsVoice {
     | "burt"
     | "marissa"
     | "andrea"
+    | "sarah"
     | "phillip"
     | "steve"
     | "joseph"
@@ -348,21 +356,28 @@ export interface ElevenLabsVoice {
    * @example false
    */
   useSpeakerBoost?: boolean;
+  /**
+   * Defines the optimize streaming latency for voice settings.
+   * @min 1
+   * @max 4
+   * @example 4
+   */
+  optimizeStreamingLatency?: number;
 }
 
 export interface OpenAIModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
   /** This is the provider that will be used for the model. */
   provider: "openai";
   /** This is the OpenAI model that will be used. */
   model: "gpt-4" | "gpt-3.5-turbo";
   /**
-   * This is the temperature that will be used for calls. Default is 1.
+   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
    * @min 0
    * @max 2
    */
   temperature?: number;
-  /** This is the starting state for the conversation. */
-  messages: object[];
   /** These are the functions that the assistant can execute during the call. */
   functions?: OpenAIFunction[];
   /**
@@ -518,11 +533,6 @@ export interface CreateAssistantDTO {
    */
   forwardingPhoneNumber?: string;
   /**
-   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
-   * @example true
-   */
-  interruptionsEnabled?: boolean;
-  /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
    */
@@ -537,6 +547,11 @@ export interface CreateAssistantDTO {
    * @default null
    */
   dialKeypadFunctionEnabled?: boolean;
+  /**
+   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
+   * @example false
+   */
+  hipaaEnabled?: boolean;
   /**
    * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call', 'speech-update', 'metadata', 'conversation-update']
    * @example ["transcript","hang","function-call","speech-update","metadata","conversation-update"]
@@ -662,11 +677,6 @@ export interface Assistant {
    */
   forwardingPhoneNumber?: string;
   /**
-   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
-   * @example true
-   */
-  interruptionsEnabled?: boolean;
-  /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
    */
@@ -681,6 +691,11 @@ export interface Assistant {
    * @default null
    */
   dialKeypadFunctionEnabled?: boolean;
+  /**
+   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
+   * @example false
+   */
+  hipaaEnabled?: boolean;
   /**
    * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call', 'speech-update', 'metadata', 'conversation-update']
    * @example ["transcript","hang","function-call","speech-update","metadata","conversation-update"]
@@ -820,11 +835,6 @@ export interface UpdateAssistantDTO {
    */
   forwardingPhoneNumber?: string;
   /**
-   * This sets whether the user can interrupt the assistant while it's speaking. Defaults to true.
-   * @example true
-   */
-  interruptionsEnabled?: boolean;
-  /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
    */
@@ -839,6 +849,11 @@ export interface UpdateAssistantDTO {
    * @default null
    */
   dialKeypadFunctionEnabled?: boolean;
+  /**
+   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
+   * @example false
+   */
+  hipaaEnabled?: boolean;
   /**
    * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call', 'speech-update', 'metadata', 'conversation-update']
    * @example ["transcript","hang","function-call","speech-update","metadata","conversation-update"]
@@ -1652,6 +1667,23 @@ export interface UpdatePhoneNumberDTO {
   assistantId?: string;
 }
 
+export interface Metrics {
+  orgId: string;
+  rangeStart: string;
+  rangeEnd: string;
+  bill: number;
+  billWithinBillingLimit: boolean;
+  billDailyBreakdown: object;
+  callActive: string;
+  callActiveWithinConcurrencyLimit: boolean;
+  callMinutes: string;
+  callMinutesDailyBreakdown: object;
+  callMinutesAverage: string;
+  callMinutesAverageDailyBreakdown: object;
+  callCount: string;
+  callCountDailyBreakdown: object;
+}
+
 export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, "body" | "bodyUsed">;
 
@@ -1698,7 +1730,7 @@ export enum ContentType {
 }
 
 export class HttpClient<SecurityDataType = unknown> {
-  public baseUrl: string = "https://api.vapi.ai";
+  public baseUrl: string = "https://west-api.vapi.ai";
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private abortControllers = new Map<CancelToken, AbortController>();
@@ -1865,7 +1897,7 @@ export class HttpClient<SecurityDataType = unknown> {
 /**
  * @title Vapi API
  * @version 1.0
- * @baseUrl https://api.vapi.ai
+ * @baseUrl https://west-api.vapi.ai
  * @contact
  *
  * API for building voice assistants
@@ -2049,6 +2081,8 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     callControllerFindAll: (
       query?: {
+        /** This will return calls with the specified assistantId. */
+        assistantId?: string;
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -2764,6 +2798,44 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       this.request<PhoneNumber, any>({
         path: `/phone-number/${id}`,
         method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+  };
+  metrics = {
+    /**
+     * No description
+     *
+     * @tags Metrics
+     * @name MetricsControllerFindAll
+     * @summary List Metrics
+     * @request GET:/metrics
+     * @secure
+     */
+    metricsControllerFindAll: (
+      query?: {
+        /**
+         * This will include calls with a createdAt timestamp greater than or equal to the specified value.
+         *
+         * If not provided, defaults to the org's current period start.
+         * @format date-time
+         */
+        rangeStart?: string;
+        /**
+         * This will include calls with a createdAt timestamp less than the specified value.
+         *
+         * If not provided, the default value will be the current timestamp.
+         * @format date-time
+         */
+        rangeEnd?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<Metrics[], any>({
+        path: `/metrics`,
+        method: "GET",
+        query: query,
         secure: true,
         format: "json",
         ...params,
