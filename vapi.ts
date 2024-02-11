@@ -265,10 +265,10 @@ export default class Vapi extends VapiEventEmitter {
       this.call.setLocalAudio(!mute);
     } catch (error) {
       console.error("Error in setMuted:", error);
-      throw error; // Rethrow the error to allow it to be caught in tests or higher up in the call stack.
+      throw error;
     }
   }
-  
+
   public toggleMute() {
     try {
       if (!this.call) {
