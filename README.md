@@ -69,6 +69,14 @@ vapi.stop();
 
 This will stop the recording and close the connection.
 
+The `setMuted(muted: boolean)` can be used to mute and un-mute the user's microphone.
+
+```javascript
+vapi.isMuted(); // false
+vapi.setMuted(true);
+vapi.isMuted(); // true
+```
+
 ## Events
 
 You can listen to the following events:

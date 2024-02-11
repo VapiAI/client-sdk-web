@@ -1,6 +1,6 @@
-import Vapi from '../vapi'; // Adjust the import path based on your project structure
+import Vapi from "../vapi"; // Adjust the import path based on your project structure
 
-describe('Vapi', () => {
+describe("Vapi", () => {
   let vapi: Vapi;
   let mockCall: any;
 
@@ -11,43 +11,46 @@ describe('Vapi', () => {
       localAudio: jest.fn(),
     };
     // Initialize Vapi instance and inject the mock
-    vapi = new Vapi('dummy_token');
-    vapi['call'] = mockCall; // Assuming you have a way to set this for testing
+    vapi = new Vapi("dummy_token");
+    vapi["call"] = mockCall; // Assuming you have a way to set this for testing
   });
 
-  describe('setMuted', () => {
-    it('should mute the audio', () => {
-      vapi['setMuted'](true);
+  describe("setMuted", () => {
+    it("should mute the audio", () => {
+      vapi["setMuted"](true);
       expect(mockCall.setLocalAudio).toHaveBeenCalledWith(false);
     });
 
-    it('should unmute the audio', () => {
-      vapi['setMuted'](false);
+    it("should unmute the audio", () => {
+      vapi["setMuted"](false);
       expect(mockCall.setLocalAudio).toHaveBeenCalledWith(true);
     });
 
-    it('should handle errors when call object is not available', () => {
-      vapi['call'] = null; // Simulate call object not being available
-      expect(() => vapi['setMuted'](true)).toThrow('Call object is not available.');
+    it("should handle errors when call object is not available", () => {
+      vapi["call"] = null; // Simulate call object not being available
+      expect(() => vapi["setMuted"](true)).toThrow(
+        "Call object is not available."
+      );
     });
   });
 
-  describe('toggleMute', () => {
-    it('should toggle audio from unmuted to muted', () => {
+  describe("isMuted", () => {
+    it("should return false if false", () => {
+      mockCall.localAudio.mockReturnValue(false); // Initially not muted
+      const res = vapi.isMuted();
+      expect(res).toBe(true);
+    });
+
+    it("should return true if true", () => {
       mockCall.localAudio.mockReturnValue(true); // Initially not muted
-      vapi.toggleMute();
-      expect(mockCall.setLocalAudio).toHaveBeenCalledWith(false); // Should mute
+      const res = vapi.isMuted();
+      expect(res).toBe(false);
     });
 
-    it('should toggle audio from muted to unmuted', () => {
-      mockCall.localAudio.mockReturnValue(false); // Initially muted
-      vapi.toggleMute();
-      expect(mockCall.setLocalAudio).toHaveBeenCalledWith(true); // Should unmute
-    });
-
-    it('should handle errors when call object is not available', () => {
-      vapi['call'] = null; // Simulate call object not being available
-      expect(() => vapi.toggleMute()).toThrow('Call object is not available.');
+    it("should return false if no call in progress", () => {
+      vapi["call"] = null; // Simulate call object not being available
+      const res = vapi.isMuted();
+      expect(res).toBe(false);
     });
   });
 });

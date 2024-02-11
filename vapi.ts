@@ -178,7 +178,7 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       this.call.startRemoteParticipantsAudioLevelObserver(100);
-      
+
       this.call.on("remote-participants-audio-level", (e) => {
         if (e) this.handleRemoteParticipantsAudioLevel(e);
       });
@@ -212,7 +212,7 @@ export default class Vapi extends VapiEventEmitter {
           const parsedMessage = JSON.parse(e.data);
           this.emit("message", parsedMessage);
         } catch (parseError) {
-          console.log("Error parsing message data: ", parseError); 
+          console.log("Error parsing message data: ", parseError);
         }
       }
     } catch (e) {
@@ -257,28 +257,25 @@ export default class Vapi extends VapiEventEmitter {
     this.call?.sendAppMessage(JSON.stringify(message));
   }
 
-  private setMuted(mute: boolean) {
+  public setMuted(mute: boolean) {
     try {
       if (!this.call) {
-        throw new Error('Call object is not available.');
+        throw new Error("Call object is not available.");
       }
       this.call.setLocalAudio(!mute);
     } catch (error) {
-      console.error("Error in setMuted:", error);
       throw error;
     }
   }
 
-  public toggleMute() {
+  public isMuted() {
     try {
       if (!this.call) {
-        throw new Error('Call object is not available.');
+        return false;
       }
-      const isCurrentlyMuted = this.call.localAudio() === false;
-      this.setMuted(!isCurrentlyMuted);
+      return this.call.localAudio() === false;
     } catch (error) {
-      console.error("Error in toggleMute:", error);
-      throw error; 
+      throw error;
     }
-  } 
+  }
 }
