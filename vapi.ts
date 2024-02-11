@@ -56,9 +56,7 @@ type VapiEventNames =
   | "speech-start"
   | "speech-end"
   | "message"
-  | "error"
-  | "audio-muted"
-  | "audio-unmuted";
+  | "error";
 
 type VapiEventListeners = {
   "call-end": () => void;
@@ -68,8 +66,6 @@ type VapiEventListeners = {
   "speech-end": () => void;
   message: (message: any) => void;
   error: (error: any) => void;
-  "audio-muted": () => void;
-  "audio-unmuted": () => void;
 };
 
 class VapiEventEmitter extends EventEmitter {
@@ -187,10 +183,6 @@ export default class Vapi extends VapiEventEmitter {
         if (e) this.handleRemoteParticipantsAudioLevel(e);
       });
 
-      this.call.on("app-message", (e) => {
-        if (e) this.onAppMessage(e);
-      });
-
       this.call.on("app-message", (e) => this.onAppMessage(e));
 
       this.call.updateInputSettings({
@@ -210,23 +202,11 @@ export default class Vapi extends VapiEventEmitter {
     }
   }
 
-  private muteUnmuteLocalAudio(enable: boolean) {
-    if (this.call) {
-      this.call.setLocalAudio(enable);
-    }
-  }
-
   private onAppMessage(e?: DailyEventObjectAppMessage) {
     if (!e) return;
     try {
       if (e.data === "listening") {
         return this.emit("call-start");
-      } else if (e.data == "mute-audio") {
-        this.muteUnmuteLocalAudio(false);
-        return this.emit("audio-muted")
-      } else if (e.data == "unmute-audio") {
-        this.muteUnmuteLocalAudio(true);
-        return this.emit("audio-unmuted");
       } else {
         try {
           const parsedMessage = JSON.parse(e.data);
@@ -276,4 +256,16 @@ export default class Vapi extends VapiEventEmitter {
   send(message: VapiClientToServerMessage): void {
     this.call?.sendAppMessage(JSON.stringify(message));
   }
+
+  private setMuted(mute: boolean) {
+    if (this.call) {
+      this.call.setLocalAudio(mute);
+    }
+  }
+
+  public toggleMute() {
+    const isCurrentlyMuted = this.call?.localAudio() === false;
+    this.setMuted(!isCurrentlyMuted);
+  }
+  
 }

@@ -2,7 +2,7 @@ import type { Config } from '@jest/types';
 
 const config: Config.InitialOptions = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   // Your Jest configuration options here
   // For example, to match test files:
   testMatch: ['**/__tests__/**/*.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
