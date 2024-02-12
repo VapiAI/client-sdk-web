@@ -28,7 +28,7 @@ export interface DeepgramVoice {
 
 export interface OpenAIMessage {
   content: string | null;
-  role: object;
+  role: string;
   function_call?: object;
   tool_calls?: object[];
 }
