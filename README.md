@@ -31,8 +31,12 @@ vapi.start({
   model: {
     provider: "openai",
     model: "gpt-3.5-turbo",
-    systemPrompt: "You're an assistant..."
-  },
+    messages: [
+      {
+        role: "system",
+        content: "You are an assistant.",
+      },
+   ],
    voice: {
     provider: "11labs",
     voiceId: "burt",
