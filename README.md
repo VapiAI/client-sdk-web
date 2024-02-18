@@ -36,7 +36,8 @@ vapi.start({
         role: "system",
         content: "You are an assistant.",
       },
-   ],
+     ],
+   }
    voice: {
     provider: "11labs",
     voiceId: "burt",
