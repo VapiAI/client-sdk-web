@@ -123,7 +123,7 @@ export default class Vapi extends VapiEventEmitter {
       ).data;
 
       if (this.call) {
-        this.call.destroy();
+        this.cleanup();
       }
       this.call = DailyIframe.createCallObject({
         audioSource: true,
