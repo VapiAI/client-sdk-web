@@ -45,7 +45,12 @@ export interface AddMessageMessage {
   message: ChatCompletionMessageParam;
 }
 
-type VapiClientToServerMessage = AddMessageMessage;
+export interface ControlMessages {
+  type: 'control';
+  control: 'mute-assistant' | 'unmute-assistant';
+}
+
+type VapiClientToServerMessage = AddMessageMessage | ControlMessages;
 
 type VapiEventNames =
   | 'call-end'
