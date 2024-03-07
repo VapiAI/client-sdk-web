@@ -113,8 +113,6 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   async start(assistant: CreateAssistantDTO | string): Promise<Call | null> {
-    console.log('start the call from web sdk');
-
     if (this.started) {
       return null;
     }
@@ -245,7 +243,6 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   send(message: VapiClientToServerMessage): void {
-    console.log('the call is: ', this);
     this.call?.sendAppMessage(JSON.stringify(message));
   }
 
