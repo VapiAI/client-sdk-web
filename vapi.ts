@@ -45,7 +45,12 @@ export interface AddMessageMessage {
   message: ChatCompletionMessageParam;
 }
 
-type VapiClientToServerMessage = AddMessageMessage;
+export interface ControlMessages {
+  type: 'control';
+  control: 'mute-assistant' | 'unmute-assistant';
+}
+
+type VapiClientToServerMessage = AddMessageMessage | ControlMessages;
 
 type VapiEventNames =
   | 'call-end'
@@ -108,6 +113,8 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   async start(assistant: CreateAssistantDTO | string): Promise<Call | null> {
+    console.log('start the call from web sdk');
+
     if (this.started) {
       return null;
     }
@@ -238,6 +245,7 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   send(message: VapiClientToServerMessage): void {
+    console.log('the call is: ', this);
     this.call?.sendAppMessage(JSON.stringify(message));
   }
 
