@@ -45,23 +45,40 @@ vapi.start({
   ...
 });
 ```
+
 ```javascript
 vapi.start('your-assistant-id');
 ```
 
-The `start` method will initiate a new call. 
+The `start` method will initiate a new call.
+
+You can also override existing assistant parameters or set variables with the `assistant_overrides` parameter.
+Assume the first message is `Hey, {{name}} how are you?` and you want to set the value of `name` to `John`:
+
+```javascript
+const assistantOverrides = {
+  recordingEnabled: false,
+  variableValues: {
+    name: 'John',
+  },
+};
+
+vapi.start({
+  assistantId: 'your-assistant-id',
+  assistantOverrides: assistantOverrides,
+});
+```
 
 You can also send text messages to the assistant aside from the audio input using the `send` method and passing appropriate `role` and `content`.
 
 ```javascript
 vapi.send({
-  type: "add-message",
+  type: 'add-message',
   message: {
-    role: "system",
-    content: "The user has pressed the button, say peanuts",
+    role: 'system',
+    content: 'The user has pressed the button, say peanuts',
   },
 });
-
 ```
 
 Possible values for the role are `system`, `user`, `assistant`, `tool` or `function`.
@@ -113,12 +130,11 @@ vapi.on('message', (message) => {
 });
 
 vapi.on('error', (e) => {
-  console.error(e)
+  console.error(e);
 });
 ```
 
 These events allow you to react to changes in the state of the call or speech.
-
 
 ## License
 
