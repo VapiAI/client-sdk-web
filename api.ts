@@ -845,6 +845,13 @@ export interface CreateAssistantDTO {
   serverUrlSecret?: string;
 }
 
+export interface OverrideAssistantDTO extends CreateAssistantDTO {
+  /**
+   * These are template variables that will be replaced in the assistant messages and prompts.
+   */
+  variableValues?: Record<string, string>;
+}
+
 export interface Assistant {
   /** These are the options for the assistant's transcriber. */
   transcriber?: DeepgramTranscriber | TalkscriberTranscriber;
@@ -1394,6 +1401,8 @@ export interface CreateOutboundCallDTO {
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
   assistant?: CreateAssistantDTO;
+  /** These are assistant overrides for the call. */
+  assistantOverrides?: OverrideAssistantDTO;
   /**
    * This is the customer that will be called. To call a transient customer , use `customer` instead.
    *
@@ -1427,6 +1436,8 @@ export interface CreateWebCallDTO {
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
   assistant?: CreateAssistantDTO;
+  /** These are assistant overrides for the call. */
+  assistantOverrides?: OverrideAssistantDTO;
   /** This will expose SIP URI you can use to connect to the call. Disabled by default. */
   sipEnabled?: boolean;
   /** This is the metadata associated with the call. */

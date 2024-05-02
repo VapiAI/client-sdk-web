@@ -1,4 +1,4 @@
-import { Call, CreateAssistantDTO } from './api';
+import { Call, CreateAssistantDTO, OverrideAssistantDTO } from './api';
 import DailyIframe, {
   DailyCall,
   DailyEventObjectAppMessage,
@@ -112,7 +112,10 @@ export default class Vapi extends VapiEventEmitter {
     this.speakingTimeout = null;
   }
 
-  async start(assistant: CreateAssistantDTO | string): Promise<Call | null> {
+  async start(
+    assistant: CreateAssistantDTO | string,
+    assistantOverrides?: OverrideAssistantDTO,
+  ): Promise<Call | null> {
     if (this.started) {
       return null;
     }
@@ -124,6 +127,7 @@ export default class Vapi extends VapiEventEmitter {
         await client.call.callControllerCreateWebCall({
           assistant: typeof assistant === 'string' ? undefined : assistant,
           assistantId: typeof assistant === 'string' ? assistant : undefined,
+          assistantOverrides,
         })
       ).data;
 
