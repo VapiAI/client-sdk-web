@@ -9,28 +9,78 @@
  * ---------------------------------------------------------------
  */
 
+export class CreateWebCallDTO {
+  /**
+   * This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
+   */
+  assistantId?: string;
+
+  /**
+   * Overrides for the assistant's settings and template variables.
+   */
+  assistantOverrides?: OverrideAssistantDTO;
+
+  /**
+   * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
+   */
+  assistant?: CreateAssistantDTO;
+
+  /**
+   * This will expose SIP URI you can use to connect to the call. Disabled by default.
+   */
+  sipEnabled?: boolean;
+
+  /**
+   * This is the metadata associated with the call.
+   */
+  metadata?: Record<string, any>;
+}
+
 export interface DeepgramVoice {
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * @min 1
+   * @max 80
+   * @example 10
+   */
+  inputMinCharacters?: number;
+  /**
+   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
+   */
+  inputPunctuationBoundaries?:
+    | '。'
+    | '，'
+    | '.'
+    | '!'
+    | '?'
+    | ';'
+    | ')'
+    | '،'
+    | '۔'
+    | '।'
+    | '॥'
+    | '|'
+    | '||'
+    | ','
+    | ':';
   /** This is the voice provider that will be used. */
   provider: 'deepgram';
   /** This is the provider-specific ID that will be used. */
   voiceId:
     | 'asteria'
     | 'luna'
-    | 'hera'
+    | 'stella'
     | 'athena'
-    | 'varun'
-    | 'leo'
+    | 'hera'
+    | 'orion'
+    | 'arcas'
     | 'perseus'
-    | 'helios'
     | 'angus'
+    | 'orpheus'
+    | 'helios'
+    | 'zeus'
     | string;
-}
-
-export interface OpenAIMessage {
-  content: string | null;
-  role: 'assistant' | 'function' | 'user' | 'system';
-  function_call?: object;
-  tool_calls?: object[];
 }
 
 export interface JsonSchema {
@@ -126,8 +176,6 @@ export interface OpenAIFunction {
    * @pattern /^[a-zA-Z0-9_-]{1,64}$/
    */
   name: string;
-  /** Setting async: true will cause the function to be called asynchronously, meaning that the Assistant will not wait for the function to return before continuing. */
-  async?: boolean;
   /**
    * This is the description of what the function does, used by the AI to choose when and how to call the function.
    * @maxLength 1000
@@ -143,9 +191,118 @@ export interface OpenAIFunction {
   parameters?: OpenAIFunctionParameters;
 }
 
+export interface Server {
+  /** API endpoint to send requests to. */
+  url: string;
+  /**
+   * This is the secret you can set that Vapi will send with every request to your server. Will be sent as a header called x-vapi-secret.
+   *
+   * Same precedence logic as server.
+   */
+  secret?: string;
+}
+
+export interface FunctionTool {
+  type: 'function';
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The function definition details for the function tool. */
+  function: OpenAIFunction;
+  /**
+   * This is the server VAPI will hit this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: tool.server.url > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl
+   */
+  server?: Server;
+  /** Setting async: true will cause the function to be called asynchronously, meaning that the Assistant will not wait for the function to return before continuing. */
+  async?: boolean;
+}
+
+export interface TransferDestination {
+  message: string;
+  destination: string;
+  description: string;
+}
+
+export interface TransferTool {
+  type: 'transferCall';
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the description of what the function does, used by the AI to choose when and how to call the function.
+   * @default "Use this tool to transfer the call. Only use it when following instructions that explicitly ask you to use the transferCall tool. DO NOT call this tool unless you are instructed to do so."
+   */
+  description?: string;
+  destinations?: TransferDestination[];
+  /**
+   * This is the server VAPI will hit this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   */
+  server?: Server;
+}
+
+export interface EndCallTool {
+  type: 'endCall';
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The function definition details for the function tool. */
+  function: OpenAIFunction;
+}
+
+export interface DtmfTool {
+  type: 'dtmf';
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The function definition details for the function tool. */
+  function: OpenAIFunction;
+}
+
+export interface Condition {
+  param: string;
+  value: object;
+  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte';
+}
+
+export interface ToolMessageComplete {
+  type: 'request-complete';
+  content: string;
+  conditions?: Condition[];
+}
+
+export interface ToolMessageDelayed {
+  type: 'request-response-delayed';
+  content: string;
+  /**
+   * The number of milliseconds to wait for the server response before saying this message.
+   * @example 1000
+   */
+  timingMilliseconds?: number;
+  conditions?: Condition[];
+}
+
+export interface ToolMessageFailed {
+  type: 'request-failed';
+  content: string;
+  conditions?: Condition[];
+}
+
+export interface ToolMessageStart {
+  type: 'request-start';
+  content: string;
+  conditions?: Condition[];
+}
+
+export interface OpenAIMessage {
+  content: string | null;
+  role: 'assistant' | 'function' | 'user' | 'system';
+  function_call?: object;
+  tool_calls?: object[];
+}
+
 export interface TogetherAIModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
+  /** These are the tools functions that the assistant can execute during the call. */
+  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
   provider: 'together-ai';
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
@@ -155,8 +312,6 @@ export interface TogetherAIModel {
    * @max 2
    */
   temperature?: number;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
@@ -168,6 +323,8 @@ export interface TogetherAIModel {
 export interface AnyscaleModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
+  /** These are the tools functions that the assistant can execute during the call. */
+  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
   provider: 'anyscale';
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
@@ -177,8 +334,6 @@ export interface AnyscaleModel {
    * @max 2
    */
   temperature?: number;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
@@ -190,6 +345,8 @@ export interface AnyscaleModel {
 export interface OpenRouterModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
+  /** These are the tools functions that the assistant can execute during the call. */
+  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
   provider: 'openrouter';
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
@@ -199,8 +356,6 @@ export interface OpenRouterModel {
    * @max 2
    */
   temperature?: number;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
@@ -212,6 +367,8 @@ export interface OpenRouterModel {
 export interface PerplexityAIModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
+  /** These are the tools functions that the assistant can execute during the call. */
+  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
   provider: 'perplexity-ai';
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
@@ -221,8 +378,6 @@ export interface PerplexityAIModel {
    * @max 2
    */
   temperature?: number;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
@@ -234,6 +389,8 @@ export interface PerplexityAIModel {
 export interface DeepInfraModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
+  /** These are the tools functions that the assistant can execute during the call. */
+  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
   provider: 'deepinfra';
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
@@ -243,8 +400,6 @@ export interface DeepInfraModel {
    * @max 2
    */
   temperature?: number;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
@@ -256,6 +411,8 @@ export interface DeepInfraModel {
 export interface CustomLLMModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
+  /** These are the tools functions that the assistant can execute during the call. */
+  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
   /** This is the provider that will be used for the model. Any service, including your own server, that is compatible with the OpenAI API can be used. */
   provider: 'custom-llm';
   /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
@@ -270,8 +427,6 @@ export interface CustomLLMModel {
    * @max 2
    */
   temperature?: number;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
@@ -283,8 +438,10 @@ export interface CustomLLMModel {
 export interface GroqModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
+  /** These are the tools functions that the assistant can execute during the call. */
+  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
   /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
-  model: 'mixtral-8x7b-32768';
+  model: 'mixtral-8x7b-32768' | 'llama3-8b-8192' | 'llama3-70b-8192';
   provider: 'groq';
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
@@ -292,8 +449,28 @@ export interface GroqModel {
    * @max 2
    */
   temperature?: number;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 1000
+   */
+  maxTokens?: number;
+}
+
+export interface AnthropicModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
+  /** These are the tools functions that the assistant can execute during the call. */
+  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
+  /** This is the Anthropic/Claude models that will be used. */
+  model: 'claude-3-opus-20240229' | 'claude-3-sonnet-20240229' | 'claude-3-haiku-20240307';
+  provider: 'anthropic';
+  /**
+   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
@@ -318,12 +495,30 @@ export interface DeepgramTranscriber {
     | 'nova-2-medical'
     | 'nova-2-drivethru'
     | 'nova-2-automotive'
+    | 'nova'
+    | 'nova-general'
+    | 'nova-phonecall'
+    | 'nova-medical'
+    | 'enhanced'
+    | 'enhanced-general'
+    | 'enhanced-meeting'
+    | 'enhanced-phonecall'
+    | 'enhanced-finance'
+    | 'base'
+    | 'base-general'
+    | 'base-meeting'
+    | 'base-phonecall'
+    | 'base-finance'
+    | 'base-conversationalai'
+    | 'base-voicemail'
+    | 'base-video'
     | string;
   /** This is the language that will be set for the transcription. The list of languages Deepgram supports can be found here: https://developers.deepgram.com/docs/models-languages-overview */
   language?:
     | 'cs'
     | 'da'
     | 'da-DK'
+    | 'de-CH'
     | 'nl'
     | 'en'
     | 'en-US'
@@ -353,7 +548,15 @@ export interface DeepgramTranscriber {
     | 'sv'
     | 'sv-SE'
     | 'tr'
-    | 'uk';
+    | 'uk'
+    | 'zh'
+    | 'zh-CN'
+    | 'zh-TW';
+  /**
+   * This will be use smart format option provided by Deepgram. It's default disabled because it can sometimes format numbers as times sometimes but it's getting better.
+   * @example false
+   */
+  smartFormat?: boolean;
   /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
 }
@@ -465,11 +668,36 @@ export interface TalkscriberTranscriber {
     | 'jw'
     | 'su'
     | 'yue';
-  /** This is the mode that will be used for Whisper. If 'transcribe' is selected, the audio will be transcribed in the language selected in 'language' field. If 'translate' is selected, the audio will be translated from language selected in 'language' field to English. Default is 'translate'. */
-  mode?: 'transcribe' | 'translate';
 }
 
 export interface ElevenLabsVoice {
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * @min 1
+   * @max 80
+   * @example 10
+   */
+  inputMinCharacters?: number;
+  /**
+   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
+   */
+  inputPunctuationBoundaries?:
+    | '。'
+    | '，'
+    | '.'
+    | '!'
+    | '?'
+    | ';'
+    | ')'
+    | '،'
+    | '۔'
+    | '।'
+    | '॥'
+    | '|'
+    | '||'
+    | ','
+    | ':';
   /** This is the voice provider that will be used. */
   provider: '11labs';
   /** This is the provider-specific ID that will be used. Ensure the Voice is present in your 11Labs Voice Library. */
@@ -518,7 +746,7 @@ export interface ElevenLabsVoice {
   useSpeakerBoost?: boolean;
   /**
    * Defines the optimize streaming latency for voice settings.
-   * @min 1
+   * @min 0
    * @max 4
    * @example 4
    */
@@ -527,24 +755,60 @@ export interface ElevenLabsVoice {
    * This is the model that will be used. Defaults to 'eleven_multilingual_v2' if transcriber.language is non-English, otherwise 'eleven_turbo_v2'.
    * @example "eleven_turbo_v2"
    */
-  model?: 'eleven_multilingual_v2' | 'eleven_turbo_v2';
+  model?: 'eleven_multilingual_v2' | 'eleven_turbo_v2' | 'eleven_monolingual_v1';
 }
 
 export interface OpenAIModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
+  /** These are the tools functions that the assistant can execute during the call. */
+  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
   /** This is the provider that will be used for the model. */
   provider: 'openai';
   /** This is the OpenAI model that will be used. */
-  model: 'gpt-4' | 'gpt-3.5-turbo';
+  model:
+    | 'gpt-4-turbo'
+    | 'gpt-4-turbo-2024-04-09'
+    | 'gpt-4-turbo-preview'
+    | 'gpt-4-0125-preview'
+    | 'gpt-4-1106-preview'
+    | 'gpt-4'
+    | 'gpt-4-0613'
+    | 'gpt-3.5-turbo'
+    | 'gpt-3.5-turbo-0125'
+    | 'gpt-3.5-turbo-1106'
+    | 'gpt-3.5-turbo-16k'
+    | 'gpt-3.5-turbo-0613';
+  /**
+   * These are the fallback models that will be used if the primary model fails. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest fallbacks that make sense.
+   * @example ["gpt-4-0125-preview","gpt-4-0613"]
+   */
+  fallbackModels?:
+    | 'gpt-4-turbo'
+    | 'gpt-4-turbo-2024-04-09'
+    | 'gpt-4-turbo-preview'
+    | 'gpt-4-0125-preview'
+    | 'gpt-4-1106-preview'
+    | 'gpt-4'
+    | 'gpt-4-0613'
+    | 'gpt-3.5-turbo'
+    | 'gpt-3.5-turbo-0125'
+    | 'gpt-3.5-turbo-1106'
+    | 'gpt-3.5-turbo-16k'
+    | 'gpt-3.5-turbo-0613';
+  /** @example true */
+  semanticCachingEnabled?: boolean;
+  /**
+   * This sets how many turns at the start of the conversation to use gpt-3.5-turbo before switching to the primary model. Default is 0.
+   * @min 0
+   */
+  numFastTurns?: number;
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
    * @min 0
    * @max 2
    */
   temperature?: number;
-  /** These are the functions that the assistant can execute during the call. */
-  functions?: OpenAIFunction[];
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
@@ -554,6 +818,33 @@ export interface OpenAIModel {
 }
 
 export interface PlayHTVoice {
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * @min 1
+   * @max 80
+   * @example 10
+   */
+  inputMinCharacters?: number;
+  /**
+   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
+   */
+  inputPunctuationBoundaries?:
+    | '。'
+    | '，'
+    | '.'
+    | '!'
+    | '?'
+    | ';'
+    | ')'
+    | '،'
+    | '۔'
+    | '।'
+    | '॥'
+    | '|'
+    | '||'
+    | ','
+    | ':';
   /** This is the voice provider that will be used. */
   provider: 'playht';
   /** This is the provider-specific ID that will be used. */
@@ -571,7 +862,7 @@ export interface PlayHTVoice {
     | string;
   /**
    * This is the speed multiplier that will be used.
-   * @min 0
+   * @min 0.1
    * @max 5
    * @example null
    */
@@ -624,34 +915,138 @@ export interface PlayHTVoice {
 }
 
 export interface RimeAIVoice {
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * @min 1
+   * @max 80
+   * @example 10
+   */
+  inputMinCharacters?: number;
+  /**
+   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
+   */
+  inputPunctuationBoundaries?:
+    | '。'
+    | '，'
+    | '.'
+    | '!'
+    | '?'
+    | ';'
+    | ')'
+    | '،'
+    | '۔'
+    | '।'
+    | '॥'
+    | '|'
+    | '||'
+    | ','
+    | ':';
   /** This is the voice provider that will be used. */
   provider: 'rime-ai';
   /** This is the provider-specific ID that will be used. */
   voiceId:
-    | 'kai'
-    | 'zion'
-    | 'xavier'
-    | 'marty'
-    | 'hudson'
-    | 'savannah'
-    | 'colette'
-    | 'daphne'
-    | 'aurora'
-    | 'nova'
+    | 'abbie'
+    | 'allison'
+    | 'ally'
+    | 'alona'
+    | 'amber'
+    | 'ana'
+    | 'antoine'
+    | 'armon'
+    | 'brenda'
+    | 'brittany'
+    | 'carol'
+    | 'colin'
+    | 'courtney'
+    | 'elena'
+    | 'elliot'
+    | 'eva'
+    | 'geoff'
+    | 'gerald'
+    | 'hank'
+    | 'helen'
+    | 'hera'
+    | 'jen'
+    | 'joe'
+    | 'joy'
+    | 'juan'
+    | 'kendra'
+    | 'kendrick'
+    | 'kenneth'
+    | 'kevin'
+    | 'kris'
+    | 'linda'
+    | 'madison'
+    | 'marge'
+    | 'marina'
+    | 'marissa'
+    | 'marta'
+    | 'maya'
+    | 'nicholas'
+    | 'nyles'
+    | 'phil'
+    | 'reba'
+    | 'rex'
+    | 'rick'
+    | 'ritu'
+    | 'rob'
+    | 'rodney'
+    | 'rohan'
+    | 'rosco'
+    | 'samantha'
+    | 'sandy'
+    | 'selena'
+    | 'seth'
+    | 'sharon'
+    | 'stan'
+    | 'tamra'
+    | 'tanya'
+    | 'tibur'
+    | 'tj'
+    | 'tyler'
+    | 'viv'
+    | 'yadira'
     | string;
   /**
-   * This is the speed multiplier that will be used.
-   * @min 0
+   * @min 0.1
    * @example null
    */
   speed?: number;
 }
 
 export interface OpenAIVoice {
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * @min 1
+   * @max 80
+   * @example 10
+   */
+  inputMinCharacters?: number;
+  /**
+   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
+   */
+  inputPunctuationBoundaries?:
+    | '。'
+    | '，'
+    | '.'
+    | '!'
+    | '?'
+    | ';'
+    | ')'
+    | '،'
+    | '۔'
+    | '।'
+    | '॥'
+    | '|'
+    | '||'
+    | ','
+    | ':';
   /** This is the voice provider that will be used. */
   provider: 'openai';
   /** This is the provider-specific ID that will be used. */
-  voiceId: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' | string;
+  voiceId: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
   /**
    * This is the speed multiplier that will be used.
    * @min 0.25
@@ -662,13 +1057,73 @@ export interface OpenAIVoice {
 }
 
 export interface AzureVoice {
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * @min 1
+   * @max 80
+   * @example 10
+   */
+  inputMinCharacters?: number;
+  /**
+   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
+   */
+  inputPunctuationBoundaries?:
+    | '。'
+    | '，'
+    | '.'
+    | '!'
+    | '?'
+    | ';'
+    | ')'
+    | '،'
+    | '۔'
+    | '।'
+    | '॥'
+    | '|'
+    | '||'
+    | ','
+    | ':';
   /** This is the voice provider that will be used. */
   provider: 'azure';
   /** This is the provider-specific ID that will be used. */
   voiceId: 'andrew' | 'brian' | 'emma' | string;
+  /**
+   * This is the speed multiplier that will be used.
+   * @min 0.5
+   * @max 2
+   */
+  speed?: number;
 }
 
 export interface LMNTVoice {
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * @min 1
+   * @max 80
+   * @example 10
+   */
+  inputMinCharacters?: number;
+  /**
+   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
+   */
+  inputPunctuationBoundaries?:
+    | '。'
+    | '，'
+    | '.'
+    | '!'
+    | '?'
+    | ';'
+    | ')'
+    | '،'
+    | '۔'
+    | '।'
+    | '॥'
+    | '|'
+    | '||'
+    | ','
+    | ':';
   /** This is the voice provider that will be used. */
   provider: 'lmnt';
   /** This is the provider-specific ID that will be used. */
@@ -682,8 +1137,46 @@ export interface LMNTVoice {
   speed?: number;
 }
 
+export interface NeetsVoice {
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * @min 1
+   * @max 80
+   * @example 10
+   */
+  inputMinCharacters?: number;
+  /**
+   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
+   */
+  inputPunctuationBoundaries?:
+    | '。'
+    | '，'
+    | '.'
+    | '!'
+    | '?'
+    | ';'
+    | ')'
+    | '،'
+    | '۔'
+    | '।'
+    | '॥'
+    | '|'
+    | '||'
+    | ','
+    | ':';
+  /** This is the voice provider that will be used. */
+  provider: 'neets';
+  /** This is the provider-specific ID that will be used. */
+  voiceId: 'lily' | 'daniel' | string;
+}
+
 export interface ForwardingPhoneNumber {
-  number: string;
+  /** This is the number to forward to. Pass one of `number` or `sipUri`. */
+  number?: string;
+  /** This is the SIP URI to forward to. Pass one of `number` or `sipUri`. */
+  sipUri?: string;
+  /** This is the message that the assistant will say when the call is forwarded to this number. */
   message?: string;
 }
 
@@ -699,6 +1192,7 @@ export interface CreateAssistantDTO {
     | PerplexityAIModel
     | DeepInfraModel
     | GroqModel
+    | AnthropicModel
     | CustomLLMModel;
   /**
    * These are the options for the assistant's voice.
@@ -711,12 +1205,32 @@ export interface CreateAssistantDTO {
     | RimeAIVoice
     | DeepgramVoice
     | OpenAIVoice
-    | LMNTVoice;
+    | LMNTVoice
+    | NeetsVoice;
   /**
    * This is the number to forward to if assistant runs into issues.
    * @example null
    */
   forwardingPhoneNumber?: string;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Specify 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?: 'assistant-speaks-first' | 'assistant-waits-for-user';
+  /**
+   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence', 'machine_end_other'].
+   * @example ["machine_end_beep","machine_end_silence","machine_end_other"]
+   */
+  voicemailDetectionTypes?:
+    | 'machine_start'
+    | 'human'
+    | 'fax'
+    | 'unknown'
+    | 'machine_end_beep'
+    | 'machine_end_silence'
+    | 'machine_end_other';
   /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
@@ -738,8 +1252,8 @@ export interface CreateAssistantDTO {
    */
   hipaaEnabled?: boolean;
   /**
-   * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call', 'speech-update', 'metadata', 'conversation-update']
-   * @example ["transcript","hang","function-call","speech-update","metadata","conversation-update"]
+   * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'tool-calls', 'speech-update', 'metadata', 'conversation-update']
+   * @example ["transcript","hang","tool-calls","speech-update","metadata","conversation-update"]
    */
   clientMessages?: (
     | 'status-update'
@@ -747,20 +1261,27 @@ export interface CreateAssistantDTO {
     | 'transcript'
     | 'hang'
     | 'function-call'
+    | 'tool-calls'
     | 'metadata'
     | 'conversation-update'
+    | 'model-output'
+    | 'voice-input'
   )[];
   /**
-   * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call']
-   * @example ["end-of-call-report","status-update","hang","function-call"]
+   * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'tool-calls']
+   * @example ["end-of-call-report","status-update","hang","tool-calls"]
    */
   serverMessages?: (
     | 'status-update'
     | 'transcript'
     | 'hang'
     | 'function-call'
+    | 'tool-calls'
     | 'end-of-call-report'
     | 'conversation-update'
+    | 'phone-call-control'
+    | 'model-output'
+    | 'voice-input'
   )[];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
@@ -772,7 +1293,7 @@ export interface CreateAssistantDTO {
   /**
    * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
    * @min 0
-   * @max 2
+   * @max 5
    * @example 0.4
    */
   responseDelaySeconds?: number;
@@ -784,10 +1305,10 @@ export interface CreateAssistantDTO {
    */
   llmRequestDelaySeconds?: number;
   /**
-   * The number of words to wait for before interrupting the assistant. Words like "stop", "actually", "no", etc. will always interrupt immediately regardless of this value. Words like "okay", "yeah", "right" will never interrupt. Defaults to 2.
+   * The number of words to wait for before interrupting the assistant. Words like "stop", "actually", "no", etc. will always interrupt immediately regardless of this value. Words like "okay", "yeah", "right" will never interrupt. Defaults to 1.
    * @min 1
    * @max 10
-   * @example 2
+   * @example 1
    */
   numWordsToInterruptAssistant?: number;
   /**
@@ -798,6 +1319,16 @@ export interface CreateAssistantDTO {
    */
   maxDurationSeconds?: number;
   /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * @example "office"
+   */
+  backgroundSound?: 'off' | 'office';
+  /**
+   * backchanneling is the bot say while listening like 'mhmm', 'ahem' etc. this make the conversation sounds natural. Default True
+   * @example true
+   */
+  backchannelingEnabled?: boolean;
+  /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 100
    */
@@ -807,10 +1338,12 @@ export interface CreateAssistantDTO {
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
-   * If unspecified, it will wait for the user to speak.
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
    * @maxLength 1000
    */
   firstMessage?: string;
+  /** This sets whether the assistant should detect voicemail. Defaults to true. */
+  voicemailDetectionEnabled?: boolean;
   /**
    * This is the message that the assistant will say if the call is forwarded to voicemail.
    *
@@ -834,7 +1367,7 @@ export interface CreateAssistantDTO {
    *
    * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
    *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: function.serverUrl > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl
    */
   serverUrl?: string;
   /**
@@ -843,13 +1376,15 @@ export interface CreateAssistantDTO {
    * Same precendence logic as serverUrl.
    */
   serverUrlSecret?: string;
-}
-
-export interface OverrideAssistantDTO extends CreateAssistantDTO {
   /**
-   * These are template variables that will be replaced in the assistant messages and prompts.
+   * This is the prompt that's used to summarize the call at the end.
+   *
+   * Default is 'You are an expert note-taker. You will be given a transcript of a conversation. Please summarize the conversation in 4-5 sentences if applicable.'
+   *
+   * Set to '' or 'off' to disable post-call summarization.
+   * @maxLength 2000
    */
-  variableValues?: Record<string, string>;
+  summaryPrompt?: string;
 }
 
 export interface Assistant {
@@ -864,6 +1399,7 @@ export interface Assistant {
     | PerplexityAIModel
     | DeepInfraModel
     | GroqModel
+    | AnthropicModel
     | CustomLLMModel;
   /**
    * These are the options for the assistant's voice.
@@ -876,12 +1412,32 @@ export interface Assistant {
     | RimeAIVoice
     | DeepgramVoice
     | OpenAIVoice
-    | LMNTVoice;
+    | LMNTVoice
+    | NeetsVoice;
   /**
    * This is the number to forward to if assistant runs into issues.
    * @example null
    */
   forwardingPhoneNumber?: string;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Specify 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?: 'assistant-speaks-first' | 'assistant-waits-for-user';
+  /**
+   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence', 'machine_end_other'].
+   * @example ["machine_end_beep","machine_end_silence","machine_end_other"]
+   */
+  voicemailDetectionTypes?:
+    | 'machine_start'
+    | 'human'
+    | 'fax'
+    | 'unknown'
+    | 'machine_end_beep'
+    | 'machine_end_silence'
+    | 'machine_end_other';
   /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
@@ -903,8 +1459,8 @@ export interface Assistant {
    */
   hipaaEnabled?: boolean;
   /**
-   * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call', 'speech-update', 'metadata', 'conversation-update']
-   * @example ["transcript","hang","function-call","speech-update","metadata","conversation-update"]
+   * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'tool-calls', 'speech-update', 'metadata', 'conversation-update']
+   * @example ["transcript","hang","tool-calls","speech-update","metadata","conversation-update"]
    */
   clientMessages?: (
     | 'status-update'
@@ -912,20 +1468,27 @@ export interface Assistant {
     | 'transcript'
     | 'hang'
     | 'function-call'
+    | 'tool-calls'
     | 'metadata'
     | 'conversation-update'
+    | 'model-output'
+    | 'voice-input'
   )[];
   /**
-   * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call']
-   * @example ["end-of-call-report","status-update","hang","function-call"]
+   * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'tool-calls']
+   * @example ["end-of-call-report","status-update","hang","tool-calls"]
    */
   serverMessages?: (
     | 'status-update'
     | 'transcript'
     | 'hang'
     | 'function-call'
+    | 'tool-calls'
     | 'end-of-call-report'
     | 'conversation-update'
+    | 'phone-call-control'
+    | 'model-output'
+    | 'voice-input'
   )[];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
@@ -937,7 +1500,7 @@ export interface Assistant {
   /**
    * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
    * @min 0
-   * @max 2
+   * @max 5
    * @example 0.4
    */
   responseDelaySeconds?: number;
@@ -949,10 +1512,10 @@ export interface Assistant {
    */
   llmRequestDelaySeconds?: number;
   /**
-   * The number of words to wait for before interrupting the assistant. Words like "stop", "actually", "no", etc. will always interrupt immediately regardless of this value. Words like "okay", "yeah", "right" will never interrupt. Defaults to 2.
+   * The number of words to wait for before interrupting the assistant. Words like "stop", "actually", "no", etc. will always interrupt immediately regardless of this value. Words like "okay", "yeah", "right" will never interrupt. Defaults to 1.
    * @min 1
    * @max 10
-   * @example 2
+   * @example 1
    */
   numWordsToInterruptAssistant?: number;
   /**
@@ -963,6 +1526,16 @@ export interface Assistant {
    */
   maxDurationSeconds?: number;
   /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * @example "office"
+   */
+  backgroundSound?: 'off' | 'office';
+  /**
+   * backchanneling is the bot say while listening like 'mhmm', 'ahem' etc. this make the conversation sounds natural. Default True
+   * @example true
+   */
+  backchannelingEnabled?: boolean;
+  /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 100
    */
@@ -972,10 +1545,12 @@ export interface Assistant {
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
-   * If unspecified, it will wait for the user to speak.
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
    * @maxLength 1000
    */
   firstMessage?: string;
+  /** This sets whether the assistant should detect voicemail. Defaults to true. */
+  voicemailDetectionEnabled?: boolean;
   /**
    * This is the message that the assistant will say if the call is forwarded to voicemail.
    *
@@ -999,7 +1574,7 @@ export interface Assistant {
    *
    * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
    *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: function.serverUrl > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl
    */
   serverUrl?: string;
   /**
@@ -1008,6 +1583,15 @@ export interface Assistant {
    * Same precendence logic as serverUrl.
    */
   serverUrlSecret?: string;
+  /**
+   * This is the prompt that's used to summarize the call at the end.
+   *
+   * Default is 'You are an expert note-taker. You will be given a transcript of a conversation. Please summarize the conversation in 4-5 sentences if applicable.'
+   *
+   * Set to '' or 'off' to disable post-call summarization.
+   * @maxLength 2000
+   */
+  summaryPrompt?: string;
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -1036,6 +1620,7 @@ export interface UpdateAssistantDTO {
     | PerplexityAIModel
     | DeepInfraModel
     | GroqModel
+    | AnthropicModel
     | CustomLLMModel;
   /**
    * These are the options for the assistant's voice.
@@ -1048,12 +1633,32 @@ export interface UpdateAssistantDTO {
     | RimeAIVoice
     | DeepgramVoice
     | OpenAIVoice
-    | LMNTVoice;
+    | LMNTVoice
+    | NeetsVoice;
   /**
    * This is the number to forward to if assistant runs into issues.
    * @example null
    */
   forwardingPhoneNumber?: string;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Specify 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?: 'assistant-speaks-first' | 'assistant-waits-for-user';
+  /**
+   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence', 'machine_end_other'].
+   * @example ["machine_end_beep","machine_end_silence","machine_end_other"]
+   */
+  voicemailDetectionTypes?:
+    | 'machine_start'
+    | 'human'
+    | 'fax'
+    | 'unknown'
+    | 'machine_end_beep'
+    | 'machine_end_silence'
+    | 'machine_end_other';
   /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
@@ -1075,8 +1680,8 @@ export interface UpdateAssistantDTO {
    */
   hipaaEnabled?: boolean;
   /**
-   * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'function-call', 'speech-update', 'metadata', 'conversation-update']
-   * @example ["transcript","hang","function-call","speech-update","metadata","conversation-update"]
+   * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'tool-calls', 'speech-update', 'metadata', 'conversation-update']
+   * @example ["transcript","hang","tool-calls","speech-update","metadata","conversation-update"]
    */
   clientMessages?: (
     | 'status-update'
@@ -1084,20 +1689,27 @@ export interface UpdateAssistantDTO {
     | 'transcript'
     | 'hang'
     | 'function-call'
+    | 'tool-calls'
     | 'metadata'
     | 'conversation-update'
+    | 'model-output'
+    | 'voice-input'
   )[];
   /**
-   * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'function-call']
-   * @example ["end-of-call-report","status-update","hang","function-call"]
+   * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'tool-calls']
+   * @example ["end-of-call-report","status-update","hang","tool-calls"]
    */
   serverMessages?: (
     | 'status-update'
     | 'transcript'
     | 'hang'
     | 'function-call'
+    | 'tool-calls'
     | 'end-of-call-report'
     | 'conversation-update'
+    | 'phone-call-control'
+    | 'model-output'
+    | 'voice-input'
   )[];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
@@ -1109,7 +1721,7 @@ export interface UpdateAssistantDTO {
   /**
    * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
    * @min 0
-   * @max 2
+   * @max 5
    * @example 0.4
    */
   responseDelaySeconds?: number;
@@ -1121,10 +1733,10 @@ export interface UpdateAssistantDTO {
    */
   llmRequestDelaySeconds?: number;
   /**
-   * The number of words to wait for before interrupting the assistant. Words like "stop", "actually", "no", etc. will always interrupt immediately regardless of this value. Words like "okay", "yeah", "right" will never interrupt. Defaults to 2.
+   * The number of words to wait for before interrupting the assistant. Words like "stop", "actually", "no", etc. will always interrupt immediately regardless of this value. Words like "okay", "yeah", "right" will never interrupt. Defaults to 1.
    * @min 1
    * @max 10
-   * @example 2
+   * @example 1
    */
   numWordsToInterruptAssistant?: number;
   /**
@@ -1135,6 +1747,16 @@ export interface UpdateAssistantDTO {
    */
   maxDurationSeconds?: number;
   /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * @example "office"
+   */
+  backgroundSound?: 'off' | 'office';
+  /**
+   * backchanneling is the bot say while listening like 'mhmm', 'ahem' etc. this make the conversation sounds natural. Default True
+   * @example true
+   */
+  backchannelingEnabled?: boolean;
+  /**
    * This is the name of the assistant. This is just for your own reference.
    * @maxLength 100
    */
@@ -1144,10 +1766,12 @@ export interface UpdateAssistantDTO {
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
-   * If unspecified, it will wait for the user to speak.
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
    * @maxLength 1000
    */
   firstMessage?: string;
+  /** This sets whether the assistant should detect voicemail. Defaults to true. */
+  voicemailDetectionEnabled?: boolean;
   /**
    * This is the message that the assistant will say if the call is forwarded to voicemail.
    *
@@ -1171,7 +1795,7 @@ export interface UpdateAssistantDTO {
    *
    * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
    *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: function.serverUrl > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl
    */
   serverUrl?: string;
   /**
@@ -1180,6 +1804,257 @@ export interface UpdateAssistantDTO {
    * Same precendence logic as serverUrl.
    */
   serverUrlSecret?: string;
+  /**
+   * This is the prompt that's used to summarize the call at the end.
+   *
+   * Default is 'You are an expert note-taker. You will be given a transcript of a conversation. Please summarize the conversation in 4-5 sentences if applicable.'
+   *
+   * Set to '' or 'off' to disable post-call summarization.
+   * @maxLength 2000
+   */
+  summaryPrompt?: string;
+}
+
+export interface CostBreakdown {
+  /** This is the cost of the transport provider, like Twilio or Vonage. */
+  transport?: number;
+  /** This is the cost of the speech-to-text service. */
+  stt?: number;
+  /** This is the cost of the language model. */
+  llm?: number;
+  /** This is the cost of the text-to-speech service. */
+  tts?: number;
+  /** This is the cost of Vapi. */
+  vapi?: number;
+  /** This is the total cost of the call. */
+  total?: number;
+  /** This is the LLM prompt tokens used for the call. */
+  llmPromptTokens?: number;
+  /** This is the LLM completion tokens used for the call. */
+  llmCompletionTokens?: number;
+  /** This is the TTS characters used for the call. */
+  ttsCharacters?: number;
+}
+
+export interface PhoneCallTwilioDetails {
+  statusCallbackEvent?: 'initiated' | 'ringing' | 'answered' | 'completed';
+  machineDetection?: 'Enable' | 'DetectMessageEnd';
+  to: string;
+  from: string;
+  twiml?: string;
+  statusCallback?: string;
+  asyncAmd?: string;
+  asyncAmdStatusCallback?: string;
+  record?: boolean;
+}
+
+export interface OverrideAssistantDTO {
+  /** These are the options for the assistant's transcriber. */
+  transcriber?: DeepgramTranscriber | TalkscriberTranscriber;
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | OpenAIModel
+    | TogetherAIModel
+    | AnyscaleModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | DeepInfraModel
+    | GroqModel
+    | AnthropicModel
+    | CustomLLMModel;
+  /**
+   * These are the options for the assistant's voice.
+   * @default {"provider":"playht","voiceId":"jennifer"}
+   */
+  voice?:
+    | AzureVoice
+    | ElevenLabsVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | DeepgramVoice
+    | OpenAIVoice
+    | LMNTVoice
+    | NeetsVoice;
+  /**
+   * This is the number to forward to if assistant runs into issues.
+   * @example null
+   */
+  forwardingPhoneNumber?: string;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Specify 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?: 'assistant-speaks-first' | 'assistant-waits-for-user';
+  /**
+   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence', 'machine_end_other'].
+   * @example ["machine_end_beep","machine_end_silence","machine_end_other"]
+   */
+  voicemailDetectionTypes?:
+    | 'machine_start'
+    | 'human'
+    | 'fax'
+    | 'unknown'
+    | 'machine_end_beep'
+    | 'machine_end_silence'
+    | 'machine_end_other';
+  /**
+   * This sets whether the assistant's calls are recorded. Defaults to true.
+   * @example true
+   */
+  recordingEnabled?: boolean;
+  /**
+   * This sets whether the assistant will be able to hang up the call. Defaults to false.
+   * @example false
+   */
+  endCallFunctionEnabled?: boolean;
+  /**
+   * This sets whether the assistant can dial digits on the keypad. Defaults to false.
+   * @default null
+   */
+  dialKeypadFunctionEnabled?: boolean;
+  /**
+   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
+   * @example false
+   */
+  hipaaEnabled?: boolean;
+  /**
+   * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'tool-calls', 'speech-update', 'metadata', 'conversation-update']
+   * @example ["transcript","hang","tool-calls","speech-update","metadata","conversation-update"]
+   */
+  clientMessages?: (
+    | 'status-update'
+    | 'speech-update'
+    | 'transcript'
+    | 'hang'
+    | 'function-call'
+    | 'tool-calls'
+    | 'metadata'
+    | 'conversation-update'
+    | 'model-output'
+    | 'voice-input'
+  )[];
+  /**
+   * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'tool-calls']
+   * @example ["end-of-call-report","status-update","hang","tool-calls"]
+   */
+  serverMessages?: (
+    | 'status-update'
+    | 'transcript'
+    | 'hang'
+    | 'function-call'
+    | 'tool-calls'
+    | 'end-of-call-report'
+    | 'conversation-update'
+    | 'phone-call-control'
+    | 'model-output'
+    | 'voice-input'
+  )[];
+  /**
+   * How many seconds of silence to wait before ending the call. Defaults to 30.
+   * @min 10
+   * @max 600
+   * @example 30
+   */
+  silenceTimeoutSeconds?: number;
+  /**
+   * The minimum number of seconds after user speech to wait before the assistant starts speaking. Defaults to 0.4.
+   * @min 0
+   * @max 5
+   * @example 0.4
+   */
+  responseDelaySeconds?: number;
+  /**
+   * The minimum number of seconds to wait after punctuation before sending a request to the LLM. Defaults to 0.1.
+   * @min 0
+   * @max 3
+   * @example 0.1
+   */
+  llmRequestDelaySeconds?: number;
+  /**
+   * The number of words to wait for before interrupting the assistant. Words like "stop", "actually", "no", etc. will always interrupt immediately regardless of this value. Words like "okay", "yeah", "right" will never interrupt. Defaults to 1.
+   * @min 1
+   * @max 10
+   * @example 1
+   */
+  numWordsToInterruptAssistant?: number;
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   * @min 10
+   * @max 3600
+   * @example 1800
+   */
+  maxDurationSeconds?: number;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * @example "office"
+   */
+  backgroundSound?: 'off' | 'office';
+  /**
+   * backchanneling is the bot say while listening like 'mhmm', 'ahem' etc. this make the conversation sounds natural. Default True
+   * @example true
+   */
+  backchannelingEnabled?: boolean;
+  /** These are template variables that will be replaced in the assistant messages and prompts. */
+  variableValues?: object;
+  /**
+   * This is the name of the assistant. This is just for your own reference.
+   * @maxLength 100
+   */
+  name?: string;
+  /** You can provide a set of phone numbers to forward to. You'll want to tell the assistant when to use each of these numbers in the system prompt. */
+  forwardingPhoneNumbers?: ForwardingPhoneNumber[];
+  /**
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
+   *
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
+   * @maxLength 1000
+   */
+  firstMessage?: string;
+  /** This sets whether the assistant should detect voicemail. Defaults to true. */
+  voicemailDetectionEnabled?: boolean;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 400
+   */
+  endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
+  /** This is the metadata associated with the call. */
+  metadata?: object;
+  /**
+   * This is the URL Vapi will communicate with via HTTP GET and POST Requests. This is used for retrieving context, function calling, and end-of-call reports.
+   *
+   * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: function.serverUrl > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl
+   */
+  serverUrl?: string;
+  /**
+   * This is the secret you can set that Vapi will send with every request to your server. Will be sent as a header called x-vapi-secret.
+   *
+   * Same precendence logic as serverUrl.
+   */
+  serverUrlSecret?: string;
+  /**
+   * This is the prompt that's used to summarize the call at the end.
+   *
+   * Default is 'You are an expert note-taker. You will be given a transcript of a conversation. Please summarize the conversation in 4-5 sentences if applicable.'
+   *
+   * Set to '' or 'off' to disable post-call summarization.
+   * @maxLength 2000
+   */
+  summaryPrompt?: string;
 }
 
 export interface CreateCustomerDTO {
@@ -1214,13 +2089,13 @@ export interface ImportTwilioPhoneNumberDTO {
    *
    * If this is not set, then the phone number will not handle incoming calls.
    */
-  assistantId?: string;
+  assistantId?: string | null;
   /**
    * This is the server URL that will be used to handle this phone number.
    *
    * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
    *
-   * This overrides the serverUrl set on the org. Order of precedence: assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl.
+   * This overrides the serverUrl set on the org. Order of precedence: function.serverUrl > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl.
    */
   serverUrl?: string;
   /**
@@ -1240,6 +2115,12 @@ export interface Call {
    * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
    */
   phoneCallProvider?: 'twilio' | 'vonage';
+  /**
+   * This is the transport of the phone call.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  phoneCallTransport?: 'sip' | 'pstn';
   /** This is the status of the call. */
   status?: 'queued' | 'ringing' | 'in-progress' | 'forwarding' | 'ended';
   /** This is the explanation for how the call ended. */
@@ -1261,6 +2142,7 @@ export interface Call {
     | 'pipeline-error-deepinfra-llm-failed'
     | 'pipeline-error-runpod-llm-failed'
     | 'pipeline-error-groq-llm-failed'
+    | 'pipeline-error-anthropic-llm-failed'
     | 'pipeline-error-openai-voice-failed'
     | 'pipeline-error-deepgram-transcriber-failed'
     | 'pipeline-error-deepgram-voice-failed'
@@ -1272,11 +2154,24 @@ export interface Call {
     | 'pipeline-error-azure-voice-failed'
     | 'pipeline-error-rime-ai-voice-failed'
     | 'pipeline-error-neets-voice-failed'
+    | 'pipeline-no-available-llm-model'
     | 'server-shutdown'
     | 'twilio-failed-to-connect-call'
     | 'unknown-error'
     | 'vonage-disconnected'
     | 'vonage-failed-to-connect-call'
+    | 'phone-call-provider-bypass-enabled-but-no-call-received'
+    | 'vapi-error-phone-call-worker-setup-socket-error'
+    | 'vapi-error-phone-call-worker-worker-setup-socket-timeout'
+    | 'vapi-error-phone-call-worker-could-not-find-call'
+    | 'vapi-error-phone-call-worker-call-never-connected'
+    | 'vapi-error-web-call-worker-setup-failed'
+    | 'assistant-not-invalid'
+    | 'assistant-not-provided'
+    | 'assistant-request-returned-error'
+    | 'assistant-request-returned-invalid-assistant'
+    | 'assistant-request-returned-no-assistant'
+    | 'assistant-request-returned-forwarding-phone-number'
     | 'assistant-ended-call'
     | 'assistant-said-end-call-phrase'
     | 'assistant-forwarded-call'
@@ -1326,7 +2221,7 @@ export interface Call {
   /** This is the cost of the call in USD. */
   cost?: number;
   /** This is the cost of the call in USD. */
-  costBreakdown?: object;
+  costBreakdown?: CostBreakdown;
   /** This is the transcript of the call. */
   transcript?: string;
   /** This is the URL of the recording of the call. */
@@ -1344,10 +2239,18 @@ export interface Call {
    */
   phoneCallProviderId?: string;
   /**
-   * This is the URL of the call that the assistant will join.
+   * If enabled, prevents Vapi from initiating calls directly. Defaults to disabled.
+   * Suitable for external call handling, such as with Twilio Studio Flow, with integration details provided in `phoneCallProviderDetails`.
    *
-   * Only relevant for `webCall` type.
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` types.
    */
+  phoneCallProviderBypassEnabled?: boolean;
+  /**
+   * This is the phone call provider details to bridge the assistant into the external call. Only filled if `phoneCallProviderBypassEnabled` is true.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` types.
+   */
+  phoneCallProviderDetails?: PhoneCallTwilioDetails;
   webCallUrl?: string;
   /**
    * This is the SIP URI of the call that the assistant will join.
@@ -1358,7 +2261,9 @@ export interface Call {
   /** This is the phone number that the call was forwarded to. */
   forwardedPhoneNumber?: string;
   /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
-  assistantId?: string;
+  assistantId?: string | null;
+  /** Overrides for the assistant's settings and template variables. */
+  assistantOverrides?: OverrideAssistantDTO;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
   assistant?: CreateAssistantDTO;
   /**
@@ -1398,11 +2303,11 @@ export interface CreateOutboundCallDTO {
    */
   maxDurationSeconds?: number;
   /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
-  assistantId?: string;
+  assistantId?: string | null;
+  /** Overrides for the assistant's settings and template variables. */
+  assistantOverrides?: OverrideAssistantDTO;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
   assistant?: CreateAssistantDTO;
-  /** These are assistant overrides for the call. */
-  assistantOverrides?: OverrideAssistantDTO;
   /**
    * This is the customer that will be called. To call a transient customer , use `customer` instead.
    *
@@ -1427,19 +2332,6 @@ export interface CreateOutboundCallDTO {
    * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
    */
   phoneNumber?: ImportTwilioPhoneNumberDTO;
-  /** This is the metadata associated with the call. */
-  metadata?: object;
-}
-
-export interface CreateWebCallDTO {
-  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
-  assistantId?: string;
-  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
-  assistant?: CreateAssistantDTO;
-  /** These are assistant overrides for the call. */
-  assistantOverrides?: OverrideAssistantDTO;
-  /** This will expose SIP URI you can use to connect to the call. Disabled by default. */
-  sipEnabled?: boolean;
   /** This is the metadata associated with the call. */
   metadata?: object;
 }
@@ -1726,6 +2618,26 @@ export interface GroqCredential {
   updatedAt: string;
 }
 
+export interface AnthropicCredential {
+  provider: 'anthropic';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
 export interface VonageCredential {
   provider: 'vonage';
   /** This is not returned in the API. */
@@ -1845,6 +2757,12 @@ export interface CreateGroqCredentialDTO {
   apiKey: string;
 }
 
+export interface CreateAnthropicCredentialDTO {
+  provider: 'anthropic';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
 export interface CreateVonageCredentialDTO {
   provider: 'vonage';
   /** This is not returned in the API. */
@@ -1938,6 +2856,12 @@ export interface UpdateGroqCredentialDTO {
   apiKey: string;
 }
 
+export interface UpdateAnthropicCredentialDTO {
+  provider: 'anthropic';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
 export interface UpdateVonageCredentialDTO {
   provider: 'vonage';
   /** This is not returned in the API. */
@@ -1962,13 +2886,13 @@ export interface BuyPhoneNumberDTO {
    *
    * If this is not set, then the phone number will not handle incoming calls.
    */
-  assistantId?: string;
+  assistantId?: string | null;
   /**
    * This is the server URL that will be used to handle this phone number.
    *
    * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
    *
-   * This overrides the serverUrl set on the org. Order of precedence: assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl.
+   * This overrides the serverUrl set on the org. Order of precedence: function.serverUrl > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl.
    */
   serverUrl?: string;
   /**
@@ -2033,13 +2957,13 @@ export interface PhoneNumber {
    *
    * If this is not set, then the phone number will not handle incoming calls.
    */
-  assistantId?: string;
+  assistantId?: string | null;
   /**
    * This is the server URL that will be used to handle this phone number.
    *
    * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
    *
-   * This overrides the serverUrl set on the org. Order of precedence: assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl.
+   * This overrides the serverUrl set on the org. Order of precedence: function.serverUrl > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl.
    */
   serverUrl?: string;
   /**
@@ -2069,13 +2993,13 @@ export interface ImportVonagePhoneNumberDTO {
    *
    * If this is not set, then the phone number will not handle incoming calls.
    */
-  assistantId?: string;
+  assistantId?: string | null;
   /**
    * This is the server URL that will be used to handle this phone number.
    *
    * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
    *
-   * This overrides the serverUrl set on the org. Order of precedence: assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl.
+   * This overrides the serverUrl set on the org. Order of precedence: function.serverUrl > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl.
    */
   serverUrl?: string;
   /**
@@ -2097,13 +3021,13 @@ export interface UpdatePhoneNumberDTO {
    *
    * If this is not set, then the phone number will not handle incoming calls.
    */
-  assistantId?: string;
+  assistantId?: string | null;
   /**
    * This is the server URL that will be used to handle this phone number.
    *
    * All requests will be sent with the call object among other things relevant to that message. You can find more details in the Server URL documentation.
    *
-   * This overrides the serverUrl set on the org. Order of precedence: assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl.
+   * This overrides the serverUrl set on the org. Order of precedence: function.serverUrl > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl.
    */
   serverUrl?: string;
   /**
@@ -2129,6 +3053,78 @@ export interface Metrics {
   callMinutesAverageDailyBreakdown: object;
   callCount: string;
   callCountDailyBreakdown: object;
+}
+
+export interface VoiceLibrary {
+  /** This is the voice provider that will be used. */
+  provider?: '11labs' | 'playht' | 'rime-ai' | 'deepgram' | 'openai' | 'azure' | 'lmnt' | 'neets';
+  /** The ID of the voice provided by the provider. */
+  providerId?: string;
+  /** The unique slug of the voice. */
+  slug?: string;
+  /** The name of the voice. */
+  name?: string;
+  /** The language of the voice. */
+  language?: string;
+  /** The language code of the voice. */
+  languageCode?: string;
+  /** The model of the voice. */
+  model?: string;
+  /** The supported models of the voice. */
+  supportedModels?: string;
+  /** The gender of the voice. */
+  gender?: 'male' | 'female';
+  /** The accent of the voice. */
+  accent?: string;
+  /** The preview URL of the voice. */
+  previewUrl?: string;
+  /** The credential ID of the voice. */
+  credentialId?: string;
+  /** The deletion status of the voice. */
+  isDeleted: boolean;
+  /** The unique identifier for the voice library. */
+  id: string;
+  /** The unique identifier for the organization that this voice library belongs to. */
+  orgId: string;
+  /** The Public voice is shared accross all the organizations. */
+  isPublic: boolean;
+  /**
+   * The ISO 8601 date-time string of when the voice library was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * The ISO 8601 date-time string of when the voice library was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface CallLogPrivileged {
+  /** This is the unique identifier for the call. */
+  callId: string;
+  /** This is the unique identifier for the org that this call log belongs to. */
+  orgId: string;
+  /** This is the log message associated with the call. */
+  log: string;
+  /** This is the level of the log message. */
+  level: 'INFO' | 'LOG' | 'WARN' | 'ERROR' | 'CHECKPOINT';
+  /**
+   * This is the ISO 8601 date-time string of when the log was created.
+   * @format date-time
+   */
+  time: string;
+}
+
+export interface PaginationMeta {
+  itemsPerPage: number;
+  totalItems: number;
+  currentPage: number;
+}
+
+export interface CallLogsPaginatedResponse {
+  results: CallLogPrivileged[];
+  metadata: PaginationMeta;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -2179,7 +3175,7 @@ export enum ContentType {
 }
 
 export class HttpClient<SecurityDataType = unknown> {
-  public baseUrl: string = 'https://west-api.vapi.ai';
+  public baseUrl: string = 'https://api.vapi.ai';
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>['securityWorker'];
   private abortControllers = new Map<CancelToken, AbortController>();
@@ -2356,7 +3352,7 @@ export class HttpClient<SecurityDataType = unknown> {
 /**
  * @title Vapi API
  * @version 1.0
- * @baseUrl https://west-api.vapi.ai
+ * @baseUrl https://api.vapi.ai
  * @contact
  *
  * API for building voice assistants
@@ -2717,6 +3713,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: 'groq';
           } & CreateGroqCredentialDTO)
         | ({
+            provider: 'anthropic';
+          } & CreateAnthropicCredentialDTO)
+        | ({
             provider: 'vonage';
           } & CreateVonageCredentialDTO),
       params: RequestParams = {},
@@ -2764,6 +3763,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | ({
             provider: 'groq';
           } & GroqCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
         | ({
             provider: 'vonage';
           } & VonageCredential),
@@ -2883,6 +3885,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
               provider: 'groq';
             } & GroqCredential)
           | ({
+              provider: 'anthropic';
+            } & AnthropicCredential)
+          | ({
               provider: 'vonage';
             } & VonageCredential)
         )[],
@@ -2950,6 +3955,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: 'groq';
           } & GroqCredential)
         | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
             provider: 'vonage';
           } & VonageCredential),
         any
@@ -3016,6 +4024,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: 'groq';
           } & UpdateGroqCredentialDTO)
         | ({
+            provider: 'anthropic';
+          } & UpdateAnthropicCredentialDTO)
+        | ({
             provider: 'vonage';
           } & UpdateVonageCredentialDTO),
       params: RequestParams = {},
@@ -3063,6 +4074,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | ({
             provider: 'groq';
           } & GroqCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
         | ({
             provider: 'vonage';
           } & VonageCredential),
@@ -3130,6 +4144,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | ({
             provider: 'groq';
           } & GroqCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
         | ({
             provider: 'vonage';
           } & VonageCredential),
@@ -3351,6 +4368,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     metricsControllerFindAll: (
       query?: {
         /**
+         * Convert date & and time to provided timezone. https://popsql.com/learn-sql/postgresql/how-to-convert-utc-to-local-time-zone-in-postgresql
+         * @example "PST"
+         */
+        timezone?: string;
+        /**
          * This will include calls with a createdAt timestamp greater than or equal to the specified value.
          *
          * If not provided, defaults to the org's current period start.
@@ -3369,6 +4391,141 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     ) =>
       this.request<Metrics[], any>({
         path: `/metrics`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
+  voiceLibrary = {
+    /**
+     * No description
+     *
+     * @tags Voice Library
+     * @name VoiceLibraryControllerVoiceGetByProvider
+     * @summary Get voices in Voice Library by Providers
+     * @request GET:/voice-library/{provider}
+     * @secure
+     */
+    voiceLibraryControllerVoiceGetByProvider: (
+      provider:
+        | '11labs'
+        | 'playht'
+        | 'rime-ai'
+        | 'deepgram'
+        | 'openai'
+        | 'azure'
+        | 'lmnt'
+        | 'neets',
+      params: RequestParams = {},
+    ) =>
+      this.request<VoiceLibrary[], any>({
+        path: `/voice-library/${provider}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Voice Library
+     * @name VoiceLibraryControllerVoiceLibrarySyncByProvider
+     * @summary Sync voices in Voice Library by Providers
+     * @request POST:/voice-library/sync/{provider}
+     * @secure
+     */
+    voiceLibraryControllerVoiceLibrarySyncByProvider: (
+      provider:
+        | '11labs'
+        | 'playht'
+        | 'rime-ai'
+        | 'deepgram'
+        | 'openai'
+        | 'azure'
+        | 'lmnt'
+        | 'neets',
+      params: RequestParams = {},
+    ) =>
+      this.request<VoiceLibrary[], any>({
+        path: `/voice-library/sync/${provider}`,
+        method: 'POST',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
+  logging = {
+    /**
+     * No description
+     *
+     * @tags Logging
+     * @name LoggingControllerGetLogs
+     * @summary Get Logging Logs
+     * @request GET:/logging
+     * @secure
+     */
+    loggingControllerGetLogs: (
+      query: {
+        callId: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<CallLogsPaginatedResponse, any>({
+        path: `/logging`,
         method: 'GET',
         query: query,
         secure: true,
