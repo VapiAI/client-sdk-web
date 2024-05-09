@@ -63,10 +63,10 @@ const assistantOverrides = {
   },
 };
 
-vapi.start({
-  assistantId: 'your-assistant-id',
-  assistantOverrides: assistantOverrides,
-});
+vapi.start(
+  'your-assistant-id',
+  assistantOverrides,
+);
 ```
 
 You can send text messages to the assistant aside from the audio input using the `send` method and passing appropriate `role` and `content`.
