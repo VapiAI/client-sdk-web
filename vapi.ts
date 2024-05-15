@@ -154,6 +154,10 @@ export default class Vapi extends VapiEventEmitter {
         this.emit('error', error);
       });
 
+      this.call.on('camera-error', (error: any) => {
+        this.emit('error', error);
+      });
+
       this.call.on('track-started', async (e) => {
         if (!e || !e.participant) return;
         if (e.participant?.local) return;
