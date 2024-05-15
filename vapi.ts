@@ -150,8 +150,8 @@ export default class Vapi extends VapiEventEmitter {
         destroyAudioPlayer(e.participant.session_id);
       });
 
-      this.call.on('error', () => {
-        // Ignore error
+      this.call.on('error', (error: any) => {
+        this.emit('error', error);
       });
 
       this.call.on('track-started', async (e) => {
