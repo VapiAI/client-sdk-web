@@ -750,6 +750,11 @@ export interface ElevenLabsVoice {
    * @max 4
    * @example 4
    */
+  enableSsmlParsing?: boolean;
+  /**
+   * Defines whether SSML parsing is enabled.
+   * @example true
+   */
   optimizeStreamingLatency?: number;
   /**
    * This is the model that will be used. Defaults to 'eleven_multilingual_v2' if transcriber.language is non-English, otherwise 'eleven_turbo_v2'.
