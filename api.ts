@@ -772,6 +772,8 @@ export interface OpenAIModel {
   provider: 'openai';
   /** This is the OpenAI model that will be used. */
   model:
+    | 'gpt-4o'
+    | 'gpt-4o-2024-05-13'
     | 'gpt-4-turbo'
     | 'gpt-4-turbo-2024-04-09'
     | 'gpt-4-turbo-preview'
@@ -789,6 +791,8 @@ export interface OpenAIModel {
    * @example ["gpt-4-0125-preview","gpt-4-0613"]
    */
   fallbackModels?:
+    | 'gpt-4o'
+    | 'gpt-4o-2024-05-13'
     | 'gpt-4-turbo'
     | 'gpt-4-turbo-2024-04-09'
     | 'gpt-4-turbo-preview'
