@@ -50,7 +50,13 @@ export interface ControlMessages {
   control: 'mute-assistant' | 'unmute-assistant';
 }
 
-type VapiClientToServerMessage = AddMessageMessage | ControlMessages;
+export interface SayMessage {
+  type: 'say';
+  message: string;
+  endCallAfterSpoken?: boolean;
+}
+
+type VapiClientToServerMessage = AddMessageMessage | ControlMessages | SayMessage;
 
 type VapiEventNames =
   | 'call-end'
@@ -274,5 +280,13 @@ export default class Vapi extends VapiEventEmitter {
     } catch (error) {
       throw error;
     }
+  }
+
+  public say(message: string, endCallAfterSpoken?: boolean) {
+    this.send({
+      type:'say', 
+      message,
+      endCallAfterSpoken
+    })
   }
 }
