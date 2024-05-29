@@ -289,4 +289,13 @@ export default class Vapi extends VapiEventEmitter {
       endCallAfterSpoken
     })
   }
+
+
+  public setInputDevicesAsync(options: Parameters<DailyCall['setInputDevicesAsync']>[0]) {
+    this.call?.setInputDevicesAsync(options)
+  }
+
+  public setOutputDeviceAsync(options: Parameters<DailyCall['setOutputDeviceAsync']>[0]) {
+    this.call?.setOutputDeviceAsync(options)
+  }
 }
