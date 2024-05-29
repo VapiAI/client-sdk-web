@@ -1,4 +1,4 @@
-import { Call, CreateAssistantDTO, OverrideAssistantDTO } from './api';
+import { Call, CreateAssistantDTO, CreateSquadDTO, OverrideAssistantDTO } from './api';
 import DailyIframe, {
   DailyCall,
   DailyEventObjectAppMessage,
@@ -103,7 +103,6 @@ export default class Vapi extends VapiEventEmitter {
   private started: boolean = false;
   private call: DailyCall | null = null;
   private speakingTimeout: NodeJS.Timeout | null = null;
-  private averageSpeechLevel: number = 0;
 
   constructor(apiToken: string, apiBaseUrl?: string) {
     super();
@@ -119,13 +118,17 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   async start(
-    assistant: CreateAssistantDTO | string,
+    assistant?: CreateAssistantDTO | string,
     assistantOverrides?: OverrideAssistantDTO,
+    squad?: CreateSquadDTO | string,
   ): Promise<Call | null> {
+    if (!assistant && !squad) {
+      throw new Error('Assistant or Squad must be provided.');
+    }
+
     if (this.started) {
       return null;
     }
-
     this.started = true;
 
     try {
@@ -134,6 +137,8 @@ export default class Vapi extends VapiEventEmitter {
           assistant: typeof assistant === 'string' ? undefined : assistant,
           assistantId: typeof assistant === 'string' ? assistant : undefined,
           assistantOverrides,
+          squad: typeof squad === 'string' ? undefined : squad,
+          squadId: typeof squad === 'string' ? squad : undefined,
         })
       ).data;
 
