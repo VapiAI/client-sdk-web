@@ -1909,6 +1909,11 @@ export interface OverrideAssistantDTO {
     | 'machine_end_silence'
     | 'machine_end_other';
   /**
+   * This sets whether the user video is recorded. Defaults to false.
+   * @example true
+   */
+  videoRecordingEnabled?: boolean;
+  /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
    */

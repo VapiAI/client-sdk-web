@@ -142,7 +142,7 @@ export default class Vapi extends VapiEventEmitter {
       }
       this.call = DailyIframe.createCallObject({
         audioSource: true,
-        videoSource: false,
+        videoSource: assistantOverrides?.videoRecordingEnabled ?? false,
       });
       this.call.iframe()?.style.setProperty('display', 'none');
 
@@ -284,9 +284,9 @@ export default class Vapi extends VapiEventEmitter {
 
   public say(message: string, endCallAfterSpoken?: boolean) {
     this.send({
-      type:'say', 
+      type: 'say',
       message,
-      endCallAfterSpoken
-    })
+      endCallAfterSpoken,
+    });
   }
 }
