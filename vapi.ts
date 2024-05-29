@@ -1,4 +1,4 @@
-import { Call, CreateAssistantDTO, OverrideAssistantDTO } from './api';
+import { Call, CreateAssistantDTO, CreateSquadDTO, OverrideAssistantDTO } from './api';
 import DailyIframe, {
   DailyCall,
   DailyEventObjectAppMessage,
@@ -113,12 +113,11 @@ export default class Vapi extends VapiEventEmitter {
 
   async start(
     assistant?: CreateAssistantDTO | string,
-    assistants?: CreateAssistantDTO[],
-    assistantOverride?: OverrideAssistantDTO,
-    assistantOverrides?: OverrideAssistantDTO[],
+    assistantOverrides?: OverrideAssistantDTO,
+    squad?: CreateSquadDTO | string,
   ): Promise<Call | null> {
-    if (!assistant && !assistants) {
-      throw new Error('Assistant or assistants must be provided.');
+    if (!assistant && !squad) {
+      throw new Error('Assistant or Squad must be provided.');
     }
 
     if (this.started) {
@@ -131,9 +130,9 @@ export default class Vapi extends VapiEventEmitter {
         await client.call.callControllerCreateWebCall({
           assistant: typeof assistant === 'string' ? undefined : assistant,
           assistantId: typeof assistant === 'string' ? assistant : undefined,
-          assistants,
-          assistantOverride,
           assistantOverrides,
+          squad: typeof squad === 'string' ? undefined : squad,
+          squadId: typeof squad === 'string' ? squad : undefined,
         })
       ).data;
 

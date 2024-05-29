@@ -9,59 +9,21 @@
  * ---------------------------------------------------------------
  */
 
-export class CreateCallAssistantDTO {
-  /**
-   * This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
-   */
-  assistantId?: string | null;
-
-  /**
-   * Overrides for a single assistant's settings and template variables.
-   */
-  assistantOverride?: OverrideAssistantDTO;
-
-  /**
-   * Individual overrides for multiple assistant settings and template variables.
-   * If only one override is provided and multiple assistants are used, it will apply to all assistants.
-   * Otherwise, the number of overrides must match the number of assistants.
-   */
-  assistantOverrides?: OverrideAssistantDTO[];
-
-  /**
-   * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
-   */
-  assistant?: CreateAssistantDTO;
-
-  /**
-   * This is the set of all assistants that can be used for the call.
-   * The call can be transferred between these assistants.
-   * The first assistant in the array will be the primary assistant that starts the call.
-   */
-  assistants?: CreateAssistantDTO[];
-}
-
-export class CreateWebCallDTO extends CreateCallAssistantDTO {
-  /**
-   * This will expose SIP URI you can use to connect to the call. Disabled by default.
-   */
-  sipEnabled?: boolean;
-
-  /**
-   * This is the metadata associated with the call.
-   */
-  metadata?: Record<string, any>;
-}
-
 export interface DeepgramVoice {
   /**
-   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * This determines whether the model output is preprocessed before being sent to the voice provider. This includes things like giving better hints to the voice provider on how to pronounce complex structured text like phone numbers, emails and addresses. This might add latency as it waits for the model to output a full chunk before sending it to the voice provider. Defaults to true.
+   * @example true
+   */
+  inputPreprocessingEnabled?: boolean;
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to 30.
    * @min 1
    * @max 80
    * @example 10
    */
   inputMinCharacters?: number;
   /**
-   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * These are the punctuations that are considered valid boundaries and "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
   inputPunctuationBoundaries?:
@@ -80,6 +42,13 @@ export interface DeepgramVoice {
     | '||'
     | ','
     | ':';
+  /**
+   * This determines whether fillers are injected into the model output before inputting it into the voice provider.
+   *
+   * Default `false` because you can achieve better results with prompting the model.
+   * @example false
+   */
+  fillerInjectionEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'deepgram';
   /** This is the provider-specific ID that will be used. */
@@ -99,75 +68,49 @@ export interface DeepgramVoice {
     | string;
 }
 
+export interface Condition {
+  param: string;
+  value: object;
+  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte';
+}
+
+export interface ToolMessageStart {
+  type: 'request-start';
+  content: string;
+  conditions?: Condition[];
+}
+
+export interface ToolMessageComplete {
+  type: 'request-complete';
+  content: string;
+  conditions?: Condition[];
+}
+
+export interface ToolMessageFailed {
+  type: 'request-failed';
+  content: string;
+  conditions?: Condition[];
+}
+
+export interface ToolMessageDelayed {
+  type: 'request-response-delayed';
+  content: string;
+  /**
+   * The number of milliseconds to wait for the server response before saying this message.
+   * @example 1000
+   */
+  timingMilliseconds?: number;
+  conditions?: Condition[];
+}
+
 export interface JsonSchema {
   type: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object';
   /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
   items?: object;
-  /** This is an array of type JsonSchema. However, Swagger doesn't support circular references. */
-  prefixItems?: object;
-  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
-  contains?: object;
   /** This is a map of string to JsonSchema. However, Swagger doesn't support circular references. */
   properties?: object;
-  /** This is a map of string to JsonSchema objects. However, Swagger doesn't support circular references. */
-  patternProperties?: object;
-  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
-  additionalProperties?: object;
-  /** This is a map of string to JsonSchema objects. However, Swagger doesn't support circular references. */
-  dependentSchemas?: object;
-  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
-  propertyNames?: object;
-  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
-  unevaluatedProperties?: object;
-  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
-  const?: object;
-  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
-  not?: object;
-  /** This is an array of type JsonSchema. However, Swagger doesn't support circular references. */
-  oneOf?: object;
-  /** This is an array of type JsonSchema. However, Swagger doesn't support circular references. */
-  anyOf?: object;
-  /** This is an array of type JsonSchema. However, Swagger doesn't support circular references. */
-  allOf?: object;
-  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
-  if?: object;
-  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
-  then?: object;
-  /** This is of type JsonSchema. However, Swagger doesn't support circular references. */
-  else?: object;
-  title?: string;
   description?: string;
-  multipleOf?: number;
-  maximum?: number;
-  exclusiveMaximum?: number;
-  minimum?: number;
-  exclusiveMinimum?: number;
-  maxLength?: number;
-  /** @min 0 */
-  minLength?: number;
-  pattern?: string;
-  format?: string;
-  maxItems?: number;
-  /** @min 0 */
-  minItems?: number;
-  minContains?: number;
-  maxContains?: number;
-  maxProperties?: number;
-  /** @min 0 */
-  minProperties?: number;
   required?: object[];
-  dependentRequired?: object;
-  enum?: object[];
-  $id?: string;
-  $ref?: string;
-  $schema?: string;
-  $comment?: string;
-  default?: object;
-  examples?: object[];
-  readOnly?: boolean;
-  writeOnly?: boolean;
-  contentEncoding?: string;
-  contentMediaType?: string;
 }
 
 export interface OpenAIFunctionParameters {
@@ -218,109 +161,304 @@ export interface Server {
   secret?: string;
 }
 
-export interface FunctionTool {
-  type: 'function';
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
-  /** The function definition details for the function tool. */
-  function: OpenAIFunction;
+export interface CreateDtmfToolDTO {
   /**
-   * This is the server VAPI will hit this tool is requested by the model.
+   * This determines if the tool is async.
    *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
    *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: tool.server.url > assistant.serverUrl > phoneNumber.serverUrl > org.serverUrl
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
    */
-  server?: Server;
-  /** Setting async: true will cause the function to be called asynchronously, meaning that the Assistant will not wait for the function to return before continuing. */
   async?: boolean;
-}
-
-export interface TransferDestination {
-  message: string;
-  destination: string;
-  description: string;
-}
-
-export interface TransferTool {
-  type: 'transferCall';
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
   /**
-   * This is the description of what the function does, used by the AI to choose when and how to call the function.
-   * @default "Use this tool to transfer the call. Only use it when following instructions that explicitly ask you to use the transferCall tool. DO NOT call this tool unless you are instructed to do so."
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  description?: string;
-  destinations?: TransferDestination[];
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "dtmf" for DTMF tool. */
+  type: 'dtmf';
   /**
-   * This is the server VAPI will hit this tool is requested by the model.
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
    *
    * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
    */
   server?: Server;
 }
 
-export interface EndCallTool {
-  type: 'endCall';
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
-  /** The function definition details for the function tool. */
-  function: OpenAIFunction;
-}
-
-export interface DtmfTool {
-  type: 'dtmf';
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
-  /** The function definition details for the function tool. */
-  function: OpenAIFunction;
-}
-
-export interface Condition {
-  param: string;
-  value: object;
-  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte';
-}
-
-export interface ToolMessageComplete {
-  type: 'request-complete';
-  content: string;
-  conditions?: Condition[];
-}
-
-export interface ToolMessageDelayed {
-  type: 'request-response-delayed';
-  content: string;
+export interface CreateEndCallToolDTO {
   /**
-   * The number of milliseconds to wait for the server response before saying this message.
-   * @example 1000
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
    */
-  timingMilliseconds?: number;
-  conditions?: Condition[];
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "endCall" for End Call tool. */
+  type: 'endCall';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
 }
 
-export interface ToolMessageFailed {
-  type: 'request-failed';
-  content: string;
-  conditions?: Condition[];
+export interface CreateFunctionToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "function" for Function tool. */
+  type: 'function';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
 }
 
-export interface ToolMessageStart {
-  type: 'request-start';
-  content: string;
-  conditions?: Condition[];
+export interface GhlToolMetadata {
+  workflowId?: string;
+  locationId?: string;
+}
+
+export interface CreateGhlToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "ghl" for GHL tool. */
+  type: 'ghl';
+  metadata: GhlToolMetadata;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface MakeToolMetadata {
+  scenarioId?: number;
+  triggerHookId?: number;
+}
+
+export interface CreateMakeToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "make" for Make tool. */
+  type: 'make';
+  metadata: MakeToolMetadata;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface AssistantTransferDestination {
+  type: 'assistant';
+  /** This is the assistant to transfer the call to. */
+  assistantName: string;
+  /** This is the message to say before transferring the call to the destination. */
+  message?: string;
+  /** This is the description of the destination, used by the AI to choose when and how to transfer the call. */
+  description?: string;
+}
+
+export interface PhoneNumberTransferDestination {
+  type: 'phoneNumber';
+  /** This is the phone number to transfer the call to. */
+  number: string;
+  /** This is the message to say before transferring the call to the destination. */
+  message?: string;
+  /** This is the description of the destination, used by the AI to choose when and how to transfer the call. */
+  description?: string;
+}
+
+export interface SipTransferDestination {
+  type: 'sip';
+  /** This is the SIP URI to transfer the call to. */
+  sipUri: string;
+  /** This is the message to say before transferring the call to the destination. */
+  message?: string;
+  /** This is the description of the destination, used by the AI to choose when and how to transfer the call. */
+  description?: string;
+}
+
+export interface CreateTransferCallToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  type: 'transferCall';
+  /** These are the destinations that the call can be transferred to. If no destinations are provided, server.url will be used to get the transfer destination once the tool is called. */
+  destinations?: (
+    | AssistantTransferDestination
+    | PhoneNumberTransferDestination
+    | SipTransferDestination
+  )[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
 }
 
 export interface OpenAIMessage {
   content: string | null;
-  role: 'assistant' | 'function' | 'user' | 'system';
-  function_call?: object;
-  tool_calls?: object[];
+  role: 'assistant' | 'function' | 'user' | 'system' | 'tool';
+}
+
+export interface KnowledgeBase {
+  provider: 'canonical';
+  topK?: number;
+  fileIds: string[];
 }
 
 export interface TogetherAIModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
-  /** These are the tools functions that the assistant can execute during the call. */
-  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateTransferCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateEndCallToolDTO
+    | CreateDtmfToolDTO
+    | CreateMakeToolDTO
+    | CreateGhlToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
   provider: 'together-ai';
-  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
@@ -328,21 +466,46 @@ export interface TogetherAIModel {
    * @max 2
    */
   temperature?: number;
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: KnowledgeBase;
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
    * @max 1000
    */
   maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   */
+  emotionRecognitionEnabled?: boolean;
 }
 
 export interface AnyscaleModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
-  /** These are the tools functions that the assistant can execute during the call. */
-  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateTransferCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateEndCallToolDTO
+    | CreateDtmfToolDTO
+    | CreateMakeToolDTO
+    | CreateGhlToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
   provider: 'anyscale';
-  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
@@ -350,21 +513,46 @@ export interface AnyscaleModel {
    * @max 2
    */
   temperature?: number;
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: KnowledgeBase;
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
    * @max 1000
    */
   maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   */
+  emotionRecognitionEnabled?: boolean;
 }
 
 export interface OpenRouterModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
-  /** These are the tools functions that the assistant can execute during the call. */
-  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateTransferCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateEndCallToolDTO
+    | CreateDtmfToolDTO
+    | CreateMakeToolDTO
+    | CreateGhlToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
   provider: 'openrouter';
-  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
@@ -372,21 +560,46 @@ export interface OpenRouterModel {
    * @max 2
    */
   temperature?: number;
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: KnowledgeBase;
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
    * @max 1000
    */
   maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   */
+  emotionRecognitionEnabled?: boolean;
 }
 
 export interface PerplexityAIModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
-  /** These are the tools functions that the assistant can execute during the call. */
-  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateTransferCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateEndCallToolDTO
+    | CreateDtmfToolDTO
+    | CreateMakeToolDTO
+    | CreateGhlToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
   provider: 'perplexity-ai';
-  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
@@ -394,21 +607,46 @@ export interface PerplexityAIModel {
    * @max 2
    */
   temperature?: number;
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: KnowledgeBase;
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
    * @max 1000
    */
   maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   */
+  emotionRecognitionEnabled?: boolean;
 }
 
 export interface DeepInfraModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
-  /** These are the tools functions that the assistant can execute during the call. */
-  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateTransferCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateEndCallToolDTO
+    | CreateDtmfToolDTO
+    | CreateMakeToolDTO
+    | CreateGhlToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
   provider: 'deepinfra';
-  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
@@ -416,26 +654,51 @@ export interface DeepInfraModel {
    * @max 2
    */
   temperature?: number;
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: KnowledgeBase;
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
    * @max 1000
    */
   maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   */
+  emotionRecognitionEnabled?: boolean;
 }
 
 export interface CustomLLMModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
-  /** These are the tools functions that the assistant can execute during the call. */
-  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateTransferCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateEndCallToolDTO
+    | CreateDtmfToolDTO
+    | CreateMakeToolDTO
+    | CreateGhlToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
   /** This is the provider that will be used for the model. Any service, including your own server, that is compatible with the OpenAI API can be used. */
   provider: 'custom-llm';
   /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
   url: string;
   /** This sets whether the call object is sent in requests to the custom provider. Default is true. */
   urlRequestMetadataEnabled: boolean;
-  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
@@ -443,20 +706,45 @@ export interface CustomLLMModel {
    * @max 2
    */
   temperature?: number;
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: KnowledgeBase;
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
    * @max 1000
    */
   maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   */
+  emotionRecognitionEnabled?: boolean;
 }
 
 export interface GroqModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
-  /** These are the tools functions that the assistant can execute during the call. */
-  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
-  /** The key of the model from the custom provider. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateTransferCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateEndCallToolDTO
+    | CreateDtmfToolDTO
+    | CreateMakeToolDTO
+    | CreateGhlToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
+  /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: 'mixtral-8x7b-32768' | 'llama3-8b-8192' | 'llama3-70b-8192';
   provider: 'groq';
   /**
@@ -465,19 +753,44 @@ export interface GroqModel {
    * @max 2
    */
   temperature?: number;
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: KnowledgeBase;
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
    * @max 1000
    */
   maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   */
+  emotionRecognitionEnabled?: boolean;
 }
 
 export interface AnthropicModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
-  /** These are the tools functions that the assistant can execute during the call. */
-  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateTransferCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateEndCallToolDTO
+    | CreateDtmfToolDTO
+    | CreateMakeToolDTO
+    | CreateGhlToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
   /** This is the Anthropic/Claude models that will be used. */
   model: 'claude-3-opus-20240229' | 'claude-3-sonnet-20240229' | 'claude-3-haiku-20240307';
   provider: 'anthropic';
@@ -487,12 +800,20 @@ export interface AnthropicModel {
    * @max 2
    */
   temperature?: number;
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: KnowledgeBase;
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
    * @max 1000
    */
   maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   */
+  emotionRecognitionEnabled?: boolean;
 }
 
 export interface DeepgramTranscriber {
@@ -531,6 +852,8 @@ export interface DeepgramTranscriber {
     | string;
   /** This is the language that will be set for the transcription. The list of languages Deepgram supports can be found here: https://developers.deepgram.com/docs/models-languages-overview */
   language?:
+    | 'bg'
+    | 'ro'
     | 'cs'
     | 'da'
     | 'da-DK'
@@ -688,14 +1011,19 @@ export interface TalkscriberTranscriber {
 
 export interface ElevenLabsVoice {
   /**
-   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * This determines whether the model output is preprocessed before being sent to the voice provider. This includes things like giving better hints to the voice provider on how to pronounce complex structured text like phone numbers, emails and addresses. This might add latency as it waits for the model to output a full chunk before sending it to the voice provider. Defaults to true.
+   * @example true
+   */
+  inputPreprocessingEnabled?: boolean;
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to 30.
    * @min 1
    * @max 80
    * @example 10
    */
   inputMinCharacters?: number;
   /**
-   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * These are the punctuations that are considered valid boundaries and "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
   inputPunctuationBoundaries?:
@@ -714,6 +1042,13 @@ export interface ElevenLabsVoice {
     | '||'
     | ','
     | ':';
+  /**
+   * This determines whether fillers are injected into the model output before inputting it into the voice provider.
+   *
+   * Default `false` because you can achieve better results with prompting the model.
+   * @example false
+   */
+  fillerInjectionEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: '11labs';
   /** This is the provider-specific ID that will be used. Ensure the Voice is present in your 11Labs Voice Library. */
@@ -761,29 +1096,50 @@ export interface ElevenLabsVoice {
    */
   useSpeakerBoost?: boolean;
   /**
-   * Defines the optimize streaming latency for voice settings.
+   * Defines the optimize streaming latency for voice settings. Defaults to 3.
    * @min 0
    * @max 4
-   * @example 4
-   */
-  enableSsmlParsing?: boolean;
-  /**
-   * Defines whether SSML parsing is enabled.
-   * @example true
+   * @example 3
    */
   optimizeStreamingLatency?: number;
   /**
-   * This is the model that will be used. Defaults to 'eleven_multilingual_v2' if transcriber.language is non-English, otherwise 'eleven_turbo_v2'.
-   * @example "eleven_turbo_v2"
+   * Defines the use of https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation. Disabled by default.
+   * @example false
    */
-  model?: 'eleven_multilingual_v2' | 'eleven_turbo_v2' | 'eleven_monolingual_v1';
+  enableSsmlParsing?: boolean;
+  /**
+   * This is the model that will be used. Defaults to 'eleven_multilingual_v2' if transcriber.language is non-English, otherwise 'eleven_turbo_v2_5'.
+   * @example "eleven_turbo_v2_5"
+   */
+  model?:
+    | 'eleven_multilingual_v2'
+    | 'eleven_turbo_v2'
+    | 'eleven_turbo_v2_5'
+    | 'eleven_monolingual_v1';
 }
 
 export interface OpenAIModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
-  /** These are the tools functions that the assistant can execute during the call. */
-  tools?: (TransferTool | FunctionTool | EndCallTool | DtmfTool)[];
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateTransferCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateEndCallToolDTO
+    | CreateDtmfToolDTO
+    | CreateMakeToolDTO
+    | CreateGhlToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
   /** This is the provider that will be used for the model. */
   provider: 'openai';
   /** This is the OpenAI model that will be used. */
@@ -834,24 +1190,37 @@ export interface OpenAIModel {
    * @max 2
    */
   temperature?: number;
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: KnowledgeBase;
   /**
    * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
    * @min 50
    * @max 1000
    */
   maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   */
+  emotionRecognitionEnabled?: boolean;
 }
 
 export interface PlayHTVoice {
   /**
-   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * This determines whether the model output is preprocessed before being sent to the voice provider. This includes things like giving better hints to the voice provider on how to pronounce complex structured text like phone numbers, emails and addresses. This might add latency as it waits for the model to output a full chunk before sending it to the voice provider. Defaults to true.
+   * @example true
+   */
+  inputPreprocessingEnabled?: boolean;
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to 30.
    * @min 1
    * @max 80
    * @example 10
    */
   inputMinCharacters?: number;
   /**
-   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * These are the punctuations that are considered valid boundaries and "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
   inputPunctuationBoundaries?:
@@ -870,6 +1239,13 @@ export interface PlayHTVoice {
     | '||'
     | ','
     | ':';
+  /**
+   * This determines whether fillers are injected into the model output before inputting it into the voice provider.
+   *
+   * Default `false` because you can achieve better results with prompting the model.
+   * @example false
+   */
+  fillerInjectionEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'playht';
   /** This is the provider-specific ID that will be used. */
@@ -941,14 +1317,19 @@ export interface PlayHTVoice {
 
 export interface RimeAIVoice {
   /**
-   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * This determines whether the model output is preprocessed before being sent to the voice provider. This includes things like giving better hints to the voice provider on how to pronounce complex structured text like phone numbers, emails and addresses. This might add latency as it waits for the model to output a full chunk before sending it to the voice provider. Defaults to true.
+   * @example true
+   */
+  inputPreprocessingEnabled?: boolean;
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to 30.
    * @min 1
    * @max 80
    * @example 10
    */
   inputMinCharacters?: number;
   /**
-   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * These are the punctuations that are considered valid boundaries and "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
   inputPunctuationBoundaries?:
@@ -967,10 +1348,37 @@ export interface RimeAIVoice {
     | '||'
     | ','
     | ':';
+  /**
+   * This determines whether fillers are injected into the model output before inputting it into the voice provider.
+   *
+   * Default `false` because you can achieve better results with prompting the model.
+   * @example false
+   */
+  fillerInjectionEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'rime-ai';
   /** This is the provider-specific ID that will be used. */
   voiceId:
+    | 'marsh'
+    | 'bayou'
+    | 'creek'
+    | 'brook'
+    | 'flower'
+    | 'spore'
+    | 'glacier'
+    | 'gulch'
+    | 'alpine'
+    | 'cove'
+    | 'lagoon'
+    | 'tundra'
+    | 'steppe'
+    | 'mesa'
+    | 'grove'
+    | 'rainforest'
+    | 'moraine'
+    | 'wildflower'
+    | 'peak'
+    | 'boulder'
     | 'abbie'
     | 'allison'
     | 'ally'
@@ -1034,6 +1442,12 @@ export interface RimeAIVoice {
     | 'yadira'
     | string;
   /**
+   * This is the model that will be used. Defaults to 'v1' when not specified.
+   * @example "v1"
+   */
+  model?: 'v1' | 'mist';
+  /**
+   * This is the speed multiplier that will be used.
    * @min 0.1
    * @example null
    */
@@ -1042,14 +1456,19 @@ export interface RimeAIVoice {
 
 export interface OpenAIVoice {
   /**
-   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * This determines whether the model output is preprocessed before being sent to the voice provider. This includes things like giving better hints to the voice provider on how to pronounce complex structured text like phone numbers, emails and addresses. This might add latency as it waits for the model to output a full chunk before sending it to the voice provider. Defaults to true.
+   * @example true
+   */
+  inputPreprocessingEnabled?: boolean;
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to 30.
    * @min 1
    * @max 80
    * @example 10
    */
   inputMinCharacters?: number;
   /**
-   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * These are the punctuations that are considered valid boundaries and "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
   inputPunctuationBoundaries?:
@@ -1068,6 +1487,13 @@ export interface OpenAIVoice {
     | '||'
     | ','
     | ':';
+  /**
+   * This determines whether fillers are injected into the model output before inputting it into the voice provider.
+   *
+   * Default `false` because you can achieve better results with prompting the model.
+   * @example false
+   */
+  fillerInjectionEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'openai';
   /** This is the provider-specific ID that will be used. */
@@ -1083,14 +1509,19 @@ export interface OpenAIVoice {
 
 export interface AzureVoice {
   /**
-   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * This determines whether the model output is preprocessed before being sent to the voice provider. This includes things like giving better hints to the voice provider on how to pronounce complex structured text like phone numbers, emails and addresses. This might add latency as it waits for the model to output a full chunk before sending it to the voice provider. Defaults to true.
+   * @example true
+   */
+  inputPreprocessingEnabled?: boolean;
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to 30.
    * @min 1
    * @max 80
    * @example 10
    */
   inputMinCharacters?: number;
   /**
-   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * These are the punctuations that are considered valid boundaries and "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
   inputPunctuationBoundaries?:
@@ -1109,6 +1540,13 @@ export interface AzureVoice {
     | '||'
     | ','
     | ':';
+  /**
+   * This determines whether fillers are injected into the model output before inputting it into the voice provider.
+   *
+   * Default `false` because you can achieve better results with prompting the model.
+   * @example false
+   */
+  fillerInjectionEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'azure';
   /** This is the provider-specific ID that will be used. */
@@ -1123,14 +1561,19 @@ export interface AzureVoice {
 
 export interface LMNTVoice {
   /**
-   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * This determines whether the model output is preprocessed before being sent to the voice provider. This includes things like giving better hints to the voice provider on how to pronounce complex structured text like phone numbers, emails and addresses. This might add latency as it waits for the model to output a full chunk before sending it to the voice provider. Defaults to true.
+   * @example true
+   */
+  inputPreprocessingEnabled?: boolean;
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to 30.
    * @min 1
    * @max 80
    * @example 10
    */
   inputMinCharacters?: number;
   /**
-   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * These are the punctuations that are considered valid boundaries and "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
   inputPunctuationBoundaries?:
@@ -1149,6 +1592,13 @@ export interface LMNTVoice {
     | '||'
     | ','
     | ':';
+  /**
+   * This determines whether fillers are injected into the model output before inputting it into the voice provider.
+   *
+   * Default `false` because you can achieve better results with prompting the model.
+   * @example false
+   */
+  fillerInjectionEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'lmnt';
   /** This is the provider-specific ID that will be used. */
@@ -1164,14 +1614,19 @@ export interface LMNTVoice {
 
 export interface NeetsVoice {
   /**
-   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to 10.
+   * This determines whether the model output is preprocessed before being sent to the voice provider. This includes things like giving better hints to the voice provider on how to pronounce complex structured text like phone numbers, emails and addresses. This might add latency as it waits for the model to output a full chunk before sending it to the voice provider. Defaults to true.
+   * @example true
+   */
+  inputPreprocessingEnabled?: boolean;
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to 30.
    * @min 1
    * @max 80
    * @example 10
    */
   inputMinCharacters?: number;
   /**
-   * These are the punctuations that are considered valid boundaries / "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the LLM tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * These are the punctuations that are considered valid boundaries and "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
   inputPunctuationBoundaries?:
@@ -1190,19 +1645,170 @@ export interface NeetsVoice {
     | '||'
     | ','
     | ':';
+  /**
+   * This determines whether fillers are injected into the model output before inputting it into the voice provider.
+   *
+   * Default `false` because you can achieve better results with prompting the model.
+   * @example false
+   */
+  fillerInjectionEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'neets';
   /** This is the provider-specific ID that will be used. */
-  voiceId: 'lily' | 'daniel' | string;
+  voiceId: 'vits' | string;
 }
 
-export interface ForwardingPhoneNumber {
-  /** This is the number to forward to. Pass one of `number` or `sipUri`. */
-  number?: string;
-  /** This is the SIP URI to forward to. Pass one of `number` or `sipUri`. */
-  sipUri?: string;
-  /** This is the message that the assistant will say when the call is forwarded to this number. */
-  message?: string;
+export interface CartesiaVoice {
+  /**
+   * This determines whether the model output is preprocessed before being sent to the voice provider. This includes things like giving better hints to the voice provider on how to pronounce complex structured text like phone numbers, emails and addresses. This might add latency as it waits for the model to output a full chunk before sending it to the voice provider. Defaults to true.
+   * @example true
+   */
+  inputPreprocessingEnabled?: boolean;
+  /**
+   * This is the minimum number of characters that will be passed to the voice provider. This helps decides the minimum chunk size that is sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to 30.
+   * @min 1
+   * @max 80
+   * @example 10
+   */
+  inputMinCharacters?: number;
+  /**
+   * These are the punctuations that are considered valid boundaries and "delimiters". This helps decides the chunks that are sent to the voice provider for the voice generation as the model tokens are streaming in. Defaults to ['。', '，', '.', '!', '?', ';', ')', '،', '۔', '।', '॥', '|', '||', ',', ':'].
+   * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
+   */
+  inputPunctuationBoundaries?:
+    | '。'
+    | '，'
+    | '.'
+    | '!'
+    | '?'
+    | ';'
+    | ')'
+    | '،'
+    | '۔'
+    | '।'
+    | '॥'
+    | '|'
+    | '||'
+    | ','
+    | ':';
+  /**
+   * This determines whether fillers are injected into the model output before inputting it into the voice provider.
+   *
+   * Default `false` because you can achieve better results with prompting the model.
+   * @example false
+   */
+  fillerInjectionEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: 'cartesia';
+  /** This is the provider-specific ID that will be used. */
+  voiceId: string;
+}
+
+export interface TwilioVoicemailDetection {
+  provider: 'twilio';
+  /**
+   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence'].
+   * @example ["machine_end_beep","machine_end_silence"]
+   */
+  voicemailDetectionTypes?:
+    | 'machine_start'
+    | 'human'
+    | 'fax'
+    | 'unknown'
+    | 'machine_end_beep'
+    | 'machine_end_silence'
+    | 'machine_end_other';
+  enabled?: boolean;
+  /**
+   * @min 3
+   * @max 59
+   */
+  machineDetectionTimeout?: number;
+  /**
+   * @min 1000
+   * @max 6000
+   */
+  machineDetectionSpeechThreshold?: number;
+  /**
+   * @min 500
+   * @max 5000
+   */
+  machineDetectionSpeechEndThreshold?: number;
+  /**
+   * @min 2000
+   * @max 10000
+   */
+  machineDetectionSilenceTimeout?: number;
+}
+
+export interface AnalysisPlan {
+  /**
+   * This is the prompt that's used to summarize the call. The output is stored in `call.analysis.summary`.
+   *
+   * Default is "You are an expert note-taker. You will be given a transcript of a call. Summarize the call in 2-3 sentences, if applicable.".
+   *
+   * Set to '' or 'off' to disable.
+   * @maxLength 2000
+   */
+  summaryPrompt?: string;
+  /**
+   * This is the prompt that's used to evaluate if the call was successful. The output is stored in `call.analysis.successEvaluation`.
+   *
+   * Default is "You are an expert call evaluator. You will be given a transcript of a call and the system prompt of the AI participant. Determine if the call was successful based on the objectives inferred from the system prompt.".
+   *
+   * Set to '' or 'off' to disable.
+   *
+   * You can use this standalone or in combination with `successEvaluationRubric`. If both are provided, they are concatenated into appropriate instructions.
+   * @maxLength 2000
+   */
+  successEvaluationPrompt?: string;
+  /**
+   * This enforces the rubric of the evaluation. The output is stored in `call.analysis.successEvaluation`.
+   *
+   * Options include:
+   * - 'NumericScale': A scale of 1 to 10.
+   * - 'DescriptiveScale': A scale of Excellent, Good, Fair, Poor.
+   * - 'Checklist': A checklist of criteria and their status.
+   * - 'Matrix': A grid that evaluates multiple criteria across different performance levels.
+   * - 'PercentageScale': A scale of 0% to 100%.
+   * - 'LikertScale': A scale of Strongly Agree, Agree, Neutral, Disagree, Strongly Disagree.
+   * - 'AutomaticRubric': Automatically break down evaluation into several criteria, each with its own score.
+   * - 'PassFail': A simple 'true' if call passed, 'false' if not.
+   *
+   * For 'Checklist' and 'Matrix', provide the criteria in `successEvaluationPrompt`.
+   *
+   * Default is 'PassFail' if `successEvaluationPrompt` is not provided, and null if `successEvaluationPrompt` is provided.
+   *
+   * You can use this standalone or in combination with `successEvaluationPrompt`. If both are provided, they are concatenated into appropriate instructions.
+   */
+  successEvaluationRubric?:
+    | 'NumericScale'
+    | 'DescriptiveScale'
+    | 'Checklist'
+    | 'Matrix'
+    | 'PercentageScale'
+    | 'LikertScale'
+    | 'AutomaticRubric'
+    | 'PassFail';
+  /**
+   * This is the prompt that's used to extract structured data from the call. The output is stored in `call.analysis.structuredData`.
+   *
+   * Disabled by default.
+   *
+   * You can use this standalone or in combination with `structuredDataSchema`. If both are provided, they are concatenated into appropriate instructions.
+   * @maxLength 2000
+   */
+  structuredDataPrompt?: string;
+  /**
+   * This enforces the schema of the structured data. This output is stored in `call.analysis.structuredData`.
+   *
+   * Complete guide on JSON Schema can be found [here](https://ajv.js.org/json-schema.html#json-data-type).
+   *
+   * Disabled by default.
+   *
+   * You can use this standalone or in combination with `structuredDataPrompt`. If both are provided, they are concatenated into appropriate instructions.
+   */
+  structuredDataSchema?: JsonSchema;
 }
 
 export interface CreateAssistantDTO {
@@ -1225,18 +1831,14 @@ export interface CreateAssistantDTO {
    */
   voice?:
     | AzureVoice
+    | DeepgramVoice
     | ElevenLabsVoice
+    | LMNTVoice
+    | NeetsVoice
+    | OpenAIVoice
     | PlayHTVoice
     | RimeAIVoice
-    | DeepgramVoice
-    | OpenAIVoice
-    | LMNTVoice
-    | NeetsVoice;
-  /**
-   * This is the number to forward to if assistant runs into issues.
-   * @example null
-   */
-  forwardingPhoneNumber?: string;
+    | CartesiaVoice;
   /**
    * This is the mode for the first message. Default is 'assistant-speaks-first'.
    *
@@ -1245,32 +1847,10 @@ export interface CreateAssistantDTO {
    */
   firstMessageMode?: 'assistant-speaks-first' | 'assistant-waits-for-user';
   /**
-   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence', 'machine_end_other'].
-   * @example ["machine_end_beep","machine_end_silence","machine_end_other"]
-   */
-  voicemailDetectionTypes?:
-    | 'machine_start'
-    | 'human'
-    | 'fax'
-    | 'unknown'
-    | 'machine_end_beep'
-    | 'machine_end_silence'
-    | 'machine_end_other';
-  /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
    */
   recordingEnabled?: boolean;
-  /**
-   * This sets whether the assistant will be able to hang up the call. Defaults to false.
-   * @example false
-   */
-  endCallFunctionEnabled?: boolean;
-  /**
-   * This sets whether the assistant can dial digits on the keypad. Defaults to false.
-   * @default null
-   */
-  dialKeypadFunctionEnabled?: boolean;
   /**
    * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
    * @example false
@@ -1280,7 +1860,7 @@ export interface CreateAssistantDTO {
    * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'tool-calls', 'speech-update', 'metadata', 'conversation-update']
    * @example ["transcript","hang","tool-calls","speech-update","metadata","conversation-update"]
    */
-  clientMessages?: (
+  clientMessages?:
     | 'status-update'
     | 'speech-update'
     | 'transcript'
@@ -1290,13 +1870,12 @@ export interface CreateAssistantDTO {
     | 'metadata'
     | 'conversation-update'
     | 'model-output'
-    | 'voice-input'
-  )[];
+    | 'voice-input';
   /**
    * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'tool-calls']
    * @example ["end-of-call-report","status-update","hang","tool-calls"]
    */
-  serverMessages?: (
+  serverMessages?:
     | 'status-update'
     | 'transcript'
     | 'hang'
@@ -1306,8 +1885,7 @@ export interface CreateAssistantDTO {
     | 'conversation-update'
     | 'phone-call-control'
     | 'model-output'
-    | 'voice-input'
-  )[];
+    | 'voice-input';
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    * @min 10
@@ -1349,17 +1927,18 @@ export interface CreateAssistantDTO {
    */
   backgroundSound?: 'off' | 'office';
   /**
-   * backchanneling is the bot say while listening like 'mhmm', 'ahem' etc. this make the conversation sounds natural. Default True
+   * This determines whether the model says 'mhmm', 'ahem' etc. while user is speaking.
+   *
+   * Default `false` while in beta.
    * @example true
    */
   backchannelingEnabled?: boolean;
   /**
-   * This is the name of the assistant. This is just for your own reference.
+   * This is the name of the assistant.
+   * This is only required to transfer calls between assistants.
    * @maxLength 100
    */
   name?: string;
-  /** You can provide a set of phone numbers to forward to. You'll want to tell the assistant when to use each of these numbers in the system prompt. */
-  forwardingPhoneNumbers?: ForwardingPhoneNumber[];
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -1367,8 +1946,8 @@ export interface CreateAssistantDTO {
    * @maxLength 1000
    */
   firstMessage?: string;
-  /** This sets whether the assistant should detect voicemail. Defaults to true. */
-  voicemailDetectionEnabled?: boolean;
+  /** These are the settings to configure or disable voicemail detection. */
+  voicemailDetection?: TwilioVoicemailDetection;
   /**
    * This is the message that the assistant will say if the call is forwarded to voicemail.
    *
@@ -1398,18 +1977,10 @@ export interface CreateAssistantDTO {
   /**
    * This is the secret you can set that Vapi will send with every request to your server. Will be sent as a header called x-vapi-secret.
    *
-   * Same precendence logic as serverUrl.
+   * Same precedence logic as serverUrl.
    */
   serverUrlSecret?: string;
-  /**
-   * This is the prompt that's used to summarize the call at the end.
-   *
-   * Default is 'You are an expert note-taker. You will be given a transcript of a conversation. Please summarize the conversation in 4-5 sentences if applicable.'
-   *
-   * Set to '' or 'off' to disable post-call summarization.
-   * @maxLength 2000
-   */
-  summaryPrompt?: string;
+  analysisPlan?: AnalysisPlan;
 }
 
 export interface Assistant {
@@ -1432,18 +2003,14 @@ export interface Assistant {
    */
   voice?:
     | AzureVoice
+    | DeepgramVoice
     | ElevenLabsVoice
+    | LMNTVoice
+    | NeetsVoice
+    | OpenAIVoice
     | PlayHTVoice
     | RimeAIVoice
-    | DeepgramVoice
-    | OpenAIVoice
-    | LMNTVoice
-    | NeetsVoice;
-  /**
-   * This is the number to forward to if assistant runs into issues.
-   * @example null
-   */
-  forwardingPhoneNumber?: string;
+    | CartesiaVoice;
   /**
    * This is the mode for the first message. Default is 'assistant-speaks-first'.
    *
@@ -1452,32 +2019,10 @@ export interface Assistant {
    */
   firstMessageMode?: 'assistant-speaks-first' | 'assistant-waits-for-user';
   /**
-   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence', 'machine_end_other'].
-   * @example ["machine_end_beep","machine_end_silence","machine_end_other"]
-   */
-  voicemailDetectionTypes?:
-    | 'machine_start'
-    | 'human'
-    | 'fax'
-    | 'unknown'
-    | 'machine_end_beep'
-    | 'machine_end_silence'
-    | 'machine_end_other';
-  /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
    */
   recordingEnabled?: boolean;
-  /**
-   * This sets whether the assistant will be able to hang up the call. Defaults to false.
-   * @example false
-   */
-  endCallFunctionEnabled?: boolean;
-  /**
-   * This sets whether the assistant can dial digits on the keypad. Defaults to false.
-   * @default null
-   */
-  dialKeypadFunctionEnabled?: boolean;
   /**
    * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
    * @example false
@@ -1487,7 +2032,7 @@ export interface Assistant {
    * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'tool-calls', 'speech-update', 'metadata', 'conversation-update']
    * @example ["transcript","hang","tool-calls","speech-update","metadata","conversation-update"]
    */
-  clientMessages?: (
+  clientMessages?:
     | 'status-update'
     | 'speech-update'
     | 'transcript'
@@ -1497,13 +2042,12 @@ export interface Assistant {
     | 'metadata'
     | 'conversation-update'
     | 'model-output'
-    | 'voice-input'
-  )[];
+    | 'voice-input';
   /**
    * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'tool-calls']
    * @example ["end-of-call-report","status-update","hang","tool-calls"]
    */
-  serverMessages?: (
+  serverMessages?:
     | 'status-update'
     | 'transcript'
     | 'hang'
@@ -1513,8 +2057,7 @@ export interface Assistant {
     | 'conversation-update'
     | 'phone-call-control'
     | 'model-output'
-    | 'voice-input'
-  )[];
+    | 'voice-input';
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    * @min 10
@@ -1556,17 +2099,18 @@ export interface Assistant {
    */
   backgroundSound?: 'off' | 'office';
   /**
-   * backchanneling is the bot say while listening like 'mhmm', 'ahem' etc. this make the conversation sounds natural. Default True
+   * This determines whether the model says 'mhmm', 'ahem' etc. while user is speaking.
+   *
+   * Default `false` while in beta.
    * @example true
    */
   backchannelingEnabled?: boolean;
   /**
-   * This is the name of the assistant. This is just for your own reference.
+   * This is the name of the assistant.
+   * This is only required to transfer calls between assistants.
    * @maxLength 100
    */
   name?: string;
-  /** You can provide a set of phone numbers to forward to. You'll want to tell the assistant when to use each of these numbers in the system prompt. */
-  forwardingPhoneNumbers?: ForwardingPhoneNumber[];
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -1574,8 +2118,8 @@ export interface Assistant {
    * @maxLength 1000
    */
   firstMessage?: string;
-  /** This sets whether the assistant should detect voicemail. Defaults to true. */
-  voicemailDetectionEnabled?: boolean;
+  /** These are the settings to configure or disable voicemail detection. */
+  voicemailDetection?: TwilioVoicemailDetection;
   /**
    * This is the message that the assistant will say if the call is forwarded to voicemail.
    *
@@ -1605,18 +2149,10 @@ export interface Assistant {
   /**
    * This is the secret you can set that Vapi will send with every request to your server. Will be sent as a header called x-vapi-secret.
    *
-   * Same precendence logic as serverUrl.
+   * Same precedence logic as serverUrl.
    */
   serverUrlSecret?: string;
-  /**
-   * This is the prompt that's used to summarize the call at the end.
-   *
-   * Default is 'You are an expert note-taker. You will be given a transcript of a conversation. Please summarize the conversation in 4-5 sentences if applicable.'
-   *
-   * Set to '' or 'off' to disable post-call summarization.
-   * @maxLength 2000
-   */
-  summaryPrompt?: string;
+  analysisPlan?: AnalysisPlan;
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -1653,18 +2189,14 @@ export interface UpdateAssistantDTO {
    */
   voice?:
     | AzureVoice
+    | DeepgramVoice
     | ElevenLabsVoice
+    | LMNTVoice
+    | NeetsVoice
+    | OpenAIVoice
     | PlayHTVoice
     | RimeAIVoice
-    | DeepgramVoice
-    | OpenAIVoice
-    | LMNTVoice
-    | NeetsVoice;
-  /**
-   * This is the number to forward to if assistant runs into issues.
-   * @example null
-   */
-  forwardingPhoneNumber?: string;
+    | CartesiaVoice;
   /**
    * This is the mode for the first message. Default is 'assistant-speaks-first'.
    *
@@ -1673,32 +2205,10 @@ export interface UpdateAssistantDTO {
    */
   firstMessageMode?: 'assistant-speaks-first' | 'assistant-waits-for-user';
   /**
-   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence', 'machine_end_other'].
-   * @example ["machine_end_beep","machine_end_silence","machine_end_other"]
-   */
-  voicemailDetectionTypes?:
-    | 'machine_start'
-    | 'human'
-    | 'fax'
-    | 'unknown'
-    | 'machine_end_beep'
-    | 'machine_end_silence'
-    | 'machine_end_other';
-  /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
    */
   recordingEnabled?: boolean;
-  /**
-   * This sets whether the assistant will be able to hang up the call. Defaults to false.
-   * @example false
-   */
-  endCallFunctionEnabled?: boolean;
-  /**
-   * This sets whether the assistant can dial digits on the keypad. Defaults to false.
-   * @default null
-   */
-  dialKeypadFunctionEnabled?: boolean;
   /**
    * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
    * @example false
@@ -1708,7 +2218,7 @@ export interface UpdateAssistantDTO {
    * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'tool-calls', 'speech-update', 'metadata', 'conversation-update']
    * @example ["transcript","hang","tool-calls","speech-update","metadata","conversation-update"]
    */
-  clientMessages?: (
+  clientMessages?:
     | 'status-update'
     | 'speech-update'
     | 'transcript'
@@ -1718,13 +2228,12 @@ export interface UpdateAssistantDTO {
     | 'metadata'
     | 'conversation-update'
     | 'model-output'
-    | 'voice-input'
-  )[];
+    | 'voice-input';
   /**
    * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'tool-calls']
    * @example ["end-of-call-report","status-update","hang","tool-calls"]
    */
-  serverMessages?: (
+  serverMessages?:
     | 'status-update'
     | 'transcript'
     | 'hang'
@@ -1734,8 +2243,7 @@ export interface UpdateAssistantDTO {
     | 'conversation-update'
     | 'phone-call-control'
     | 'model-output'
-    | 'voice-input'
-  )[];
+    | 'voice-input';
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    * @min 10
@@ -1777,17 +2285,18 @@ export interface UpdateAssistantDTO {
    */
   backgroundSound?: 'off' | 'office';
   /**
-   * backchanneling is the bot say while listening like 'mhmm', 'ahem' etc. this make the conversation sounds natural. Default True
+   * This determines whether the model says 'mhmm', 'ahem' etc. while user is speaking.
+   *
+   * Default `false` while in beta.
    * @example true
    */
   backchannelingEnabled?: boolean;
   /**
-   * This is the name of the assistant. This is just for your own reference.
+   * This is the name of the assistant.
+   * This is only required to transfer calls between assistants.
    * @maxLength 100
    */
   name?: string;
-  /** You can provide a set of phone numbers to forward to. You'll want to tell the assistant when to use each of these numbers in the system prompt. */
-  forwardingPhoneNumbers?: ForwardingPhoneNumber[];
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -1795,8 +2304,8 @@ export interface UpdateAssistantDTO {
    * @maxLength 1000
    */
   firstMessage?: string;
-  /** This sets whether the assistant should detect voicemail. Defaults to true. */
-  voicemailDetectionEnabled?: boolean;
+  /** These are the settings to configure or disable voicemail detection. */
+  voicemailDetection?: TwilioVoicemailDetection;
   /**
    * This is the message that the assistant will say if the call is forwarded to voicemail.
    *
@@ -1826,18 +2335,31 @@ export interface UpdateAssistantDTO {
   /**
    * This is the secret you can set that Vapi will send with every request to your server. Will be sent as a header called x-vapi-secret.
    *
-   * Same precendence logic as serverUrl.
+   * Same precedence logic as serverUrl.
    */
   serverUrlSecret?: string;
-  /**
-   * This is the prompt that's used to summarize the call at the end.
-   *
-   * Default is 'You are an expert note-taker. You will be given a transcript of a conversation. Please summarize the conversation in 4-5 sentences if applicable.'
-   *
-   * Set to '' or 'off' to disable post-call summarization.
-   * @maxLength 2000
-   */
-  summaryPrompt?: string;
+  analysisPlan?: AnalysisPlan;
+}
+
+export interface AnalysisCostBreakdown {
+  /** This is the cost to summarize the call. */
+  summary?: number;
+  /** This is the number of prompt tokens used to summarize the call. */
+  summaryPromptTokens?: number;
+  /** This is the number of completion tokens used to summarize the call. */
+  summaryCompletionTokens?: number;
+  /** This is the cost to extract structured data from the call. */
+  structuredData?: number;
+  /** This is the number of prompt tokens used to extract structured data from the call. */
+  structuredDataPromptTokens?: number;
+  /** This is the number of completion tokens used to extract structured data from the call. */
+  structuredDataCompletionTokens?: number;
+  /** This is the cost to evaluate if the call was successful. */
+  successEvaluation?: number;
+  /** This is the number of prompt tokens used to evaluate if the call was successful. */
+  successEvaluationPromptTokens?: number;
+  /** This is the number of completion tokens used to evaluate if the call was successful. */
+  successEvaluationCompletionTokens?: number;
 }
 
 export interface CostBreakdown {
@@ -1859,6 +2381,17 @@ export interface CostBreakdown {
   llmCompletionTokens?: number;
   /** This is the TTS characters used for the call. */
   ttsCharacters?: number;
+  /** This is the cost of the analysis. */
+  analysisCostBreakdown?: AnalysisCostBreakdown;
+}
+
+export interface Analysis {
+  /** This is the summary of the call. Customize by setting `assistant.analysisPlan.summaryPrompt`. */
+  summary?: string;
+  /** This is the structured data extracted from the call. Customize by setting `assistant.analysisPlan.structuredDataPrompt` and/or `assistant.analysisPlan.structuredDataSchema`. */
+  structuredData?: string;
+  /** This is the evaluation of the call. Customize by setting `assistant.analysisPlan.successEvaluationPrompt` and/or `assistant.analysisPlan.successEvaluationRubric`. */
+  successEvaluation?: string;
 }
 
 export interface PhoneCallTwilioDetails {
@@ -1868,6 +2401,26 @@ export interface PhoneCallTwilioDetails {
   from: string;
   twiml?: string;
   statusCallback?: string;
+  /** The number of seconds that we should attempt to detect an answering machine before timing out and sending a voice request with `AnsweredBy` of `unknown`. The default timeout is 30 seconds. */
+  machineDetectionTimeout?: number;
+  /**
+   * The number of milliseconds that is used as the measuring stick for the length of the speech activity, where durations lower than this value will be interpreted as a human and longer than this value as a machine. Possible Values: 1000-6000. Default: 2400.
+   * @min 1000
+   * @max 6000
+   */
+  machineDetectionSpeechThreshold?: number;
+  /**
+   * The number of milliseconds of silence after speech activity at which point the speech activity is considered complete. Possible Values: 500-5000. Default: 1200.
+   * @min 500
+   * @max 5000
+   */
+  machineDetectionSpeechEndThreshold?: number;
+  /**
+   * The number of milliseconds of initial silence after which an `unknown` AnsweredBy result will be returned. Possible Values: 2000-10000. Default: 5000.
+   * @min 2000
+   * @max 10000
+   */
+  machineDetectionSilenceTimeout?: number;
   asyncAmd?: string;
   asyncAmdStatusCallback?: string;
   record?: boolean;
@@ -1893,18 +2446,14 @@ export interface OverrideAssistantDTO {
    */
   voice?:
     | AzureVoice
+    | DeepgramVoice
     | ElevenLabsVoice
+    | LMNTVoice
+    | NeetsVoice
+    | OpenAIVoice
     | PlayHTVoice
     | RimeAIVoice
-    | DeepgramVoice
-    | OpenAIVoice
-    | LMNTVoice
-    | NeetsVoice;
-  /**
-   * This is the number to forward to if assistant runs into issues.
-   * @example null
-   */
-  forwardingPhoneNumber?: string;
+    | CartesiaVoice;
   /**
    * This is the mode for the first message. Default is 'assistant-speaks-first'.
    *
@@ -1913,32 +2462,10 @@ export interface OverrideAssistantDTO {
    */
   firstMessageMode?: 'assistant-speaks-first' | 'assistant-waits-for-user';
   /**
-   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence', 'machine_end_other'].
-   * @example ["machine_end_beep","machine_end_silence","machine_end_other"]
-   */
-  voicemailDetectionTypes?:
-    | 'machine_start'
-    | 'human'
-    | 'fax'
-    | 'unknown'
-    | 'machine_end_beep'
-    | 'machine_end_silence'
-    | 'machine_end_other';
-  /**
    * This sets whether the assistant's calls are recorded. Defaults to true.
    * @example true
    */
   recordingEnabled?: boolean;
-  /**
-   * This sets whether the assistant will be able to hang up the call. Defaults to false.
-   * @example false
-   */
-  endCallFunctionEnabled?: boolean;
-  /**
-   * This sets whether the assistant can dial digits on the keypad. Defaults to false.
-   * @default null
-   */
-  dialKeypadFunctionEnabled?: boolean;
   /**
    * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
    * @example false
@@ -1948,7 +2475,7 @@ export interface OverrideAssistantDTO {
    * These are the messages that will be sent to the Client SDKs. Default is ['transcript', 'hang', 'tool-calls', 'speech-update', 'metadata', 'conversation-update']
    * @example ["transcript","hang","tool-calls","speech-update","metadata","conversation-update"]
    */
-  clientMessages?: (
+  clientMessages?:
     | 'status-update'
     | 'speech-update'
     | 'transcript'
@@ -1958,13 +2485,12 @@ export interface OverrideAssistantDTO {
     | 'metadata'
     | 'conversation-update'
     | 'model-output'
-    | 'voice-input'
-  )[];
+    | 'voice-input';
   /**
    * These are the messages that will be sent to your Server URL. Default is ['end-of-call-report', 'status-update', 'hang', 'tool-calls']
    * @example ["end-of-call-report","status-update","hang","tool-calls"]
    */
-  serverMessages?: (
+  serverMessages?:
     | 'status-update'
     | 'transcript'
     | 'hang'
@@ -1974,8 +2500,7 @@ export interface OverrideAssistantDTO {
     | 'conversation-update'
     | 'phone-call-control'
     | 'model-output'
-    | 'voice-input'
-  )[];
+    | 'voice-input';
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    * @min 10
@@ -2017,19 +2542,20 @@ export interface OverrideAssistantDTO {
    */
   backgroundSound?: 'off' | 'office';
   /**
-   * backchanneling is the bot say while listening like 'mhmm', 'ahem' etc. this make the conversation sounds natural. Default True
+   * This determines whether the model says 'mhmm', 'ahem' etc. while user is speaking.
+   *
+   * Default `false` while in beta.
    * @example true
    */
   backchannelingEnabled?: boolean;
   /** These are template variables that will be replaced in the assistant messages and prompts. */
   variableValues?: object;
   /**
-   * This is the name of the assistant. This is just for your own reference.
+   * This is the name of the assistant.
+   * This is only required to transfer calls between assistants.
    * @maxLength 100
    */
   name?: string;
-  /** You can provide a set of phone numbers to forward to. You'll want to tell the assistant when to use each of these numbers in the system prompt. */
-  forwardingPhoneNumbers?: ForwardingPhoneNumber[];
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -2037,8 +2563,8 @@ export interface OverrideAssistantDTO {
    * @maxLength 1000
    */
   firstMessage?: string;
-  /** This sets whether the assistant should detect voicemail. Defaults to true. */
-  voicemailDetectionEnabled?: boolean;
+  /** These are the settings to configure or disable voicemail detection. */
+  voicemailDetection?: TwilioVoicemailDetection;
   /**
    * This is the message that the assistant will say if the call is forwarded to voicemail.
    *
@@ -2068,18 +2594,32 @@ export interface OverrideAssistantDTO {
   /**
    * This is the secret you can set that Vapi will send with every request to your server. Will be sent as a header called x-vapi-secret.
    *
-   * Same precendence logic as serverUrl.
+   * Same precedence logic as serverUrl.
    */
   serverUrlSecret?: string;
+  analysisPlan?: AnalysisPlan;
+}
+
+export interface SquadMemberDTO {
+  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
+  assistantId?: string | null;
+  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
+  /** Overrides for a single assistant's settings and template variables. */
+  assistantOverrides?: OverrideAssistantDTO;
   /**
-   * This is the prompt that's used to summarize the call at the end.
-   *
-   * Default is 'You are an expert note-taker. You will be given a transcript of a conversation. Please summarize the conversation in 4-5 sentences if applicable.'
-   *
-   * Set to '' or 'off' to disable post-call summarization.
-   * @maxLength 2000
+   * These are the others assistants that this assistant can transfer to.
+   * These destinations are in addition to destinations that already exist in the assistant's TransferCall tool.
    */
-  summaryPrompt?: string;
+  assistantDestinations?: AssistantTransferDestination[];
+}
+
+export interface CreateSquadDTO {
+  /**
+   * The list of assistant members in the squad. By default, the call will start
+   * with the first assistant supplied in the list.
+   */
+  members: SquadMemberDTO[];
 }
 
 export interface CreateCustomerDTO {
@@ -2169,11 +2709,10 @@ export interface Call {
     | 'pipeline-error-groq-llm-failed'
     | 'pipeline-error-anthropic-llm-failed'
     | 'pipeline-error-openai-voice-failed'
+    | 'pipeline-error-cartesia-voice-failed'
     | 'pipeline-error-deepgram-transcriber-failed'
     | 'pipeline-error-deepgram-voice-failed'
     | 'pipeline-error-eleven-labs-voice-failed'
-    | 'pipeline-error-eleven-labs-voice-not-found'
-    | 'pipeline-error-eleven-labs-quota-exceeded'
     | 'pipeline-error-playht-voice-failed'
     | 'pipeline-error-lmnt-voice-failed'
     | 'pipeline-error-azure-voice-failed'
@@ -2205,20 +2744,29 @@ export interface Call {
     | 'customer-ended-call'
     | 'customer-did-not-answer'
     | 'customer-did-not-give-microphone-permission'
+    | 'incoming-client-message-say-ended-call'
     | 'exceeded-max-duration'
     | 'manually-canceled'
     | 'phone-call-provider-closed-websocket'
     | 'pipeline-error-custom-llm-llm-failed'
+    | 'pipeline-error-eleven-labs-voice-not-found'
+    | 'pipeline-error-eleven-labs-quota-exceeded'
+    | 'pipeline-error-eleven-labs-blocked-free-plan'
+    | 'pipeline-error-eleven-labs-blocked-concurrent-requests'
+    | 'pipeline-error-eleven-labs-unauthorized-access'
+    | 'pipeline-error-eleven-labs-system-busy-and-requested-upgrade'
+    | 'pipeline-error-eleven-labs-voice-not-fine-tuned'
+    | 'pipeline-error-eleven-labs-invalid-api-key'
+    | 'pipeline-error-playht-request-timed-out'
+    | 'pipeline-error-playht-invalid-voice'
+    | 'pipeline-error-playht-unexpected-error'
+    | 'pipeline-error-playht-out-of-credits'
+    | 'pipeline-error-playht-rate-limit-exceeded'
+    | 'pipeline-error-playht-502-gateway-error'
+    | 'pipeline-error-playht-504-gateway-error'
     | 'silence-timed-out'
     | 'voicemail'
     | 'vonage-rejected';
-  /**
-   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
-   * @min 10
-   * @max 3600
-   * @example 1800
-   */
-  maxDurationSeconds?: number;
   /** This is the unique identifier for the call. */
   id: string;
   /** This is the unique identifier for the org that this call belongs to. */
@@ -2253,8 +2801,8 @@ export interface Call {
   recordingUrl?: string;
   /** This is the URL of the recording of the call in two channels. */
   stereoRecordingUrl?: string;
-  /** This is the summary of the call. */
-  summary?: string;
+  /** This is the analysis of the call. Customize the analysis by setting `assistant.analysisPlan`. */
+  analysis?: Analysis;
   /** These are the messages that were spoken during the call. */
   messages?: object[];
   /**
@@ -2287,10 +2835,14 @@ export interface Call {
   forwardedPhoneNumber?: string;
   /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
   assistantId?: string | null;
-  /** Overrides for the assistant's settings and template variables. */
-  assistantOverrides?: OverrideAssistantDTO;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
   assistant?: CreateAssistantDTO;
+  /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
+  assistantOverrides?: OverrideAssistantDTO;
+  /** This is the squad that will be used for the call. To use a transient squad, use `squad` instead. */
+  squadId?: string;
+  /** This is a squad that will be used for the call. To use an existing squad, use `squadId` instead. */
+  squad?: CreateSquadDTO;
   /**
    * This is the customer that will be called. To call a transient customer , use `customer` instead.
    *
@@ -2319,14 +2871,7 @@ export interface Call {
   metadata?: object;
 }
 
-export interface CreateOutboundCallDTO extends CreateCallAssistantDTO {
-  /**
-   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
-   * @min 10
-   * @max 3600
-   * @example 1800
-   */
-  maxDurationSeconds?: number;
+export interface CreateOutboundCallDTO {
   /**
    * This is the customer that will be called. To call a transient customer , use `customer` instead.
    *
@@ -2353,12 +2898,44 @@ export interface CreateOutboundCallDTO extends CreateCallAssistantDTO {
   phoneNumber?: ImportTwilioPhoneNumberDTO;
   /** This is the metadata associated with the call. */
   metadata?: object;
+  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
+  assistantId?: string | null;
+  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
+  /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
+  assistantOverrides?: OverrideAssistantDTO;
+  /** This is the squad that will be used for the call. To use a transient squad, use `squad` instead. */
+  squadId?: string;
+  /** This is a squad that will be used for the call. To use an existing squad, use `squadId` instead. */
+  squad?: CreateSquadDTO;
 }
 
-export interface TwilioCredential {
-  provider: 'twilio';
+export interface CreateWebCallDTO {
+  /** This will expose SIP URI you can use to connect to the call. Disabled by default. */
+  sipEnabled?: boolean;
+  /** This is the metadata associated with the call. */
+  metadata?: object;
+  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
+  assistantId?: string | null;
+  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
+  /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
+  assistantOverrides?: OverrideAssistantDTO;
+  /** This is the squad that will be used for the call. To use a transient squad, use `squad` instead. */
+  squadId?: string;
+  /** This is a squad that will be used for the call. To use an existing squad, use `squadId` instead. */
+  squad?: CreateSquadDTO;
+}
+
+export interface UpdateCallDTO {
+  /** This is the metadata associated with the call. */
+  metadata?: object;
+}
+
+export interface AnyscaleCredential {
+  provider: 'anyscale';
   /** This is not returned in the API. */
-  authToken: string;
+  apiKey: string;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -2373,7 +2950,112 @@ export interface TwilioCredential {
    * @format date-time
    */
   updatedAt: string;
-  accountSid: string;
+}
+
+export interface AnthropicCredential {
+  provider: 'anthropic';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface AzureOpenAICredential {
+  provider: 'azure-openai';
+  region:
+    | 'australia'
+    | 'canada'
+    | 'eastus2'
+    | 'eastus'
+    | 'france'
+    | 'india'
+    | 'japan'
+    | 'northcentralus'
+    | 'norway'
+    | 'southcentralus'
+    | 'sweden'
+    | 'switzerland'
+    | 'uk'
+    | 'westus'
+    | 'westus3';
+  /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
+  models:
+    | 'gpt-4o-2024-05-13'
+    | 'gpt-4-turbo-2024-04-09'
+    | 'gpt-4-0125-preview'
+    | 'gpt-4-1106-preview'
+    | 'gpt-4-0613'
+    | 'gpt-35-turbo-0125'
+    | 'gpt-35-turbo-1106';
+  /** This is not returned in the API. */
+  openAIKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  openAIEndpoint: string;
+}
+
+export interface CartesiaCredential {
+  provider: 'cartesia';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface CustomLLMCredential {
+  provider: 'custom-llm';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
 }
 
 export interface DeepgramCredential {
@@ -2396,8 +3078,172 @@ export interface DeepgramCredential {
   updatedAt: string;
 }
 
+export interface DeepInfraCredential {
+  provider: 'deepinfra';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
 export interface ElevenLabsCredential {
   provider: '11labs';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface GoHighLevelCredential {
+  provider: 'gohighlevel';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface GroqCredential {
+  provider: 'groq';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface LmntCredential {
+  provider: 'lmnt';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface MakeCredential {
+  provider: 'make';
+  /** Team ID */
+  teamId: string;
+  /** Region of your application. For example: eu1, eu2, us1, us2 */
+  region: string;
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface OpenAICredential {
+  provider: 'openai';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface OpenRouterCredential {
+  provider: 'openrouter';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface PerplexityAICredential {
+  provider: 'perplexity-ai';
   /** This is not returned in the API. */
   apiKey: string;
   /** This is the unique identifier for the credential. */
@@ -2457,8 +3303,8 @@ export interface RimeAICredential {
   updatedAt: string;
 }
 
-export interface OpenAICredential {
-  provider: 'openai';
+export interface RunpodCredential {
+  provider: 'runpod';
   /** This is not returned in the API. */
   apiKey: string;
   /** This is the unique identifier for the credential. */
@@ -2497,10 +3343,10 @@ export interface TogetherAICredential {
   updatedAt: string;
 }
 
-export interface AnyscaleCredential {
-  provider: 'anyscale';
+export interface TwilioCredential {
+  provider: 'twilio';
   /** This is not returned in the API. */
-  apiKey: string;
+  authToken: string;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -2515,146 +3361,7 @@ export interface AnyscaleCredential {
    * @format date-time
    */
   updatedAt: string;
-}
-
-export interface OpenRouterCredential {
-  provider: 'openrouter';
-  /** This is not returned in the API. */
-  apiKey: string;
-  /** This is the unique identifier for the credential. */
-  id: string;
-  /** This is the unique identifier for the org that this credential belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the credential was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-}
-
-export interface PerplexityAICredential {
-  provider: 'perplexity-ai';
-  /** This is not returned in the API. */
-  apiKey: string;
-  /** This is the unique identifier for the credential. */
-  id: string;
-  /** This is the unique identifier for the org that this credential belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the credential was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-}
-
-export interface DeepInfraCredential {
-  provider: 'deepinfra';
-  /** This is not returned in the API. */
-  apiKey: string;
-  /** This is the unique identifier for the credential. */
-  id: string;
-  /** This is the unique identifier for the org that this credential belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the credential was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-}
-
-export interface CustomLLMCredential {
-  provider: 'custom-llm';
-  /** This is not returned in the API. */
-  apiKey: string;
-  /** This is the unique identifier for the credential. */
-  id: string;
-  /** This is the unique identifier for the org that this credential belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the credential was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-}
-
-export interface RunpodCredential {
-  provider: 'runpod';
-  /** This is not returned in the API. */
-  apiKey: string;
-  /** This is the unique identifier for the credential. */
-  id: string;
-  /** This is the unique identifier for the org that this credential belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the credential was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-}
-
-export interface GroqCredential {
-  provider: 'groq';
-  /** This is not returned in the API. */
-  apiKey: string;
-  /** This is the unique identifier for the credential. */
-  id: string;
-  /** This is the unique identifier for the org that this credential belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the credential was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-}
-
-export interface AnthropicCredential {
-  provider: 'anthropic';
-  /** This is not returned in the API. */
-  apiKey: string;
-  /** This is the unique identifier for the credential. */
-  id: string;
-  /** This is the unique identifier for the org that this credential belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the credential was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
+  accountSid: string;
 }
 
 export interface VonageCredential {
@@ -2690,11 +3397,60 @@ export interface VonageCredential {
   apiKey: string;
 }
 
-export interface CreateTwilioCredentialDTO {
-  provider: 'twilio';
+export interface CreateAnyscaleCredentialDTO {
+  provider: 'anyscale';
   /** This is not returned in the API. */
-  authToken: string;
-  accountSid: string;
+  apiKey: string;
+}
+
+export interface CreateAnthropicCredentialDTO {
+  provider: 'anthropic';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateAzureOpenAICredentialDTO {
+  provider: 'azure-openai';
+  region:
+    | 'australia'
+    | 'canada'
+    | 'eastus2'
+    | 'eastus'
+    | 'france'
+    | 'india'
+    | 'japan'
+    | 'northcentralus'
+    | 'norway'
+    | 'southcentralus'
+    | 'sweden'
+    | 'switzerland'
+    | 'uk'
+    | 'westus'
+    | 'westus3';
+  /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
+  models:
+    | 'gpt-4o-2024-05-13'
+    | 'gpt-4-turbo-2024-04-09'
+    | 'gpt-4-0125-preview'
+    | 'gpt-4-1106-preview'
+    | 'gpt-4-0613'
+    | 'gpt-35-turbo-0125'
+    | 'gpt-35-turbo-1106';
+  /** This is not returned in the API. */
+  openAIKey: string;
+  openAIEndpoint: string;
+}
+
+export interface CreateCartesiaCredentialDTO {
+  provider: 'cartesia';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateCustomLLMCredentialDTO {
+  provider: 'custom-llm';
+  /** This is not returned in the API. */
+  apiKey: string;
 }
 
 export interface CreateDeepgramCredentialDTO {
@@ -2703,20 +3459,48 @@ export interface CreateDeepgramCredentialDTO {
   apiKey: string;
 }
 
+export interface CreateDeepInfraCredentialDTO {
+  provider: 'deepinfra';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateElevenLabsCredentialDTO {
+  provider: '11labs';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateGoHighLevelCredentialDTO {
+  provider: 'gohighlevel';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateGroqCredentialDTO {
+  provider: 'groq';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateLmntCredentialDTO {
+  provider: 'lmnt';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface CreateMakeCredentialDTO {
+  provider: 'make';
+  /** Team ID */
+  teamId: string;
+  /** Region of your application. For example: eu1, eu2, us1, us2 */
+  region: string;
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
 export interface CreateOpenAICredentialDTO {
   provider: 'openai';
-  /** This is not returned in the API. */
-  apiKey: string;
-}
-
-export interface CreateTogetherAICredentialDTO {
-  provider: 'together-ai';
-  /** This is not returned in the API. */
-  apiKey: string;
-}
-
-export interface CreateAnyscaleCredentialDTO {
-  provider: 'anyscale';
   /** This is not returned in the API. */
   apiKey: string;
 }
@@ -2729,24 +3513,6 @@ export interface CreateOpenRouterCredentialDTO {
 
 export interface CreatePerplexityAICredentialDTO {
   provider: 'perplexity-ai';
-  /** This is not returned in the API. */
-  apiKey: string;
-}
-
-export interface CreateDeepInfraCredentialDTO {
-  provider: 'deepinfra';
-  /** This is not returned in the API. */
-  apiKey: string;
-}
-
-export interface CreateCustomLLMCredentialDTO {
-  provider: 'custom-llm';
-  /** This is not returned in the API. */
-  apiKey: string;
-}
-
-export interface CreateElevenLabsCredentialDTO {
-  provider: '11labs';
   /** This is not returned in the API. */
   apiKey: string;
 }
@@ -2770,16 +3536,17 @@ export interface CreateRunpodCredentialDTO {
   apiKey: string;
 }
 
-export interface CreateGroqCredentialDTO {
-  provider: 'groq';
+export interface CreateTogetherAICredentialDTO {
+  provider: 'together-ai';
   /** This is not returned in the API. */
   apiKey: string;
 }
 
-export interface CreateAnthropicCredentialDTO {
-  provider: 'anthropic';
+export interface CreateTwilioCredentialDTO {
+  provider: 'twilio';
   /** This is not returned in the API. */
-  apiKey: string;
+  authToken: string;
+  accountSid: string;
 }
 
 export interface CreateVonageCredentialDTO {
@@ -2789,11 +3556,66 @@ export interface CreateVonageCredentialDTO {
   apiKey: string;
 }
 
-export interface UpdateTwilioCredentialDTO {
-  provider: 'twilio';
+export interface UpdateAnyscaleCredentialDTO {
+  provider: 'anyscale';
   /** This is not returned in the API. */
-  authToken: string;
-  accountSid: string;
+  apiKey: string;
+}
+
+export interface UpdateAnthropicCredentialDTO {
+  provider: 'anthropic';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateAzureOpenAICredentialDTO {
+  provider: 'azure-openai';
+  region:
+    | 'australia'
+    | 'canada'
+    | 'eastus2'
+    | 'eastus'
+    | 'france'
+    | 'india'
+    | 'japan'
+    | 'northcentralus'
+    | 'norway'
+    | 'southcentralus'
+    | 'sweden'
+    | 'switzerland'
+    | 'uk'
+    | 'westus'
+    | 'westus3';
+  /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
+  models:
+    | 'gpt-4o-2024-05-13'
+    | 'gpt-4-turbo-2024-04-09'
+    | 'gpt-4-0125-preview'
+    | 'gpt-4-1106-preview'
+    | 'gpt-4-0613'
+    | 'gpt-35-turbo-0125'
+    | 'gpt-35-turbo-1106';
+  /** This is not returned in the API. */
+  openAIKey: string;
+  openAIEndpoint: string;
+}
+
+export interface UpdateCartesiaCredentialDTO {
+  provider: 'cartesia';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateCustomLLMCredentialDTO {
+  provider: 'custom-llm';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateDeepInfraCredentialDTO {
+  provider: 'deepinfra';
+  /** This is not returned in the API. */
+  apiKey: string;
 }
 
 export interface UpdateDeepgramCredentialDTO {
@@ -2802,20 +3624,42 @@ export interface UpdateDeepgramCredentialDTO {
   apiKey: string;
 }
 
+export interface UpdateElevenLabsCredentialDTO {
+  provider: '11labs';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateGoHighLevelCredentialDTO {
+  provider: 'gohighlevel';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateGroqCredentialDTO {
+  provider: 'groq';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateLmntCredentialDTO {
+  provider: 'lmnt';
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
+export interface UpdateMakeCredentialDTO {
+  provider: 'make';
+  /** Team ID */
+  teamId: string;
+  /** Region of your application. For example: eu1, eu2, us1, us2 */
+  region: string;
+  /** This is not returned in the API. */
+  apiKey: string;
+}
+
 export interface UpdateOpenAICredentialDTO {
   provider: 'openai';
-  /** This is not returned in the API. */
-  apiKey: string;
-}
-
-export interface UpdateTogetherAICredentialDTO {
-  provider: 'together-ai';
-  /** This is not returned in the API. */
-  apiKey: string;
-}
-
-export interface UpdateAnyscaleCredentialDTO {
-  provider: 'anyscale';
   /** This is not returned in the API. */
   apiKey: string;
 }
@@ -2828,24 +3672,6 @@ export interface UpdateOpenRouterCredentialDTO {
 
 export interface UpdatePerplexityAICredentialDTO {
   provider: 'perplexity-ai';
-  /** This is not returned in the API. */
-  apiKey: string;
-}
-
-export interface UpdateDeepInfraCredentialDTO {
-  provider: 'deepinfra';
-  /** This is not returned in the API. */
-  apiKey: string;
-}
-
-export interface UpdateCustomLLMCredentialDTO {
-  provider: 'custom-llm';
-  /** This is not returned in the API. */
-  apiKey: string;
-}
-
-export interface UpdateElevenLabsCredentialDTO {
-  provider: '11labs';
   /** This is not returned in the API. */
   apiKey: string;
 }
@@ -2869,16 +3695,17 @@ export interface UpdateRunpodCredentialDTO {
   apiKey: string;
 }
 
-export interface UpdateGroqCredentialDTO {
-  provider: 'groq';
+export interface UpdateTogetherAICredentialDTO {
+  provider: 'together-ai';
   /** This is not returned in the API. */
   apiKey: string;
 }
 
-export interface UpdateAnthropicCredentialDTO {
-  provider: 'anthropic';
+export interface UpdateTwilioCredentialDTO {
+  provider: 'twilio';
   /** This is not returned in the API. */
-  apiKey: string;
+  authToken: string;
+  accountSid: string;
 }
 
 export interface UpdateVonageCredentialDTO {
@@ -3074,51 +3901,6 @@ export interface Metrics {
   callCountDailyBreakdown: object;
 }
 
-export interface VoiceLibrary {
-  /** This is the voice provider that will be used. */
-  provider?: '11labs' | 'playht' | 'rime-ai' | 'deepgram' | 'openai' | 'azure' | 'lmnt' | 'neets';
-  /** The ID of the voice provided by the provider. */
-  providerId?: string;
-  /** The unique slug of the voice. */
-  slug?: string;
-  /** The name of the voice. */
-  name?: string;
-  /** The language of the voice. */
-  language?: string;
-  /** The language code of the voice. */
-  languageCode?: string;
-  /** The model of the voice. */
-  model?: string;
-  /** The supported models of the voice. */
-  supportedModels?: string;
-  /** The gender of the voice. */
-  gender?: 'male' | 'female';
-  /** The accent of the voice. */
-  accent?: string;
-  /** The preview URL of the voice. */
-  previewUrl?: string;
-  /** The credential ID of the voice. */
-  credentialId?: string;
-  /** The deletion status of the voice. */
-  isDeleted: boolean;
-  /** The unique identifier for the voice library. */
-  id: string;
-  /** The unique identifier for the organization that this voice library belongs to. */
-  orgId: string;
-  /** The Public voice is shared accross all the organizations. */
-  isPublic: boolean;
-  /**
-   * The ISO 8601 date-time string of when the voice library was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * The ISO 8601 date-time string of when the voice library was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-}
-
 export interface CallLogPrivileged {
   /** This is the unique identifier for the call. */
   callId: string;
@@ -3144,6 +3926,305 @@ export interface PaginationMeta {
 export interface CallLogsPaginatedResponse {
   results: CallLogPrivileged[];
   metadata: PaginationMeta;
+}
+
+export interface MakeTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "make" for Make tool. */
+  type: 'make';
+  /** The unique identifier for the tool library. */
+  id: string;
+  /** The unique identifier for the organization that this tool library belongs to. */
+  orgId: string;
+  /**
+   * The ISO 8601 date-time string of when the tool library was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * The ISO 8601 date-time string of when the tool library was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+  metadata: MakeToolMetadata;
+}
+
+export interface GhlTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "ghl" for GHL tool. */
+  type: 'ghl';
+  /** The unique identifier for the tool library. */
+  id: string;
+  /** The unique identifier for the organization that this tool library belongs to. */
+  orgId: string;
+  /**
+   * The ISO 8601 date-time string of when the tool library was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * The ISO 8601 date-time string of when the tool library was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+  metadata: GhlToolMetadata;
+}
+
+export interface FunctionTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "function" for Function tool. */
+  type: 'function';
+  /** The unique identifier for the tool library. */
+  id: string;
+  /** The unique identifier for the organization that this tool library belongs to. */
+  orgId: string;
+  /**
+   * The ISO 8601 date-time string of when the tool library was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * The ISO 8601 date-time string of when the tool library was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateMakeToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "make" for Make tool. */
+  type: 'make';
+  metadata: MakeToolMetadata;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateGhlToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "ghl" for GHL tool. */
+  type: 'ghl';
+  metadata: GhlToolMetadata;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateFunctionToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "function" for Function tool. */
+  type: 'function';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, this is a custom function definition.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateFileDTO {
+  /** @format binary */
+  file: File;
+}
+
+export interface File {
+  /** This is the name of the file. This is just for your own reference. */
+  name?: string;
+  originalName?: string;
+  /** @default "file" */
+  object?: 'file';
+  bytes?: number;
+  purpose?: string;
+  mimetype?: string;
+  url?: string;
+  metadata?: object;
+  status?: 'indexed' | 'not_indexed';
+  key?: string;
+  path?: string;
+  /** @default "files" */
+  bucket?: string;
+  /** This is the unique identifier for the file. */
+  id: string;
+  /** This is the unique identifier for the org that this file belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the file was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the file was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -3641,6 +4722,44 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags Calls
+     * @name CallControllerDeleteCallData
+     * @summary Delete Call Data
+     * @request DELETE:/call/{id}
+     * @secure
+     */
+    callControllerDeleteCallData: (id: string, params: RequestParams = {}) =>
+      this.request<Call, any>({
+        path: `/call/${id}`,
+        method: 'DELETE',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallControllerUpdate
+     * @summary Update Call
+     * @request PATCH:/call/{id}
+     * @secure
+     */
+    callControllerUpdate: (id: string, data: UpdateCallDTO, params: RequestParams = {}) =>
+      this.request<Call, any>({
+        path: `/call/${id}`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
      * @name CallControllerCreatePhoneCall
      * @summary Create Phone Call
      * @request POST:/call/phone
@@ -3690,35 +4809,50 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     credentialControllerCreate: (
       data:
         | ({
-            provider: 'twilio';
-          } & CreateTwilioCredentialDTO)
+            provider: '11labs';
+          } & CreateElevenLabsCredentialDTO)
+        | ({
+            provider: 'anthropic';
+          } & CreateAnthropicCredentialDTO)
+        | ({
+            provider: 'anyscale';
+          } & CreateAnyscaleCredentialDTO)
+        | ({
+            provider: 'azure-openai';
+          } & CreateAzureOpenAICredentialDTO)
+        | ({
+            provider: 'cartesia';
+          } & CreateCartesiaCredentialDTO)
+        | ({
+            provider: 'custom-llm';
+          } & CreateCustomLLMCredentialDTO)
         | ({
             provider: 'deepgram';
           } & CreateDeepgramCredentialDTO)
         | ({
+            provider: 'deepinfra';
+          } & CreateDeepInfraCredentialDTO)
+        | ({
+            provider: 'gohighlevel';
+          } & CreateGoHighLevelCredentialDTO)
+        | ({
+            provider: 'groq';
+          } & CreateGroqCredentialDTO)
+        | ({
+            provider: 'lmnt';
+          } & CreateLmntCredentialDTO)
+        | ({
+            provider: 'make';
+          } & CreateMakeCredentialDTO)
+        | ({
             provider: 'openai';
           } & CreateOpenAICredentialDTO)
-        | ({
-            provider: 'together-ai';
-          } & CreateTogetherAICredentialDTO)
-        | ({
-            provider: 'anyscale';
-          } & CreateAnyscaleCredentialDTO)
         | ({
             provider: 'openrouter';
           } & CreateOpenRouterCredentialDTO)
         | ({
             provider: 'perplexity-ai';
           } & CreatePerplexityAICredentialDTO)
-        | ({
-            provider: 'deepinfra';
-          } & CreateDeepInfraCredentialDTO)
-        | ({
-            provider: 'custom-llm';
-          } & CreateCustomLLMCredentialDTO)
-        | ({
-            provider: '11labs';
-          } & CreateElevenLabsCredentialDTO)
         | ({
             provider: 'playht';
           } & CreatePlayHTCredentialDTO)
@@ -3729,11 +4863,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: 'runpod';
           } & CreateRunpodCredentialDTO)
         | ({
-            provider: 'groq';
-          } & CreateGroqCredentialDTO)
+            provider: 'together-ai';
+          } & CreateTogetherAICredentialDTO)
         | ({
-            provider: 'anthropic';
-          } & CreateAnthropicCredentialDTO)
+            provider: 'twilio';
+          } & CreateTwilioCredentialDTO)
         | ({
             provider: 'vonage';
           } & CreateVonageCredentialDTO),
@@ -3741,35 +4875,50 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     ) =>
       this.request<
         | ({
-            provider: 'twilio';
-          } & TwilioCredential)
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
         | ({
             provider: 'deepgram';
           } & DeepgramCredential)
         | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
             provider: 'openai';
           } & OpenAICredential)
-        | ({
-            provider: 'together-ai';
-          } & TogetherAICredential)
-        | ({
-            provider: 'anyscale';
-          } & AnyscaleCredential)
         | ({
             provider: 'openrouter';
           } & OpenRouterCredential)
         | ({
             provider: 'perplexity-ai';
           } & PerplexityAICredential)
-        | ({
-            provider: 'deepinfra';
-          } & DeepInfraCredential)
-        | ({
-            provider: 'custom-llm';
-          } & CustomLLMCredential)
-        | ({
-            provider: '11labs';
-          } & ElevenLabsCredential)
         | ({
             provider: 'playht';
           } & PlayHTCredential)
@@ -3780,11 +4929,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: 'runpod';
           } & RunpodCredential)
         | ({
-            provider: 'groq';
-          } & GroqCredential)
+            provider: 'together-ai';
+          } & TogetherAICredential)
         | ({
-            provider: 'anthropic';
-          } & AnthropicCredential)
+            provider: 'twilio';
+          } & TwilioCredential)
         | ({
             provider: 'vonage';
           } & VonageCredential),
@@ -3862,35 +5011,50 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       this.request<
         (
           | ({
-              provider: 'twilio';
-            } & TwilioCredential)
+              provider: '11labs';
+            } & ElevenLabsCredential)
+          | ({
+              provider: 'anthropic';
+            } & AnthropicCredential)
+          | ({
+              provider: 'anyscale';
+            } & AnyscaleCredential)
+          | ({
+              provider: 'azure-openai';
+            } & AzureOpenAICredential)
+          | ({
+              provider: 'cartesia';
+            } & CartesiaCredential)
+          | ({
+              provider: 'custom-llm';
+            } & CustomLLMCredential)
           | ({
               provider: 'deepgram';
             } & DeepgramCredential)
           | ({
+              provider: 'deepinfra';
+            } & DeepInfraCredential)
+          | ({
+              provider: 'gohighlevel';
+            } & GoHighLevelCredential)
+          | ({
+              provider: 'groq';
+            } & GroqCredential)
+          | ({
+              provider: 'lmnt';
+            } & LmntCredential)
+          | ({
+              provider: 'make';
+            } & MakeCredential)
+          | ({
               provider: 'openai';
             } & OpenAICredential)
-          | ({
-              provider: 'together-ai';
-            } & TogetherAICredential)
-          | ({
-              provider: 'anyscale';
-            } & AnyscaleCredential)
           | ({
               provider: 'openrouter';
             } & OpenRouterCredential)
           | ({
               provider: 'perplexity-ai';
             } & PerplexityAICredential)
-          | ({
-              provider: 'deepinfra';
-            } & DeepInfraCredential)
-          | ({
-              provider: 'custom-llm';
-            } & CustomLLMCredential)
-          | ({
-              provider: '11labs';
-            } & ElevenLabsCredential)
           | ({
               provider: 'playht';
             } & PlayHTCredential)
@@ -3901,11 +5065,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
               provider: 'runpod';
             } & RunpodCredential)
           | ({
-              provider: 'groq';
-            } & GroqCredential)
+              provider: 'together-ai';
+            } & TogetherAICredential)
           | ({
-              provider: 'anthropic';
-            } & AnthropicCredential)
+              provider: 'twilio';
+            } & TwilioCredential)
           | ({
               provider: 'vonage';
             } & VonageCredential)
@@ -3932,35 +5096,50 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     credentialControllerFindOne: (id: string, params: RequestParams = {}) =>
       this.request<
         | ({
-            provider: 'twilio';
-          } & TwilioCredential)
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
         | ({
             provider: 'deepgram';
           } & DeepgramCredential)
         | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
             provider: 'openai';
           } & OpenAICredential)
-        | ({
-            provider: 'together-ai';
-          } & TogetherAICredential)
-        | ({
-            provider: 'anyscale';
-          } & AnyscaleCredential)
         | ({
             provider: 'openrouter';
           } & OpenRouterCredential)
         | ({
             provider: 'perplexity-ai';
           } & PerplexityAICredential)
-        | ({
-            provider: 'deepinfra';
-          } & DeepInfraCredential)
-        | ({
-            provider: 'custom-llm';
-          } & CustomLLMCredential)
-        | ({
-            provider: '11labs';
-          } & ElevenLabsCredential)
         | ({
             provider: 'playht';
           } & PlayHTCredential)
@@ -3971,11 +5150,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: 'runpod';
           } & RunpodCredential)
         | ({
-            provider: 'groq';
-          } & GroqCredential)
+            provider: 'together-ai';
+          } & TogetherAICredential)
         | ({
-            provider: 'anthropic';
-          } & AnthropicCredential)
+            provider: 'twilio';
+          } & TwilioCredential)
         | ({
             provider: 'vonage';
           } & VonageCredential),
@@ -4001,35 +5180,50 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       id: string,
       data:
         | ({
-            provider: 'twilio';
-          } & UpdateTwilioCredentialDTO)
+            provider: '11labs';
+          } & UpdateElevenLabsCredentialDTO)
+        | ({
+            provider: 'anthropic';
+          } & UpdateAnthropicCredentialDTO)
+        | ({
+            provider: 'anyscale';
+          } & UpdateAnyscaleCredentialDTO)
+        | ({
+            provider: 'azure-openai';
+          } & UpdateAzureOpenAICredentialDTO)
+        | ({
+            provider: 'cartesia';
+          } & UpdateCartesiaCredentialDTO)
+        | ({
+            provider: 'custom-llm';
+          } & UpdateCustomLLMCredentialDTO)
         | ({
             provider: 'deepgram';
           } & UpdateDeepgramCredentialDTO)
         | ({
+            provider: 'deepinfra';
+          } & UpdateDeepInfraCredentialDTO)
+        | ({
+            provider: 'gohighlevel';
+          } & UpdateGoHighLevelCredentialDTO)
+        | ({
+            provider: 'groq';
+          } & UpdateGroqCredentialDTO)
+        | ({
+            provider: 'lmnt';
+          } & UpdateLmntCredentialDTO)
+        | ({
+            provider: 'make';
+          } & UpdateMakeCredentialDTO)
+        | ({
             provider: 'openai';
           } & UpdateOpenAICredentialDTO)
-        | ({
-            provider: 'together-ai';
-          } & UpdateTogetherAICredentialDTO)
-        | ({
-            provider: 'anyscale';
-          } & UpdateAnyscaleCredentialDTO)
         | ({
             provider: 'openrouter';
           } & UpdateOpenRouterCredentialDTO)
         | ({
             provider: 'perplexity-ai';
           } & UpdatePerplexityAICredentialDTO)
-        | ({
-            provider: 'deepinfra';
-          } & UpdateDeepInfraCredentialDTO)
-        | ({
-            provider: 'custom-llm';
-          } & UpdateCustomLLMCredentialDTO)
-        | ({
-            provider: '11labs';
-          } & UpdateElevenLabsCredentialDTO)
         | ({
             provider: 'playht';
           } & UpdatePlayHTCredentialDTO)
@@ -4040,11 +5234,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: 'runpod';
           } & UpdateRunpodCredentialDTO)
         | ({
-            provider: 'groq';
-          } & UpdateGroqCredentialDTO)
+            provider: 'together-ai';
+          } & UpdateTogetherAICredentialDTO)
         | ({
-            provider: 'anthropic';
-          } & UpdateAnthropicCredentialDTO)
+            provider: 'twilio';
+          } & UpdateTwilioCredentialDTO)
         | ({
             provider: 'vonage';
           } & UpdateVonageCredentialDTO),
@@ -4052,35 +5246,50 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     ) =>
       this.request<
         | ({
-            provider: 'twilio';
-          } & TwilioCredential)
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
         | ({
             provider: 'deepgram';
           } & DeepgramCredential)
         | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
             provider: 'openai';
           } & OpenAICredential)
-        | ({
-            provider: 'together-ai';
-          } & TogetherAICredential)
-        | ({
-            provider: 'anyscale';
-          } & AnyscaleCredential)
         | ({
             provider: 'openrouter';
           } & OpenRouterCredential)
         | ({
             provider: 'perplexity-ai';
           } & PerplexityAICredential)
-        | ({
-            provider: 'deepinfra';
-          } & DeepInfraCredential)
-        | ({
-            provider: 'custom-llm';
-          } & CustomLLMCredential)
-        | ({
-            provider: '11labs';
-          } & ElevenLabsCredential)
         | ({
             provider: 'playht';
           } & PlayHTCredential)
@@ -4091,11 +5300,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: 'runpod';
           } & RunpodCredential)
         | ({
-            provider: 'groq';
-          } & GroqCredential)
+            provider: 'together-ai';
+          } & TogetherAICredential)
         | ({
-            provider: 'anthropic';
-          } & AnthropicCredential)
+            provider: 'twilio';
+          } & TwilioCredential)
         | ({
             provider: 'vonage';
           } & VonageCredential),
@@ -4122,35 +5331,50 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     credentialControllerRemove: (id: string, params: RequestParams = {}) =>
       this.request<
         | ({
-            provider: 'twilio';
-          } & TwilioCredential)
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
         | ({
             provider: 'deepgram';
           } & DeepgramCredential)
         | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
             provider: 'openai';
           } & OpenAICredential)
-        | ({
-            provider: 'together-ai';
-          } & TogetherAICredential)
-        | ({
-            provider: 'anyscale';
-          } & AnyscaleCredential)
         | ({
             provider: 'openrouter';
           } & OpenRouterCredential)
         | ({
             provider: 'perplexity-ai';
           } & PerplexityAICredential)
-        | ({
-            provider: 'deepinfra';
-          } & DeepInfraCredential)
-        | ({
-            provider: 'custom-llm';
-          } & CustomLLMCredential)
-        | ({
-            provider: '11labs';
-          } & ElevenLabsCredential)
         | ({
             provider: 'playht';
           } & PlayHTCredential)
@@ -4161,11 +5385,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             provider: 'runpod';
           } & RunpodCredential)
         | ({
-            provider: 'groq';
-          } & GroqCredential)
+            provider: 'together-ai';
+          } & TogetherAICredential)
         | ({
-            provider: 'anthropic';
-          } & AnthropicCredential)
+            provider: 'twilio';
+          } & TwilioCredential)
         | ({
             provider: 'vonage';
           } & VonageCredential),
@@ -4417,73 +5641,14 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         ...params,
       }),
   };
-  voiceLibrary = {
+  log = {
     /**
      * No description
      *
-     * @tags Voice Library
-     * @name VoiceLibraryControllerVoiceGetByProvider
-     * @summary Get voices in Voice Library by Providers
-     * @request GET:/voice-library/{provider}
-     * @secure
-     */
-    voiceLibraryControllerVoiceGetByProvider: (
-      provider:
-        | '11labs'
-        | 'playht'
-        | 'rime-ai'
-        | 'deepgram'
-        | 'openai'
-        | 'azure'
-        | 'lmnt'
-        | 'neets',
-      params: RequestParams = {},
-    ) =>
-      this.request<VoiceLibrary[], any>({
-        path: `/voice-library/${provider}`,
-        method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Voice Library
-     * @name VoiceLibraryControllerVoiceLibrarySyncByProvider
-     * @summary Sync voices in Voice Library by Providers
-     * @request POST:/voice-library/sync/{provider}
-     * @secure
-     */
-    voiceLibraryControllerVoiceLibrarySyncByProvider: (
-      provider:
-        | '11labs'
-        | 'playht'
-        | 'rime-ai'
-        | 'deepgram'
-        | 'openai'
-        | 'azure'
-        | 'lmnt'
-        | 'neets',
-      params: RequestParams = {},
-    ) =>
-      this.request<VoiceLibrary[], any>({
-        path: `/voice-library/sync/${provider}`,
-        method: 'POST',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-  };
-  logging = {
-    /**
-     * No description
-     *
-     * @tags Logging
+     * @tags Logs
      * @name LoggingControllerGetLogs
-     * @summary Get Logging Logs
-     * @request GET:/logging
+     * @summary Get Call Logs
+     * @request GET:/log
      * @secure
      */
     loggingControllerGetLogs: (
@@ -4494,6 +5659,8 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
          * @min 1
          */
         page?: number;
+        /** This is the sort order for pagination. Defaults to 'ASC'. */
+        sortOrder?: 'ASC' | 'DESC';
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -4544,9 +5711,312 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       params: RequestParams = {},
     ) =>
       this.request<CallLogsPaginatedResponse, any>({
-        path: `/logging`,
+        path: `/log`,
         method: 'GET',
         query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
+  tool = {
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerCreate
+     * @summary Create Tool
+     * @request POST:/tool
+     * @secure
+     */
+    toolControllerCreate: (
+      data:
+        | ({
+            type: 'make';
+          } & CreateMakeToolDTO)
+        | ({
+            type: 'ghl';
+          } & CreateGhlToolDTO)
+        | ({
+            type: 'function';
+          } & CreateFunctionToolDTO),
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        | ({
+            type: 'make';
+          } & MakeTool)
+        | ({
+            type: 'ghl';
+          } & GhlTool)
+        | ({
+            type: 'function';
+          } & FunctionTool),
+        any
+      >({
+        path: `/tool`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerFindAll
+     * @summary List Tools
+     * @request GET:/tool
+     * @secure
+     */
+    toolControllerFindAll: (
+      query?: {
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        (
+          | ({
+              type: 'make';
+            } & MakeTool)
+          | ({
+              type: 'ghl';
+            } & GhlTool)
+          | ({
+              type: 'function';
+            } & FunctionTool)
+        )[],
+        any
+      >({
+        path: `/tool`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerFindOne
+     * @summary Get Tool
+     * @request GET:/tool/{id}
+     * @secure
+     */
+    toolControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<
+        | ({
+            type: 'make';
+          } & MakeTool)
+        | ({
+            type: 'ghl';
+          } & GhlTool)
+        | ({
+            type: 'function';
+          } & FunctionTool),
+        any
+      >({
+        path: `/tool/${id}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerUpdate
+     * @summary Update Tool
+     * @request PATCH:/tool/{id}
+     * @secure
+     */
+    toolControllerUpdate: (
+      id: string,
+      data:
+        | ({
+            type: 'make';
+          } & UpdateMakeToolDTO)
+        | ({
+            type: 'ghl';
+          } & UpdateGhlToolDTO)
+        | ({
+            type: 'function';
+          } & UpdateFunctionToolDTO),
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        | ({
+            type: 'make';
+          } & MakeTool)
+        | ({
+            type: 'ghl';
+          } & GhlTool)
+        | ({
+            type: 'function';
+          } & FunctionTool),
+        any
+      >({
+        path: `/tool/${id}`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerRemove
+     * @summary Delete Tool
+     * @request DELETE:/tool/{id}
+     * @secure
+     */
+    toolControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<
+        | ({
+            type: 'make';
+          } & MakeTool)
+        | ({
+            type: 'ghl';
+          } & GhlTool)
+        | ({
+            type: 'function';
+          } & FunctionTool),
+        any
+      >({
+        path: `/tool/${id}`,
+        method: 'DELETE',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
+  file = {
+    /**
+     * No description
+     *
+     * @tags Files
+     * @name FileControllerCreate
+     * @summary Upload File
+     * @request POST:/file/upload
+     * @secure
+     */
+    fileControllerCreate: (data: CreateFileDTO, params: RequestParams = {}) =>
+      this.request<File, void>({
+        path: `/file/upload`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Files
+     * @name FileControllerFindAll
+     * @summary List Files
+     * @request GET:/file
+     * @secure
+     */
+    fileControllerFindAll: (params: RequestParams = {}) =>
+      this.request<File[], any>({
+        path: `/file`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Files
+     * @name FileControllerFindOne
+     * @summary Get File
+     * @request GET:/file/{id}
+     * @secure
+     */
+    fileControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<File, any>({
+        path: `/file/${id}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Files
+     * @name FileControllerRemove
+     * @summary Delete File
+     * @request DELETE:/file/{id}
+     * @secure
+     */
+    fileControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<File, any>({
+        path: `/file/${id}`,
+        method: 'DELETE',
         secure: true,
         format: 'json',
         ...params,
