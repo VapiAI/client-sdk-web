@@ -1811,6 +1811,14 @@ export interface AnalysisPlan {
   structuredDataSchema?: JsonSchema;
 }
 
+export interface ArtifactPlan {
+    /**
+   * This sets whether the video is recorded with Daily. Defaults to false.
+   * @example true
+   */
+    videoRecordingEnabled?: boolean;
+}
+
 export interface CreateAssistantDTO {
   /** These are the options for the assistant's transcriber. */
   transcriber?: DeepgramTranscriber | TalkscriberTranscriber;
@@ -1981,6 +1989,7 @@ export interface CreateAssistantDTO {
    */
   serverUrlSecret?: string;
   analysisPlan?: AnalysisPlan;
+  artifactPlan?: ArtifactPlan;
 }
 
 export interface Assistant {
@@ -2153,6 +2162,7 @@ export interface Assistant {
    */
   serverUrlSecret?: string;
   analysisPlan?: AnalysisPlan;
+  artifactPlan?: ArtifactPlan;
   /** This is the unique identifier for the assistant. */
   id: string;
   /** This is the unique identifier for the org that this assistant belongs to. */
@@ -2339,6 +2349,7 @@ export interface UpdateAssistantDTO {
    */
   serverUrlSecret?: string;
   analysisPlan?: AnalysisPlan;
+  artifactPlan?: ArtifactPlan;
 }
 
 export interface AnalysisCostBreakdown {
@@ -2392,6 +2403,11 @@ export interface Analysis {
   structuredData?: string;
   /** This is the evaluation of the call. Customize by setting `assistant.analysisPlan.successEvaluationPrompt` and/or `assistant.analysisPlan.successEvaluationRubric`. */
   successEvaluation?: string;
+}
+
+export interface Artifact {
+  /** Video recording url if assistant.artifactPlan.videoRecordingEnabled was set to true */
+  videoRecording?: string;
 }
 
 export interface PhoneCallTwilioDetails {
@@ -2598,6 +2614,7 @@ export interface OverrideAssistantDTO {
    */
   serverUrlSecret?: string;
   analysisPlan?: AnalysisPlan;
+  artifactPlan?: ArtifactPlan;
 }
 
 export interface SquadMemberDTO {
@@ -2803,6 +2820,8 @@ export interface Call {
   stereoRecordingUrl?: string;
   /** This is the analysis of the call. Customize the analysis by setting `assistant.analysisPlan`. */
   analysis?: Analysis;
+  /** This is the artifacts related to the call. Customize the analysis by setting `assistant.artifactPlan`. */
+  artifact?: Artifact;
   /** These are the messages that were spoken during the call. */
   messages?: object[];
   /**
