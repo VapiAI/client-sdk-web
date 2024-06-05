@@ -2407,7 +2407,7 @@ export interface Analysis {
 
 export interface Artifact {
   /** Video recording url if assistant.artifactPlan.videoRecordingEnabled was set to true */
-  videoRecording?: string;
+  videoRecordingUrl?: string;
 }
 
 export interface PhoneCallTwilioDetails {

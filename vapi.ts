@@ -171,6 +171,9 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('error', (error: any) => {
         this.emit('error', error);
+        if (isVideoRecordingEnabled) {
+          this.call?.stopRecording();
+        }
       });
 
       this.call.on('camera-error', (error: any) => {
