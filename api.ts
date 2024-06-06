@@ -2822,6 +2822,8 @@ export interface Call {
   analysis?: Analysis;
   /** This is the artifacts related to the call. Customize the analysis by setting `assistant.artifactPlan`. */
   artifact?: Artifact;
+  /** This stores a copy of assistant.artifactPlan. */
+  artifactPlan?: ArtifactPlan;
   /** These are the messages that were spoken during the call. */
   messages?: object[];
   /**

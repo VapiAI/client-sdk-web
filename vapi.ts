@@ -146,8 +146,7 @@ export default class Vapi extends VapiEventEmitter {
         this.cleanup();
       }
       const isVideoRecordingEnabled =
-        webCall.assistantOverrides?.artifactPlan?.videoRecordingEnabled ??
-        webCall.assistant?.artifactPlan?.videoRecordingEnabled ??
+        webCall?.artifactPlan?.videoRecordingEnabled ??
         false;
 
       this.call = DailyIframe.createCallObject({
