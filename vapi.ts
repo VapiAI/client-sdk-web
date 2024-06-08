@@ -198,6 +198,23 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('app-message', (e) => this.onAppMessage(e));
 
+      this.call.on('nonfatal-error', (e) => {
+        // https://docs.daily.co/reference/daily-js/events/meeting-events#type-audio-processor-error
+        if (e?.type === 'audio-processor-error') {
+          this.call
+            ?.updateInputSettings({
+              audio: {
+                processor: {
+                  type: 'none',
+                },
+              },
+            })
+            .then(() => {
+              this.call?.setLocalAudio(true);
+            });
+        }
+      });
+
       this.call.updateInputSettings({
         audio: {
           processor: {
