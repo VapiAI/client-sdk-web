@@ -29,13 +29,13 @@ async function buildAudioPlayer(track: any, participantId: string) {
   await startPlayer(player, track);
   return player;
 }
-function subscribeToTracks(e: DailyEventObjectParticipant, call: DailyCall) {
+function subscribeToTracks(e: DailyEventObjectParticipant, call: DailyCall, isVideoRecordingEnabled?: boolean) {
   if (e.participant.local) return;
 
   call.updateParticipant(e.participant.session_id, {
     setSubscribedTracks: {
       audio: true,
-      video: false,
+      video: isVideoRecordingEnabled,
     },
   });
 }
@@ -145,14 +145,21 @@ export default class Vapi extends VapiEventEmitter {
       if (this.call) {
         this.cleanup();
       }
+      const isVideoRecordingEnabled =
+        webCall?.artifactPlan?.videoRecordingEnabled ??
+        false;
+
       this.call = DailyIframe.createCallObject({
         audioSource: true,
-        videoSource: false,
+        videoSource: isVideoRecordingEnabled,
       });
       this.call.iframe()?.style.setProperty('display', 'none');
 
       this.call.on('left-meeting', () => {
         this.emit('call-end');
+        if (isVideoRecordingEnabled) {
+          this.call?.stopRecording();
+        }
         this.cleanup();
       });
 
@@ -163,6 +170,9 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('error', (error: any) => {
         this.emit('error', error);
+        if (isVideoRecordingEnabled) {
+          this.call?.stopRecording();
+        }
       });
 
       this.call.on('camera-error', (error: any) => {
@@ -182,13 +192,24 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('participant-joined', (e) => {
         if (!e || !this.call) return;
-        subscribeToTracks(e, this.call);
+        subscribeToTracks(e, this.call, isVideoRecordingEnabled);
       });
 
       await this.call.join({
         url: webCall.webCallUrl,
         subscribeToTracksAutomatically: false,
       });
+
+      if (isVideoRecordingEnabled) {
+        await this.call.startRecording({
+          width: 1280,
+          height: 720,
+          backgroundColor: '#FF1F2D3D',
+          layout: {
+            preset: 'default',
+          },
+        });
+      }
 
       this.call.startRemoteParticipantsAudioLevelObserver(100);
 
