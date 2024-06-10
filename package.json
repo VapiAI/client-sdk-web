@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/VapiAI/web#readme",
   "dependencies": {
-    "@daily-co/daily-js": "^0.58.0",
+    "@daily-co/daily-js": "^0.66.0",
     "@vapi-ai/web": "^1.0.263",
     "events": "^3.3.0"
   },
