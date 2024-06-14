@@ -29,7 +29,11 @@ async function buildAudioPlayer(track: any, participantId: string) {
   await startPlayer(player, track);
   return player;
 }
-function subscribeToTracks(e: DailyEventObjectParticipant, call: DailyCall, isVideoRecordingEnabled?: boolean) {
+function subscribeToTracks(
+  e: DailyEventObjectParticipant,
+  call: DailyCall,
+  isVideoRecordingEnabled?: boolean,
+) {
   if (e.participant.local) return;
 
   call.updateParticipant(e.participant.session_id, {
@@ -47,7 +51,8 @@ export interface AddMessageMessage {
 
 export interface ControlMessages {
   type: 'control';
-  control: 'mute-assistant' | 'unmute-assistant';
+  control: 'mute-assistant' | 'unmute-assistant' | 'say-first-message';
+  videoRecordingStartDelay?: number;
 }
 
 export interface SayMessage {
@@ -145,9 +150,7 @@ export default class Vapi extends VapiEventEmitter {
       if (this.call) {
         this.cleanup();
       }
-      const isVideoRecordingEnabled =
-        webCall?.artifactPlan?.videoRecordingEnabled ??
-        false;
+      const isVideoRecordingEnabled = webCall?.artifactPlan?.videoRecordingEnabled ?? false;
 
       this.call = DailyIframe.createCallObject({
         audioSource: true,
@@ -201,13 +204,23 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       if (isVideoRecordingEnabled) {
-        await this.call.startRecording({
+        const recordingRequestedTime = new Date().getTime();
+
+        this.call.startRecording({
           width: 1280,
           height: 720,
           backgroundColor: '#FF1F2D3D',
           layout: {
             preset: 'default',
           },
+        });
+
+        this.call.on('recording-started', () => {
+          this.send({
+            type: 'control',
+            control: 'say-first-message',
+            videoRecordingStartDelay: new Date().getTime() - recordingRequestedTime,
+          });
         });
       }
 
@@ -327,18 +340,17 @@ export default class Vapi extends VapiEventEmitter {
 
   public say(message: string, endCallAfterSpoken?: boolean) {
     this.send({
-      type:'say', 
+      type: 'say',
       message,
-      endCallAfterSpoken
-    })
+      endCallAfterSpoken,
+    });
   }
 
-
   public setInputDevicesAsync(options: Parameters<DailyCall['setInputDevicesAsync']>[0]) {
-    this.call?.setInputDevicesAsync(options)
+    this.call?.setInputDevicesAsync(options);
   }
 
   public setOutputDeviceAsync(options: Parameters<DailyCall['setOutputDeviceAsync']>[0]) {
-    this.call?.setOutputDeviceAsync(options)
+    this.call?.setOutputDeviceAsync(options);
   }
 }
