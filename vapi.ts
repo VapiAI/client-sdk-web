@@ -47,7 +47,8 @@ export interface AddMessageMessage {
 
 export interface ControlMessages {
   type: 'control';
-  control: 'mute-assistant' | 'unmute-assistant';
+  control: 'mute-assistant' | 'unmute-assistant' | 'resume-call';
+  videoRecordingStartDelay?: number;
 }
 
 export interface SayMessage {
@@ -201,6 +202,7 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       if (isVideoRecordingEnabled) {
+        const recordingRequestedTime = new Date().getTime();
         await this.call.startRecording({
           width: 1280,
           height: 720,
@@ -208,6 +210,14 @@ export default class Vapi extends VapiEventEmitter {
           layout: {
             preset: 'default',
           },
+        });
+
+        this.call.on('recording-started', () => {
+          this.send({
+            type: 'control',
+            control: 'resume-call',
+            videoRecordingStartDelay: new Date().getTime() - recordingRequestedTime,
+          })
         });
       }
 
