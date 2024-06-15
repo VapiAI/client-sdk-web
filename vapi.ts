@@ -52,7 +52,7 @@ export interface AddMessageMessage {
 export interface ControlMessages {
   type: 'control';
   control: 'mute-assistant' | 'unmute-assistant' | 'say-first-message';
-  videoRecordingStartDelay?: number;
+  videoRecordingStartDelaySeconds?: number;
 }
 
 export interface SayMessage {
@@ -219,7 +219,7 @@ export default class Vapi extends VapiEventEmitter {
           this.send({
             type: 'control',
             control: 'say-first-message',
-            videoRecordingStartDelay: new Date().getTime() - recordingRequestedTime,
+            videoRecordingStartDelaySeconds: (new Date().getTime() - recordingRequestedTime) / 1000,
           });
         });
       }
