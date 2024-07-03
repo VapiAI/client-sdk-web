@@ -224,7 +224,10 @@ export interface GladiaTranscriber {
   /** This is the Gladia model that will be used. Default is 'fast' */
   model?: 'fast' | 'accurate';
   /** Defines how the transcription model detects the audio language. Default value is 'automatic single language'. */
-  languageBehaviour?: 'manual' | 'automatic single language' | 'automatic multiple languages';
+  languageBehaviour?:
+    | 'manual'
+    | 'automatic single language'
+    | 'automatic multiple languages';
   /** Defines the language to use for the transcription. Required when languageBehaviour is 'manual'. */
   language?:
     | 'af'
@@ -557,7 +560,12 @@ export interface CreateDtmfToolDTO {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "dtmf" for DTMF tool. */
   type: 'dtmf';
   /**
@@ -595,7 +603,12 @@ export interface CreateEndCallToolDTO {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "endCall" for End Call tool. */
   type: 'endCall';
   /**
@@ -633,7 +646,12 @@ export interface CreateVoicemailToolDTO {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "voicemail". This uses the model itself to determine if a voicemil was reached. Can be used alternatively/alongside with TwilioVoicemailDetection */
   type: 'voicemail';
   /**
@@ -671,7 +689,12 @@ export interface CreateFunctionToolDTO {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "function" for Function tool. */
   type: 'function';
   /**
@@ -714,7 +737,12 @@ export interface CreateGhlToolDTO {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "ghl" for GHL tool. */
   type: 'ghl';
   metadata: GhlToolMetadata;
@@ -758,7 +786,12 @@ export interface CreateMakeToolDTO {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "make" for Make tool. */
   type: 'make';
   metadata: MakeToolMetadata;
@@ -827,7 +860,12 @@ export interface CreateTransferCallToolDTO {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   type: 'transferCall';
   /** These are the destinations that the call can be transferred to. If no destinations are provided, server.url will be used to get the transfer destination once the tool is called. */
   destinations?: (
@@ -1400,7 +1438,7 @@ export interface AzureVoice {
    * Constraining the delimiters might add latency as it waits for the model to output a full chunk before sending it to the voice provider. On the other hand, constraining might be a good idea if you want to give voice provider longer chunks so it can sound less disjointed across chunks. Eg. ['.'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
-  inputPunctuationBoundaries?:
+  inputPunctuationBoundaries?: (
     | '。'
     | '，'
     | '.'
@@ -1415,7 +1453,8 @@ export interface AzureVoice {
     | '|'
     | '||'
     | ','
-    | ':';
+    | ':'
+  )[];
   /**
    * This determines whether fillers are injected into the model output before inputting it into the voice provider.
    *
@@ -1475,7 +1514,7 @@ export interface CartesiaVoice {
    * Constraining the delimiters might add latency as it waits for the model to output a full chunk before sending it to the voice provider. On the other hand, constraining might be a good idea if you want to give voice provider longer chunks so it can sound less disjointed across chunks. Eg. ['.'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
-  inputPunctuationBoundaries?:
+  inputPunctuationBoundaries?: (
     | '。'
     | '，'
     | '.'
@@ -1490,7 +1529,8 @@ export interface CartesiaVoice {
     | '|'
     | '||'
     | ','
-    | ':';
+    | ':'
+  )[];
   /**
    * This determines whether fillers are injected into the model output before inputting it into the voice provider.
    *
@@ -1554,7 +1594,7 @@ export interface DeepgramVoice {
    * Constraining the delimiters might add latency as it waits for the model to output a full chunk before sending it to the voice provider. On the other hand, constraining might be a good idea if you want to give voice provider longer chunks so it can sound less disjointed across chunks. Eg. ['.'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
-  inputPunctuationBoundaries?:
+  inputPunctuationBoundaries?: (
     | '。'
     | '，'
     | '.'
@@ -1569,7 +1609,8 @@ export interface DeepgramVoice {
     | '|'
     | '||'
     | ','
-    | ':';
+    | ':'
+  )[];
   /**
    * This determines whether fillers are injected into the model output before inputting it into the voice provider.
    *
@@ -1636,7 +1677,7 @@ export interface ElevenLabsVoice {
    * Constraining the delimiters might add latency as it waits for the model to output a full chunk before sending it to the voice provider. On the other hand, constraining might be a good idea if you want to give voice provider longer chunks so it can sound less disjointed across chunks. Eg. ['.'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
-  inputPunctuationBoundaries?:
+  inputPunctuationBoundaries?: (
     | '。'
     | '，'
     | '.'
@@ -1651,7 +1692,8 @@ export interface ElevenLabsVoice {
     | '|'
     | '||'
     | ','
-    | ':';
+    | ':'
+  )[];
   /**
    * This determines whether fillers are injected into the model output before inputting it into the voice provider.
    *
@@ -1768,7 +1810,7 @@ export interface LMNTVoice {
    * Constraining the delimiters might add latency as it waits for the model to output a full chunk before sending it to the voice provider. On the other hand, constraining might be a good idea if you want to give voice provider longer chunks so it can sound less disjointed across chunks. Eg. ['.'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
-  inputPunctuationBoundaries?:
+  inputPunctuationBoundaries?: (
     | '。'
     | '，'
     | '.'
@@ -1783,7 +1825,8 @@ export interface LMNTVoice {
     | '|'
     | '||'
     | ','
-    | ':';
+    | ':'
+  )[];
   /**
    * This determines whether fillers are injected into the model output before inputting it into the voice provider.
    *
@@ -1844,7 +1887,7 @@ export interface NeetsVoice {
    * Constraining the delimiters might add latency as it waits for the model to output a full chunk before sending it to the voice provider. On the other hand, constraining might be a good idea if you want to give voice provider longer chunks so it can sound less disjointed across chunks. Eg. ['.'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
-  inputPunctuationBoundaries?:
+  inputPunctuationBoundaries?: (
     | '。'
     | '，'
     | '.'
@@ -1859,7 +1902,8 @@ export interface NeetsVoice {
     | '|'
     | '||'
     | ','
-    | ':';
+    | ':'
+  )[];
   /**
    * This determines whether fillers are injected into the model output before inputting it into the voice provider.
    *
@@ -1913,7 +1957,7 @@ export interface OpenAIVoice {
    * Constraining the delimiters might add latency as it waits for the model to output a full chunk before sending it to the voice provider. On the other hand, constraining might be a good idea if you want to give voice provider longer chunks so it can sound less disjointed across chunks. Eg. ['.'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
-  inputPunctuationBoundaries?:
+  inputPunctuationBoundaries?: (
     | '。'
     | '，'
     | '.'
@@ -1928,7 +1972,8 @@ export interface OpenAIVoice {
     | '|'
     | '||'
     | ','
-    | ':';
+    | ':'
+  )[];
   /**
    * This determines whether fillers are injected into the model output before inputting it into the voice provider.
    *
@@ -1989,7 +2034,7 @@ export interface PlayHTVoice {
    * Constraining the delimiters might add latency as it waits for the model to output a full chunk before sending it to the voice provider. On the other hand, constraining might be a good idea if you want to give voice provider longer chunks so it can sound less disjointed across chunks. Eg. ['.'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
-  inputPunctuationBoundaries?:
+  inputPunctuationBoundaries?: (
     | '。'
     | '，'
     | '.'
@@ -2004,7 +2049,8 @@ export interface PlayHTVoice {
     | '|'
     | '||'
     | ','
-    | ':';
+    | ':'
+  )[];
   /**
    * This determines whether fillers are injected into the model output before inputting it into the voice provider.
    *
@@ -2121,7 +2167,7 @@ export interface RimeAIVoice {
    * Constraining the delimiters might add latency as it waits for the model to output a full chunk before sending it to the voice provider. On the other hand, constraining might be a good idea if you want to give voice provider longer chunks so it can sound less disjointed across chunks. Eg. ['.'].
    * @example ["。","，",".","!","?",";",")","،","۔","।","॥","|","||",",",":"]
    */
-  inputPunctuationBoundaries?:
+  inputPunctuationBoundaries?: (
     | '。'
     | '，'
     | '.'
@@ -2136,7 +2182,8 @@ export interface RimeAIVoice {
     | '|'
     | '||'
     | ','
-    | ':';
+    | ':'
+  )[];
   /**
    * This determines whether fillers are injected into the model output before inputting it into the voice provider.
    *
@@ -2452,7 +2499,10 @@ export interface MessagePlan {
 
 export interface CreateAssistantDTO {
   /** These are the options for the assistant's transcriber. */
-  transcriber?: DeepgramTranscriber | GladiaTranscriber | TalkscriberTranscriber;
+  transcriber?:
+    | DeepgramTranscriber
+    | GladiaTranscriber
+    | TalkscriberTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnyscaleModel
@@ -2507,7 +2557,7 @@ export interface CreateAssistantDTO {
    * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
    * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transcript","tool-calls","user-interrupted","voice-input"]
    */
-  clientMessages?:
+  clientMessages?: (
     | 'conversation-update'
     | 'function-call'
     | 'function-call-result'
@@ -2520,12 +2570,13 @@ export interface CreateAssistantDTO {
     | 'tool-calls'
     | 'tool-calls-result'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+  )[];
   /**
    * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
    * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
    */
-  serverMessages?:
+  serverMessages?: (
     | 'conversation-update'
     | 'end-of-call-report'
     | 'function-call'
@@ -2538,7 +2589,8 @@ export interface CreateAssistantDTO {
     | 'tool-calls'
     | 'transfer-destination-request'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+  )[];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    *
@@ -2697,7 +2749,10 @@ export interface CreateAssistantDTO {
 
 export interface AssistantOverrides {
   /** These are the options for the assistant's transcriber. */
-  transcriber?: DeepgramTranscriber | GladiaTranscriber | TalkscriberTranscriber;
+  transcriber?:
+    | DeepgramTranscriber
+    | GladiaTranscriber
+    | TalkscriberTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnyscaleModel
@@ -2752,7 +2807,7 @@ export interface AssistantOverrides {
    * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
    * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transcript","tool-calls","user-interrupted","voice-input"]
    */
-  clientMessages?:
+  clientMessages?: (
     | 'conversation-update'
     | 'function-call'
     | 'function-call-result'
@@ -2765,12 +2820,13 @@ export interface AssistantOverrides {
     | 'tool-calls'
     | 'tool-calls-result'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+  )[];
   /**
    * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
    * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
    */
-  serverMessages?:
+  serverMessages?: (
     | 'conversation-update'
     | 'end-of-call-report'
     | 'function-call'
@@ -2783,7 +2839,8 @@ export interface AssistantOverrides {
     | 'tool-calls'
     | 'transfer-destination-request'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+  )[];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    *
@@ -3419,7 +3476,10 @@ export interface UpdateCallDTO {
 
 export interface Assistant {
   /** These are the options for the assistant's transcriber. */
-  transcriber?: DeepgramTranscriber | GladiaTranscriber | TalkscriberTranscriber;
+  transcriber?:
+    | DeepgramTranscriber
+    | GladiaTranscriber
+    | TalkscriberTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnyscaleModel
@@ -3474,7 +3534,7 @@ export interface Assistant {
    * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
    * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transcript","tool-calls","user-interrupted","voice-input"]
    */
-  clientMessages?:
+  clientMessages?: (
     | 'conversation-update'
     | 'function-call'
     | 'function-call-result'
@@ -3487,12 +3547,13 @@ export interface Assistant {
     | 'tool-calls'
     | 'tool-calls-result'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+  )[];
   /**
    * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
    * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
    */
-  serverMessages?:
+  serverMessages?: (
     | 'conversation-update'
     | 'end-of-call-report'
     | 'function-call'
@@ -3505,7 +3566,8 @@ export interface Assistant {
     | 'tool-calls'
     | 'transfer-destination-request'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+  )[];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    *
@@ -3679,7 +3741,10 @@ export interface Assistant {
 
 export interface UpdateAssistantDTO {
   /** These are the options for the assistant's transcriber. */
-  transcriber?: DeepgramTranscriber | GladiaTranscriber | TalkscriberTranscriber;
+  transcriber?:
+    | DeepgramTranscriber
+    | GladiaTranscriber
+    | TalkscriberTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnyscaleModel
@@ -3734,7 +3799,7 @@ export interface UpdateAssistantDTO {
    * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
    * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transcript","tool-calls","user-interrupted","voice-input"]
    */
-  clientMessages?:
+  clientMessages?: (
     | 'conversation-update'
     | 'function-call'
     | 'function-call-result'
@@ -3747,12 +3812,13 @@ export interface UpdateAssistantDTO {
     | 'tool-calls'
     | 'tool-calls-result'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+  )[];
   /**
    * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
    * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
    */
-  serverMessages?:
+  serverMessages?: (
     | 'conversation-update'
     | 'end-of-call-report'
     | 'function-call'
@@ -3765,7 +3831,8 @@ export interface UpdateAssistantDTO {
     | 'tool-calls'
     | 'transfer-destination-request'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+  )[];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    *
@@ -4555,7 +4622,12 @@ export interface DtmfTool {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "dtmf" for DTMF tool. */
   type: 'dtmf';
   /** The unique identifier for the tool library. */
@@ -4607,7 +4679,12 @@ export interface EndCallTool {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "endCall" for End Call tool. */
   type: 'endCall';
   /** The unique identifier for the tool library. */
@@ -4659,7 +4736,12 @@ export interface FunctionTool {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "function" for Function tool. */
   type: 'function';
   /** The unique identifier for the tool library. */
@@ -4711,7 +4793,12 @@ export interface GhlTool {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "ghl" for GHL tool. */
   type: 'ghl';
   /** The unique identifier for the tool library. */
@@ -4764,7 +4851,12 @@ export interface MakeTool {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "make" for Make tool. */
   type: 'make';
   /** The unique identifier for the tool library. */
@@ -4817,7 +4909,12 @@ export interface TransferCallTool {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   type: 'transferCall';
   /** These are the destinations that the call can be transferred to. If no destinations are provided, server.url will be used to get the transfer destination once the tool is called. */
   destinations?: (
@@ -4874,7 +4971,12 @@ export interface UpdateToolDTO {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /**
    * This is the function definition of the tool.
    *
@@ -4972,7 +5074,11 @@ export interface AnalyticsQuery {
   /** This is the table you want to query. */
   table: 'call';
   /** This is the list of columns you want to group by. */
-  groupBy?: 'type' | 'assistantId' | 'endedReason' | 'analysis.successEvaluation';
+  groupBy?:
+    | 'type'
+    | 'assistantId'
+    | 'endedReason'
+    | 'analysis.successEvaluation';
   /** This is the name of the query. This will be used to identify the query in the response. */
   name: string;
   /** This is the time range for the query. */
@@ -5084,14 +5190,15 @@ export interface AzureOpenAICredential {
     | 'westus'
     | 'westus3';
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
-  models:
+  models: (
     | 'gpt-4o-2024-05-13'
     | 'gpt-4-turbo-2024-04-09'
     | 'gpt-4-0125-preview'
     | 'gpt-4-1106-preview'
     | 'gpt-4-0613'
     | 'gpt-35-turbo-0125'
-    | 'gpt-35-turbo-1106';
+    | 'gpt-35-turbo-1106'
+  )[];
   /** This is not returned in the API. */
   openAIKey: string;
   /** This is the unique identifier for the credential. */
@@ -6048,7 +6155,7 @@ export interface VoiceLibraryVoiceResponse {
   publicOwnerId?: string;
   description?: string;
   gender?: string;
-  age?: object;
+  age?: string;
   accent?: string;
 }
 
@@ -6125,7 +6232,7 @@ export interface CloneVoiceDTO {
   /** Serialized labels dictionary for the voice. */
   labels?: string;
   /** These are the files you want to use to clone your voice. Only Audio files are supported. */
-  files: File[];
+  files: Blob[];
 }
 
 export interface ToolTemplateSetup {
@@ -6183,7 +6290,10 @@ export interface CreateToolTemplateDTO {
     | CreateGhlToolDTO
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO;
-  providerDetails?: MakeToolProviderDetails | GhlToolProviderDetails | FunctionToolProviderDetails;
+  providerDetails?:
+    | MakeToolProviderDetails
+    | GhlToolProviderDetails
+    | FunctionToolProviderDetails;
   metadata?: ToolTemplateMetadata;
   /** @default "private" */
   visibility?: 'public' | 'private';
@@ -6206,7 +6316,10 @@ export interface Template {
     | CreateGhlToolDTO
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO;
-  providerDetails?: MakeToolProviderDetails | GhlToolProviderDetails | FunctionToolProviderDetails;
+  providerDetails?:
+    | MakeToolProviderDetails
+    | GhlToolProviderDetails
+    | FunctionToolProviderDetails;
   metadata?: ToolTemplateMetadata;
   /** @default "private" */
   visibility?: 'public' | 'private';
@@ -6243,7 +6356,10 @@ export interface UpdateToolTemplateDTO {
     | CreateGhlToolDTO
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO;
-  providerDetails?: MakeToolProviderDetails | GhlToolProviderDetails | FunctionToolProviderDetails;
+  providerDetails?:
+    | MakeToolProviderDetails
+    | GhlToolProviderDetails
+    | FunctionToolProviderDetails;
   metadata?: ToolTemplateMetadata;
   /** @default "private" */
   visibility?: 'public' | 'private';
@@ -6324,7 +6440,7 @@ export interface Token {
 
 export interface SyncVoiceLibraryDTO {
   /** List of providers you want to sync. */
-  providers?:
+  providers?: (
     | '11labs'
     | 'azure'
     | 'cartesia'
@@ -6333,7 +6449,8 @@ export interface SyncVoiceLibraryDTO {
     | 'neets'
     | 'openai'
     | 'playht'
-    | 'rime-ai';
+    | 'rime-ai'
+  )[];
 }
 
 export interface ToolCallFunction {
@@ -6369,7 +6486,12 @@ export interface FunctionToolWithToolCall {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "function" for Function tool. */
   type: 'function';
   toolCall: ToolCall;
@@ -6408,7 +6530,12 @@ export interface GhlToolWithToolCall {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "ghl" for GHL tool. */
   type: 'ghl';
   toolCall: ToolCall;
@@ -6448,7 +6575,12 @@ export interface MakeToolWithToolCall {
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
   /** The type of tool. "make" for Make tool. */
   type: 'make';
   toolCall: ToolCall;
@@ -6647,7 +6779,11 @@ export interface ClientMessageToolCalls {
   /** This is the type of the message. "tool-calls" is sent to call a tool. */
   type?: 'tool-calls';
   /** This is the list of tools calls that the model is requesting along with the original tool configuration. */
-  toolWithToolCallList: (FunctionToolWithToolCall | GhlToolWithToolCall | MakeToolWithToolCall)[];
+  toolWithToolCallList: (
+    | FunctionToolWithToolCall
+    | GhlToolWithToolCall
+    | MakeToolWithToolCall
+  )[];
   /** This is the list of tool calls that the model is requesting. */
   toolCallList: ToolCall[];
 }
@@ -7048,7 +7184,11 @@ export interface ServerMessageToolCalls {
   /** This is the type of the message. "tool-calls" is sent to call a tool. */
   type?: 'tool-calls';
   /** This is the list of tools calls that the model is requesting along with the original tool configuration. */
-  toolWithToolCallList: (FunctionToolWithToolCall | GhlToolWithToolCall | MakeToolWithToolCall)[];
+  toolWithToolCallList: (
+    | FunctionToolWithToolCall
+    | GhlToolWithToolCall
+    | MakeToolWithToolCall
+  )[];
   /** The phone number associated with the call. This either directly matches `call.phoneNumber` or is expanded from `call.phoneNumberId`. */
   phoneNumber?: object;
   /** The customer associated with the call. This either directly matches `call.customer` or is expanded from `call.customerId`. */
@@ -7229,7 +7369,10 @@ export interface ServerMessageResponseToolCalls {
 
 export interface ServerMessageResponseTransferDestinationRequest {
   /** This is the destination you'd like the call to be transferred to. */
-  destination?: AssistantTransferDestination | NumberTransferDestination | SipTransferDestination;
+  destination?:
+    | AssistantTransferDestination
+    | NumberTransferDestination
+    | SipTransferDestination;
   /** This is the error message if the transfer should not be made. */
   error?: string;
 }
@@ -7276,7 +7419,10 @@ export interface ClientInboundMessageSay {
 
 export interface ClientInboundMessage {
   /** These are the messages that can be sent from client-side SDKs to control the call. */
-  message: ClientInboundMessageAddMessage | ClientInboundMessageControl | ClientInboundMessageSay;
+  message:
+    | ClientInboundMessageAddMessage
+    | ClientInboundMessageControl
+    | ClientInboundMessageSay;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -7301,7 +7447,10 @@ export interface FullRequestParams extends Omit<RequestInit, 'body'> {
   cancelToken?: CancelToken;
 }
 
-export type RequestParams = Omit<FullRequestParams, 'body' | 'method' | 'query' | 'path'>;
+export type RequestParams = Omit<
+  FullRequestParams,
+  'body' | 'method' | 'query' | 'path'
+>;
 
 export interface ApiConfig<SecurityDataType = unknown> {
   baseUrl?: string;
@@ -7312,7 +7461,8 @@ export interface ApiConfig<SecurityDataType = unknown> {
   customFetch?: typeof fetch;
 }
 
-export interface HttpResponse<D extends unknown, E extends unknown = unknown> extends Response {
+export interface HttpResponse<D extends unknown, E extends unknown = unknown>
+  extends Response {
   data: D;
   error: E;
 }
@@ -7327,11 +7477,12 @@ export enum ContentType {
 }
 
 export class HttpClient<SecurityDataType = unknown> {
-  public baseUrl: string = 'https://api.vapi.ai';
+  public baseUrl: string = '';
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>['securityWorker'];
   private abortControllers = new Map<CancelToken, AbortController>();
-  private customFetch = (...fetchParams: Parameters<typeof fetch>) => fetch(...fetchParams);
+  private customFetch = (...fetchParams: Parameters<typeof fetch>) =>
+    fetch(...fetchParams);
 
   private baseApiParams: RequestParams = {
     credentials: 'same-origin',
@@ -7364,7 +7515,9 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected toQueryString(rawQuery?: QueryParamsType): string {
     const query = rawQuery || {};
-    const keys = Object.keys(query).filter((key) => 'undefined' !== typeof query[key]);
+    const keys = Object.keys(query).filter(
+      (key) => 'undefined' !== typeof query[key],
+    );
     return keys
       .map((key) =>
         Array.isArray(query[key])
@@ -7385,24 +7538,43 @@ export class HttpClient<SecurityDataType = unknown> {
         ? JSON.stringify(input)
         : input,
     [ContentType.Text]: (input: any) =>
-      input !== null && typeof input !== 'string' ? JSON.stringify(input) : input,
+      input !== null && typeof input !== 'string'
+        ? JSON.stringify(input)
+        : input,
     [ContentType.FormData]: (input: any) =>
       Object.keys(input || {}).reduce((formData, key) => {
         const property = input[key];
-        formData.append(
-          key,
-          property instanceof Blob
-            ? property
-            : typeof property === 'object' && property !== null
-            ? JSON.stringify(property)
-            : `${property}`,
-        );
+        if (Array.isArray(property)) {
+          property.forEach((item) => {
+            formData.append(
+              key,
+              item instanceof Blob || item instanceof File
+                ? item
+                : typeof item === 'object' && item !== null
+                  ? JSON.stringify(item)
+                  : `${item}`,
+            );
+          });
+        } else {
+          formData.append(
+            key,
+            property instanceof Blob || property instanceof File
+              ? property
+              : typeof property === 'object' && property !== null
+                ? JSON.stringify(property)
+                : `${property}`,
+          );
+        }
         return formData;
       }, new FormData()),
+
     [ContentType.UrlEncoded]: (input: any) => this.toQueryString(input),
   };
 
-  protected mergeRequestParams(params1: RequestParams, params2?: RequestParams): RequestParams {
+  protected mergeRequestParams(
+    params1: RequestParams,
+    params2?: RequestParams,
+  ): RequestParams {
     return {
       ...this.baseApiParams,
       ...params1,
@@ -7415,7 +7587,9 @@ export class HttpClient<SecurityDataType = unknown> {
     };
   }
 
-  protected createAbortSignal = (cancelToken: CancelToken): AbortSignal | undefined => {
+  protected createAbortSignal = (
+    cancelToken: CancelToken,
+  ): AbortSignal | undefined => {
     if (this.abortControllers.has(cancelToken)) {
       const abortController = this.abortControllers.get(cancelToken);
       if (abortController) {
@@ -7465,13 +7639,21 @@ export class HttpClient<SecurityDataType = unknown> {
         ...requestParams,
         headers: {
           ...(requestParams.headers || {}),
-          ...(type && type !== ContentType.FormData ? { 'Content-Type': type } : {}),
+          ...(type && type !== ContentType.FormData
+            ? { 'Content-Type': type }
+            : {}),
         },
-        signal: (cancelToken ? this.createAbortSignal(cancelToken) : requestParams.signal) || null,
-        body: typeof body === 'undefined' || body === null ? null : payloadFormatter(body),
+        signal:
+          (cancelToken
+            ? this.createAbortSignal(cancelToken)
+            : requestParams.signal) || null,
+        body:
+          typeof body === 'undefined' || body === null
+            ? null
+            : payloadFormatter(body),
       },
     ).then(async (response) => {
-      const r = response as HttpResponse<T, E>;
+      const r = response.clone() as HttpResponse<T, E>;
       r.data = null as unknown as T;
       r.error = null as unknown as E;
 
@@ -7504,12 +7686,13 @@ export class HttpClient<SecurityDataType = unknown> {
 /**
  * @title Vapi API
  * @version 1.0
- * @baseUrl https://api.vapi.ai
  * @contact
  *
  * API for building voice assistants
  */
-export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
+export class Api<
+  SecurityDataType extends unknown,
+> extends HttpClient<SecurityDataType> {
   call = {
     /**
      * No description
@@ -7629,7 +7812,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request PATCH:/call/{id}
      * @secure
      */
-    callControllerUpdate: (id: string, data: UpdateCallDTO, params: RequestParams = {}) =>
+    callControllerUpdate: (
+      id: string,
+      data: UpdateCallDTO,
+      params: RequestParams = {},
+    ) =>
       this.request<Call, any>({
         path: `/call/${id}`,
         method: 'PATCH',
@@ -7657,6 +7844,131 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         format: 'json',
         ...params,
       }),
+
+    /**
+     * No description
+     *
+     * @tags Calls, extended
+     * @name CallControllerCreatePhoneCall
+     * @summary Create Phone Call
+     * @request POST:/call/phone
+     * @secure
+     */
+    callControllerCreatePhoneCall: (
+      data: CreateOutboundCallDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Call, any>({
+        path: `/call/phone`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls, extended
+     * @name CallControllerCreateWebCall
+     * @summary Create Web Call
+     * @request POST:/call/web
+     * @secure
+     */
+    callControllerCreateWebCall: (
+      data: CreateWebCallDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Call, any>({
+        path: `/call/web`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+  };
+  v2 = {
+    /**
+     * No description
+     *
+     * @tags Calls, extended
+     * @name CallControllerFindAllPaginated
+     * @summary List Calls
+     * @request GET:/v2/call
+     * @secure
+     */
+    callControllerFindAllPaginated: (
+      query?: {
+        /** This will return calls with the specified assistantId. */
+        assistantId?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'ASC'. */
+        sortOrder?: 'ASC' | 'DESC';
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<CallPaginatedResponse, any>({
+        path: `/v2/call`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
   };
   assistant = {
     /**
@@ -7668,7 +7980,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request POST:/assistant
      * @secure
      */
-    assistantControllerCreate: (data: CreateAssistantDTO, params: RequestParams = {}) =>
+    assistantControllerCreate: (
+      data: CreateAssistantDTO,
+      params: RequestParams = {},
+    ) =>
       this.request<Assistant, any>({
         path: `/assistant`,
         method: 'POST',
@@ -7775,10 +8090,38 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request PATCH:/assistant/{id}
      * @secure
      */
-    assistantControllerUpdate: (id: string, data: UpdateAssistantDTO, params: RequestParams = {}) =>
+    assistantControllerUpdate: (
+      id: string,
+      data: UpdateAssistantDTO,
+      params: RequestParams = {},
+    ) =>
       this.request<Assistant, any>({
         path: `/assistant/${id}`,
         method: 'PATCH',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants, extended
+     * @name AssistantControllerReplace
+     * @summary Replace Assistant
+     * @request PUT:/assistant/{id}
+     * @secure
+     */
+    assistantControllerReplace: (
+      id: string,
+      data: UpdateAssistantDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Assistant, any>({
+        path: `/assistant/${id}`,
+        method: 'PUT',
         body: data,
         secure: true,
         type: ContentType.Json,
@@ -7805,6 +8148,110 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       }),
   };
   phoneNumber = {
+    /**
+     * No description
+     *
+     * @tags Phone Numbers, extended
+     * @name PhoneNumberControllerBuy
+     * @summary Buy Phone Number
+     * @request POST:/phone-number/buy
+     * @secure
+     */
+    phoneNumberControllerBuy: (
+      data: BuyPhoneNumberDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        | ({
+            provider: 'twilio';
+          } & TwilioPhoneNumber)
+        | ({
+            provider: 'vonage';
+          } & VonagePhoneNumber)
+        | ({
+            provider: 'vapi';
+          } & VapiPhoneNumber),
+        any
+      >({
+        path: `/phone-number/buy`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * @description Use POST /phone-number instead.
+     *
+     * @tags Phone Numbers, extended
+     * @name PhoneNumberControllerImportTwilio
+     * @summary Import Twilio Number
+     * @request POST:/phone-number/import/twilio
+     * @deprecated
+     * @secure
+     */
+    phoneNumberControllerImportTwilio: (
+      data: ImportTwilioPhoneNumberDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        | ({
+            provider: 'twilio';
+          } & TwilioPhoneNumber)
+        | ({
+            provider: 'vonage';
+          } & VonagePhoneNumber)
+        | ({
+            provider: 'vapi';
+          } & VapiPhoneNumber),
+        any
+      >({
+        path: `/phone-number/import/twilio`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * @description Use POST /phone-number instead.
+     *
+     * @tags Phone Numbers, extended
+     * @name PhoneNumberControllerImportVonage
+     * @summary Import Vonage Number
+     * @request POST:/phone-number/import/vonage
+     * @deprecated
+     * @secure
+     */
+    phoneNumberControllerImportVonage: (
+      data: ImportVonagePhoneNumberDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        | ({
+            provider: 'twilio';
+          } & TwilioPhoneNumber)
+        | ({
+            provider: 'vonage';
+          } & VonagePhoneNumber)
+        | ({
+            provider: 'vapi';
+          } & VapiPhoneNumber),
+        any
+      >({
+        path: `/phone-number/import/vonage`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
     /**
      * No description
      *
@@ -8025,6 +8472,30 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   };
   file = {
     /**
+     * @description Use POST /file instead.
+     *
+     * @tags Files, extended
+     * @name FileControllerCreateDeprecated
+     * @summary Upload File
+     * @request POST:/file/upload
+     * @deprecated
+     * @secure
+     */
+    fileControllerCreateDeprecated: (
+      data: CreateFileDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<File, void>({
+        path: `/file/upload`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
      * No description
      *
      * @tags Files
@@ -8089,7 +8560,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request PATCH:/file/{id}
      * @secure
      */
-    fileControllerUpdate: (id: string, data: UpdateFileDTO, params: RequestParams = {}) =>
+    fileControllerUpdate: (
+      id: string,
+      data: UpdateFileDTO,
+      params: RequestParams = {},
+    ) =>
       this.request<File, any>({
         path: `/file/${id}`,
         method: 'PATCH',
@@ -8235,7 +8710,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request PATCH:/squad/{id}
      * @secure
      */
-    squadControllerUpdate: (id: string, data: UpdateSquadDTO, params: RequestParams = {}) =>
+    squadControllerUpdate: (
+      id: string,
+      data: UpdateSquadDTO,
+      params: RequestParams = {},
+    ) =>
       this.request<Squad, any>({
         path: `/squad/${id}`,
         method: 'PATCH',
@@ -8464,7 +8943,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request PATCH:/tool/{id}
      * @secure
      */
-    toolControllerUpdate: (id: string, data: UpdateToolDTO, params: RequestParams = {}) =>
+    toolControllerUpdate: (
+      id: string,
+      data: UpdateToolDTO,
+      params: RequestParams = {},
+    ) =>
       this.request<
         | ({
             type: 'dtmf';
@@ -8533,6 +9016,50 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         ...params,
       }),
   };
+  metrics = {
+    /**
+     * @description Use GET /metric instead
+     *
+     * @tags Analytics, extended
+     * @name MetricsControllerFindAllDeprecated
+     * @summary List Billing Metrics
+     * @request GET:/metrics
+     * @deprecated
+     * @secure
+     */
+    metricsControllerFindAllDeprecated: (
+      query?: {
+        /**
+         * Convert date & and time to provided timezone. https://popsql.com/learn-sql/postgresql/how-to-convert-utc-to-local-time-zone-in-postgresql
+         * @example "PST"
+         */
+        timezone?: string;
+        /**
+         * This will include calls with a createdAt timestamp greater than or equal to the specified value.
+         *
+         * If not provided, defaults to the org's current period start.
+         * @format date-time
+         */
+        rangeStart?: string;
+        /**
+         * This will include calls with a createdAt timestamp less than the specified value.
+         *
+         * If not provided, the default value will be the current timestamp.
+         * @format date-time
+         */
+        rangeEnd?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<Metrics[], any>({
+        path: `/metrics`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
   analytics = {
     /**
      * No description
@@ -8543,9 +9070,1476 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request POST:/analytics
      * @secure
      */
-    metricsControllerQuery: (data: AnalyticsQueryDTO, params: RequestParams = {}) =>
+    metricsControllerQuery: (
+      data: AnalyticsQueryDTO,
+      params: RequestParams = {},
+    ) =>
       this.request<AnalyticsQueryResult[], any>({
         path: `/analytics`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+  };
+  log = {
+    /**
+     * No description
+     *
+     * @tags Call Logs, extended
+     * @name LoggingControllerGetLogs
+     * @summary List Call Logs
+     * @request GET:/log
+     * @secure
+     */
+    loggingControllerGetLogs: (
+      query: {
+        callId: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'ASC'. */
+        sortOrder?: 'ASC' | 'DESC';
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<CallLogsPaginatedResponse, any>({
+        path: `/log`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
+  credential = {
+    /**
+     * No description
+     *
+     * @tags Credentials, extended
+     * @name CredentialControllerCreate
+     * @summary Create Credential
+     * @request POST:/credential
+     * @secure
+     */
+    credentialControllerCreate: (
+      data:
+        | ({
+            provider: '11labs';
+          } & CreateElevenLabsCredentialDTO)
+        | ({
+            provider: 'anthropic';
+          } & CreateAnthropicCredentialDTO)
+        | ({
+            provider: 'anyscale';
+          } & CreateAnyscaleCredentialDTO)
+        | ({
+            provider: 'azure-openai';
+          } & CreateAzureOpenAICredentialDTO)
+        | ({
+            provider: 'cartesia';
+          } & CreateCartesiaCredentialDTO)
+        | ({
+            provider: 'custom-llm';
+          } & CreateCustomLLMCredentialDTO)
+        | ({
+            provider: 'deepgram';
+          } & CreateDeepgramCredentialDTO)
+        | ({
+            provider: 'gladia';
+          } & CreateGladiaCredentialDTO)
+        | ({
+            provider: 'deepinfra';
+          } & CreateDeepInfraCredentialDTO)
+        | ({
+            provider: 'gohighlevel';
+          } & CreateGoHighLevelCredentialDTO)
+        | ({
+            provider: 'groq';
+          } & CreateGroqCredentialDTO)
+        | ({
+            provider: 'lmnt';
+          } & CreateLmntCredentialDTO)
+        | ({
+            provider: 'make';
+          } & CreateMakeCredentialDTO)
+        | ({
+            provider: 'openai';
+          } & CreateOpenAICredentialDTO)
+        | ({
+            provider: 'openrouter';
+          } & CreateOpenRouterCredentialDTO)
+        | ({
+            provider: 'perplexity-ai';
+          } & CreatePerplexityAICredentialDTO)
+        | ({
+            provider: 'playht';
+          } & CreatePlayHTCredentialDTO)
+        | ({
+            provider: 'rime-ai';
+          } & CreateRimeAICredentialDTO)
+        | ({
+            provider: 'runpod';
+          } & CreateRunpodCredentialDTO)
+        | ({
+            provider: 's3';
+          } & CreateS3CredentialDTO)
+        | ({
+            provider: 'together-ai';
+          } & CreateTogetherAICredentialDTO)
+        | ({
+            provider: 'twilio';
+          } & CreateTwilioCredentialDTO)
+        | ({
+            provider: 'vonage';
+          } & CreateVonageCredentialDTO),
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        | ({
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
+        | ({
+            provider: 'deepgram';
+          } & DeepgramCredential)
+        | ({
+            provider: 'gladia';
+          } & GladiaCredential)
+        | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
+            provider: 'openai';
+          } & OpenAICredential)
+        | ({
+            provider: 'openrouter';
+          } & OpenRouterCredential)
+        | ({
+            provider: 'perplexity-ai';
+          } & PerplexityAICredential)
+        | ({
+            provider: 'playht';
+          } & PlayHTCredential)
+        | ({
+            provider: 'rime-ai';
+          } & RimeAICredential)
+        | ({
+            provider: 'runpod';
+          } & RunpodCredential)
+        | ({
+            provider: 's3';
+          } & S3Credential)
+        | ({
+            provider: 'together-ai';
+          } & TogetherAICredential)
+        | ({
+            provider: 'twilio';
+          } & TwilioCredential)
+        | ({
+            provider: 'vonage';
+          } & VonageCredential),
+        any
+      >({
+        path: `/credential`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials, extended
+     * @name CredentialControllerFindAll
+     * @summary List Credentials
+     * @request GET:/credential
+     * @secure
+     */
+    credentialControllerFindAll: (
+      query?: {
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        (
+          | ({
+              provider: '11labs';
+            } & ElevenLabsCredential)
+          | ({
+              provider: 'anthropic';
+            } & AnthropicCredential)
+          | ({
+              provider: 'anyscale';
+            } & AnyscaleCredential)
+          | ({
+              provider: 'azure-openai';
+            } & AzureOpenAICredential)
+          | ({
+              provider: 'cartesia';
+            } & CartesiaCredential)
+          | ({
+              provider: 'custom-llm';
+            } & CustomLLMCredential)
+          | ({
+              provider: 'deepgram';
+            } & DeepgramCredential)
+          | ({
+              provider: 'gladia';
+            } & GladiaCredential)
+          | ({
+              provider: 'deepinfra';
+            } & DeepInfraCredential)
+          | ({
+              provider: 'gohighlevel';
+            } & GoHighLevelCredential)
+          | ({
+              provider: 'groq';
+            } & GroqCredential)
+          | ({
+              provider: 'lmnt';
+            } & LmntCredential)
+          | ({
+              provider: 'make';
+            } & MakeCredential)
+          | ({
+              provider: 'openai';
+            } & OpenAICredential)
+          | ({
+              provider: 'openrouter';
+            } & OpenRouterCredential)
+          | ({
+              provider: 'perplexity-ai';
+            } & PerplexityAICredential)
+          | ({
+              provider: 'playht';
+            } & PlayHTCredential)
+          | ({
+              provider: 'rime-ai';
+            } & RimeAICredential)
+          | ({
+              provider: 'runpod';
+            } & RunpodCredential)
+          | ({
+              provider: 's3';
+            } & S3Credential)
+          | ({
+              provider: 'together-ai';
+            } & TogetherAICredential)
+          | ({
+              provider: 'twilio';
+            } & TwilioCredential)
+          | ({
+              provider: 'vonage';
+            } & VonageCredential)
+        )[],
+        any
+      >({
+        path: `/credential`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials, extended
+     * @name CredentialControllerFindOne
+     * @summary Get Credential
+     * @request GET:/credential/{id}
+     * @secure
+     */
+    credentialControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<
+        | ({
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
+        | ({
+            provider: 'deepgram';
+          } & DeepgramCredential)
+        | ({
+            provider: 'gladia';
+          } & GladiaCredential)
+        | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
+            provider: 'openai';
+          } & OpenAICredential)
+        | ({
+            provider: 'openrouter';
+          } & OpenRouterCredential)
+        | ({
+            provider: 'perplexity-ai';
+          } & PerplexityAICredential)
+        | ({
+            provider: 'playht';
+          } & PlayHTCredential)
+        | ({
+            provider: 'rime-ai';
+          } & RimeAICredential)
+        | ({
+            provider: 'runpod';
+          } & RunpodCredential)
+        | ({
+            provider: 's3';
+          } & S3Credential)
+        | ({
+            provider: 'together-ai';
+          } & TogetherAICredential)
+        | ({
+            provider: 'twilio';
+          } & TwilioCredential)
+        | ({
+            provider: 'vonage';
+          } & VonageCredential),
+        any
+      >({
+        path: `/credential/${id}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials, extended
+     * @name CredentialControllerUpdate
+     * @summary Update Credential
+     * @request PUT:/credential/{id}
+     * @secure
+     */
+    credentialControllerUpdate: (
+      id: string,
+      data:
+        | ({
+            provider: '11labs';
+          } & UpdateElevenLabsCredentialDTO)
+        | ({
+            provider: 'anthropic';
+          } & UpdateAnthropicCredentialDTO)
+        | ({
+            provider: 'anyscale';
+          } & UpdateAnyscaleCredentialDTO)
+        | ({
+            provider: 'azure-openai';
+          } & UpdateAzureOpenAICredentialDTO)
+        | ({
+            provider: 'cartesia';
+          } & UpdateCartesiaCredentialDTO)
+        | ({
+            provider: 'custom-llm';
+          } & UpdateCustomLLMCredentialDTO)
+        | ({
+            provider: 'deepgram';
+          } & UpdateDeepgramCredentialDTO)
+        | ({
+            provider: 'gladia';
+          } & UpdateGladiaCredentialDTO)
+        | ({
+            provider: 'deepinfra';
+          } & UpdateDeepInfraCredentialDTO)
+        | ({
+            provider: 'gohighlevel';
+          } & UpdateGoHighLevelCredentialDTO)
+        | ({
+            provider: 'groq';
+          } & UpdateGroqCredentialDTO)
+        | ({
+            provider: 'lmnt';
+          } & UpdateLmntCredentialDTO)
+        | ({
+            provider: 'make';
+          } & UpdateMakeCredentialDTO)
+        | ({
+            provider: 'openai';
+          } & UpdateOpenAICredentialDTO)
+        | ({
+            provider: 'openrouter';
+          } & UpdateOpenRouterCredentialDTO)
+        | ({
+            provider: 'perplexity-ai';
+          } & UpdatePerplexityAICredentialDTO)
+        | ({
+            provider: 'playht';
+          } & UpdatePlayHTCredentialDTO)
+        | ({
+            provider: 'rime-ai';
+          } & UpdateRimeAICredentialDTO)
+        | ({
+            provider: 'runpod';
+          } & UpdateRunpodCredentialDTO)
+        | ({
+            provider: 's3';
+          } & UpdateS3CredentialDTO)
+        | ({
+            provider: 'together-ai';
+          } & UpdateTogetherAICredentialDTO)
+        | ({
+            provider: 'twilio';
+          } & UpdateTwilioCredentialDTO)
+        | ({
+            provider: 'vonage';
+          } & UpdateVonageCredentialDTO),
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        | ({
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
+        | ({
+            provider: 'deepgram';
+          } & DeepgramCredential)
+        | ({
+            provider: 'gladia';
+          } & GladiaCredential)
+        | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
+            provider: 'openai';
+          } & OpenAICredential)
+        | ({
+            provider: 'openrouter';
+          } & OpenRouterCredential)
+        | ({
+            provider: 'perplexity-ai';
+          } & PerplexityAICredential)
+        | ({
+            provider: 'playht';
+          } & PlayHTCredential)
+        | ({
+            provider: 'rime-ai';
+          } & RimeAICredential)
+        | ({
+            provider: 'runpod';
+          } & RunpodCredential)
+        | ({
+            provider: 's3';
+          } & S3Credential)
+        | ({
+            provider: 'together-ai';
+          } & TogetherAICredential)
+        | ({
+            provider: 'twilio';
+          } & TwilioCredential)
+        | ({
+            provider: 'vonage';
+          } & VonageCredential),
+        any
+      >({
+        path: `/credential/${id}`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials, extended
+     * @name CredentialControllerRemove
+     * @summary Delete Credential
+     * @request DELETE:/credential/{id}
+     * @secure
+     */
+    credentialControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<
+        | ({
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
+        | ({
+            provider: 'deepgram';
+          } & DeepgramCredential)
+        | ({
+            provider: 'gladia';
+          } & GladiaCredential)
+        | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
+            provider: 'openai';
+          } & OpenAICredential)
+        | ({
+            provider: 'openrouter';
+          } & OpenRouterCredential)
+        | ({
+            provider: 'perplexity-ai';
+          } & PerplexityAICredential)
+        | ({
+            provider: 'playht';
+          } & PlayHTCredential)
+        | ({
+            provider: 'rime-ai';
+          } & RimeAICredential)
+        | ({
+            provider: 'runpod';
+          } & RunpodCredential)
+        | ({
+            provider: 's3';
+          } & S3Credential)
+        | ({
+            provider: 'together-ai';
+          } & TogetherAICredential)
+        | ({
+            provider: 'twilio';
+          } & TwilioCredential)
+        | ({
+            provider: 'vonage';
+          } & VonageCredential),
+        any
+      >({
+        path: `/credential/${id}`,
+        method: 'DELETE',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
+  org = {
+    /**
+     * No description
+     *
+     * @tags Orgs, extended
+     * @name OrgControllerCreate
+     * @summary Create Org
+     * @request POST:/org
+     * @secure
+     */
+    orgControllerCreate: (data: CreateOrgDTO, params: RequestParams = {}) =>
+      this.request<Org, any>({
+        path: `/org`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs, extended
+     * @name OrgControllerFindAll
+     * @summary List Orgs
+     * @request GET:/org
+     * @secure
+     */
+    orgControllerFindAll: (params: RequestParams = {}) =>
+      this.request<Org[], any>({
+        path: `/org`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs, extended
+     * @name OrgControllerFindOne
+     * @summary Get Org
+     * @request GET:/org/{id}
+     * @secure
+     */
+    orgControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Org, any>({
+        path: `/org/${id}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs, extended
+     * @name OrgControllerUpdate
+     * @summary Update Org
+     * @request PATCH:/org/{id}
+     * @secure
+     */
+    orgControllerUpdate: (
+      id: string,
+      data: UpdateOrgDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Org, any>({
+        path: `/org/${id}`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs, extended
+     * @name OrgControllerFindAllUsers
+     * @summary List Users
+     * @request GET:/org/{id}/user
+     * @secure
+     */
+    orgControllerFindAllUsers: (id: string, params: RequestParams = {}) =>
+      this.request<User[], any>({
+        path: `/org/${id}/user`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs, extended
+     * @name OrgControllerOrgLeave
+     * @summary Leave Org
+     * @request DELETE:/org/{id}/leave
+     * @secure
+     */
+    orgControllerOrgLeave: (id: string, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/org/${id}/leave`,
+        method: 'DELETE',
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs, extended
+     * @name OrgControllerUserInvite
+     * @summary Invite User
+     * @request POST:/org/{id}/invite
+     * @secure
+     */
+    orgControllerUserInvite: (
+      id: string,
+      data: InviteUserDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, any>({
+        path: `/org/${id}/invite`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
+  };
+  provider = {
+    /**
+     * No description
+     *
+     * @tags Providers, extended
+     * @name ProviderControllerGetWorkflows
+     * @request GET:/{provider}/workflows
+     * @secure
+     */
+    providerControllerGetWorkflows: (
+      provider: 'make' | 'ghl',
+      query?: {
+        locationId?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<object, any>({
+        path: `/${provider}/workflows`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Providers, extended
+     * @name ProviderControllerGetWorkflowTriggerHook
+     * @request GET:/{provider}/workflows/{workflowId}/hooks
+     * @secure
+     */
+    providerControllerGetWorkflowTriggerHook: (
+      provider: 'make' | 'ghl',
+      workflowId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<object, any>({
+        path: `/${provider}/workflows/${workflowId}/hooks`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Providers, extended
+     * @name ProviderControllerGetLocations
+     * @request GET:/{provider}/locations
+     * @secure
+     */
+    providerControllerGetLocations: (
+      provider: 'make' | 'ghl',
+      params: RequestParams = {},
+    ) =>
+      this.request<object, any>({
+        path: `/${provider}/locations`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Providers, extended, extended
+     * @name VoiceProviderControllerSearchVoices
+     * @summary Search Voice from Provider Voice Library.
+     * @request GET:/{provider}/voices/search
+     * @deprecated
+     * @secure
+     */
+    voiceProviderControllerSearchVoices: (
+      provider: string,
+      query: {
+        /** The name of the voice from the provider you want to search. */
+        name: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<VoiceLibraryVoiceResponse[], any>({
+        path: `/${provider}/voices/search`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Providers, extended, extended
+     * @name VoiceProviderControllerSearchVoice
+     * @summary Search Voice from Provider Voice Library.
+     * @request GET:/{provider}/voice/search
+     * @secure
+     */
+    voiceProviderControllerSearchVoice: (
+      provider: string,
+      query: {
+        /** The name of the voice from the provider you want to search. */
+        name: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<VoiceLibraryVoiceResponse[], any>({
+        path: `/${provider}/voice/search`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Providers, extended, extended
+     * @name VoiceProviderControllerAddVoices
+     * @summary Add Shared Voice to your Provider Account.
+     * @request POST:/{provider}/voices/add
+     * @deprecated
+     * @secure
+     */
+    voiceProviderControllerAddVoices: (
+      provider: string,
+      data: AddVoiceToProviderDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<VoiceLibrary, any>({
+        path: `/${provider}/voices/add`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Providers, extended, extended
+     * @name VoiceProviderControllerAddVoice
+     * @summary Add Shared Voice to your Provider Account.
+     * @request POST:/{provider}/voice/add
+     * @secure
+     */
+    voiceProviderControllerAddVoice: (
+      provider: string,
+      data: AddVoiceToProviderDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<VoiceLibrary, any>({
+        path: `/${provider}/voice/add`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+  };
+  v11Labs = {
+    /**
+     * No description
+     *
+     * @tags Providers, extended
+     * @name VoiceProviderControllerCloneVoices
+     * @summary Clone a voice to the provider account and add to Vapi Voice Library.
+     * @request POST:/11labs/voice/clone
+     * @secure
+     */
+    voiceProviderControllerCloneVoices: (
+      data: CloneVoiceDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/11labs/voice/clone`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        ...params,
+      }),
+  };
+  template = {
+    /**
+     * No description
+     *
+     * @tags Templates, extended
+     * @name TemplateControllerCreate
+     * @summary Create Template
+     * @request POST:/template
+     * @secure
+     */
+    templateControllerCreate: (
+      data: CreateToolTemplateDTO[],
+      params: RequestParams = {},
+    ) =>
+      this.request<Template, any>({
+        path: `/template`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Templates, extended
+     * @name TemplateControllerFindAll
+     * @summary List Templates
+     * @request GET:/template
+     * @secure
+     */
+    templateControllerFindAll: (
+      query?: {
+        collectionId?: string;
+        visibility?: 'public' | 'private';
+        provider?: 'make' | 'gohighlevel' | 'function';
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<Template[], any>({
+        path: `/template`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Templates, extended
+     * @name TemplateControllerFindAllPinned
+     * @summary List Templates
+     * @request GET:/template/pinned
+     * @secure
+     */
+    templateControllerFindAllPinned: (params: RequestParams = {}) =>
+      this.request<Template[], any>({
+        path: `/template/pinned`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Templates, extended
+     * @name TemplateControllerFindOne
+     * @summary Get Template
+     * @request GET:/template/{id}
+     * @secure
+     */
+    templateControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Template, any>({
+        path: `/template/${id}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Templates, extended
+     * @name TemplateControllerUpdate
+     * @summary Update Template
+     * @request PATCH:/template/{id}
+     * @secure
+     */
+    templateControllerUpdate: (
+      id: string,
+      data: UpdateToolTemplateDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Template, any>({
+        path: `/template/${id}`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Templates, extended
+     * @name TemplateControllerRemove
+     * @summary Delete Template
+     * @request DELETE:/template/{id}
+     * @secure
+     */
+    templateControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Template, any>({
+        path: `/template/${id}`,
+        method: 'DELETE',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
+  token = {
+    /**
+     * No description
+     *
+     * @tags Tokens, extended
+     * @name TokenControllerCreate
+     * @summary Create Token
+     * @request POST:/token
+     * @secure
+     */
+    tokenControllerCreate: (data: CreateTokenDTO, params: RequestParams = {}) =>
+      this.request<Token, any>({
+        path: `/token`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tokens, extended
+     * @name TokenControllerFindAll
+     * @summary List Tokens
+     * @request GET:/token
+     * @secure
+     */
+    tokenControllerFindAll: (
+      query?: {
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<Token[], any>({
+        path: `/token`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tokens, extended
+     * @name TokenControllerFindOne
+     * @summary Get Token
+     * @request GET:/token/{id}
+     * @secure
+     */
+    tokenControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Token, any>({
+        path: `/token/${id}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tokens, extended
+     * @name TokenControllerUpdate
+     * @summary Update Token
+     * @request PATCH:/token/{id}
+     * @secure
+     */
+    tokenControllerUpdate: (
+      id: string,
+      data: CreateTokenDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Token, any>({
+        path: `/token/${id}`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tokens, extended
+     * @name TokenControllerRemove
+     * @summary Delete Token
+     * @request DELETE:/token/{id}
+     * @secure
+     */
+    tokenControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Token, any>({
+        path: `/token/${id}`,
+        method: 'DELETE',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
+  voiceLibrary = {
+    /**
+     * No description
+     *
+     * @tags Voice Library, extended
+     * @name VoiceLibraryControllerVoiceGetByProvider
+     * @summary Get voices in Voice Library by Provider
+     * @request GET:/voice-library/{provider}
+     * @secure
+     */
+    voiceLibraryControllerVoiceGetByProvider: (
+      provider:
+        | '11labs'
+        | 'azure'
+        | 'cartesia'
+        | 'deepgram'
+        | 'lmnt'
+        | 'neets'
+        | 'openai'
+        | 'playht'
+        | 'rime-ai',
+      params: RequestParams = {},
+    ) =>
+      this.request<VoiceLibrary[], any>({
+        path: `/voice-library/${provider}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Voice Library, extended
+     * @name VoiceLibraryControllerVoiceLibrarySyncByProvider
+     * @summary Sync Private voices in Voice Library by Provider
+     * @request POST:/voice-library/sync/{provider}
+     * @secure
+     */
+    voiceLibraryControllerVoiceLibrarySyncByProvider: (
+      provider:
+        | '11labs'
+        | 'azure'
+        | 'cartesia'
+        | 'deepgram'
+        | 'lmnt'
+        | 'neets'
+        | 'openai'
+        | 'playht'
+        | 'rime-ai',
+      params: RequestParams = {},
+    ) =>
+      this.request<VoiceLibrary[], any>({
+        path: `/voice-library/sync/${provider}`,
+        method: 'POST',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Voice Library, extended, extended
+     * @name VoiceLibraryControllerVoiceLibrarySyncDefaultVoices
+     * @summary Sync Default voices in Voice Library by Providers
+     * @request POST:/voice-library/sync
+     * @secure
+     */
+    voiceLibraryControllerVoiceLibrarySyncDefaultVoices: (
+      data: SyncVoiceLibraryDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<VoiceLibrary[], any>({
+        path: `/voice-library/sync`,
         method: 'POST',
         body: data,
         secure: true,
