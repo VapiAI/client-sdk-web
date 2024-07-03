@@ -1,4 +1,4 @@
-import { Call, CreateAssistantDTO, CreateSquadDTO, OverrideAssistantDTO } from './api';
+import { Call, CreateAssistantDTO, CreateSquadDTO, AssistantOverrides } from './api';
 import DailyIframe, {
   DailyCall,
   DailyEventObjectAppMessage,
@@ -124,7 +124,7 @@ export default class Vapi extends VapiEventEmitter {
 
   async start(
     assistant?: CreateAssistantDTO | string,
-    assistantOverrides?: OverrideAssistantDTO,
+    assistantOverrides?: AssistantOverrides,
     squad?: CreateSquadDTO | string,
   ): Promise<Call | null> {
     if (!assistant && !squad) {

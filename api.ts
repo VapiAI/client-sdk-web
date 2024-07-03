@@ -3398,6 +3398,13 @@ export interface Call {
    * @maxLength 40
    */
   name?: string;
+
+  /**
+   * This is the URL of the call that the assistant will join.
+   *
+   * Only relevant for `webCall` type.
+   */
+  webCallUrl?: string;
 }
 
 export interface PaginationMeta {
