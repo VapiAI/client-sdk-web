@@ -166,7 +166,7 @@ export default class Vapi extends VapiEventEmitter {
       this.call = DailyIframe.createCallObject({
         audioSource: this.dailyCallObject.audioSource ?? true,
         videoSource: isVideoRecordingEnabled,
-        dailyConfig: this.dailyCallConfig || {}
+        dailyConfig: this.dailyCallConfig
       });
       this.call.iframe()?.style.setProperty('display', 'none');
 
