@@ -5,6 +5,7 @@ import DailyIframe, {
   DailyEventObjectAppMessage,
   DailyEventObjectParticipant,
   DailyEventObjectRemoteParticipantsAudioLevel,
+  DailyFactoryOptions,
 } from '@daily-co/daily-js';
 
 import type { ChatCompletionMessageParam } from 'openai/resources';
@@ -110,12 +111,19 @@ export default class Vapi extends VapiEventEmitter {
   private call: DailyCall | null = null;
   private speakingTimeout: NodeJS.Timeout | null = null;
   private dailyCallConfig: DailyAdvancedConfig = {}
+  private dailyCallObject: DailyFactoryOptions = {}
 
-  constructor(apiToken: string, apiBaseUrl?: string, dailyCallConfig?: Pick<DailyAdvancedConfig, 'avoidEval'>) {
+  constructor(
+    apiToken: string, 
+    apiBaseUrl?: string, 
+    dailyCallConfig?: Pick<DailyAdvancedConfig, 'avoidEval' | 'alwaysIncludeMicInPermissionPrompt'>,
+    dailyCallObject?: Pick<DailyFactoryOptions, 'audioSource'>
+  ) {
     super();
     client.baseUrl = apiBaseUrl ?? 'https://api.vapi.ai';
     client.setSecurityData(apiToken);
     this.dailyCallConfig = dailyCallConfig ?? {}
+    this.dailyCallObject = dailyCallObject ?? {}
   }
 
   private cleanup() {
@@ -156,7 +164,7 @@ export default class Vapi extends VapiEventEmitter {
       const isVideoRecordingEnabled = webCall?.artifactPlan?.videoRecordingEnabled ?? false;
 
       this.call = DailyIframe.createCallObject({
-        audioSource: true,
+        audioSource: this.dailyCallObject.audioSource ?? true,
         videoSource: isVideoRecordingEnabled,
         dailyConfig: this.dailyCallConfig
       });
