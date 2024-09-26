@@ -1768,6 +1768,10 @@ export interface ElevenLabsVoice {
     | 'eleven_turbo_v2'
     | 'eleven_turbo_v2_5'
     | 'eleven_monolingual_v1';
+  /**
+  * This is the language (ISO 639-1) that is enforced for the model. Currently only Turbo v2.5 supports language enforcement. For other models, an error will be returned if language code is provided.
+  */
+  language?: string;
 }
 
 export interface LMNTVoice {
