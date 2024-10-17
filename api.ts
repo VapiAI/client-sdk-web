@@ -2303,14 +2303,15 @@ export interface TwilioVoicemailDetection {
    * @default {Array} ['machine_end_beep', 'machine_end_silence']
    * @example ["machine_end_beep","machine_end_silence"]
    */
-  voicemailDetectionTypes?:
+  voicemailDetectionTypes?: (
     | 'machine_start'
     | 'human'
     | 'fax'
     | 'unknown'
     | 'machine_end_beep'
     | 'machine_end_silence'
-    | 'machine_end_other';
+    | 'machine_end_other'
+  )[];
   /**
    * This sets whether the assistant should detect voicemail. Defaults to true.
    *
