@@ -1,22 +1,27 @@
-import { Call, CreateAssistantDTO, CreateSquadDTO, AssistantOverrides } from './api';
+import type { ChatCompletionMessageParam } from 'openai/resources';
+
 import DailyIframe, {
-  DailyAdvancedConfig,
   DailyCall,
+  DailyAdvancedConfig,
+  DailyFactoryOptions,
   DailyEventObjectAppMessage,
   DailyEventObjectParticipant,
   DailyEventObjectRemoteParticipantsAudioLevel,
-  DailyFactoryOptions,
 } from '@daily-co/daily-js';
-
-import type { ChatCompletionMessageParam } from 'openai/resources';
 import EventEmitter from 'events';
+
+import {
+  Call,
+  CreateSquadDTO,
+  CreateAssistantDTO,
+  AssistantOverrides,
+} from './api';
 import { client } from './client';
 
-function destroyAudioPlayer(participantId: string) {
-  const player = document.querySelector(`audio[data-participant-id="${participantId}"]`);
-  player?.remove();
-}
-async function startPlayer(player: HTMLAudioElement, track: any) {
+async function startAudioPlayer(
+  player: HTMLAudioElement,
+  track: MediaStreamTrack,
+) {
   player.muted = false;
   player.autoplay = true;
   if (track != null) {
@@ -24,24 +29,37 @@ async function startPlayer(player: HTMLAudioElement, track: any) {
     await player.play();
   }
 }
-async function buildAudioPlayer(track: any, participantId: string) {
+
+async function buildAudioPlayer(
+  track: MediaStreamTrack,
+  participantId: string,
+) {
   const player = document.createElement('audio');
   player.dataset.participantId = participantId;
   document.body.appendChild(player);
-  await startPlayer(player, track);
+  await startAudioPlayer(player, track);
   return player;
 }
+
+function destroyAudioPlayer(participantId: string) {
+  const player = document.querySelector(
+    `audio[data-participant-id="${participantId}"]`,
+  );
+  player?.remove();
+}
+
 function subscribeToTracks(
   e: DailyEventObjectParticipant,
   call: DailyCall,
   isVideoRecordingEnabled?: boolean,
+  isVideoEnabled?: boolean,
 ) {
   if (e.participant.local) return;
 
   call.updateParticipant(e.participant.session_id, {
     setSubscribedTracks: {
       audio: true,
-      video: isVideoRecordingEnabled,
+      video: isVideoRecordingEnabled || isVideoEnabled,
     },
   });
 }
@@ -63,7 +81,10 @@ export interface SayMessage {
   endCallAfterSpoken?: boolean;
 }
 
-type VapiClientToServerMessage = AddMessageMessage | ControlMessages | SayMessage;
+type VapiClientToServerMessage =
+  | AddMessageMessage
+  | ControlMessages
+  | SayMessage;
 
 type VapiEventNames =
   | 'call-end'
@@ -72,6 +93,7 @@ type VapiEventNames =
   | 'speech-start'
   | 'speech-end'
   | 'message'
+  | 'video'
   | 'error';
 
 type VapiEventListeners = {
@@ -80,23 +102,36 @@ type VapiEventListeners = {
   'volume-level': (volume: number) => void;
   'speech-start': () => void;
   'speech-end': () => void;
+  video: (track: MediaStreamTrack) => void;
   message: (message: any) => void;
   error: (error: any) => void;
 };
 
 class VapiEventEmitter extends EventEmitter {
-  on<E extends VapiEventNames>(event: E, listener: VapiEventListeners[E]): this {
+  on<E extends VapiEventNames>(
+    event: E,
+    listener: VapiEventListeners[E],
+  ): this {
     super.on(event, listener);
     return this;
   }
-  once<E extends VapiEventNames>(event: E, listener: VapiEventListeners[E]): this {
+  once<E extends VapiEventNames>(
+    event: E,
+    listener: VapiEventListeners[E],
+  ): this {
     super.once(event, listener);
     return this;
   }
-  emit<E extends VapiEventNames>(event: E, ...args: Parameters<VapiEventListeners[E]>): boolean {
+  emit<E extends VapiEventNames>(
+    event: E,
+    ...args: Parameters<VapiEventListeners[E]>
+  ): boolean {
     return super.emit(event, ...args);
   }
-  removeListener<E extends VapiEventNames>(event: E, listener: VapiEventListeners[E]): this {
+  removeListener<E extends VapiEventNames>(
+    event: E,
+    listener: VapiEventListeners[E],
+  ): this {
     super.removeListener(event, listener);
     return this;
   }
@@ -110,20 +145,23 @@ export default class Vapi extends VapiEventEmitter {
   private started: boolean = false;
   private call: DailyCall | null = null;
   private speakingTimeout: NodeJS.Timeout | null = null;
-  private dailyCallConfig: DailyAdvancedConfig = {}
-  private dailyCallObject: DailyFactoryOptions = {}
+  private dailyCallConfig: DailyAdvancedConfig = {};
+  private dailyCallObject: DailyFactoryOptions = {};
 
   constructor(
-    apiToken: string, 
-    apiBaseUrl?: string, 
-    dailyCallConfig?: Pick<DailyAdvancedConfig, 'avoidEval' | 'alwaysIncludeMicInPermissionPrompt'>,
-    dailyCallObject?: Pick<DailyFactoryOptions, 'audioSource'>
+    apiToken: string,
+    apiBaseUrl?: string,
+    dailyCallConfig?: Pick<
+      DailyAdvancedConfig,
+      'avoidEval' | 'alwaysIncludeMicInPermissionPrompt'
+    >,
+    dailyCallObject?: Pick<DailyFactoryOptions, 'audioSource'>,
   ) {
     super();
     client.baseUrl = apiBaseUrl ?? 'https://api.vapi.ai';
     client.setSecurityData(apiToken);
-    this.dailyCallConfig = dailyCallConfig ?? {}
-    this.dailyCallObject = dailyCallObject ?? {}
+    this.dailyCallConfig = dailyCallConfig ?? {};
+    this.dailyCallObject = dailyCallObject ?? {};
   }
 
   private cleanup() {
@@ -161,12 +199,17 @@ export default class Vapi extends VapiEventEmitter {
       if (this.call) {
         this.cleanup();
       }
-      const isVideoRecordingEnabled = webCall?.artifactPlan?.videoRecordingEnabled ?? false;
+
+      const isVideoRecordingEnabled =
+        webCall?.artifactPlan?.videoRecordingEnabled ?? false;
+
+      // @ts-expect-error Tavus voice exists
+      const isVideoEnabled = webCall.assistant?.voice?.provider === 'tavus';
 
       this.call = DailyIframe.createCallObject({
         audioSource: this.dailyCallObject.audioSource ?? true,
-        videoSource: isVideoRecordingEnabled,
-        dailyConfig: this.dailyCallConfig
+        videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
+        dailyConfig: this.dailyCallConfig,
       });
       this.call.iframe()?.style.setProperty('display', 'none');
 
@@ -197,17 +240,27 @@ export default class Vapi extends VapiEventEmitter {
       this.call.on('track-started', async (e) => {
         if (!e || !e.participant) return;
         if (e.participant?.local) return;
-        if (e.track.kind !== 'audio') return;
+        if (e.participant?.user_name !== 'Vapi Speaker') return;
 
-        await buildAudioPlayer(e.track, e.participant.session_id);
+        if (e.track.kind === 'video') {
+          this.emit('video', e.track);
+        }
 
-        if (e?.participant?.user_name !== 'Vapi Speaker') return;
+        if (e.track.kind === 'audio') {
+          await buildAudioPlayer(e.track, e.participant.session_id);
+        }
+
         this.call?.sendAppMessage('playable');
       });
 
       this.call.on('participant-joined', (e) => {
         if (!e || !this.call) return;
-        subscribeToTracks(e, this.call, isVideoRecordingEnabled);
+        subscribeToTracks(
+          e,
+          this.call,
+          isVideoRecordingEnabled,
+          isVideoEnabled,
+        );
       });
 
       await this.call.join({
@@ -231,7 +284,8 @@ export default class Vapi extends VapiEventEmitter {
           this.send({
             type: 'control',
             control: 'say-first-message',
-            videoRecordingStartDelaySeconds: (new Date().getTime() - recordingRequestedTime) / 1000,
+            videoRecordingStartDelaySeconds:
+              (new Date().getTime() - recordingRequestedTime) / 1000,
           });
         });
       }
@@ -296,8 +350,13 @@ export default class Vapi extends VapiEventEmitter {
     }
   }
 
-  private handleRemoteParticipantsAudioLevel(e: DailyEventObjectRemoteParticipantsAudioLevel) {
-    const speechLevel = Object.values(e.participantsAudioLevel).reduce((a, b) => a + b, 0);
+  private handleRemoteParticipantsAudioLevel(
+    e: DailyEventObjectRemoteParticipantsAudioLevel,
+  ) {
+    const speechLevel = Object.values(e.participantsAudioLevel).reduce(
+      (a, b) => a + b,
+      0,
+    );
 
     this.emit('volume-level', Math.min(1, speechLevel / 0.15));
 
@@ -329,25 +388,17 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   public setMuted(mute: boolean) {
-    try {
-      if (!this.call) {
-        throw new Error('Call object is not available.');
-      }
-      this.call.setLocalAudio(!mute);
-    } catch (error) {
-      throw error;
+    if (!this.call) {
+      throw new Error('Call object is not available.');
     }
+    this.call.setLocalAudio(!mute);
   }
 
   public isMuted() {
-    try {
-      if (!this.call) {
-        return false;
-      }
-      return this.call.localAudio() === false;
-    } catch (error) {
-      throw error;
+    if (!this.call) {
+      return false;
     }
+    return this.call.localAudio() === false;
   }
 
   public say(message: string, endCallAfterSpoken?: boolean) {
@@ -358,11 +409,15 @@ export default class Vapi extends VapiEventEmitter {
     });
   }
 
-  public setInputDevicesAsync(options: Parameters<DailyCall['setInputDevicesAsync']>[0]) {
+  public setInputDevicesAsync(
+    options: Parameters<DailyCall['setInputDevicesAsync']>[0],
+  ) {
     this.call?.setInputDevicesAsync(options);
   }
 
-  public setOutputDeviceAsync(options: Parameters<DailyCall['setOutputDeviceAsync']>[0]) {
+  public setOutputDeviceAsync(
+    options: Parameters<DailyCall['setOutputDeviceAsync']>[0],
+  ) {
     this.call?.setOutputDeviceAsync(options);
   }
 
