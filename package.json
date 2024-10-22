@@ -1,6 +1,6 @@
 {
   "name": "@vapi-ai/web",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "",
   "main": "dist/vapi.js",
   "types": "dist/vapi.d.ts",
@@ -22,8 +22,8 @@
   },
   "homepage": "https://github.com/VapiAI/web#readme",
   "dependencies": {
-    "@daily-co/daily-js": "^0.66.0",
-    "@vapi-ai/web": "^1.0.263",
+    "@daily-co/daily-js": "^0.72.1",
+    "@vapi-ai/web": "^2.1.5",
     "events": "^3.3.0"
   },
   "devDependencies": {
