@@ -823,6 +823,13 @@ export interface AssistantTransferDestination {
   description?: string;
 }
 
+export interface TransferPlan {
+  /** This configures how transfer is executed and the experience of the destination party receiving the call. */
+  mode: 'blind-transfer'|'warm-transfer-with-summary' | 'warm-transfer-with-message';
+  /** This is the message the assistant will deliver to the destination party before connecting the customer. */
+  message?: string;
+}
+
 export interface NumberTransferDestination {
   type: 'number';
   /** This is the phone number to transfer the call to. */
@@ -831,6 +838,8 @@ export interface NumberTransferDestination {
   message?: string;
   /** This is the description of the destination, used by the AI to choose when and how to transfer the call. */
   description?: string;
+  /** This configures how transfer is executed and the experience of the destination party receiving the call. Defaults to blind-transfer. */
+  transferPlan?: TransferPlan;
 }
 
 export interface SipTransferDestination {
