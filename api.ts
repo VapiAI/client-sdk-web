@@ -2975,6 +2975,16 @@ export interface AssistantOverrides {
   endCallMessage?: string;
   /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
   endCallPhrases?: string[];
+  /**
+   * This determines whether assistant can use the `endCall` function to end the call.
+   * @see: https://docs.vapi.ai/assistants/function-calling#end-call
+   *
+   * Default `false` while in beta.
+   *
+   * @default false
+   * @example false
+   */
+  endCallFunctionEnabled?: boolean;
   /** This is for metadata you want to store on the assistant. */
   metadata?: object;
   /**
