@@ -275,7 +275,7 @@ export default class Vapi extends VapiEventEmitter {
 
       // Allow mobile devices to finish processing the microphone permissions
       // request before joining the call and playing the assistant's audio
-      if (this.isMobileDevice()) await this.sleep(500);
+      if (this.isMobileDevice()) await this.sleep(1000);
 
       await this.call.join({
         url: webCall.webCallUrl,
