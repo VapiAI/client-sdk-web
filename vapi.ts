@@ -18,6 +18,49 @@ import {
 } from './api';
 import { client } from './client';
 
+export interface AddMessageMessage {
+  type: 'add-message';
+  message: ChatCompletionMessageParam;
+}
+
+export interface ControlMessages {
+  type: 'control';
+  control: 'mute-assistant' | 'unmute-assistant' | 'say-first-message';
+  videoRecordingStartDelaySeconds?: number;
+}
+
+export interface SayMessage {
+  type: 'say';
+  message: string;
+  endCallAfterSpoken?: boolean;
+}
+
+type VapiClientToServerMessage =
+  | AddMessageMessage
+  | ControlMessages
+  | SayMessage;
+
+type VapiEventNames =
+  | 'call-end'
+  | 'call-start'
+  | 'volume-level'
+  | 'speech-start'
+  | 'speech-end'
+  | 'message'
+  | 'video'
+  | 'error';
+
+type VapiEventListeners = {
+  'call-end': () => void;
+  'call-start': () => void;
+  'volume-level': (volume: number) => void;
+  'speech-start': () => void;
+  'speech-end': () => void;
+  video: (track: MediaStreamTrack) => void;
+  message: (message: any) => void;
+  error: (error: any) => void;
+};
+
 async function startAudioPlayer(
   player: HTMLAudioElement,
   track: MediaStreamTrack,
@@ -63,49 +106,6 @@ function subscribeToTracks(
     },
   });
 }
-
-export interface AddMessageMessage {
-  type: 'add-message';
-  message: ChatCompletionMessageParam;
-}
-
-export interface ControlMessages {
-  type: 'control';
-  control: 'mute-assistant' | 'unmute-assistant' | 'say-first-message';
-  videoRecordingStartDelaySeconds?: number;
-}
-
-export interface SayMessage {
-  type: 'say';
-  message: string;
-  endCallAfterSpoken?: boolean;
-}
-
-type VapiClientToServerMessage =
-  | AddMessageMessage
-  | ControlMessages
-  | SayMessage;
-
-type VapiEventNames =
-  | 'call-end'
-  | 'call-start'
-  | 'volume-level'
-  | 'speech-start'
-  | 'speech-end'
-  | 'message'
-  | 'video'
-  | 'error';
-
-type VapiEventListeners = {
-  'call-end': () => void;
-  'call-start': () => void;
-  'volume-level': (volume: number) => void;
-  'speech-start': () => void;
-  'speech-end': () => void;
-  video: (track: MediaStreamTrack) => void;
-  message: (message: any) => void;
-  error: (error: any) => void;
-};
 
 class VapiEventEmitter extends EventEmitter {
   on<E extends VapiEventNames>(
@@ -169,6 +169,20 @@ export default class Vapi extends VapiEventEmitter {
     this.call?.destroy();
     this.call = null;
     this.speakingTimeout = null;
+  }
+
+  private isMobileDevice() {
+    if (typeof navigator === 'undefined') {
+      return false;
+    }
+    const userAgent = navigator.userAgent;
+    return /android|iphone|ipad|ipod|iemobile|blackberry|bada/i.test(
+      userAgent.toLowerCase(),
+    );
+  }
+
+  private async sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async start(
@@ -262,6 +276,12 @@ export default class Vapi extends VapiEventEmitter {
           isVideoEnabled,
         );
       });
+
+      // Allow mobile devices to finish processing the microphone permissions
+      // request before joining the call and playing the assistant's audio
+      if (this.isMobileDevice()) {
+        await this.sleep(1000);
+      }
 
       await this.call.join({
         url: webCall.webCallUrl,
