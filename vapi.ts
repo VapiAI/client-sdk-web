@@ -172,7 +172,9 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   private isMobileDevice() {
-    if (typeof navigator === 'undefined') return false;
+    if (typeof navigator === 'undefined') {
+      return false;
+    }
     const userAgent = navigator.userAgent;
     return /android|iphone|ipad|ipod|iemobile|blackberry|bada/i.test(
       userAgent.toLowerCase(),
