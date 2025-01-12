@@ -217,7 +217,6 @@ export default class Vapi extends VapiEventEmitter {
       const isVideoRecordingEnabled =
         webCall?.artifactPlan?.videoRecordingEnabled ?? false;
 
-      // @ts-expect-error This exists
       const isVideoEnabled = webCall.transport?.assistantVideoEnabled ?? false;
 
       this.call = DailyIframe.createCallObject({
@@ -227,6 +226,10 @@ export default class Vapi extends VapiEventEmitter {
       });
       this.call.iframe()?.style.setProperty('display', 'none');
 
+      // Start local video preview
+      this.startLocalVideoPreview(this.call); // Ensure this is called after creating the call object
+
+      // Existing event listeners...
       this.call.on('left-meeting', () => {
         this.emit('call-end');
         if (isVideoRecordingEnabled) {
@@ -443,5 +446,28 @@ export default class Vapi extends VapiEventEmitter {
 
   public getDailyCallObject(): DailyCall | null {
     return this.call;
+  }
+
+  // Add the startLocalVideoPreview method here at the bottom
+  private startLocalVideoPreview(call: DailyCall) {
+    // Create a video element
+    const localVideoElement = document.createElement('video');
+    localVideoElement.autoplay = true;
+    localVideoElement.muted = true; // Mute to avoid feedback
+    localVideoElement.style.width = '320px'; // Set width for the preview
+    localVideoElement.style.height = '240px'; // Set height for the preview
+
+    // Append to a specific container in the rs app
+    const container = document.getElementById('rs-video-container'); // Replace with your actual container ID
+    if (container) {
+      container.appendChild(localVideoElement);
+    }
+
+    // Set the video source when the track starts
+    call.on('track-started', (e) => {
+      if (e.participant.local && e.track.kind === 'video') {
+        localVideoElement.srcObject = new MediaStream([e.track]);
+      }
+    });
   }
 }
