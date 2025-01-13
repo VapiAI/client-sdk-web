@@ -1374,6 +1374,12 @@ export interface SummaryPlan {
    * @max 60
    */
   timeoutSeconds?: number;
+  /**
+   * This determines whether to use the assistant's LLM to generate the summary. Defaults to false.
+   *
+   * @default false
+   */
+  useAssistantLlm?: boolean;
 }
 
 export interface TransferPlan {
@@ -1963,14 +1969,13 @@ export interface GroqModel {
   knowledgeBaseId?: string;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model:
+    | 'llama-3.3-70b-versatile'
     | 'llama-3.1-405b-reasoning'
     | 'llama-3.1-70b-versatile'
     | 'llama-3.1-8b-instant'
     | 'mixtral-8x7b-32768'
     | 'llama3-8b-8192'
     | 'llama3-70b-8192'
-    | 'llama3-groq-8b-8192-tool-use-preview'
-    | 'llama3-groq-70b-8192-tool-use-preview'
     | 'gemma2-9b-it';
   provider: 'groq';
   /**
@@ -3844,6 +3849,12 @@ export interface StructuredDataPlan {
    * @max 60
    */
   timeoutSeconds?: number;
+  /**
+   * This determines whether to use the assistant's LLM to generate the structured data. Defaults to false.
+   *
+   * @default false
+   */
+  useAssistantLlm?: boolean;
 }
 
 export interface SuccessEvaluationPlan {
@@ -3916,6 +3927,12 @@ export interface SuccessEvaluationPlan {
    * @max 60
    */
   timeoutSeconds?: number;
+  /**
+   * This determines whether to use the assistant's LLM to generate the success evaluation. Defaults to false.
+   *
+   * @default false
+   */
+  useAssistantLlm?: boolean;
 }
 
 export interface AnalysisPlan {
@@ -6593,208 +6610,6 @@ export interface UpdatePhoneNumberDTO {
   server?: Server;
 }
 
-export interface AutoReloadPlan {
-  /** This the amount of credits to reload. */
-  credits: number;
-  /** This is the limit at which the reload is triggered. */
-  threshold: number;
-}
-
-export interface Subscription {
-  /** This is the unique identifier for the subscription. */
-  id: string;
-  /**
-   * This is the timestamp when the subscription was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the timestamp when the subscription was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-  /** This is the type / tier of the subscription. */
-  type: 'trial' | 'pay-as-you-go' | 'enterprise';
-  /**
-   * This is the status of the subscription. Past due subscriptions are subscriptions
-   * with past due payments.
-   */
-  status: 'active' | 'frozen';
-  /**
-   * This is the number of credits the subscription currently has.
-   *
-   * Note: This is a string to avoid floating point precision issues.
-   */
-  credits: string;
-  /**
-   * This is the total concurrency limit for the subscription.
-   * @min 10
-   */
-  concurrencyLimit: number;
-  /** This is the default concurrency limit for the subscription. */
-  concurrencyLimitIncluded: number;
-  /** This is the purchased add-on concurrency limit for the subscription. */
-  concurrencyLimitPurchased: number;
-  /** This is the ID of the monthly job that charges for subscription add ons and phone numbers. */
-  monthlyChargeScheduleId?: number;
-  /**
-   * This is the ID of the monthly job that checks whether the credit balance of the subscription
-   * is sufficient for the monthly charge.
-   */
-  monthlyCreditCheckScheduleId?: number;
-  /** This is the Stripe customer ID. */
-  stripeCustomerId?: string;
-  /** This is the Stripe payment ID. */
-  stripePaymentMethodId?: string;
-  /** If this flag is true, then the user has purchased slack support. */
-  slackSupportEnabled?: boolean;
-  /** If this subscription has a slack support subscription, the slack channel's ID will be stored here. */
-  slackChannelId?: string;
-  /**
-   * This is the HIPAA enabled flag for the subscription. It determines whether orgs under this
-   * subscription have the option to enable HIPAA compliance.
-   */
-  hipaaEnabled?: boolean;
-  /** This is the ID for the Common Paper agreement outlining the HIPAA contract. */
-  hipaaCommonPaperAgreementId?: string;
-  /**
-   * This is the Stripe fingerprint of the payment method (card). It allows us
-   * to detect users who try to abuse our system through multiple sign-ups.
-   */
-  stripePaymentMethodFingerprint?: string;
-  /** This is the customer's email on Stripe. */
-  stripeCustomerEmail?: string;
-  /** This is the email of the referrer for the subscription. */
-  referredByEmail?: string;
-  /** This is the auto reload plan configured for the subscription. */
-  autoReloadPlan?: AutoReloadPlan;
-  /** The number of minutes included in the subscription. Enterprise only. */
-  minutesIncluded?: number;
-  /** The number of minutes used in the subscription. Enterprise only. */
-  minutesUsed?: number;
-  /** The per minute charge on minutes that exceed the included minutes. Enterprise only. */
-  minutesOverageCost?: number;
-  /** The list of providers included in the subscription. Enterprise only. */
-  providersIncluded?: string[];
-  /**
-   * The maximum number of outbound calls this subscription may make in a day. Resets every night.
-   * @min 10
-   */
-  outboundCallsDailyLimit?: number;
-  /**
-   * The current number of outbound calls the subscription has made in the current day.
-   * @min 0
-   */
-  outboundCallsCounter?: number;
-  /**
-   * This is the timestamp at which the outbound calls counter is scheduled to reset at.
-   * @format date-time
-   */
-  outboundCallsCounterNextResetAt?: string;
-  /** This is the IDs of the coupons applicable to this subscription. */
-  couponIds?: string[];
-  /** This is the number of credits left obtained from a coupon. */
-  couponUsageLeft?: string;
-}
-
-export interface UpdateSubscriptionDTO {
-  /** This is the customer's email on Stripe. */
-  stripeCustomerEmail?: string;
-}
-
-export interface Payment {
-  /** This is the id of the payment */
-  id: string;
-  /** This is the id of the org */
-  orgId?: string;
-  /**
-   * This is the total cost of the payment, which is the sum of all the costs in the costs object.
-   *
-   * Note: this is a string to avoid floating point precision issues.
-   */
-  cost: string;
-  /** This is the itemized breakdown of payment amounts */
-  costs: object[];
-  /** This is the status of the payment */
-  status: 'past-due' | 'pending' | 'finalized' | 'refunded';
-  /**
-   * This is the timestamp when the payment was created
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the timestamp when the payment was last updated
-   * @format date-time
-   */
-  updatedAt: string;
-  /** This indicates if this payment was automatically generated by the auto-reload feature */
-  isAutoReload: boolean;
-  /** This is the id of the subscription the payment belongs to */
-  subscriptionId: string;
-  /** This is the id of the call */
-  callId?: string;
-  /** This is the id of the purchased phone number */
-  phoneNumberId?: string;
-  /** This is the id of the associated stripe payment intent */
-  stripePaymentIntentId?: string;
-  /** This is the id of the associated stripe invoice */
-  stripeInvoiceId?: string;
-}
-
-export interface PaymentsPaginatedResponse {
-  results: Payment[];
-  metadata: PaginationMeta;
-}
-
-export interface SubscriptionMonthlyCharge {
-  /** This is the monthly charge for the subscription. */
-  monthlyCharge: number;
-  /** These are the different costs that make up the monthly charge. */
-  costs: object[];
-}
-
-export interface CreditsBuyDTO {
-  /** This is the number of credits to add to the subscription. */
-  credits: number;
-}
-
-export interface AutoReloadPlanDTO {
-  /**
-   * This is the auto reload plan to be configured for the subscription.
-   * It can be null if no auto reload plan is set.
-   */
-  autoReloadPlan?: AutoReloadPlan;
-}
-
-export interface PaymentRetryDTO {
-  /** This is the payment ID to retry. */
-  paymentId: string;
-}
-
-export interface SubscriptionConcurrencyLineBuyDTO {
-  /** This is the number of concurrency lines to purchase. */
-  quantity: number;
-}
-
-export interface SubscriptionConcurrencyLineRemoveDTO {
-  /** This is the number of concurrency lines to remove. */
-  quantity: number;
-}
-
-export interface HipaaBuyDTO {
-  /** This is the name of the recipient. */
-  recipientName: string;
-  /** This is the name of the recipient organization. */
-  recipientOrganization: string;
-}
-
-export interface SubscriptionCouponAddDTO {
-  /** This is the ID of the org within the subscription which the coupon will take effect on. */
-  orgId: string;
-  /** This is the code of the coupon to apply to the subscription. */
-  couponCode: string;
-}
-
 export interface Squad {
   /** This is the name of the squad. */
   name?: string;
@@ -8743,6 +8558,15 @@ export interface AssemblyAICredential {
   name?: string;
 }
 
+export interface AzureBlobStorageBucketPlan {
+  /** This is the connection string for the Azure blob storage. */
+  connectionString: string;
+  /** This is the container name for the Azure blob storage. */
+  containerName: string;
+  /** This is the path where call artifacts will be stored. */
+  path?: string;
+}
+
 export interface AzureCredential {
   provider: 'azure';
   /**
@@ -8793,6 +8617,8 @@ export interface AzureCredential {
    * @maxLength 40
    */
   name?: string;
+  /** This is the bucket plan for the Azure blob storage. */
+  bucketPlan?: AzureBlobStorageBucketPlan;
 }
 
 export interface AzureOpenAICredential {
@@ -8830,6 +8656,8 @@ export interface AzureOpenAICredential {
    * @maxLength 10000
    */
   openAIKey: string;
+  /** OCP-APIM-Subscription-Key Header */
+  ocpApimSubscriptionKey?: string;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -9588,6 +9416,32 @@ export interface RimeAICredential {
   name?: string;
 }
 
+export interface SmallestAICredential {
+  provider: 'smallest-ai';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface RunpodCredential {
   provider: 'runpod';
   /** This is not returned in the API. */
@@ -9903,6 +9757,8 @@ export interface CreateAzureCredentialDTO {
    * @maxLength 40
    */
   name?: string;
+  /** This is the bucket plan for the Azure blob storage. */
+  bucketPlan?: AzureBlobStorageBucketPlan;
 }
 
 export interface CreateAzureOpenAICredentialDTO {
@@ -9940,6 +9796,8 @@ export interface CreateAzureOpenAICredentialDTO {
    * @maxLength 10000
    */
   openAIKey: string;
+  /** OCP-APIM-Subscription-Key Header */
+  ocpApimSubscriptionKey?: string;
   /** @maxLength 10000 */
   openAIEndpoint: string;
   /**
@@ -9989,6 +9847,21 @@ export interface CreateByoSipTrunkCredentialDTO {
 export interface CreateCartesiaCredentialDTO {
   provider: 'cartesia';
   /** This is not returned in the API. */
+  apiKey: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateCerebrasCredentialDTO {
+  provider: 'cerebras';
+  /**
+   * This is not returned in the API.
+   * @maxLength 10000
+   */
   apiKey: string;
   /**
    * This is the name of credential. This is just for your reference.
@@ -10247,6 +10120,18 @@ export interface CreateRimeAICredentialDTO {
   name?: string;
 }
 
+export interface CreateSmallestAICredentialDTO {
+  provider: 'smallest-ai';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CreateRunpodCredentialDTO {
   provider: 'runpod';
   /** This is not returned in the API. */
@@ -10294,6 +10179,18 @@ export interface CreateTavusCredentialDTO {
 
 export interface CreateTogetherAICredentialDTO {
   provider: 'together-ai';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateTrieveCredentialDTO {
+  provider: 'trieve';
   /** This is not returned in the API. */
   apiKey: string;
   /**
@@ -10436,6 +10333,8 @@ export interface UpdateAzureCredentialDTO {
    * @maxLength 40
    */
   name?: string;
+  /** This is the bucket plan for the Azure blob storage. */
+  bucketPlan?: AzureBlobStorageBucketPlan;
 }
 
 export interface UpdateAzureOpenAICredentialDTO {
@@ -10473,6 +10372,8 @@ export interface UpdateAzureOpenAICredentialDTO {
    * @maxLength 10000
    */
   openAIKey: string;
+  /** OCP-APIM-Subscription-Key Header */
+  ocpApimSubscriptionKey?: string;
   /** @maxLength 10000 */
   openAIEndpoint: string;
   /**
@@ -10792,6 +10693,18 @@ export interface UpdateRunpodCredentialDTO {
   name?: string;
 }
 
+export interface UpdateSmallestAICredentialDTO {
+  provider: 'smallest-ai';
+  /** This is not returned in the API. */
+  apiKey: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface UpdateS3CredentialDTO {
   /** Credential provider. Only allowed value is s3 */
   provider: 's3';
@@ -10879,163 +10792,6 @@ export interface UpdateXAiCredentialDTO {
   name?: string;
 }
 
-export interface CreateOrgDTO {
-  /**
-   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-   * When HIPAA is enabled, only OpenAI/Custom LLM or Azure Providers will be available for LLM and Voice respectively.
-   * This is due to the compliance requirements of HIPAA. Other providers may not meet these requirements.
-   * @example false
-   */
-  hipaaEnabled?: boolean;
-  /** This is the ID of the subscription the org belongs to. */
-  subscriptionId?: string;
-  /**
-   * This is the name of the org. This is just for your own reference.
-   * @maxLength 40
-   */
-  name?: string;
-  /** This is the channel of the org. There is the cluster the API traffic for the org will be directed. */
-  channel?: 'default' | 'weekly';
-  /**
-   * This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
-   * @min 0
-   * @max 1000
-   */
-  billingLimit?: number;
-  /**
-   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
-   *
-   * The order of precedence is:
-   *
-   * 1. assistant.server
-   * 2. phoneNumber.server
-   * 3. org.server
-   */
-  server?: Server;
-  /**
-   * This is the concurrency limit for the org. This is the maximum number of calls that can be active at any given time. To go beyond 10, please contact us at support@vapi.ai.
-   * @min 1
-   * @max 10
-   */
-  concurrencyLimit?: number;
-}
-
-export interface OrgPlan {
-  includedProviders?: object[];
-  includedMinutes?: number;
-  costPerOverageMinute?: number;
-}
-
-export interface Org {
-  /**
-   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-   * When HIPAA is enabled, only OpenAI/Custom LLM or Azure Providers will be available for LLM and Voice respectively.
-   * This is due to the compliance requirements of HIPAA. Other providers may not meet these requirements.
-   * @example false
-   */
-  hipaaEnabled?: boolean;
-  subscription?: Subscription;
-  /** This is the ID of the subscription the org belongs to. */
-  subscriptionId?: string;
-  /** This is the unique identifier for the org. */
-  id: string;
-  /**
-   * This is the ISO 8601 date-time string of when the org was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the org was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-  /** This is the Stripe customer for the org. */
-  stripeCustomerId?: string;
-  /** This is the subscription for the org. */
-  stripeSubscriptionId?: string;
-  /** This is the subscription's subscription item. */
-  stripeSubscriptionItemId?: string;
-  /**
-   * This is the subscription's current period start.
-   * @format date-time
-   */
-  stripeSubscriptionCurrentPeriodStart?: string;
-  /** This is the subscription's status. */
-  stripeSubscriptionStatus?: string;
-  /** This is the plan for the org. */
-  plan?: OrgPlan;
-  /**
-   * This is the name of the org. This is just for your own reference.
-   * @maxLength 40
-   */
-  name?: string;
-  /** This is the channel of the org. There is the cluster the API traffic for the org will be directed. */
-  channel?: 'default' | 'weekly';
-  /**
-   * This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
-   * @min 0
-   * @max 1000
-   */
-  billingLimit?: number;
-  /**
-   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
-   *
-   * The order of precedence is:
-   *
-   * 1. assistant.server
-   * 2. phoneNumber.server
-   * 3. org.server
-   */
-  server?: Server;
-  /**
-   * This is the concurrency limit for the org. This is the maximum number of calls that can be active at any given time. To go beyond 10, please contact us at support@vapi.ai.
-   * @min 1
-   * @max 10
-   */
-  concurrencyLimit?: number;
-}
-
-export interface UpdateOrgDTO {
-  /**
-   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-   * When HIPAA is enabled, only OpenAI/Custom LLM or Azure Providers will be available for LLM and Voice respectively.
-   * This is due to the compliance requirements of HIPAA. Other providers may not meet these requirements.
-   * @example false
-   */
-  hipaaEnabled?: boolean;
-  /** This is the ID of the subscription the org belongs to. */
-  subscriptionId?: string;
-  /**
-   * This is the name of the org. This is just for your own reference.
-   * @maxLength 40
-   */
-  name?: string;
-  /** This is the channel of the org. There is the cluster the API traffic for the org will be directed. */
-  channel?: 'default' | 'weekly';
-  /**
-   * This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
-   * @min 0
-   * @max 1000
-   */
-  billingLimit?: number;
-  /**
-   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
-   *
-   * The order of precedence is:
-   *
-   * 1. assistant.server
-   * 2. phoneNumber.server
-   * 3. org.server
-   */
-  server?: Server;
-  /**
-   * This is the concurrency limit for the org. This is the maximum number of calls that can be active at any given time. To go beyond 10, please contact us at support@vapi.ai.
-   * @min 1
-   * @max 10
-   */
-  concurrencyLimit?: number;
-}
-
 export interface User {
   /** This is the unique identifier for the profile or user. */
   id: string;
@@ -11059,77 +10815,6 @@ export interface InviteUserDTO {
   /** @maxItems 100 */
   emails: string[];
   role: 'admin' | 'editor' | 'viewer';
-}
-
-export interface OrgWithOrgUser {
-  /**
-   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-   * When HIPAA is enabled, only OpenAI/Custom LLM or Azure Providers will be available for LLM and Voice respectively.
-   * This is due to the compliance requirements of HIPAA. Other providers may not meet these requirements.
-   * @example false
-   */
-  hipaaEnabled?: boolean;
-  subscription?: Subscription;
-  /** This is the ID of the subscription the org belongs to. */
-  subscriptionId?: string;
-  /** This is the unique identifier for the org. */
-  id: string;
-  /**
-   * This is the ISO 8601 date-time string of when the org was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the org was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-  /** This is the Stripe customer for the org. */
-  stripeCustomerId?: string;
-  /** This is the subscription for the org. */
-  stripeSubscriptionId?: string;
-  /** This is the subscription's subscription item. */
-  stripeSubscriptionItemId?: string;
-  /**
-   * This is the subscription's current period start.
-   * @format date-time
-   */
-  stripeSubscriptionCurrentPeriodStart?: string;
-  /** This is the subscription's status. */
-  stripeSubscriptionStatus?: string;
-  /** This is the plan for the org. */
-  plan?: OrgPlan;
-  /**
-   * This is the name of the org. This is just for your own reference.
-   * @maxLength 40
-   */
-  name?: string;
-  /** This is the channel of the org. There is the cluster the API traffic for the org will be directed. */
-  channel?: 'default' | 'weekly';
-  /**
-   * This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
-   * @min 0
-   * @max 1000
-   */
-  billingLimit?: number;
-  /**
-   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
-   *
-   * The order of precedence is:
-   *
-   * 1. assistant.server
-   * 2. phoneNumber.server
-   * 3. org.server
-   */
-  server?: Server;
-  /**
-   * This is the concurrency limit for the org. This is the maximum number of calls that can be active at any given time. To go beyond 10, please contact us at support@vapi.ai.
-   * @min 1
-   * @max 10
-   */
-  concurrencyLimit?: number;
-  invitedByUserId?: string;
-  role?: 'admin' | 'editor' | 'viewer';
 }
 
 export interface UpdateUserRoleDTO {
@@ -11442,50 +11127,6 @@ export interface SyncVoiceLibraryDTO {
     | 'playht'
     | 'rime-ai'
     | 'tavus';
-}
-
-export interface CreateEnterpriseInfoDTO {
-  /** The size of the company. */
-  companySize: string;
-  /** How the company heard about us. */
-  source: string;
-  /** The type of the company. */
-  companyType: string;
-  /** The call volume of the company. */
-  callVolume: string;
-  /** The optional ID of the organization. */
-  orgId?: string;
-  /** The optional email of the company. */
-  email?: string;
-  /** The use case of the company. */
-  useCase?: string;
-}
-
-export interface EnterpriseInfo {
-  /** The unique identifier for the enterprise info. */
-  id: string;
-  /** The size of the company. */
-  companySize: string;
-  /** How the company heard about us. */
-  source: string;
-  /** The type of the company. */
-  companyType: string;
-  /** The call volume of the company. */
-  callVolume: string;
-  /** The optional ID of the organization. */
-  orgId?: string;
-  /** The optional email of the company. */
-  email?: string;
-  /**
-   * The ISO 8601 date-time string of when the enterprise info was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * The ISO 8601 date-time string of when the enterprise info was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
 }
 
 export interface ClientMessageConversationUpdate {
@@ -13282,6 +12923,11 @@ export interface ClientInboundMessageSay {
   endCallAfterSpoken?: boolean;
 }
 
+export interface ClientInboundMessageEndCall {
+  /** This is the type of the message. Send "end-call" message to end the call. */
+  type?: 'end-call';
+}
+
 export interface ClientInboundMessageTransfer {
   /** This is the type of the message. Send "transfer" message to transfer the call to a destination. */
   type: 'transfer';
@@ -13295,6 +12941,7 @@ export interface ClientInboundMessage {
     | ClientInboundMessageAddMessage
     | ClientInboundMessageControl
     | ClientInboundMessageSay
+    | ClientInboundMessageEndCall
     | ClientInboundMessageTransfer;
 }
 
@@ -15052,394 +14699,6 @@ export class Api<
         ...params,
       }),
   };
-  subscription = {
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionControllerFindOne
-     * @summary Get subscription
-     * @request GET:/subscription/{id}
-     * @secure
-     */
-    subscriptionControllerFindOne: (id: string, params: RequestParams = {}) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}`,
-        method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionControllerUpdate
-     * @summary Update subscription
-     * @request PATCH:/subscription/{id}
-     * @secure
-     */
-    subscriptionControllerUpdate: (
-      id: string,
-      data: UpdateSubscriptionDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}`,
-        method: 'PATCH',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerPaymentsGet
-     * @summary Find all payments
-     * @request GET:/subscription/{id}/payment
-     * @secure
-     */
-    subscriptionPaymentControllerPaymentsGet: (
-      id: string,
-      query: {
-        /** This is the status of the payment */
-        status: 'past-due' | 'pending' | 'finalized' | 'refunded';
-        /** This will return items where the cost is less than or equal to the specified value. */
-        costLe: number;
-        /** This will return items where the cost is less than the specified value. */
-        costLt: number;
-        /** This will return items where the cost is greater than or equal to the specified value. */
-        costGe: number;
-        /** This will return items where the cost is greater than the specified value. */
-        costGt: number;
-        /** This is the ID for the org */
-        orgId?: string;
-        /** This is the ID for the call */
-        callId?: string;
-        /** This is the id of the purchased phone number */
-        phoneNumberId?: string;
-        /**
-         * This is the page number to return. Defaults to 1.
-         * @min 1
-         */
-        page?: number;
-        /** This is the sort order for pagination. Defaults to 'ASC'. */
-        sortOrder?: 'ASC' | 'DESC';
-        /**
-         * This is the maximum number of items to return. Defaults to 100.
-         * @min 0
-         * @max 1000
-         */
-        limit?: number;
-        /**
-         * This will return items where the createdAt is greater than the specified value.
-         * @format date-time
-         */
-        createdAtGt?: string;
-        /**
-         * This will return items where the createdAt is less than the specified value.
-         * @format date-time
-         */
-        createdAtLt?: string;
-        /**
-         * This will return items where the createdAt is greater than or equal to the specified value.
-         * @format date-time
-         */
-        createdAtGe?: string;
-        /**
-         * This will return items where the createdAt is less than or equal to the specified value.
-         * @format date-time
-         */
-        createdAtLe?: string;
-        /**
-         * This will return items where the updatedAt is greater than the specified value.
-         * @format date-time
-         */
-        updatedAtGt?: string;
-        /**
-         * This will return items where the updatedAt is less than the specified value.
-         * @format date-time
-         */
-        updatedAtLt?: string;
-        /**
-         * This will return items where the updatedAt is greater than or equal to the specified value.
-         * @format date-time
-         */
-        updatedAtGe?: string;
-        /**
-         * This will return items where the updatedAt is less than or equal to the specified value.
-         * @format date-time
-         */
-        updatedAtLe?: string;
-      },
-      params: RequestParams = {},
-    ) =>
-      this.request<PaymentsPaginatedResponse, any>({
-        path: `/subscription/${id}/payment`,
-        method: 'GET',
-        query: query,
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerMonthlyChargeGet
-     * @summary Get monthly charge
-     * @request GET:/subscription/{id}/monthly-charge
-     * @secure
-     */
-    subscriptionPaymentControllerMonthlyChargeGet: (
-      id: string,
-      params: RequestParams = {},
-    ) =>
-      this.request<SubscriptionMonthlyCharge, any>({
-        path: `/subscription/${id}/monthly-charge`,
-        method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerCharge
-     * @summary Update subscription credits
-     * @request POST:/subscription/{id}/credit
-     * @secure
-     */
-    subscriptionPaymentControllerCharge: (
-      id: string,
-      data: CreditsBuyDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}/credit`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerAutoReloadPlanUpdate
-     * @summary Update auto-reload plan
-     * @request PUT:/subscription/{id}/auto-reload-plan
-     * @secure
-     */
-    subscriptionPaymentControllerAutoReloadPlanUpdate: (
-      id: string,
-      data: AutoReloadPlanDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}/auto-reload-plan`,
-        method: 'PUT',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerPastDuePaymentRetry
-     * @summary Retry past due payment
-     * @request POST:/subscription/{id}/payment/retry
-     * @secure
-     */
-    subscriptionPaymentControllerPastDuePaymentRetry: (
-      id: string,
-      data: PaymentRetryDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<Payment, any>({
-        path: `/subscription/${id}/payment/retry`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerConcurrencyLineBuy
-     * @summary Buy extra concurrency
-     * @request POST:/subscription/{id}/concurrency
-     * @secure
-     */
-    subscriptionPaymentControllerConcurrencyLineBuy: (
-      id: string,
-      data: SubscriptionConcurrencyLineBuyDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}/concurrency`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerConcurrencyLineRemove
-     * @summary Remove extra concurrency
-     * @request DELETE:/subscription/{id}/concurrency
-     * @secure
-     */
-    subscriptionPaymentControllerConcurrencyLineRemove: (
-      id: string,
-      data: SubscriptionConcurrencyLineRemoveDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}/concurrency`,
-        method: 'DELETE',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerHipaaEnable
-     * @summary Purchase HIPAA add-on
-     * @request POST:/subscription/{id}/hipaa
-     * @secure
-     */
-    subscriptionPaymentControllerHipaaEnable: (
-      id: string,
-      data: HipaaBuyDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}/hipaa`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerHipaaRemove
-     * @summary Remove HIPAA add-on
-     * @request DELETE:/subscription/{id}/hipaa
-     * @secure
-     */
-    subscriptionPaymentControllerHipaaRemove: (
-      id: string,
-      params: RequestParams = {},
-    ) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}/hipaa`,
-        method: 'DELETE',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerSlackSupportBuy
-     * @summary Purchase Slack Support add-on
-     * @request POST:/subscription/{id}/slack-support
-     * @secure
-     */
-    subscriptionPaymentControllerSlackSupportBuy: (
-      id: string,
-      params: RequestParams = {},
-    ) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}/slack-support`,
-        method: 'POST',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerSlackSupportRemove
-     * @summary Remove Slack Support add-on
-     * @request DELETE:/subscription/{id}/slack-support
-     * @secure
-     */
-    subscriptionPaymentControllerSlackSupportRemove: (
-      id: string,
-      params: RequestParams = {},
-    ) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}/slack-support`,
-        method: 'DELETE',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Subscriptions, extended
-     * @name SubscriptionPaymentControllerCouponAdd
-     * @summary Attach coupon to subscription
-     * @request POST:/subscription/{id}/coupon
-     * @secure
-     */
-    subscriptionPaymentControllerCouponAdd: (
-      id: string,
-      data: SubscriptionCouponAddDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<Subscription, any>({
-        path: `/subscription/${id}/coupon`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-  };
   squad = {
     /**
      * No description
@@ -16848,6 +16107,9 @@ export class Api<
             provider: 'runpod';
           } & CreateRunpodCredentialDTO)
         | ({
+            provider: 'smallest-ai';
+          } & CreateSmallestAICredentialDTO)
+        | ({
             provider: 's3';
           } & CreateS3CredentialDTO)
         | ({
@@ -16949,6 +16211,9 @@ export class Api<
         | ({
             provider: 'runpod';
           } & RunpodCredential)
+        | ({
+            provider: 'smallest-ai';
+          } & SmallestAICredential)
         | ({
             provider: 's3';
           } & S3Credential)
@@ -17122,6 +16387,9 @@ export class Api<
               provider: 'runpod';
             } & RunpodCredential)
           | ({
+              provider: 'smallest-ai';
+            } & SmallestAICredential)
+          | ({
               provider: 's3';
             } & S3Credential)
           | ({
@@ -17243,6 +16511,9 @@ export class Api<
             provider: 'runpod';
           } & RunpodCredential)
         | ({
+            provider: 'smallest-ai';
+          } & SmallestAICredential)
+        | ({
             provider: 's3';
           } & S3Credential)
         | ({
@@ -17362,6 +16633,9 @@ export class Api<
             provider: 'runpod';
           } & RunpodCredential)
         | ({
+            provider: 'smallest-ai';
+          } & SmallestAICredential)
+        | ({
             provider: 's3';
           } & S3Credential)
         | ({
@@ -17388,226 +16662,6 @@ export class Api<
         method: 'DELETE',
         secure: true,
         format: 'json',
-        ...params,
-      }),
-  };
-  org = {
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerCreate
-     * @summary Create Org
-     * @request POST:/org
-     * @secure
-     */
-    orgControllerCreate: (data: CreateOrgDTO, params: RequestParams = {}) =>
-      this.request<Org, any>({
-        path: `/org`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerFindAll
-     * @summary List Orgs
-     * @request GET:/org
-     * @secure
-     */
-    orgControllerFindAll: (params: RequestParams = {}) =>
-      this.request<Org[], any>({
-        path: `/org`,
-        method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerFindOne
-     * @summary Get Org
-     * @request GET:/org/{id}
-     * @secure
-     */
-    orgControllerFindOne: (id: string, params: RequestParams = {}) =>
-      this.request<Org, any>({
-        path: `/org/${id}`,
-        method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerUpdate
-     * @summary Update Org
-     * @request PATCH:/org/{id}
-     * @secure
-     */
-    orgControllerUpdate: (
-      id: string,
-      data: UpdateOrgDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<Org, any>({
-        path: `/org/${id}`,
-        method: 'PATCH',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerDeleteOrg
-     * @summary Delete Org
-     * @request DELETE:/org/{id}
-     * @secure
-     */
-    orgControllerDeleteOrg: (id: string, params: RequestParams = {}) =>
-      this.request<void, any>({
-        path: `/org/${id}`,
-        method: 'DELETE',
-        secure: true,
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerFindAllUsers
-     * @summary List Users
-     * @request GET:/org/{id}/user
-     * @secure
-     */
-    orgControllerFindAllUsers: (id: string, params: RequestParams = {}) =>
-      this.request<User[], any>({
-        path: `/org/${id}/user`,
-        method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerOrgLeave
-     * @summary Leave Org
-     * @request DELETE:/org/{id}/leave
-     * @secure
-     */
-    orgControllerOrgLeave: (id: string, params: RequestParams = {}) =>
-      this.request<void, any>({
-        path: `/org/${id}/leave`,
-        method: 'DELETE',
-        secure: true,
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerOrgRemoveUser
-     * @summary Leave Org
-     * @request DELETE:/org/{id}/member/{memberId}/leave
-     * @secure
-     */
-    orgControllerOrgRemoveUser: (
-      id: string,
-      memberId: string,
-      params: RequestParams = {},
-    ) =>
-      this.request<void, any>({
-        path: `/org/${id}/member/${memberId}/leave`,
-        method: 'DELETE',
-        secure: true,
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerUsersInvite
-     * @summary Invite User
-     * @request POST:/org/{id}/invite
-     * @secure
-     */
-    orgControllerUsersInvite: (
-      id: string,
-      data: InviteUserDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<void, any>({
-        path: `/org/${id}/invite`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerSubscriptionMigrate
-     * @summary Migrates to subscription based billing
-     * @request POST:/org/{id}/subscription-migrate
-     * @secure
-     */
-    orgControllerSubscriptionMigrate: (
-      id: string,
-      params: RequestParams = {},
-    ) =>
-      this.request<void, any>({
-        path: `/org/${id}/subscription-migrate`,
-        method: 'POST',
-        secure: true,
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Orgs, extended
-     * @name OrgControllerUserUpdate
-     * @summary Update User Role
-     * @request PATCH:/org/{id}/role
-     * @secure
-     */
-    orgControllerUserUpdate: (
-      id: string,
-      data: UpdateUserRoleDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<void, any>({
-        path: `/org/${id}/role`,
-        method: 'PATCH',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
         ...params,
       }),
   };
@@ -17802,180 +16856,6 @@ export class Api<
         ...params,
       }),
   };
-  template = {
-    /**
-     * No description
-     *
-     * @tags Templates, extended
-     * @name TemplateControllerCreate
-     * @summary Create Template
-     * @request POST:/template
-     * @secure
-     */
-    templateControllerCreate: (
-      data: CreateToolTemplateDTO[],
-      params: RequestParams = {},
-    ) =>
-      this.request<Template, any>({
-        path: `/template`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Templates, extended
-     * @name TemplateControllerFindAll
-     * @summary List Templates
-     * @request GET:/template
-     * @secure
-     */
-    templateControllerFindAll: (
-      query?: {
-        collectionId?: string;
-        visibility?: 'public' | 'private';
-        provider?: 'make' | 'gohighlevel' | 'function';
-        /**
-         * This is the maximum number of items to return. Defaults to 100.
-         * @min 0
-         * @max 1000
-         */
-        limit?: number;
-        /**
-         * This will return items where the createdAt is greater than the specified value.
-         * @format date-time
-         */
-        createdAtGt?: string;
-        /**
-         * This will return items where the createdAt is less than the specified value.
-         * @format date-time
-         */
-        createdAtLt?: string;
-        /**
-         * This will return items where the createdAt is greater than or equal to the specified value.
-         * @format date-time
-         */
-        createdAtGe?: string;
-        /**
-         * This will return items where the createdAt is less than or equal to the specified value.
-         * @format date-time
-         */
-        createdAtLe?: string;
-        /**
-         * This will return items where the updatedAt is greater than the specified value.
-         * @format date-time
-         */
-        updatedAtGt?: string;
-        /**
-         * This will return items where the updatedAt is less than the specified value.
-         * @format date-time
-         */
-        updatedAtLt?: string;
-        /**
-         * This will return items where the updatedAt is greater than or equal to the specified value.
-         * @format date-time
-         */
-        updatedAtGe?: string;
-        /**
-         * This will return items where the updatedAt is less than or equal to the specified value.
-         * @format date-time
-         */
-        updatedAtLe?: string;
-      },
-      params: RequestParams = {},
-    ) =>
-      this.request<Template[], any>({
-        path: `/template`,
-        method: 'GET',
-        query: query,
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Templates, extended
-     * @name TemplateControllerFindAllPinned
-     * @summary List Templates
-     * @request GET:/template/pinned
-     * @secure
-     */
-    templateControllerFindAllPinned: (params: RequestParams = {}) =>
-      this.request<Template[], any>({
-        path: `/template/pinned`,
-        method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Templates, extended
-     * @name TemplateControllerFindOne
-     * @summary Get Template
-     * @request GET:/template/{id}
-     * @secure
-     */
-    templateControllerFindOne: (id: string, params: RequestParams = {}) =>
-      this.request<Template, any>({
-        path: `/template/${id}`,
-        method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Templates, extended
-     * @name TemplateControllerUpdate
-     * @summary Update Template
-     * @request PATCH:/template/{id}
-     * @secure
-     */
-    templateControllerUpdate: (
-      id: string,
-      data: UpdateToolTemplateDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<Template, any>({
-        path: `/template/${id}`,
-        method: 'PATCH',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Templates, extended
-     * @name TemplateControllerRemove
-     * @summary Delete Template
-     * @request DELETE:/template/{id}
-     * @secure
-     */
-    templateControllerRemove: (id: string, params: RequestParams = {}) =>
-      this.request<Template, any>({
-        path: `/template/${id}`,
-        method: 'DELETE',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-  };
   token = {
     /**
      * No description
@@ -18148,6 +17028,7 @@ export class Api<
         | 'openai'
         | 'playht'
         | 'rime-ai'
+        | 'smallest-ai'
         | 'tavus',
       query?: {
         page?: number;
@@ -18292,29 +17173,6 @@ export class Api<
     ) =>
       this.request<VoiceLibrary[], any>({
         path: `/voice-library/sync`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params,
-      }),
-  };
-  enterprise = {
-    /**
-     * No description
-     *
-     * @name EnterpriseInfoControllerCreateEnterprise
-     * @summary Create Enterprise
-     * @request POST:/enterprise
-     * @secure
-     */
-    enterpriseInfoControllerCreateEnterprise: (
-      data: CreateEnterpriseInfoDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<EnterpriseInfo, any>({
-        path: `/enterprise`,
         method: 'POST',
         body: data,
         secure: true,
