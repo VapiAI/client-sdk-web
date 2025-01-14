@@ -217,7 +217,6 @@ export default class Vapi extends VapiEventEmitter {
       const isVideoRecordingEnabled =
         webCall?.artifactPlan?.videoRecordingEnabled ?? false;
 
-      // @ts-expect-error This exists
       const isVideoEnabled = webCall.transport?.assistantVideoEnabled ?? false;
 
       this.call = DailyIframe.createCallObject({
@@ -284,6 +283,7 @@ export default class Vapi extends VapiEventEmitter {
       }
 
       await this.call.join({
+        // @ts-expect-error This exists
         url: webCall.webCallUrl,
         subscribeToTracksAutomatically: false,
       });
