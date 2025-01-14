@@ -147,6 +147,7 @@ export default class Vapi extends VapiEventEmitter {
   private speakingTimeout: NodeJS.Timeout | null = null;
   private dailyCallConfig: DailyAdvancedConfig = {};
   private dailyCallObject: DailyFactoryOptions = {};
+  private introRequested: boolean = false;
 
   constructor(
     apiToken: string,
@@ -169,20 +170,6 @@ export default class Vapi extends VapiEventEmitter {
     this.call?.destroy();
     this.call = null;
     this.speakingTimeout = null;
-  }
-
-  private isMobileDevice() {
-    if (typeof navigator === 'undefined') {
-      return false;
-    }
-    const userAgent = navigator.userAgent;
-    return /android|iphone|ipad|ipod|iemobile|blackberry|bada/i.test(
-      userAgent.toLowerCase(),
-    );
-  }
-
-  private async sleep(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async start(
@@ -268,19 +255,18 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('participant-joined', (e) => {
         if (!e || !this.call) return;
-        subscribeToTracks(
-          e,
-          this.call,
-          isVideoRecordingEnabled,
-          isVideoEnabled,
-        );
-      });
 
-      // Allow mobile devices to finish processing the microphone permissions
-      // request before joining the call and playing the assistant's audio
-      if (this.isMobileDevice()) {
-        await this.sleep(1000);
-      }
+        if (!this.introRequested && !e.participant.local) {
+          this.introRequested = true;
+
+          this.send({
+            type: 'control',
+            control: 'say-first-message',
+          });
+        }
+
+        subscribeToTracks(e, this.call, isVideoRecordingEnabled, isVideoEnabled);
+      });
 
       await this.call.join({
         // @ts-expect-error This exists
@@ -289,8 +275,6 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       if (isVideoRecordingEnabled) {
-        const recordingRequestedTime = new Date().getTime();
-
         this.call.startRecording({
           width: 1280,
           height: 720,
@@ -298,15 +282,6 @@ export default class Vapi extends VapiEventEmitter {
           layout: {
             preset: 'default',
           },
-        });
-
-        this.call.on('recording-started', () => {
-          this.send({
-            type: 'control',
-            control: 'say-first-message',
-            videoRecordingStartDelaySeconds:
-              (new Date().getTime() - recordingRequestedTime) / 1000,
-          });
         });
       }
 
