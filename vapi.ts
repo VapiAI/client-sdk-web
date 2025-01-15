@@ -250,18 +250,21 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       this.call.on('track-started', async (e) => {
-        if (!e || !e.participant) return;
-        if (e.participant?.local) return;
-        if (e.participant?.user_name !== 'Vapi Speaker') return;
-
+        if (!e || !e.participant) {
+          return;
+        }
+        if (e.participant?.local) {
+          return;
+        }
+        if (e.participant?.user_name !== 'Vapi Speaker') {
+          return;
+        }
         if (e.track.kind === 'video') {
           this.emit('video', e.track);
         }
-
         if (e.track.kind === 'audio') {
           await buildAudioPlayer(e.track, e.participant.session_id);
         }
-
         this.call?.sendAppMessage('playable');
       });
 
@@ -276,12 +279,16 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       this.call.on('participant-updated', (e) => {
-        if (!e) return;
+        if (!e) {
+          return;
+        }
         this.emit('daily-participant-updated', e.participant);
       });
 
       this.call.on('participant-left', (e) => {
-        if (!e) return;
+        if (!e) {
+          return;
+        }
         destroyAudioPlayer(e.participant.session_id);
       });
 
@@ -362,7 +369,9 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   private onAppMessage(e?: DailyEventObjectAppMessage) {
-    if (!e) return;
+    if (!e) {
+      return;
+    }
     try {
       if (e.data === 'listening') {
         return this.emit('call-start');
@@ -391,7 +400,9 @@ export default class Vapi extends VapiEventEmitter {
 
     const isSpeaking = speechLevel > 0.01;
 
-    if (!isSpeaking) return;
+    if (!isSpeaking) {
+      return;
+    }
 
     if (this.speakingTimeout) {
       clearTimeout(this.speakingTimeout);
