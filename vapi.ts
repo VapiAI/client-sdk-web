@@ -7,6 +7,8 @@ import DailyIframe, {
   DailyEventObjectAppMessage,
   DailyEventObjectParticipant,
   DailyEventObjectRemoteParticipantsAudioLevel,
+  DailyParticipant,
+  DailyVideoSendSettings,
 } from '@daily-co/daily-js';
 import EventEmitter from 'events';
 
@@ -48,7 +50,8 @@ type VapiEventNames =
   | 'speech-end'
   | 'message'
   | 'video'
-  | 'error';
+  | 'error'
+  | 'daily-participant-updated';
 
 type VapiEventListeners = {
   'call-end': () => void;
@@ -59,6 +62,7 @@ type VapiEventListeners = {
   video: (track: MediaStreamTrack) => void;
   message: (message: any) => void;
   error: (error: any) => void;
+  'daily-participant-updated': (participant: DailyParticipant) => void;
 };
 
 async function startAudioPlayer(
@@ -234,11 +238,6 @@ export default class Vapi extends VapiEventEmitter {
         this.cleanup();
       });
 
-      this.call.on('participant-left', (e) => {
-        if (!e) return;
-        destroyAudioPlayer(e.participant.session_id);
-      });
-
       this.call.on('error', (error: any) => {
         this.emit('error', error);
         if (isVideoRecordingEnabled) {
@@ -274,6 +273,16 @@ export default class Vapi extends VapiEventEmitter {
           isVideoRecordingEnabled,
           isVideoEnabled,
         );
+      });
+
+      this.call.on('participant-updated', (e) => {
+        if (!e) return;
+        this.emit('daily-participant-updated', e.participant);
+      });
+
+      this.call.on('participant-left', (e) => {
+        if (!e) return;
+        destroyAudioPlayer(e.participant.session_id);
       });
 
       // Allow mobile devices to finish processing the microphone permissions
@@ -443,5 +452,16 @@ export default class Vapi extends VapiEventEmitter {
 
   public getDailyCallObject(): DailyCall | null {
     return this.call;
+  }
+
+  public startScreenSharing(displayMediaOptions?: DisplayMediaStreamOptions, screenVideoSendSettings?: DailyVideoSendSettings) {
+    this.call?.startScreenShare({
+      displayMediaOptions,
+      screenVideoSendSettings,
+    });
+  }
+
+  public stopScreenSharing() {
+    this.call?.stopScreenShare();
   }
 }
