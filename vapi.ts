@@ -152,6 +152,8 @@ export default class Vapi extends VapiEventEmitter {
   private dailyCallConfig: DailyAdvancedConfig = {};
   private dailyCallObject: DailyFactoryOptions = {};
 
+  private hasEmittedCallEndedStatus: boolean = false;
+
   constructor(
     apiToken: string,
     apiBaseUrl?: string,
@@ -232,6 +234,14 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('left-meeting', () => {
         this.emit('call-end');
+        if (!this.hasEmittedCallEndedStatus) {
+          this.emit('message', {
+            type: 'status-update',
+            status: 'ended',
+            'endedReason': 'customer-ended-call',
+          });
+          this.hasEmittedCallEndedStatus = true;
+        }
         if (isVideoRecordingEnabled) {
           this.call?.stopRecording();
         }
@@ -379,6 +389,9 @@ export default class Vapi extends VapiEventEmitter {
         try {
           const parsedMessage = JSON.parse(e.data);
           this.emit('message', parsedMessage);
+          if (parsedMessage.type === 'status-update' && parsedMessage.status === 'ended') {
+            this.hasEmittedCallEndedStatus = true;
+          }
         } catch (parseError) {
           console.log('Error parsing message data: ', parseError);
         }
