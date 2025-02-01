@@ -389,7 +389,7 @@ export default class Vapi extends VapiEventEmitter {
         try {
           const parsedMessage = JSON.parse(e.data);
           this.emit('message', parsedMessage);
-          if (parsedMessage.type === 'status-update' && parsedMessage.status === 'ended') {
+          if (parsedMessage && 'type' in parsedMessage && 'status' in parsedMessage && parsedMessage.type === 'status-update' && parsedMessage.status === 'ended') {
             this.hasEmittedCallEndedStatus = true;
           }
         } catch (parseError) {
