@@ -172,6 +172,7 @@ export default class Vapi extends VapiEventEmitter {
 
   private cleanup() {
     this.started = false;
+    this.hasEmittedCallEndedStatus = false;
     this.call?.destroy();
     this.call = null;
     this.speakingTimeout = null;
