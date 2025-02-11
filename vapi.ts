@@ -35,6 +35,7 @@ export interface SayMessage {
   type: 'say';
   message: string;
   endCallAfterSpoken?: boolean;
+  suppressRoomDeletedError?: boolean; // Add this field to handle expected room deletion errors
 }
 
 type VapiClientToServerMessage =
@@ -250,7 +251,18 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       this.call.on('error', (error: any) => {
-        this.emit('error', error);
+        // Don't emit expected room deletion errors when ending call
+        if (error?.type === 'no-room' && 
+            this.hasEmittedCallEndedStatus) {
+          return;
+        }
+        
+        this.emit('error', {
+          ...error,
+          statusCode: error?.type === 'no-room' ? 410 : 500, // Add HTTP status code
+          expected: error?.type === 'no-room' && this.hasEmittedCallEndedStatus,
+        });
+        
         if (isVideoRecordingEnabled) {
           this.call?.stopRecording();
         }
@@ -460,6 +472,7 @@ export default class Vapi extends VapiEventEmitter {
       type: 'say',
       message,
       endCallAfterSpoken,
+      suppressRoomDeletedError: endCallAfterSpoken, // Add this line to suppress expected room deletion errors
     });
   }
 
