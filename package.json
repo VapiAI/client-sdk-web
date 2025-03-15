@@ -8,7 +8,7 @@
     "test": "jest",
     "build": "tsc && tsc --declaration",
     "start": "npm run generate-api && npm run build && node dist/vapi.js",
-    "generate-api": "npx swagger-typescript-api -p https://api.vapi.ai/api-json -o . -n api.ts",
+    "generate-api": "npx swagger-typescript-api -p https://api.vapi.ai/api-extended-json -o . -n api.ts",
     "update": "./update.sh"
   },
   "repository": {
