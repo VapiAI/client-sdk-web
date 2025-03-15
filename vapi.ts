@@ -469,6 +469,32 @@ export default class Vapi extends VapiEventEmitter {
     this.call?.setInputDevicesAsync(options);
   }
 
+  public async increaseMicLevel(gain: number) {
+    if (!this.call) {
+      throw new Error('Call object is not available.');
+    }
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new AudioContext();
+  
+      const source = audioContext.createMediaStreamSource(stream);
+      
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = gain;
+      
+      source.connect(gainNode);
+      
+      const destination = audioContext.createMediaStreamDestination();
+      gainNode.connect(destination);
+  
+      const [boostedTrack] = destination.stream.getAudioTracks();
+      await this.call.setInputDevicesAsync({ audioSource: boostedTrack });      
+    } catch (error) {
+      console.error("Error adjusting microphone level:", error);
+    }
+  }  
+
   public setOutputDeviceAsync(
     options: Parameters<DailyCall['setOutputDeviceAsync']>[0],
   ) {

@@ -1,6 +1,6 @@
 {
   "name": "@vapi-ai/web",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "",
   "main": "dist/vapi.js",
   "types": "dist/vapi.d.ts",
@@ -8,7 +8,7 @@
     "test": "jest",
     "build": "tsc && tsc --declaration",
     "start": "npm run generate-api && npm run build && node dist/vapi.js",
-    "generate-api": "npx swagger-typescript-api -p https://api.vapi.ai/api-json -o . -n api.ts",
+    "generate-api": "npx swagger-typescript-api -p https://api.vapi.ai/api-extended-json -o . -n api.ts",
     "update": "./update.sh"
   },
   "repository": {
@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/VapiAI/web#readme",
   "dependencies": {
-    "@daily-co/daily-js": "^0.72.1",
+    "@daily-co/daily-js": "^0.75.2",
     "events": "^3.3.0"
   },
   "devDependencies": {
