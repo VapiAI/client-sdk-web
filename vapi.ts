@@ -161,7 +161,7 @@ export default class Vapi extends VapiEventEmitter {
       DailyAdvancedConfig,
       'avoidEval' | 'alwaysIncludeMicInPermissionPrompt'
     >,
-    dailyCallObject?: Pick<DailyFactoryOptions, 'audioSource'>,
+    dailyCallObject?: Pick<DailyFactoryOptions, 'audioSource' | 'startAudioOff'>,
   ) {
     super();
     client.baseUrl = apiBaseUrl ?? 'https://api.vapi.ai';
