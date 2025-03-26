@@ -1,6 +1,6 @@
 {
   "name": "@vapi-ai/web",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "",
   "main": "dist/vapi.js",
   "types": "dist/vapi.d.ts",
@@ -8,7 +8,7 @@
     "test": "jest",
     "build": "tsc && tsc --declaration",
     "start": "npm run generate-api && npm run build && node dist/vapi.js",
-    "generate-api": "npx swagger-typescript-api -p https://api.vapi.ai/api-extended-json -o . -n api.ts",
+    "generate-api": "./generate-api.sh",
     "update": "./update.sh"
   },
   "repository": {

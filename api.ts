@@ -9,6 +9,21 @@
  * ---------------------------------------------------------------
  */
 
+export interface FallbackTranscriberPlan {
+  transcribers: (
+    | FallbackAssemblyAITranscriber
+    | FallbackAzureSpeechTranscriber
+    | FallbackCustomTranscriber
+    | FallbackDeepgramTranscriber
+    | FallbackElevenLabsTranscriber
+    | FallbackGladiaTranscriber
+    | FallbackGoogleTranscriber
+    | FallbackTalkscriberTranscriber
+    | FallbackSpeechmaticsTranscriber
+    | FallbackOpenAITranscriber
+  )[];
+}
+
 export interface AssemblyAITranscriber {
   /** This is the transcription provider that will be used. */
   provider: 'assembly-ai';
@@ -25,6 +40,8 @@ export interface AssemblyAITranscriber {
    * Set to `true` to not receive partial transcripts. Defaults to `false`.
    */
   disablePartialTranscripts?: boolean;
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
 }
 
 export interface AzureSpeechTranscriber {
@@ -175,6 +192,8 @@ export interface AzureSpeechTranscriber {
     | 'zh-HK'
     | 'zh-TW'
     | 'zu-ZA';
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
 }
 
 export interface BackoffPlan {
@@ -275,6 +294,8 @@ export interface CustomTranscriber {
    * ```
    */
   server: Server;
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
 }
 
 export interface DeepgramTranscriber {
@@ -446,6 +467,8 @@ export interface DeepgramTranscriber {
    * @max 500
    */
   endpointing?: number;
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
 }
 
 export interface ElevenLabsTranscriber {
@@ -639,6 +662,8 @@ export interface ElevenLabsTranscriber {
     | 'za'
     | 'zh'
     | 'zu';
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
 }
 
 export interface GladiaTranscriber {
@@ -766,6 +791,8 @@ export interface GladiaTranscriber {
    * @example false
    */
   audioEnhancer?: boolean;
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
 }
 
 export interface SpeechmaticsTranscriber {
@@ -830,6 +857,8 @@ export interface SpeechmaticsTranscriber {
     | 'ug'
     | 'vi'
     | 'cy';
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
 }
 
 export interface TalkscriberTranscriber {
@@ -939,11 +968,1153 @@ export interface TalkscriberTranscriber {
     | 'jw'
     | 'su'
     | 'yue';
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
+}
+
+export interface GoogleTranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: 'google';
+  /** This is the model that will be used for the transcription. */
+  model?:
+    | 'gemini-2.0-flash-thinking-exp'
+    | 'gemini-2.0-pro-exp-02-05'
+    | 'gemini-2.0-flash'
+    | 'gemini-2.0-flash-lite'
+    | 'gemini-2.0-flash-lite-preview-02-05'
+    | 'gemini-2.0-flash-exp'
+    | 'gemini-2.0-flash-realtime-exp'
+    | 'gemini-1.5-flash'
+    | 'gemini-1.5-flash-002'
+    | 'gemini-1.5-pro'
+    | 'gemini-1.5-pro-002'
+    | 'gemini-1.0-pro';
+  /** This is the language that will be set for the transcription. */
+  language?:
+    | 'Multilingual'
+    | 'Arabic'
+    | 'Bengali'
+    | 'Bulgarian'
+    | 'Chinese'
+    | 'Croatian'
+    | 'Czech'
+    | 'Danish'
+    | 'Dutch'
+    | 'English'
+    | 'Estonian'
+    | 'Finnish'
+    | 'French'
+    | 'German'
+    | 'Greek'
+    | 'Hebrew'
+    | 'Hindi'
+    | 'Hungarian'
+    | 'Indonesian'
+    | 'Italian'
+    | 'Japanese'
+    | 'Korean'
+    | 'Latvian'
+    | 'Lithuanian'
+    | 'Norwegian'
+    | 'Polish'
+    | 'Portuguese'
+    | 'Romanian'
+    | 'Russian'
+    | 'Serbian'
+    | 'Slovak'
+    | 'Slovenian'
+    | 'Spanish'
+    | 'Swahili'
+    | 'Swedish'
+    | 'Thai'
+    | 'Turkish'
+    | 'Ukrainian'
+    | 'Vietnamese';
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
+}
+
+export interface OpenAITranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: 'openai';
+  /** This is the model that will be used for the transcription. */
+  model: 'gpt-4o-transcribe' | 'gpt-4o-mini-transcribe';
+  /** This is the language that will be set for the transcription. */
+  language?:
+    | 'af'
+    | 'ar'
+    | 'hy'
+    | 'az'
+    | 'be'
+    | 'bs'
+    | 'bg'
+    | 'ca'
+    | 'zh'
+    | 'hr'
+    | 'cs'
+    | 'da'
+    | 'nl'
+    | 'en'
+    | 'et'
+    | 'fi'
+    | 'fr'
+    | 'gl'
+    | 'de'
+    | 'el'
+    | 'he'
+    | 'hi'
+    | 'hu'
+    | 'is'
+    | 'id'
+    | 'it'
+    | 'ja'
+    | 'kn'
+    | 'kk'
+    | 'ko'
+    | 'lv'
+    | 'lt'
+    | 'mk'
+    | 'ms'
+    | 'mr'
+    | 'mi'
+    | 'ne'
+    | 'no'
+    | 'fa'
+    | 'pl'
+    | 'pt'
+    | 'ro'
+    | 'ru'
+    | 'sr'
+    | 'sk'
+    | 'sl'
+    | 'es'
+    | 'sw'
+    | 'sv'
+    | 'tl'
+    | 'ta'
+    | 'th'
+    | 'tr'
+    | 'uk'
+    | 'ur'
+    | 'vi'
+    | 'cy';
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
+}
+
+export interface FallbackAssemblyAITranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: 'assembly-ai';
+  /** This is the language that will be set for the transcription. */
+  language?: 'en';
+  /** The WebSocket URL that the transcriber connects to. */
+  realtimeUrl?: string;
+  /** Add up to 2500 characters of custom vocabulary. */
+  wordBoost?: string[];
+  /** The duration of the end utterance silence threshold in milliseconds. */
+  endUtteranceSilenceThreshold?: number;
+  /**
+   * Disable partial transcripts.
+   * Set to `true` to not receive partial transcripts. Defaults to `false`.
+   */
+  disablePartialTranscripts?: boolean;
+}
+
+export interface FallbackAzureSpeechTranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: 'azure';
+  /** This is the language that will be set for the transcription. The list of languages Azure supports can be found here: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=stt */
+  language?:
+    | 'af-ZA'
+    | 'am-ET'
+    | 'ar-AE'
+    | 'ar-BH'
+    | 'ar-DZ'
+    | 'ar-EG'
+    | 'ar-IL'
+    | 'ar-IQ'
+    | 'ar-JO'
+    | 'ar-KW'
+    | 'ar-LB'
+    | 'ar-LY'
+    | 'ar-MA'
+    | 'ar-OM'
+    | 'ar-PS'
+    | 'ar-QA'
+    | 'ar-SA'
+    | 'ar-SY'
+    | 'ar-TN'
+    | 'ar-YE'
+    | 'az-AZ'
+    | 'bg-BG'
+    | 'bn-IN'
+    | 'bs-BA'
+    | 'ca-ES'
+    | 'cs-CZ'
+    | 'cy-GB'
+    | 'da-DK'
+    | 'de-AT'
+    | 'de-CH'
+    | 'de-DE'
+    | 'el-GR'
+    | 'en-AU'
+    | 'en-CA'
+    | 'en-GB'
+    | 'en-GH'
+    | 'en-HK'
+    | 'en-IE'
+    | 'en-IN'
+    | 'en-KE'
+    | 'en-NG'
+    | 'en-NZ'
+    | 'en-PH'
+    | 'en-SG'
+    | 'en-TZ'
+    | 'en-US'
+    | 'en-ZA'
+    | 'es-AR'
+    | 'es-BO'
+    | 'es-CL'
+    | 'es-CO'
+    | 'es-CR'
+    | 'es-CU'
+    | 'es-DO'
+    | 'es-EC'
+    | 'es-ES'
+    | 'es-GQ'
+    | 'es-GT'
+    | 'es-HN'
+    | 'es-MX'
+    | 'es-NI'
+    | 'es-PA'
+    | 'es-PE'
+    | 'es-PR'
+    | 'es-PY'
+    | 'es-SV'
+    | 'es-US'
+    | 'es-UY'
+    | 'es-VE'
+    | 'et-EE'
+    | 'eu-ES'
+    | 'fa-IR'
+    | 'fi-FI'
+    | 'fil-PH'
+    | 'fr-BE'
+    | 'fr-CA'
+    | 'fr-CH'
+    | 'fr-FR'
+    | 'ga-IE'
+    | 'gl-ES'
+    | 'gu-IN'
+    | 'he-IL'
+    | 'hi-IN'
+    | 'hr-HR'
+    | 'hu-HU'
+    | 'hy-AM'
+    | 'id-ID'
+    | 'is-IS'
+    | 'it-CH'
+    | 'it-IT'
+    | 'ja-JP'
+    | 'jv-ID'
+    | 'ka-GE'
+    | 'kk-KZ'
+    | 'km-KH'
+    | 'kn-IN'
+    | 'ko-KR'
+    | 'lo-LA'
+    | 'lt-LT'
+    | 'lv-LV'
+    | 'mk-MK'
+    | 'ml-IN'
+    | 'mn-MN'
+    | 'mr-IN'
+    | 'ms-MY'
+    | 'mt-MT'
+    | 'my-MM'
+    | 'nb-NO'
+    | 'ne-NP'
+    | 'nl-BE'
+    | 'nl-NL'
+    | 'pa-IN'
+    | 'pl-PL'
+    | 'ps-AF'
+    | 'pt-BR'
+    | 'pt-PT'
+    | 'ro-RO'
+    | 'ru-RU'
+    | 'si-LK'
+    | 'sk-SK'
+    | 'sl-SI'
+    | 'so-SO'
+    | 'sq-AL'
+    | 'sr-RS'
+    | 'sv-SE'
+    | 'sw-KE'
+    | 'sw-TZ'
+    | 'ta-IN'
+    | 'te-IN'
+    | 'th-TH'
+    | 'tr-TR'
+    | 'uk-UA'
+    | 'ur-IN'
+    | 'uz-UZ'
+    | 'vi-VN'
+    | 'wuu-CN'
+    | 'yue-CN'
+    | 'zh-CN'
+    | 'zh-CN-shandong'
+    | 'zh-CN-sichuan'
+    | 'zh-HK'
+    | 'zh-TW'
+    | 'zu-ZA';
+}
+
+export interface FallbackCustomTranscriber {
+  /** This is the transcription provider that will be used. Use `custom-transcriber` for providers that are not natively supported. */
+  provider: 'custom-transcriber';
+  /**
+   * This is where the transcription request will be sent.
+   *
+   * Usage:
+   * 1. Vapi will initiate a websocket connection with `server.url`.
+   *
+   * 2. Vapi will send an initial text frame with the sample rate. Format:
+   * ```
+   *     {
+   *       "type": "start",
+   *       "encoding": "linear16", // 16-bit raw PCM format
+   *       "container": "raw",
+   *       "sampleRate": {{sampleRate}},
+   *       "channels": 2 // customer is channel 0, assistant is channel 1
+   *     }
+   * ```
+   *
+   * 3. Vapi will send the audio data in 16-bit raw PCM format as binary frames.
+   *
+   * 4. You can read the messages something like this:
+   * ```
+   * ws.on('message', (data, isBinary) => {
+   *   if (isBinary) {
+   *     pcmBuffer = Buffer.concat([pcmBuffer, data]);
+   *     console.log(`Received PCM data, buffer size: ${pcmBuffer.length}`);
+   *   } else {
+   *     console.log('Received message:', JSON.parse(data.toString()));
+   *   }
+   * });
+   * ```
+   *
+   * 5. You will respond with transcriptions as you have them. Format:
+   * ```
+   *  {
+   *     "type": "transcriber-response",
+   *     "transcription": "Hello, world!",
+   *     "channel": "customer" | "assistant"
+   *  }
+   * ```
+   */
+  server: Server;
+}
+
+export interface FallbackDeepgramTranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: 'deepgram';
+  /** This is the Deepgram model that will be used. A list of models can be found here: https://developers.deepgram.com/docs/models-languages-overview */
+  model?:
+    | 'nova-3'
+    | 'nova-3-general'
+    | 'nova-2'
+    | 'nova-2-general'
+    | 'nova-2-meeting'
+    | 'nova-2-phonecall'
+    | 'nova-2-finance'
+    | 'nova-2-conversationalai'
+    | 'nova-2-voicemail'
+    | 'nova-2-video'
+    | 'nova-2-medical'
+    | 'nova-2-drivethru'
+    | 'nova-2-automotive'
+    | 'nova'
+    | 'nova-general'
+    | 'nova-phonecall'
+    | 'nova-medical'
+    | 'enhanced'
+    | 'enhanced-general'
+    | 'enhanced-meeting'
+    | 'enhanced-phonecall'
+    | 'enhanced-finance'
+    | 'base'
+    | 'base-general'
+    | 'base-meeting'
+    | 'base-phonecall'
+    | 'base-finance'
+    | 'base-conversationalai'
+    | 'base-voicemail'
+    | 'base-video'
+    | string;
+  /** This is the language that will be set for the transcription. The list of languages Deepgram supports can be found here: https://developers.deepgram.com/docs/models-languages-overview */
+  language?:
+    | 'bg'
+    | 'ca'
+    | 'cs'
+    | 'da'
+    | 'da-DK'
+    | 'de'
+    | 'de-CH'
+    | 'el'
+    | 'en'
+    | 'en-AU'
+    | 'en-GB'
+    | 'en-IN'
+    | 'en-NZ'
+    | 'en-US'
+    | 'es'
+    | 'es-419'
+    | 'es-LATAM'
+    | 'et'
+    | 'fi'
+    | 'fr'
+    | 'fr-CA'
+    | 'hi'
+    | 'hi-Latn'
+    | 'hu'
+    | 'id'
+    | 'it'
+    | 'ja'
+    | 'ko'
+    | 'ko-KR'
+    | 'lt'
+    | 'lv'
+    | 'ms'
+    | 'multi'
+    | 'nl'
+    | 'nl-BE'
+    | 'no'
+    | 'pl'
+    | 'pt'
+    | 'pt-BR'
+    | 'ro'
+    | 'ru'
+    | 'sk'
+    | 'sv'
+    | 'sv-SE'
+    | 'ta'
+    | 'taq'
+    | 'th'
+    | 'th-TH'
+    | 'tr'
+    | 'uk'
+    | 'vi'
+    | 'zh'
+    | 'zh-CN'
+    | 'zh-HK'
+    | 'zh-Hans'
+    | 'zh-Hant'
+    | 'zh-TW';
+  /**
+   * This will be use smart format option provided by Deepgram. It's default disabled because it can sometimes format numbers as times but it's getting better.
+   * @example false
+   */
+  smartFormat?: boolean;
+  /**
+   * This automatically switches the transcriber's language when the customer's language changes. Defaults to false.
+   *
+   * Usage:
+   * - If your customers switch languages mid-call, you can set this to true.
+   *
+   * Note:
+   * - To detect language changes, Vapi uses a custom trained model. Languages supported (X = limited support):
+   *   1. Arabic
+   *   2. Bengali
+   *   3. Cantonese
+   *   4. Chinese
+   *   5. Chinese Simplified (X)
+   *   6. Chinese Traditional (X)
+   *   7. English
+   *   8. Farsi (X)
+   *   9. French
+   *   10. German
+   *   11. Haitian Creole (X)
+   *   12. Hindi
+   *   13. Italian
+   *   14. Japanese
+   *   15. Korean
+   *   16. Portuguese
+   *   17. Russian
+   *   18. Spanish
+   *   19. Thai
+   *   20. Urdu
+   *   21. Vietnamese
+   * - To receive `language-change-detected` webhook events, add it to `assistant.serverMessages`.
+   *
+   * @default false
+   * @example false
+   */
+  codeSwitchingEnabled?: boolean;
+  /**
+   * If set to true, this will add mip_opt_out=true as a query parameter of all API requests. See https://developers.deepgram.com/docs/the-deepgram-model-improvement-partnership-program#want-to-opt-out
+   *
+   * This will only be used if you are using your own Deepgram API key.
+   *
+   * @default false
+   * @default false
+   * @example false
+   */
+  mipOptOut?: boolean;
+  /**
+   * If set to true, this will cause deepgram to convert spoken numbers to literal numerals. For example, "my phone number is nine-seven-two..." would become "my phone number is 972..."
+   *
+   * @default false
+   * @example false
+   */
+  numerals?: boolean;
+  /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
+  keywords?: string[];
+  /** Keyterm Prompting allows you improve Keyword Recall Rate (KRR) for important keyterms or phrases up to 90%. */
+  keyterm?: string[];
+  /**
+   * This is the timeout after which Deepgram will send transcription on user silence. You can read in-depth documentation here: https://developers.deepgram.com/docs/endpointing.
+   *
+   * Here are the most important bits:
+   * - Defaults to 10. This is recommended for most use cases to optimize for latency.
+   * - 10 can cause some missing transcriptions since because of the shorter context. This mostly happens for one-word utterances. For those uses cases, it's recommended to try 300. It will add a bit of latency but the quality and reliability of the experience will be better.
+   * - If neither 10 nor 300 work, contact support@vapi.ai and we'll find another solution.
+   *
+   * @default 10
+   * @min 10
+   * @max 500
+   */
+  endpointing?: number;
+}
+
+export interface FallbackElevenLabsTranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: '11labs';
+  /** This is the model that will be used for the transcription. */
+  model?: 'scribe_v1';
+  language?:
+    | 'aa'
+    | 'ab'
+    | 'ae'
+    | 'af'
+    | 'ak'
+    | 'am'
+    | 'an'
+    | 'ar'
+    | 'as'
+    | 'av'
+    | 'ay'
+    | 'az'
+    | 'ba'
+    | 'be'
+    | 'bg'
+    | 'bh'
+    | 'bi'
+    | 'bm'
+    | 'bn'
+    | 'bo'
+    | 'br'
+    | 'bs'
+    | 'ca'
+    | 'ce'
+    | 'ch'
+    | 'co'
+    | 'cr'
+    | 'cs'
+    | 'cu'
+    | 'cv'
+    | 'cy'
+    | 'da'
+    | 'de'
+    | 'dv'
+    | 'dz'
+    | 'ee'
+    | 'el'
+    | 'en'
+    | 'eo'
+    | 'es'
+    | 'et'
+    | 'eu'
+    | 'fa'
+    | 'ff'
+    | 'fi'
+    | 'fj'
+    | 'fo'
+    | 'fr'
+    | 'fy'
+    | 'ga'
+    | 'gd'
+    | 'gl'
+    | 'gn'
+    | 'gu'
+    | 'gv'
+    | 'ha'
+    | 'he'
+    | 'hi'
+    | 'ho'
+    | 'hr'
+    | 'ht'
+    | 'hu'
+    | 'hy'
+    | 'hz'
+    | 'ia'
+    | 'id'
+    | 'ie'
+    | 'ig'
+    | 'ii'
+    | 'ik'
+    | 'io'
+    | 'is'
+    | 'it'
+    | 'iu'
+    | 'ja'
+    | 'jv'
+    | 'ka'
+    | 'kg'
+    | 'ki'
+    | 'kj'
+    | 'kk'
+    | 'kl'
+    | 'km'
+    | 'kn'
+    | 'ko'
+    | 'kr'
+    | 'ks'
+    | 'ku'
+    | 'kv'
+    | 'kw'
+    | 'ky'
+    | 'la'
+    | 'lb'
+    | 'lg'
+    | 'li'
+    | 'ln'
+    | 'lo'
+    | 'lt'
+    | 'lu'
+    | 'lv'
+    | 'mg'
+    | 'mh'
+    | 'mi'
+    | 'mk'
+    | 'ml'
+    | 'mn'
+    | 'mr'
+    | 'ms'
+    | 'mt'
+    | 'my'
+    | 'na'
+    | 'nb'
+    | 'nd'
+    | 'ne'
+    | 'ng'
+    | 'nl'
+    | 'nn'
+    | 'no'
+    | 'nr'
+    | 'nv'
+    | 'ny'
+    | 'oc'
+    | 'oj'
+    | 'om'
+    | 'or'
+    | 'os'
+    | 'pa'
+    | 'pi'
+    | 'pl'
+    | 'ps'
+    | 'pt'
+    | 'qu'
+    | 'rm'
+    | 'rn'
+    | 'ro'
+    | 'ru'
+    | 'rw'
+    | 'sa'
+    | 'sc'
+    | 'sd'
+    | 'se'
+    | 'sg'
+    | 'si'
+    | 'sk'
+    | 'sl'
+    | 'sm'
+    | 'sn'
+    | 'so'
+    | 'sq'
+    | 'sr'
+    | 'ss'
+    | 'st'
+    | 'su'
+    | 'sv'
+    | 'sw'
+    | 'ta'
+    | 'te'
+    | 'tg'
+    | 'th'
+    | 'ti'
+    | 'tk'
+    | 'tl'
+    | 'tn'
+    | 'to'
+    | 'tr'
+    | 'ts'
+    | 'tt'
+    | 'tw'
+    | 'ty'
+    | 'ug'
+    | 'uk'
+    | 'ur'
+    | 'uz'
+    | 've'
+    | 'vi'
+    | 'vo'
+    | 'wa'
+    | 'wo'
+    | 'xh'
+    | 'yi'
+    | 'yue'
+    | 'yo'
+    | 'za'
+    | 'zh'
+    | 'zu';
+}
+
+export interface FallbackGladiaTranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: 'gladia';
+  /** This is the Gladia model that will be used. Default is 'fast' */
+  model?: 'fast' | 'accurate';
+  /** Defines how the transcription model detects the audio language. Default value is 'automatic single language'. */
+  languageBehaviour?: 'manual' | 'automatic single language' | 'automatic multiple languages';
+  /** Defines the language to use for the transcription. Required when languageBehaviour is 'manual'. */
+  language?:
+    | 'af'
+    | 'sq'
+    | 'am'
+    | 'ar'
+    | 'hy'
+    | 'as'
+    | 'az'
+    | 'ba'
+    | 'eu'
+    | 'be'
+    | 'bn'
+    | 'bs'
+    | 'br'
+    | 'bg'
+    | 'ca'
+    | 'zh'
+    | 'hr'
+    | 'cs'
+    | 'da'
+    | 'nl'
+    | 'en'
+    | 'et'
+    | 'fo'
+    | 'fi'
+    | 'fr'
+    | 'gl'
+    | 'ka'
+    | 'de'
+    | 'el'
+    | 'gu'
+    | 'ht'
+    | 'ha'
+    | 'haw'
+    | 'he'
+    | 'hi'
+    | 'hu'
+    | 'is'
+    | 'id'
+    | 'it'
+    | 'ja'
+    | 'jv'
+    | 'kn'
+    | 'kk'
+    | 'km'
+    | 'ko'
+    | 'lo'
+    | 'la'
+    | 'lv'
+    | 'ln'
+    | 'lt'
+    | 'lb'
+    | 'mk'
+    | 'mg'
+    | 'ms'
+    | 'ml'
+    | 'mt'
+    | 'mi'
+    | 'mr'
+    | 'mn'
+    | 'my'
+    | 'ne'
+    | 'no'
+    | 'nn'
+    | 'oc'
+    | 'ps'
+    | 'fa'
+    | 'pl'
+    | 'pt'
+    | 'pa'
+    | 'ro'
+    | 'ru'
+    | 'sa'
+    | 'sr'
+    | 'sn'
+    | 'sd'
+    | 'si'
+    | 'sk'
+    | 'sl'
+    | 'so'
+    | 'es'
+    | 'su'
+    | 'sw'
+    | 'sv'
+    | 'tl'
+    | 'tg'
+    | 'ta'
+    | 'tt'
+    | 'te'
+    | 'th'
+    | 'bo'
+    | 'tr'
+    | 'tk'
+    | 'uk'
+    | 'ur'
+    | 'uz'
+    | 'vi'
+    | 'cy'
+    | 'yi'
+    | 'yo';
+  /**
+   * Provides a custom vocabulary to the model to improve accuracy of transcribing context specific words, technical terms, names, etc. If empty, this argument is ignored.
+   * ⚠️ Warning ⚠️: Please be aware that the transcription_hint field has a character limit of 600. If you provide a transcription_hint longer than 600 characters, it will be automatically truncated to meet this limit.
+   * @maxLength 600
+   * @example "custom vocabulary"
+   */
+  transcriptionHint?: string;
+  /**
+   * If prosody is true, you will get a transcription that can contain prosodies i.e. (laugh) (giggles) (malefic laugh) (toss) (music)… Default value is false.
+   * @example false
+   */
+  prosody?: boolean;
+  /**
+   * If true, audio will be pre-processed to improve accuracy but latency will increase. Default value is false.
+   * @example false
+   */
+  audioEnhancer?: boolean;
+}
+
+export interface FallbackSpeechmaticsTranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: 'speechmatics';
+  /** This is the model that will be used for the transcription. */
+  model?: 'default';
+  language?:
+    | 'auto'
+    | 'ar'
+    | 'ba'
+    | 'eu'
+    | 'be'
+    | 'bn'
+    | 'bg'
+    | 'yue'
+    | 'ca'
+    | 'hr'
+    | 'cs'
+    | 'da'
+    | 'nl'
+    | 'en'
+    | 'eo'
+    | 'et'
+    | 'fi'
+    | 'fr'
+    | 'gl'
+    | 'de'
+    | 'el'
+    | 'he'
+    | 'hi'
+    | 'hu'
+    | 'id'
+    | 'ia'
+    | 'ga'
+    | 'it'
+    | 'ja'
+    | 'ko'
+    | 'lv'
+    | 'lt'
+    | 'ms'
+    | 'mt'
+    | 'cmn'
+    | 'mr'
+    | 'mn'
+    | 'no'
+    | 'fa'
+    | 'pl'
+    | 'pt'
+    | 'ro'
+    | 'ru'
+    | 'sk'
+    | 'sl'
+    | 'es'
+    | 'sw'
+    | 'sv'
+    | 'ta'
+    | 'th'
+    | 'tr'
+    | 'uk'
+    | 'ur'
+    | 'ug'
+    | 'vi'
+    | 'cy';
+}
+
+export interface FallbackTalkscriberTranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: 'talkscriber';
+  /** This is the model that will be used for the transcription. */
+  model?: 'whisper';
+  /** This is the language that will be set for the transcription. The list of languages Whisper supports can be found here: https://github.com/openai/whisper/blob/main/whisper/tokenizer.py */
+  language?:
+    | 'en'
+    | 'zh'
+    | 'de'
+    | 'es'
+    | 'ru'
+    | 'ko'
+    | 'fr'
+    | 'ja'
+    | 'pt'
+    | 'tr'
+    | 'pl'
+    | 'ca'
+    | 'nl'
+    | 'ar'
+    | 'sv'
+    | 'it'
+    | 'id'
+    | 'hi'
+    | 'fi'
+    | 'vi'
+    | 'he'
+    | 'uk'
+    | 'el'
+    | 'ms'
+    | 'cs'
+    | 'ro'
+    | 'da'
+    | 'hu'
+    | 'ta'
+    | 'no'
+    | 'th'
+    | 'ur'
+    | 'hr'
+    | 'bg'
+    | 'lt'
+    | 'la'
+    | 'mi'
+    | 'ml'
+    | 'cy'
+    | 'sk'
+    | 'te'
+    | 'fa'
+    | 'lv'
+    | 'bn'
+    | 'sr'
+    | 'az'
+    | 'sl'
+    | 'kn'
+    | 'et'
+    | 'mk'
+    | 'br'
+    | 'eu'
+    | 'is'
+    | 'hy'
+    | 'ne'
+    | 'mn'
+    | 'bs'
+    | 'kk'
+    | 'sq'
+    | 'sw'
+    | 'gl'
+    | 'mr'
+    | 'pa'
+    | 'si'
+    | 'km'
+    | 'sn'
+    | 'yo'
+    | 'so'
+    | 'af'
+    | 'oc'
+    | 'ka'
+    | 'be'
+    | 'tg'
+    | 'sd'
+    | 'gu'
+    | 'am'
+    | 'yi'
+    | 'lo'
+    | 'uz'
+    | 'fo'
+    | 'ht'
+    | 'ps'
+    | 'tk'
+    | 'nn'
+    | 'mt'
+    | 'sa'
+    | 'lb'
+    | 'my'
+    | 'bo'
+    | 'tl'
+    | 'mg'
+    | 'as'
+    | 'tt'
+    | 'haw'
+    | 'ln'
+    | 'ha'
+    | 'ba'
+    | 'jw'
+    | 'su'
+    | 'yue';
+}
+
+export interface FallbackGoogleTranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: 'google';
+  /** This is the model that will be used for the transcription. */
+  model?:
+    | 'gemini-2.0-flash-thinking-exp'
+    | 'gemini-2.0-pro-exp-02-05'
+    | 'gemini-2.0-flash'
+    | 'gemini-2.0-flash-lite'
+    | 'gemini-2.0-flash-lite-preview-02-05'
+    | 'gemini-2.0-flash-exp'
+    | 'gemini-2.0-flash-realtime-exp'
+    | 'gemini-1.5-flash'
+    | 'gemini-1.5-flash-002'
+    | 'gemini-1.5-pro'
+    | 'gemini-1.5-pro-002'
+    | 'gemini-1.0-pro';
+  /** This is the language that will be set for the transcription. */
+  language?:
+    | 'Multilingual'
+    | 'Arabic'
+    | 'Bengali'
+    | 'Bulgarian'
+    | 'Chinese'
+    | 'Croatian'
+    | 'Czech'
+    | 'Danish'
+    | 'Dutch'
+    | 'English'
+    | 'Estonian'
+    | 'Finnish'
+    | 'French'
+    | 'German'
+    | 'Greek'
+    | 'Hebrew'
+    | 'Hindi'
+    | 'Hungarian'
+    | 'Indonesian'
+    | 'Italian'
+    | 'Japanese'
+    | 'Korean'
+    | 'Latvian'
+    | 'Lithuanian'
+    | 'Norwegian'
+    | 'Polish'
+    | 'Portuguese'
+    | 'Romanian'
+    | 'Russian'
+    | 'Serbian'
+    | 'Slovak'
+    | 'Slovenian'
+    | 'Spanish'
+    | 'Swahili'
+    | 'Swedish'
+    | 'Thai'
+    | 'Turkish'
+    | 'Ukrainian'
+    | 'Vietnamese';
+}
+
+export interface FallbackOpenAITranscriber {
+  /** This is the transcription provider that will be used. */
+  provider: 'openai';
+  /** This is the model that will be used for the transcription. */
+  model: 'gpt-4o-transcribe' | 'gpt-4o-mini-transcribe';
+  /** This is the language that will be set for the transcription. */
+  language?:
+    | 'af'
+    | 'ar'
+    | 'hy'
+    | 'az'
+    | 'be'
+    | 'bs'
+    | 'bg'
+    | 'ca'
+    | 'zh'
+    | 'hr'
+    | 'cs'
+    | 'da'
+    | 'nl'
+    | 'en'
+    | 'et'
+    | 'fi'
+    | 'fr'
+    | 'gl'
+    | 'de'
+    | 'el'
+    | 'he'
+    | 'hi'
+    | 'hu'
+    | 'is'
+    | 'id'
+    | 'it'
+    | 'ja'
+    | 'kn'
+    | 'kk'
+    | 'ko'
+    | 'lv'
+    | 'lt'
+    | 'mk'
+    | 'ms'
+    | 'mr'
+    | 'mi'
+    | 'ne'
+    | 'no'
+    | 'fa'
+    | 'pl'
+    | 'pt'
+    | 'ro'
+    | 'ru'
+    | 'sr'
+    | 'sk'
+    | 'sl'
+    | 'es'
+    | 'sw'
+    | 'sv'
+    | 'tl'
+    | 'ta'
+    | 'th'
+    | 'tr'
+    | 'uk'
+    | 'ur'
+    | 'vi'
+    | 'cy';
 }
 
 export interface LangfuseObservabilityPlan {
   provider: 'langfuse';
+  /** This is an array of tags to be added to the Langfuse trace. Tags allow you to categorize and filter traces. https://langfuse.com/docs/tracing-features/tags */
   tags: string[];
+  /**
+   * This is a JSON object that will be added to the Langfuse trace. Traces can be enriched with metadata to better understand your users, application, and experiments. https://langfuse.com/docs/tracing-features/metadata
+   * By default it includes the call metadata, assistant metadata, and assistant overrides.
+   */
+  metadata?: object;
 }
 
 export interface TextContent {
@@ -2108,6 +3279,8 @@ export interface AnyscaleModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2181,6 +3354,8 @@ export interface AnthropicModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2257,6 +3432,8 @@ export interface CerebrasModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2319,6 +3496,8 @@ export interface CustomLLMModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2346,6 +3525,12 @@ export interface CustomLLMModel {
   metadataSendMode?: 'off' | 'variable' | 'destructured';
   /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
   url: string;
+  /**
+   * This sets the timeout for the connection to the custom provider without needing to stream any tokens back. Default is 20 seconds.
+   * @min 20
+   * @max 600
+   */
+  timeoutSeconds?: number;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
@@ -2396,6 +3581,8 @@ export interface DeepInfraModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2458,6 +3645,8 @@ export interface DeepSeekModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2560,6 +3749,8 @@ export interface GoogleModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2639,6 +3830,8 @@ export interface GroqModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2710,6 +3903,8 @@ export interface InflectionAIModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2772,6 +3967,8 @@ export interface OpenAIModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2896,6 +4093,8 @@ export interface OpenRouterModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -2958,6 +4157,8 @@ export interface PerplexityAIModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3020,6 +4221,8 @@ export interface TogetherAIModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3121,6 +4324,8 @@ export interface VapiModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3187,6 +4392,8 @@ export interface XaiModel {
     | CreateMakeToolDTO
     | CreateTransferCallToolDTO
     | CreateQueryToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3435,7 +4642,6 @@ export interface FallbackPlan {
     | FallbackElevenLabsVoice
     | FallbackVapiVoice
     | FallbackLMNTVoice
-    | FallbackNeetsVoice
     | FallbackOpenAIVoice
     | FallbackPlayHTVoice
     | FallbackRimeAIVoice
@@ -3727,17 +4933,6 @@ export interface LMNTVoice {
   fallbackPlan?: FallbackPlan;
 }
 
-export interface NeetsVoice {
-  /** This is the voice provider that will be used. */
-  provider: 'neets';
-  /** This is the provider-specific ID that will be used. */
-  voiceId: 'vits' | string;
-  /** This is the plan for chunking the model output before it is sent to the voice provider. */
-  chunkPlan?: ChunkPlan;
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
-  fallbackPlan?: FallbackPlan;
-}
-
 export interface NeuphonicVoice {
   /** This is the voice provider that will be used. */
   provider: 'neuphonic';
@@ -3785,6 +4980,14 @@ export interface OpenAIVoice {
     | 'coral'
     | 'sage'
     | 'verse';
+  /** This is the model that will be used for text-to-speech. */
+  model?: 'tts-1' | 'tts-1-hd' | 'gpt-4o-mini-tts';
+  /**
+   * This is a prompt that allows you to control the voice of your generated audio.
+   * Does not work with 'tts-1' or 'tts-1-hd' models.
+   * @maxLength 10000
+   */
+  instructions?: string;
   /**
    * This is the speed multiplier that will be used.
    * @min 0.25
@@ -4013,6 +5216,26 @@ export interface RimeAIVoice {
    * @example null
    */
   speed?: number;
+  /**
+   * This is a flag that controls whether to add slight pauses using angle brackets. Example: “Hi. <200> I’d love to have a conversation with you.” adds a 200ms pause between the first and second sentences.
+   * @example false
+   */
+  pauseBetweenBrackets?: boolean;
+  /**
+   * This is a flag that controls whether text inside brackets should be phonemized (converted to phonetic pronunciation) - Example: "{h'El.o} World" will pronounce "Hello" as expected.
+   * @example false
+   */
+  phonemizeBetweenBrackets?: boolean;
+  /**
+   * This is a flag that controls whether to optimize for reduced latency in streaming. https://docs.rime.ai/api-reference/endpoint/websockets#param-reduce-latency
+   * @example false
+   */
+  reduceLatency?: boolean;
+  /**
+   * This is a string that allows inline speed control using alpha notation. https://docs.rime.ai/api-reference/endpoint/websockets#param-inline-speed-alpha
+   * @example null
+   */
+  inlineSpeedAlpha?: string;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -4131,7 +5354,72 @@ export interface VapiVoice {
   /** This is the voice provider that will be used. */
   provider: 'vapi';
   /** The voices provided by Vapi */
-  voiceId: 'Elliot' | 'Rohan' | 'Lily' | 'Savannah' | 'Hana' | 'Neha' | 'Cole' | 'Harry' | 'Paige';
+  voiceId:
+    | 'Elliot'
+    | 'Rohan'
+    | 'Lily'
+    | 'Savannah'
+    | 'Hana'
+    | 'Neha'
+    | 'Cole'
+    | 'Harry'
+    | 'Paige'
+    | 'Spencer';
+  /**
+   * This is the speed multiplier that will be used.
+   *
+   * @default 1
+   * @min 0.25
+   * @max 2
+   * @default 1
+   */
+  speed?: number;
+  /**
+   * This is the language code (ISO 639-1) that will be used.
+   *
+   * @default 'en-US'
+   * @default "en-US"
+   */
+  language?:
+    | 'en-US'
+    | 'en-GB'
+    | 'en-AU'
+    | 'en-CA'
+    | 'ja'
+    | 'zh'
+    | 'de'
+    | 'hi'
+    | 'fr-FR'
+    | 'fr-CA'
+    | 'ko'
+    | 'pt-BR'
+    | 'pt-PT'
+    | 'it'
+    | 'es-ES'
+    | 'es-MX'
+    | 'id'
+    | 'nl'
+    | 'tr'
+    | 'fil'
+    | 'pl'
+    | 'sv'
+    | 'bg'
+    | 'ro'
+    | 'ar-SA'
+    | 'ar-AE'
+    | 'cs'
+    | 'el'
+    | 'fi'
+    | 'hr'
+    | 'ms'
+    | 'sk'
+    | 'da'
+    | 'ta'
+    | 'uk'
+    | 'ru'
+    | 'hu'
+    | 'no'
+    | 'vi';
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -4380,15 +5668,6 @@ export interface FallbackLMNTVoice {
   chunkPlan?: ChunkPlan;
 }
 
-export interface FallbackNeetsVoice {
-  /** This is the voice provider that will be used. */
-  provider: 'neets';
-  /** This is the provider-specific ID that will be used. */
-  voiceId: 'vits' | string;
-  /** This is the plan for chunking the model output before it is sent to the voice provider. */
-  chunkPlan?: ChunkPlan;
-}
-
 export interface FallbackNeuphonicVoice {
   /** This is the voice provider that will be used. */
   provider: 'neuphonic';
@@ -4434,6 +5713,14 @@ export interface FallbackOpenAIVoice {
     | 'coral'
     | 'sage'
     | 'verse';
+  /** This is the model that will be used for text-to-speech. */
+  model?: 'tts-1' | 'tts-1-hd' | 'gpt-4o-mini-tts';
+  /**
+   * This is a prompt that allows you to control the voice of your generated audio.
+   * Does not work with 'tts-1' or 'tts-1-hd' models.
+   * @maxLength 10000
+   */
+  instructions?: string;
   /**
    * This is the speed multiplier that will be used.
    * @min 0.25
@@ -4658,6 +5945,26 @@ export interface FallbackRimeAIVoice {
    * @example null
    */
   speed?: number;
+  /**
+   * This is a flag that controls whether to add slight pauses using angle brackets. Example: “Hi. <200> I’d love to have a conversation with you.” adds a 200ms pause between the first and second sentences.
+   * @example false
+   */
+  pauseBetweenBrackets?: boolean;
+  /**
+   * This is a flag that controls whether text inside brackets should be phonemized (converted to phonetic pronunciation) - Example: "{h'El.o} World" will pronounce "Hello" as expected.
+   * @example false
+   */
+  phonemizeBetweenBrackets?: boolean;
+  /**
+   * This is a flag that controls whether to optimize for reduced latency in streaming. https://docs.rime.ai/api-reference/endpoint/websockets#param-reduce-latency
+   * @example false
+   */
+  reduceLatency?: boolean;
+  /**
+   * This is a string that allows inline speed control using alpha notation. https://docs.rime.ai/api-reference/endpoint/websockets#param-inline-speed-alpha
+   * @example null
+   */
+  inlineSpeedAlpha?: string;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -4729,7 +6036,72 @@ export interface FallbackVapiVoice {
   /** This is the voice provider that will be used. */
   provider: 'vapi';
   /** The voices provided by Vapi */
-  voiceId: 'Elliot' | 'Rohan' | 'Lily' | 'Savannah' | 'Hana' | 'Neha' | 'Cole' | 'Harry' | 'Paige';
+  voiceId:
+    | 'Elliot'
+    | 'Rohan'
+    | 'Lily'
+    | 'Savannah'
+    | 'Hana'
+    | 'Neha'
+    | 'Cole'
+    | 'Harry'
+    | 'Paige'
+    | 'Spencer';
+  /**
+   * This is the speed multiplier that will be used.
+   *
+   * @default 1
+   * @min 0.25
+   * @max 2
+   * @default 1
+   */
+  speed?: number;
+  /**
+   * This is the language code (ISO 639-1) that will be used.
+   *
+   * @default 'en-US'
+   * @default "en-US"
+   */
+  language?:
+    | 'en-US'
+    | 'en-GB'
+    | 'en-AU'
+    | 'en-CA'
+    | 'ja'
+    | 'zh'
+    | 'de'
+    | 'hi'
+    | 'fr-FR'
+    | 'fr-CA'
+    | 'ko'
+    | 'pt-BR'
+    | 'pt-PT'
+    | 'it'
+    | 'es-ES'
+    | 'es-MX'
+    | 'id'
+    | 'nl'
+    | 'tr'
+    | 'fil'
+    | 'pl'
+    | 'sv'
+    | 'bg'
+    | 'ro'
+    | 'ar-SA'
+    | 'ar-AE'
+    | 'cs'
+    | 'el'
+    | 'fi'
+    | 'hr'
+    | 'ms'
+    | 'sk'
+    | 'da'
+    | 'ta'
+    | 'uk'
+    | 'ru'
+    | 'hu'
+    | 'no'
+    | 'vi';
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -4896,6 +6268,7 @@ export interface CreateAzureOpenAICredentialDTO {
     | 'westus3';
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models:
+    | 'gpt-4o-2024-11-20'
     | 'gpt-4o-2024-08-06'
     | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4o-2024-05-13'
@@ -5578,6 +6951,28 @@ export interface CreateXAiCredentialDTO {
   name?: string;
 }
 
+export interface CreateGoogleCalendarOAuth2ClientCredentialDTO {
+  provider: 'google.calendar.oauth2-client';
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateGoogleCalendarOAuth2AuthorizationCredentialDTO {
+  provider: 'google.calendar.oauth2-authorization';
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface TransferAssistantHookAction {
   /** This is the type of action - must be "transfer" */
   type: 'transfer';
@@ -5594,7 +6989,7 @@ export interface GoogleVoicemailDetectionPlan {
    * @default 15
    * @min 5
    * @max 60
-   * @default 15
+   * @default 25
    */
   voicemailExpectedDurationSeconds: number;
 }
@@ -5608,7 +7003,7 @@ export interface OpenAIVoicemailDetectionPlan {
    * @default 15
    * @min 5
    * @max 60
-   * @default 15
+   * @default 25
    */
   voicemailExpectedDurationSeconds: number;
 }
@@ -5698,12 +7093,14 @@ export interface TwilioVoicemailDetectionPlan {
 
 export interface CompliancePlan {
   /**
-   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
+   * When this is enabled, no logs, recordings, or transcriptions will be stored.
+   * At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
    * @example {"hipaaEnabled":false}
    */
   hipaaEnabled?: boolean;
   /**
-   * When this is enabled, the user will be restricted to use PCI-compliant providers, and no logs or transcripts are stored. At the end of the call, you will receive an end-of-call-report message to store on your server. Defaults to false.
+   * When this is enabled, the user will be restricted to use PCI-compliant providers, and no logs or transcripts are stored.
+   * At the end of the call, you will receive an end-of-call-report message to store on your server. Defaults to false.
    * @example {"pciEnabled":false}
    */
   pciEnabled?: boolean;
@@ -5757,6 +7154,13 @@ export interface StructuredDataPlan {
    * @max 60
    */
   timeoutSeconds?: number;
+}
+
+export interface StructuredDataMultiPlan {
+  /** This is the key of the structured data plan in the catalog. */
+  key: string;
+  /** This is an individual structured data plan in the catalog. */
+  plan: StructuredDataPlan;
 }
 
 export interface SuccessEvaluationPlan {
@@ -5836,6 +7240,8 @@ export interface AnalysisPlan {
   summaryPlan?: SummaryPlan;
   /** This is the plan for generating the structured data from the call. This outputs to `call.analysis.structuredData`. */
   structuredDataPlan?: StructuredDataPlan;
+  /** This is an array of structured data plan catalogs. Each entry includes a `key` and a `plan` for generating the structured data from the call. This outputs to `call.analysis.structuredDataMulti`. */
+  structuredDataMultiPlan?: StructuredDataMultiPlan[];
   /** This is the plan for generating the success evaluation of the call. This outputs to `call.analysis.successEvaluation`. */
   successEvaluationPlan?: SuccessEvaluationPlan;
 }
@@ -5894,6 +7300,12 @@ export interface ArtifactPlan {
    * @example true
    */
   recordingEnabled?: boolean;
+  /**
+   * This determines the format of the recording. Defaults to `wav;l16`.
+   *
+   * @default 'wav;l16'
+   */
+  recordingFormat?: 'wav;l16' | 'mp3';
   /**
    * This determines whether the video is recorded during the call. Defaults to false. Only relevant for `webCall` type.
    *
@@ -6105,6 +7517,34 @@ export interface BothCustomEndpointingRule {
   timeoutSeconds: number;
 }
 
+export interface VapiSmartEndpointingPlan {
+  /**
+   * This is the provider for the smart endpointing plan.
+   * @example "vapi"
+   */
+  provider: 'vapi' | 'livekit';
+}
+
+export interface LivekitSmartEndpointingPlan {
+  /**
+   * This is the provider for the smart endpointing plan.
+   * @example "livekit"
+   */
+  provider: 'vapi' | 'livekit';
+  /**
+   * This expression describes how long the bot will wait to start speaking based on the likelihood that the user has reached an endpoint.
+   *
+   * This is a millisecond valued function. It maps probabilities (real numbers on [0,1]) to seconds that the user should wait ([0, \infty]). Any negative values that are returned are set to zero (the bot can't start talking in the past).
+   *
+   * A probability of zero represents very high confidence that the caller has stopped speaking, and would like the bot to speak to them. A probability of one represents very high confidence that the caller is still speaking.
+   *
+   * Under the hood, this is parsed into a mathjs expression. Whatever you use to write your expression needs to be valid with respect to mathjs
+   *
+   * @default "200 + 8000 * x"
+   */
+  waitFunction?: string;
+}
+
 export interface TranscriptionEndpointingPlan {
   /**
    * The minimum number of seconds to wait after transcription ending with punctuation before sending a request to the model. Defaults to 0.1.
@@ -6161,19 +7601,17 @@ export interface StartSpeakingPlan {
    */
   waitSeconds?: number;
   /**
-   * This determines if a customer speech is considered done (endpointing) using a Vapi custom-trained model on customer's speech. This is good for middle-of-thought detection. Alternatively, you can use LiveKit's smart endpointing model (it only supports English, though)
-   *
-   * Once an endpoint is triggered, the request is sent to `assistant.model`.
-   *
-   * Usage:
-   * - If your conversations are long-form and you want assistant to wait smartly even if customer pauses for a bit to think, you can use this instead.
-   *
-   * This overrides `transcriptionEndpointingPlan`.
-   *
-   * @default false
+   * @deprecated
    * @example false
    */
-  smartEndpointingEnabled?: 'true' | 'false' | 'livekit';
+  smartEndpointingEnabled?: object;
+  /**
+   * This is the plan for smart endpointing. Pick between Vapi smart endpointing or LiveKit smart endpointing (or nothing). We strongly recommend using livekit endpointing when working in English. LiveKit endpointing is not supported in other languages, yet.
+   *
+   * If this is set, it will override and take precedence over `transcriptionEndpointingPlan`.
+   * This plan will still be overridden by any matching `customEndpointingRules`.
+   */
+  smartEndpointingPlan?: VapiSmartEndpointingPlan | LivekitSmartEndpointingPlan;
   /**
    * These are the custom endpointing rules to set an endpointing timeout based on a regex on the customer's speech or the assistant's last message.
    *
@@ -6182,9 +7620,14 @@ export interface StartSpeakingPlan {
    * - If you have questions where the customer may pause to look up information like "what's my account number?", you can set a longer timeout.
    * - If you want to wait longer while customer is enumerating a list of numbers, you can set a longer timeout.
    *
-   * These override `transcriptionEndpointingPlan` and `smartEndpointingEnabled` when a rule is matched.
+   * These rules have the highest precedence and will override both `smartEndpointingPlan` and `transcriptionEndpointingPlan` when a rule is matched.
    *
    * The rules are evaluated in order and the first one that matches will be used.
+   *
+   * Order of precedence for endpointing:
+   * 1. customEndpointingRules (if any match)
+   * 2. smartEndpointingPlan (if set)
+   * 3. transcriptionEndpointingPlan
    *
    * @default []
    */
@@ -6197,6 +7640,9 @@ export interface StartSpeakingPlan {
    * This determines how a customer speech is considered done (endpointing) using the transcription of customer's speech.
    *
    * Once an endpoint is triggered, the request is sent to `assistant.model`.
+   *
+   * Note: This plan is only used if `smartEndpointingPlan` is not set. If both are provided, `smartEndpointingPlan` takes precedence.
+   * This plan will also be overridden by any matching `customEndpointingRules`.
    */
   transcriptionEndpointingPlan?: TranscriptionEndpointingPlan;
 }
@@ -6350,7 +7796,9 @@ export interface CreateAssistantDTO {
     | ElevenLabsTranscriber
     | GladiaTranscriber
     | SpeechmaticsTranscriber
-    | TalkscriberTranscriber;
+    | TalkscriberTranscriber
+    | GoogleTranscriber
+    | OpenAITranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnyscaleModel
@@ -6380,7 +7828,6 @@ export interface CreateAssistantDTO {
     | ElevenLabsVoice
     | HumeVoice
     | LMNTVoice
-    | NeetsVoice
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
@@ -6395,6 +7842,8 @@ export interface CreateAssistantDTO {
    * @example "Hello! How can I help you today?"
    */
   firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
   /**
    * This is the mode for the first message. Default is 'assistant-speaks-first'.
    *
@@ -6481,9 +7930,10 @@ export interface CreateAssistantDTO {
   maxDurationSeconds?: number;
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * @example "office"
+   * You can also provide a custom sound by providing a URL to an audio file.
+   * @maxLength 1000
    */
-  backgroundSound?: 'off' | 'office';
+  backgroundSound?: 'off' | 'office' | string;
   /**
    * This enables filtering of noise and background speech while the user is talking.
    *
@@ -6554,6 +8004,8 @@ export interface CreateAssistantDTO {
     | CreateVonageCredentialDTO
     | CreateWebhookCredentialDTO
     | CreateXAiCredentialDTO
+    | CreateGoogleCalendarOAuth2ClientCredentialDTO
+    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
   )[];
   /**
    * This is the name of the assistant.
@@ -6652,7 +8104,9 @@ export interface AssistantOverrides {
     | ElevenLabsTranscriber
     | GladiaTranscriber
     | SpeechmaticsTranscriber
-    | TalkscriberTranscriber;
+    | TalkscriberTranscriber
+    | GoogleTranscriber
+    | OpenAITranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnyscaleModel
@@ -6682,7 +8136,6 @@ export interface AssistantOverrides {
     | ElevenLabsVoice
     | HumeVoice
     | LMNTVoice
-    | NeetsVoice
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
@@ -6697,6 +8150,8 @@ export interface AssistantOverrides {
    * @example "Hello! How can I help you today?"
    */
   firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
   /**
    * This is the mode for the first message. Default is 'assistant-speaks-first'.
    *
@@ -6783,9 +8238,10 @@ export interface AssistantOverrides {
   maxDurationSeconds?: number;
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * @example "office"
+   * You can also provide a custom sound by providing a URL to an audio file.
+   * @maxLength 1000
    */
-  backgroundSound?: 'off' | 'office';
+  backgroundSound?: 'off' | 'office' | string;
   /**
    * This enables filtering of noise and background speech while the user is talking.
    *
@@ -6856,6 +8312,8 @@ export interface AssistantOverrides {
     | CreateVonageCredentialDTO
     | CreateWebhookCredentialDTO
     | CreateXAiCredentialDTO
+    | CreateGoogleCalendarOAuth2ClientCredentialDTO
+    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
   )[];
   /**
    * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
@@ -7162,6 +8620,8 @@ export interface Analysis {
   summary?: string;
   /** This is the structured data extracted from the call. Customize by setting `assistant.analysisPlan.structuredDataPrompt` and/or `assistant.analysisPlan.structuredDataSchema`. */
   structuredData?: object;
+  /** This is the structured data catalog of the call. Customize by setting `assistant.analysisPlan.structuredDataMultiPlan`. */
+  structuredDataMulti?: object[];
   /** This is the evaluation of the call. Customize by setting `assistant.analysisPlan.successEvaluationPrompt` and/or `assistant.analysisPlan.successEvaluationRubric`. */
   successEvaluation?: string;
 }
@@ -7266,10 +8726,10 @@ export interface Call {
     | 'pipeline-error-lmnt-voice-failed'
     | 'pipeline-error-azure-voice-failed'
     | 'pipeline-error-rime-ai-voice-failed'
-    | 'pipeline-error-neets-voice-failed'
     | 'pipeline-error-smallest-ai-voice-failed'
     | 'pipeline-error-neuphonic-voice-failed'
     | 'pipeline-error-hume-voice-failed'
+    | 'pipeline-error-sesame-voice-failed'
     | 'pipeline-error-deepgram-transcriber-failed'
     | 'pipeline-error-gladia-transcriber-failed'
     | 'pipeline-error-speechmatics-transcriber-failed'
@@ -7448,6 +8908,16 @@ export interface Call {
     | 'pipeline-error-deepgram-returning-502-network-error'
     | 'pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach'
     | 'pipeline-error-google-transcriber-failed'
+    | 'pipeline-error-openai-transcriber-failed'
+    | 'call.start.error-get-org'
+    | 'call.start.error-get-subscription'
+    | 'call.start.error-get-assistant'
+    | 'call.start.error-get-phone-number'
+    | 'call.start.error-get-customer'
+    | 'call.start.error-get-resources-validation'
+    | 'call.start.error-vapi-number-international'
+    | 'call.start.error-vapi-number-outbound-daily-limit'
+    | 'call.start.error-get-transport'
     | 'silence-timed-out'
     | 'sip-gateway-failed-to-connect-call'
     | 'twilio-failed-to-connect-call'
@@ -7625,7 +9095,7 @@ export interface ChatCompletionMessageMetadata {
   nodeTrace?: string[];
 }
 
-export interface ChatCompletionMessage {
+export interface ChatCompletionMessageWorkflows {
   role: object;
   content: string | null;
   metadata?: ChatCompletionMessageMetadata;
@@ -7741,7 +9211,7 @@ export interface CreateWorkflowDTO {
 }
 
 export interface ChatCompletionsDTO {
-  messages: ChatCompletionMessage[];
+  messages: ChatCompletionMessageWorkflows[];
   workflowId?: string;
   workflow?: CreateWorkflowDTO;
 }
@@ -7756,7 +9226,9 @@ export interface Assistant {
     | ElevenLabsTranscriber
     | GladiaTranscriber
     | SpeechmaticsTranscriber
-    | TalkscriberTranscriber;
+    | TalkscriberTranscriber
+    | GoogleTranscriber
+    | OpenAITranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnyscaleModel
@@ -7786,7 +9258,6 @@ export interface Assistant {
     | ElevenLabsVoice
     | HumeVoice
     | LMNTVoice
-    | NeetsVoice
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
@@ -7801,6 +9272,8 @@ export interface Assistant {
    * @example "Hello! How can I help you today?"
    */
   firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
   /**
    * This is the mode for the first message. Default is 'assistant-speaks-first'.
    *
@@ -7887,9 +9360,10 @@ export interface Assistant {
   maxDurationSeconds?: number;
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * @example "office"
+   * You can also provide a custom sound by providing a URL to an audio file.
+   * @maxLength 1000
    */
-  backgroundSound?: 'off' | 'office';
+  backgroundSound?: 'off' | 'office' | string;
   /**
    * This enables filtering of noise and background speech while the user is talking.
    *
@@ -7960,6 +9434,8 @@ export interface Assistant {
     | CreateVonageCredentialDTO
     | CreateWebhookCredentialDTO
     | CreateXAiCredentialDTO
+    | CreateGoogleCalendarOAuth2ClientCredentialDTO
+    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
   )[];
   /**
    * This is the name of the assistant.
@@ -8077,7 +9553,9 @@ export interface UpdateAssistantDTO {
     | ElevenLabsTranscriber
     | GladiaTranscriber
     | SpeechmaticsTranscriber
-    | TalkscriberTranscriber;
+    | TalkscriberTranscriber
+    | GoogleTranscriber
+    | OpenAITranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnyscaleModel
@@ -8107,7 +9585,6 @@ export interface UpdateAssistantDTO {
     | ElevenLabsVoice
     | HumeVoice
     | LMNTVoice
-    | NeetsVoice
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
@@ -8122,6 +9599,8 @@ export interface UpdateAssistantDTO {
    * @example "Hello! How can I help you today?"
    */
   firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
   /**
    * This is the mode for the first message. Default is 'assistant-speaks-first'.
    *
@@ -8208,9 +9687,10 @@ export interface UpdateAssistantDTO {
   maxDurationSeconds?: number;
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * @example "office"
+   * You can also provide a custom sound by providing a URL to an audio file.
+   * @maxLength 1000
    */
-  backgroundSound?: 'off' | 'office';
+  backgroundSound?: 'off' | 'office' | string;
   /**
    * This enables filtering of noise and background speech while the user is talking.
    *
@@ -8281,6 +9761,8 @@ export interface UpdateAssistantDTO {
     | CreateVonageCredentialDTO
     | CreateWebhookCredentialDTO
     | CreateXAiCredentialDTO
+    | CreateGoogleCalendarOAuth2ClientCredentialDTO
+    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
   )[];
   /**
    * This is the name of the assistant.
@@ -9940,6 +11422,110 @@ export interface QueryTool {
   server?: Server;
 }
 
+export interface GoogleCalendarCreateEventTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  type: 'google.calendar.event.create';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoogleSheetsRowAppendTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.sheets.row.append" for Google Sheets tool. */
+  type: 'google.sheets.row.append';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
 export interface CreateOutputToolDTO {
   /**
    * This determines if the tool is async.
@@ -10141,6 +11727,82 @@ export interface CreateQueryToolDTO {
   type: 'query';
   /** The knowledge bases to query */
   knowledgeBases?: KnowledgeBase[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateGoogleCalendarCreateEventToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  type: 'google.calendar.event.create';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateGoogleSheetsRowAppendToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.sheets.row.append" for Google Sheets tool. */
+  type: 'google.sheets.row.append';
   /**
    * This is the function definition of the tool.
    *
@@ -10593,6 +12255,78 @@ export interface UpdateQueryToolDTO {
   server?: Server;
 }
 
+export interface UpdateGoogleCalendarCreateEventToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateGoogleSheetsRowAppendToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
 export interface CreateFileDTO {
   /**
    * This is the File you want to upload for use with the Knowledge Base.
@@ -10895,6 +12629,45 @@ export interface UpdateSquadDTO {
   membersOverrides?: AssistantOverrides;
 }
 
+export interface TesterPlan {
+  /**
+   * Pass a transient assistant to use for the test assistant.
+   *
+   * Make sure to write a detailed system prompt for a test assistant, and use the {{test.script}} variable to access the test script.
+   */
+  assistant?: CreateAssistantDTO;
+  /**
+   * Pass an assistant id that can be access
+   *
+   * Make sure to write a detailed system prompt for the test assistant, and use the {{test.script}} variable to access the test script.
+   */
+  assistantId?: string;
+  /**
+   * Add any assistant overrides to the test assistant.
+   *
+   * One use case is if you want to pass custom variables into the test using variableValues, that you can then access in the script
+   * and rubric using {{varName}}.
+   */
+  assistantOverrides?: AssistantOverrides;
+}
+
+export interface TestSuitePhoneNumber {
+  /** This is the provider of the phone number. */
+  provider: 'test-suite';
+  /**
+   * This is the phone number that is being tested.
+   * @maxLength 50
+   */
+  number: string;
+}
+
+export interface TargetPlan {
+  /** This is the phoneNumberId that is being tested. */
+  phoneNumberId?: string;
+  /** This is the phone number that is being tested. Only use this if you have not imported the phone number to Vapi. */
+  phoneNumber?: TestSuitePhoneNumber;
+}
+
 export interface TestSuite {
   /** This is the unique identifier for the test suite. */
   id: string;
@@ -10915,8 +12688,19 @@ export interface TestSuite {
    * @maxLength 80
    */
   name?: string;
-  /** This is the phone number ID associated with this test suite. */
+  /**
+   * This is the phone number ID associated with this test suite.
+   * @deprecated
+   */
   phoneNumberId?: string;
+  /**
+   * Override the default tester plan by providing custom assistant configuration for the test agent.
+   *
+   * We recommend only using this if you are confident, as we have already set sensible defaults on the tester plan.
+   */
+  testerPlan?: TesterPlan;
+  /** These are the configuration for the assistant / phone number that is being tested. */
+  targetPlan?: TargetPlan;
 }
 
 export interface TestSuitesPaginatedResponse {
@@ -10930,8 +12714,19 @@ export interface CreateTestSuiteDto {
    * @maxLength 80
    */
   name?: string;
-  /** This is the phone number ID associated with this test suite. */
+  /**
+   * This is the phone number ID associated with this test suite.
+   * @deprecated
+   */
   phoneNumberId?: string;
+  /**
+   * Override the default tester plan by providing custom assistant configuration for the test agent.
+   *
+   * We recommend only using this if you are confident, as we have already set sensible defaults on the tester plan.
+   */
+  testerPlan?: TesterPlan;
+  /** These are the configuration for the assistant / phone number that is being tested. */
+  targetPlan?: TargetPlan;
 }
 
 export interface UpdateTestSuiteDto {
@@ -10940,8 +12735,19 @@ export interface UpdateTestSuiteDto {
    * @maxLength 80
    */
   name?: string;
-  /** This is the phone number ID associated with this test suite. */
+  /**
+   * This is the phone number ID associated with this test suite.
+   * @deprecated
+   */
   phoneNumberId?: string;
+  /**
+   * Override the default tester plan by providing custom assistant configuration for the test agent.
+   *
+   * We recommend only using this if you are confident, as we have already set sensible defaults on the tester plan.
+   */
+  testerPlan?: TesterPlan;
+  /** These are the configuration for the assistant / phone number that is being tested. */
+  targetPlan?: TargetPlan;
 }
 
 export interface TestSuiteTestVoice {
@@ -10986,6 +12792,48 @@ export interface TestSuiteTestVoice {
   numAttempts?: number;
 }
 
+export interface TestSuiteTestChat {
+  /** These are the scorers used to evaluate the test. */
+  scorers: TestSuiteTestScorerAI[];
+  /**
+   * This is the type of the test, which must be chat.
+   * @maxLength 100
+   */
+  type: 'chat';
+  /** This is the unique identifier for the test. */
+  id: string;
+  /** This is the unique identifier for the test suite this test belongs to. */
+  testSuiteId: string;
+  /** This is the unique identifier for the organization this test belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the test was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the test was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of the test.
+   * @maxLength 80
+   */
+  name?: string;
+  /**
+   * This is the script to be used for the chat test.
+   * @maxLength 10000
+   */
+  script: string;
+  /**
+   * This is the number of attempts allowed for the test.
+   * @min 1
+   * @max 10
+   */
+  numAttempts?: number;
+}
+
 export interface CreateTestSuiteTestVoiceDto {
   /** These are the scorers used to evaluate the test. */
   scorers: TestSuiteTestScorerAI[];
@@ -11012,9 +12860,40 @@ export interface CreateTestSuiteTestVoiceDto {
   name?: string;
 }
 
+export interface CreateTestSuiteTestChatDto {
+  /** These are the scorers used to evaluate the test. */
+  scorers: TestSuiteTestScorerAI[];
+  /**
+   * This is the type of the test, which must be chat.
+   * @maxLength 100
+   */
+  type: 'chat';
+  /**
+   * This is the script to be used for the chat test.
+   * @maxLength 10000
+   */
+  script: string;
+  /**
+   * This is the number of attempts allowed for the test.
+   * @min 1
+   * @max 10
+   */
+  numAttempts?: number;
+  /**
+   * This is the name of the test.
+   * @maxLength 80
+   */
+  name?: string;
+}
+
 export interface UpdateTestSuiteTestVoiceDto {
   /** These are the scorers used to evaluate the test. */
   scorers?: TestSuiteTestScorerAI[];
+  /**
+   * This is the type of the test, which must be voice.
+   * @maxLength 100
+   */
+  type?: 'voice';
   /**
    * This is the name of the test.
    * @maxLength 80
@@ -11022,6 +12901,32 @@ export interface UpdateTestSuiteTestVoiceDto {
   name?: string;
   /**
    * This is the script to be used for the voice test.
+   * @maxLength 10000
+   */
+  script?: string;
+  /**
+   * This is the number of attempts allowed for the test.
+   * @min 1
+   * @max 10
+   */
+  numAttempts?: number;
+}
+
+export interface UpdateTestSuiteTestChatDto {
+  /** These are the scorers used to evaluate the test. */
+  scorers?: TestSuiteTestScorerAI[];
+  /**
+   * This is the type of the test, which must be chat.
+   * @maxLength 100
+   */
+  type?: 'chat';
+  /**
+   * This is the name of the test.
+   * @maxLength 80
+   */
+  name?: string;
+  /**
+   * This is the script to be used for the chat test.
    * @maxLength 10000
    */
   script?: string;
@@ -11048,7 +12953,7 @@ export interface TestSuiteTestScorerAI {
 
 export interface TestSuiteTestsPaginatedResponse {
   /** A list of test suite tests. */
-  results: TestSuiteTestVoice[];
+  results: (TestSuiteTestVoice | TestSuiteTestChat)[];
   /** Metadata about the pagination. */
   metadata: PaginationMeta;
 }
@@ -11403,6 +13308,15 @@ export interface CreateOrgDTO {
    * @max 10
    */
   concurrencyLimit?: number;
+  /**
+   * Stores the information about the compliance plan enforced at the organization level. Currently pciEnabled is supported through this field.
+   * When this is enabled, any logs, recordings, or transcriptions will be shipped to the customer endpoints if provided else lost.
+   * At the end of the call, you will receive an end-of-call-report message to store on your server, if webhook is provided.
+   * Defaults to false.
+   * When PCI is enabled, only PCI-compliant Providers will be available for LLM, Voice and transcribers.
+   * This is due to the compliance requirements of PCI. Other providers may not meet these requirements.
+   */
+  compliancePlan?: CompliancePlan;
 }
 
 export interface AutoReloadPlan {
@@ -11547,6 +13461,13 @@ export interface Subscription {
   couponUsageLeft?: string;
   /** This is the invoice plan for the subscription. */
   invoicePlan?: InvoicePlan;
+  /**
+   * This is the PCI enabled flag for the subscription. It determines whether orgs under this
+   * subscription have the option to enable PCI compliance.
+   */
+  pciEnabled?: boolean;
+  /** This is the ID for the Common Paper agreement outlining the PCI contract. */
+  pciCommonPaperAgreementId?: string;
 }
 
 export interface OrgPlan {
@@ -11622,6 +13543,15 @@ export interface Org {
    * @max 10
    */
   concurrencyLimit?: number;
+  /**
+   * Stores the information about the compliance plan enforced at the organization level. Currently pciEnabled is supported through this field.
+   * When this is enabled, any logs, recordings, or transcriptions will be shipped to the customer endpoints if provided else lost.
+   * At the end of the call, you will receive an end-of-call-report message to store on your server, if webhook is provided.
+   * Defaults to false.
+   * When PCI is enabled, only PCI-compliant Providers will be available for LLM, Voice and transcribers.
+   * This is due to the compliance requirements of PCI. Other providers may not meet these requirements.
+   */
+  compliancePlan?: CompliancePlan;
 }
 
 export interface UpdateOrgDTO {
@@ -11663,6 +13593,15 @@ export interface UpdateOrgDTO {
    * @max 10
    */
   concurrencyLimit?: number;
+  /**
+   * Stores the information about the compliance plan enforced at the organization level. Currently pciEnabled is supported through this field.
+   * When this is enabled, any logs, recordings, or transcriptions will be shipped to the customer endpoints if provided else lost.
+   * At the end of the call, you will receive an end-of-call-report message to store on your server, if webhook is provided.
+   * Defaults to false.
+   * When PCI is enabled, only PCI-compliant Providers will be available for LLM, Voice and transcribers.
+   * This is due to the compliance requirements of PCI. Other providers may not meet these requirements.
+   */
+  compliancePlan?: CompliancePlan;
 }
 
 export interface User {
@@ -11936,6 +13875,7 @@ export interface AzureOpenAICredential {
     | 'westus3';
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models:
+    | 'gpt-4o-2024-11-20'
     | 'gpt-4o-2024-08-06'
     | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4o-2024-05-13'
@@ -13078,6 +15018,56 @@ export interface XAiCredential {
   name?: string;
 }
 
+export interface GoogleCalendarOAuth2ClientCredential {
+  provider: 'google.calendar.oauth2-client';
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface GoogleCalendarOAuth2AuthorizationCredential {
+  provider: 'google.calendar.oauth2-authorization';
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CreateCerebrasCredentialDTO {
   provider: 'cerebras';
   /**
@@ -13293,6 +15283,7 @@ export interface UpdateAzureOpenAICredentialDTO {
     | 'westus3';
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models?:
+    | 'gpt-4o-2024-11-20'
     | 'gpt-4o-2024-08-06'
     | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4o-2024-05-13'
@@ -13818,6 +15809,67 @@ export interface UpdateXAiCredentialDTO {
   name?: string;
 }
 
+export interface UpdateGoogleCalendarOAuth2ClientCredentialDTO {
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface UpdateGoogleCalendarOAuth2AuthorizationCredentialDTO {
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CredentialSessionResponse {
+  sessionToken: string;
+}
+
+export interface CredentialEndUser {
+  endUserId: string;
+  organizationId: string;
+}
+
+export interface CredentialSessionError {
+  type: string;
+  description: string;
+}
+
+export interface CredentialWebhookDTO {
+  type: 'auth' | 'sync' | 'forward';
+  operation: 'creation' | 'override' | 'refresh';
+  from: string;
+  connectionId: string;
+  authMode: 'OAUTH2' | 'API_KEY' | 'BASIC';
+  providerConfigKey: string;
+  provider: string;
+  environment: string;
+  success: boolean;
+  endUser: CredentialEndUser;
+  error?: CredentialSessionError;
+}
+
+export interface CredentialActionRequest {
+  action_name: string;
+  input: object;
+}
+
+export interface CredentialSessionDTO {
+  /** The type of credential to generate a session for. Only Nango user-facing providers are supported. */
+  provider:
+    | 'google.calendar.oauth2-client'
+    | 'google.calendar.oauth2-authorization'
+    | 'google.sheets.oauth2-authorization';
+}
+
 export interface ToolTemplateSetup {
   title: string;
   description?: string;
@@ -13858,6 +15910,22 @@ export interface FunctionToolProviderDetails {
   type: 'function';
 }
 
+export interface GoogleCalendarCreateEventToolProviderDetails {
+  /** This is the Template URL or the Snapshot URL corresponding to the Template. */
+  templateUrl?: string;
+  setupInstructions?: ToolTemplateSetup[];
+  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  type: 'google.calendar.event.create';
+}
+
+export interface GoogleSheetsRowAppendToolProviderDetails {
+  /** This is the Template URL or the Snapshot URL corresponding to the Template. */
+  templateUrl?: string;
+  setupInstructions?: ToolTemplateSetup[];
+  /** The type of tool. "google.sheets.row.append" for Google Sheets tool. */
+  type: 'google.sheets.row.append';
+}
+
 export interface ToolTemplateMetadata {
   collectionType?: string;
   collectionId?: string;
@@ -13872,8 +15940,15 @@ export interface CreateToolTemplateDTO {
     | CreateFunctionToolDTO
     | CreateGhlToolDTO
     | CreateMakeToolDTO
-    | CreateTransferCallToolDTO;
-  providerDetails?: MakeToolProviderDetails | GhlToolProviderDetails | FunctionToolProviderDetails;
+    | CreateTransferCallToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO;
+  providerDetails?:
+    | MakeToolProviderDetails
+    | GhlToolProviderDetails
+    | FunctionToolProviderDetails
+    | GoogleCalendarCreateEventToolProviderDetails
+    | GoogleSheetsRowAppendToolProviderDetails;
   metadata?: ToolTemplateMetadata;
   /** @default "private" */
   visibility?: 'public' | 'private';
@@ -13895,8 +15970,15 @@ export interface Template {
     | CreateFunctionToolDTO
     | CreateGhlToolDTO
     | CreateMakeToolDTO
-    | CreateTransferCallToolDTO;
-  providerDetails?: MakeToolProviderDetails | GhlToolProviderDetails | FunctionToolProviderDetails;
+    | CreateTransferCallToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO;
+  providerDetails?:
+    | MakeToolProviderDetails
+    | GhlToolProviderDetails
+    | FunctionToolProviderDetails
+    | GoogleCalendarCreateEventToolProviderDetails
+    | GoogleSheetsRowAppendToolProviderDetails;
   metadata?: ToolTemplateMetadata;
   /** @default "private" */
   visibility?: 'public' | 'private';
@@ -13932,8 +16014,15 @@ export interface UpdateToolTemplateDTO {
     | CreateFunctionToolDTO
     | CreateGhlToolDTO
     | CreateMakeToolDTO
-    | CreateTransferCallToolDTO;
-  providerDetails?: MakeToolProviderDetails | GhlToolProviderDetails | FunctionToolProviderDetails;
+    | CreateTransferCallToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO;
+  providerDetails?:
+    | MakeToolProviderDetails
+    | GhlToolProviderDetails
+    | FunctionToolProviderDetails
+    | GoogleCalendarCreateEventToolProviderDetails
+    | GoogleSheetsRowAppendToolProviderDetails;
   metadata?: ToolTemplateMetadata;
   /** @default "private" */
   visibility?: 'public' | 'private';
@@ -13958,13 +16047,13 @@ export interface VoiceLibrary {
     | 'deepgram'
     | 'hume'
     | 'lmnt'
-    | 'neets'
     | 'neuphonic'
     | 'openai'
     | 'playht'
     | 'rime-ai'
     | 'smallest-ai'
-    | 'tavus';
+    | 'tavus'
+    | 'sesame';
   /** The ID of the voice provided by the provider. */
   providerId?: string;
   /** The unique slug of the voice. */
@@ -14020,13 +16109,13 @@ export interface SyncVoiceLibraryDTO {
     | 'deepgram'
     | 'hume'
     | 'lmnt'
-    | 'neets'
     | 'neuphonic'
     | 'openai'
     | 'playht'
     | 'rime-ai'
     | 'smallest-ai'
-    | 'tavus';
+    | 'tavus'
+    | 'sesame';
 }
 
 export interface VoiceLibraryVoiceResponse {
@@ -14147,6 +16236,7 @@ export interface ClientMessageToolCalls {
     | BashToolWithToolCall
     | ComputerToolWithToolCall
     | TextEditorToolWithToolCall
+    | GoogleCalendarCreateEventToolWithToolCall
   )[];
   /** This is the list of tool calls that the model is requesting. */
   toolCallList: ToolCall[];
@@ -14375,10 +16465,10 @@ export interface ServerMessageEndOfCallReport {
     | 'pipeline-error-lmnt-voice-failed'
     | 'pipeline-error-azure-voice-failed'
     | 'pipeline-error-rime-ai-voice-failed'
-    | 'pipeline-error-neets-voice-failed'
     | 'pipeline-error-smallest-ai-voice-failed'
     | 'pipeline-error-neuphonic-voice-failed'
     | 'pipeline-error-hume-voice-failed'
+    | 'pipeline-error-sesame-voice-failed'
     | 'pipeline-error-deepgram-transcriber-failed'
     | 'pipeline-error-gladia-transcriber-failed'
     | 'pipeline-error-speechmatics-transcriber-failed'
@@ -14557,6 +16647,16 @@ export interface ServerMessageEndOfCallReport {
     | 'pipeline-error-deepgram-returning-502-network-error'
     | 'pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach'
     | 'pipeline-error-google-transcriber-failed'
+    | 'pipeline-error-openai-transcriber-failed'
+    | 'call.start.error-get-org'
+    | 'call.start.error-get-subscription'
+    | 'call.start.error-get-assistant'
+    | 'call.start.error-get-phone-number'
+    | 'call.start.error-get-customer'
+    | 'call.start.error-get-resources-validation'
+    | 'call.start.error-vapi-number-international'
+    | 'call.start.error-vapi-number-outbound-daily-limit'
+    | 'call.start.error-get-transport'
     | 'silence-timed-out'
     | 'sip-gateway-failed-to-connect-call'
     | 'twilio-failed-to-connect-call'
@@ -14962,10 +17062,10 @@ export interface ServerMessageStatusUpdate {
     | 'pipeline-error-lmnt-voice-failed'
     | 'pipeline-error-azure-voice-failed'
     | 'pipeline-error-rime-ai-voice-failed'
-    | 'pipeline-error-neets-voice-failed'
     | 'pipeline-error-smallest-ai-voice-failed'
     | 'pipeline-error-neuphonic-voice-failed'
     | 'pipeline-error-hume-voice-failed'
+    | 'pipeline-error-sesame-voice-failed'
     | 'pipeline-error-deepgram-transcriber-failed'
     | 'pipeline-error-gladia-transcriber-failed'
     | 'pipeline-error-speechmatics-transcriber-failed'
@@ -15144,6 +17244,16 @@ export interface ServerMessageStatusUpdate {
     | 'pipeline-error-deepgram-returning-502-network-error'
     | 'pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach'
     | 'pipeline-error-google-transcriber-failed'
+    | 'pipeline-error-openai-transcriber-failed'
+    | 'call.start.error-get-org'
+    | 'call.start.error-get-subscription'
+    | 'call.start.error-get-assistant'
+    | 'call.start.error-get-phone-number'
+    | 'call.start.error-get-customer'
+    | 'call.start.error-get-resources-validation'
+    | 'call.start.error-vapi-number-international'
+    | 'call.start.error-vapi-number-outbound-daily-limit'
+    | 'call.start.error-get-transport'
     | 'silence-timed-out'
     | 'sip-gateway-failed-to-connect-call'
     | 'twilio-failed-to-connect-call'
@@ -15227,6 +17337,7 @@ export interface ServerMessageToolCalls {
     | BashToolWithToolCall
     | ComputerToolWithToolCall
     | TextEditorToolWithToolCall
+    | GoogleCalendarCreateEventToolWithToolCall
   )[];
   /** This is the ISO-8601 formatted timestamp of when the message was sent. */
   timestamp?: string;
@@ -15896,6 +18007,8 @@ export interface ClientInboundMessageSay {
   content?: string;
   /** This is the flag to end call after content is spoken. */
   endCallAfterSpoken?: boolean;
+  /** This is the flag for whether the message is interruptible. */
+  interruptionsEnabled?: boolean;
 }
 
 export interface ClientInboundMessageEndCall {
@@ -16358,6 +18471,84 @@ export interface TextEditorToolWithToolCall {
    * @default "str_replace_editor"
    */
   name: 'str_replace_editor';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoogleCalendarCreateEventToolWithToolCall {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  type: 'google.calendar.event.create';
+  toolCall: ToolCall;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoogleSheetsRowAppendToolWithToolCall {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.sheets.row.append" for Google Sheets tool. */
+  type: 'google.sheets.row.append';
+  toolCall: ToolCall;
   /**
    * This is the function definition of the tool.
    *
@@ -17755,7 +19946,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & CreateTextEditorToolDTO)
         | ({
             type: 'query';
-          } & CreateQueryToolDTO),
+          } & CreateQueryToolDTO)
+        | ({
+            type: 'google.calendar.event.create';
+          } & CreateGoogleCalendarCreateEventToolDTO)
+        | ({
+            type: 'google.sheets.row.append';
+          } & CreateGoogleSheetsRowAppendToolDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -17791,7 +19988,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & TextEditorTool)
         | ({
             type: 'query';
-          } & QueryTool),
+          } & QueryTool)
+        | ({
+            type: 'google.calendar.event.create';
+          } & GoogleCalendarCreateEventTool)
+        | ({
+            type: 'google.sheets.row.append';
+          } & GoogleSheetsRowAppendTool),
         any
       >({
         path: `/tool`,
@@ -17898,6 +20101,12 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           | ({
               type: 'query';
             } & QueryTool)
+          | ({
+              type: 'google.calendar.event.create';
+            } & GoogleCalendarCreateEventTool)
+          | ({
+              type: 'google.sheets.row.append';
+            } & GoogleSheetsRowAppendTool)
         )[],
         any
       >({
@@ -17952,7 +20161,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & TextEditorTool)
         | ({
             type: 'query';
-          } & QueryTool),
+          } & QueryTool)
+        | ({
+            type: 'google.calendar.event.create';
+          } & GoogleCalendarCreateEventTool)
+        | ({
+            type: 'google.sheets.row.append';
+          } & GoogleSheetsRowAppendTool),
         any
       >({
         path: `/tool/${id}`,
@@ -18006,7 +20221,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & UpdateTextEditorToolDTO)
         | ({
             type: 'query';
-          } & UpdateQueryToolDTO),
+          } & UpdateQueryToolDTO)
+        | ({
+            type: 'google.calendar.event.create';
+          } & UpdateGoogleCalendarCreateEventToolDTO)
+        | ({
+            type: 'google.sheets.row.append';
+          } & UpdateGoogleSheetsRowAppendToolDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -18042,7 +20263,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & TextEditorTool)
         | ({
             type: 'query';
-          } & QueryTool),
+          } & QueryTool)
+        | ({
+            type: 'google.calendar.event.create';
+          } & GoogleCalendarCreateEventTool)
+        | ({
+            type: 'google.sheets.row.append';
+          } & GoogleSheetsRowAppendTool),
         any
       >({
         path: `/tool/${id}`,
@@ -18097,7 +20324,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & TextEditorTool)
         | ({
             type: 'query';
-          } & QueryTool),
+          } & QueryTool)
+        | ({
+            type: 'google.calendar.event.create';
+          } & GoogleCalendarCreateEventTool)
+        | ({
+            type: 'google.sheets.row.append';
+          } & GoogleSheetsRowAppendTool),
         any
       >({
         path: `/tool/${id}`,
@@ -18912,16 +21145,23 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     testSuiteTestControllerCreate: (
       testSuiteId: string,
-      data: {
-        type: 'voice';
-      } & CreateTestSuiteTestVoiceDto,
+      data:
+        | ({
+            type: 'voice';
+          } & CreateTestSuiteTestVoiceDto)
+        | ({
+            type: 'chat';
+          } & CreateTestSuiteTestChatDto),
       params: RequestParams = {},
     ) =>
       this.request<
-        TestSuiteTestVoice,
-        {
-          type: 'voice';
-        } & TestSuiteTestVoice
+        | ({
+            type: 'voice';
+          } & TestSuiteTestVoice)
+        | ({
+            type: 'chat';
+          } & TestSuiteTestChat),
+        any
       >({
         path: `/test-suite/${testSuiteId}/test`,
         method: 'POST',
@@ -18943,10 +21183,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     testSuiteTestControllerFindOne: (testSuiteId: string, id: string, params: RequestParams = {}) =>
       this.request<
-        TestSuiteTestVoice,
-        {
-          type: 'voice';
-        } & TestSuiteTestVoice
+        | ({
+            type: 'voice';
+          } & TestSuiteTestVoice)
+        | ({
+            type: 'chat';
+          } & TestSuiteTestChat),
+        any
       >({
         path: `/test-suite/${testSuiteId}/test/${id}`,
         method: 'GET',
@@ -18967,16 +21210,23 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     testSuiteTestControllerUpdate: (
       testSuiteId: string,
       id: string,
-      data: {
-        type: 'voice';
-      } & UpdateTestSuiteTestVoiceDto,
+      data:
+        | ({
+            type: 'voice';
+          } & UpdateTestSuiteTestVoiceDto)
+        | ({
+            type: 'chat';
+          } & UpdateTestSuiteTestChatDto),
       params: RequestParams = {},
     ) =>
       this.request<
-        TestSuiteTestVoice,
-        {
-          type: 'voice';
-        } & TestSuiteTestVoice
+        | ({
+            type: 'voice';
+          } & TestSuiteTestVoice)
+        | ({
+            type: 'chat';
+          } & TestSuiteTestChat),
+        any
       >({
         path: `/test-suite/${testSuiteId}/test/${id}`,
         method: 'PATCH',
@@ -18998,9 +21248,12 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     testSuiteTestControllerRemove: (testSuiteId: string, id: string, params: RequestParams = {}) =>
       this.request<
-        {
-          type: 'voice';
-        } & TestSuiteTestVoice,
+        | ({
+            type: 'voice';
+          } & TestSuiteTestVoice)
+        | ({
+            type: 'chat';
+          } & TestSuiteTestChat),
         any
       >({
         path: `/test-suite/${testSuiteId}/test/${id}`,
@@ -19848,7 +22101,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | CreateTwilioCredentialDTO
         | CreateVonageCredentialDTO
         | CreateWebhookCredentialDTO
-        | CreateXAiCredentialDTO,
+        | CreateXAiCredentialDTO
+        | CreateGoogleCalendarOAuth2ClientCredentialDTO
+        | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO,
       params: RequestParams = {},
     ) =>
       this.request<
@@ -19894,7 +22149,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | TwilioCredential
         | VonageCredential
         | WebhookCredential
-        | XAiCredential,
+        | XAiCredential
+        | GoogleCalendarOAuth2ClientCredential
+        | GoogleCalendarOAuth2AuthorizationCredential,
         any
       >({
         path: `/credential`,
@@ -20011,6 +22268,8 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           | VonageCredential
           | WebhookCredential
           | XAiCredential
+          | GoogleCalendarOAuth2ClientCredential
+          | GoogleCalendarOAuth2AuthorizationCredential
         )[],
         any
       >({
@@ -20075,7 +22334,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | TwilioCredential
         | VonageCredential
         | WebhookCredential
-        | XAiCredential,
+        | XAiCredential
+        | GoogleCalendarOAuth2ClientCredential
+        | GoogleCalendarOAuth2AuthorizationCredential,
         any
       >({
         path: `/credential/${id}`,
@@ -20139,7 +22400,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | UpdateTwilioCredentialDTO
         | UpdateVonageCredentialDTO
         | UpdateWebhookCredentialDTO
-        | UpdateXAiCredentialDTO,
+        | UpdateXAiCredentialDTO
+        | UpdateGoogleCalendarOAuth2ClientCredentialDTO
+        | UpdateGoogleCalendarOAuth2AuthorizationCredentialDTO,
       params: RequestParams = {},
     ) =>
       this.request<
@@ -20185,7 +22448,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | TwilioCredential
         | VonageCredential
         | WebhookCredential
-        | XAiCredential,
+        | XAiCredential
+        | GoogleCalendarOAuth2ClientCredential
+        | GoogleCalendarOAuth2AuthorizationCredential,
         any
       >({
         path: `/credential/${id}`,
@@ -20250,13 +22515,74 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | TwilioCredential
         | VonageCredential
         | WebhookCredential
-        | XAiCredential,
+        | XAiCredential
+        | GoogleCalendarOAuth2ClientCredential
+        | GoogleCalendarOAuth2AuthorizationCredential,
         any
       >({
         path: `/credential/${id}`,
         method: 'DELETE',
         secure: true,
         format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerGenerateSession
+     * @summary Generate a credential session
+     * @request POST:/credential/session
+     * @secure
+     */
+    credentialControllerGenerateSession: (data: CredentialSessionDTO, params: RequestParams = {}) =>
+      this.request<CredentialSessionResponse, any>({
+        path: `/credential/session`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerHandleWebhook
+     * @summary Handle credential webhook
+     * @request POST:/credential/webhook
+     */
+    credentialControllerHandleWebhook: (data: CredentialWebhookDTO, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/credential/webhook`,
+        method: 'POST',
+        body: data,
+        type: ContentType.Json,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerTriggerCredentialAction
+     * @summary Trigger a credential action
+     * @request POST:/credential/trigger
+     * @secure
+     */
+    credentialControllerTriggerCredentialAction: (
+      data: CredentialActionRequest,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, any>({
+        path: `/credential/trigger`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         ...params,
       }),
   };
@@ -20451,13 +22777,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | 'deepgram'
         | 'hume'
         | 'lmnt'
-        | 'neets'
         | 'neuphonic'
         | 'openai'
         | 'playht'
         | 'rime-ai'
         | 'smallest-ai'
-        | 'tavus',
+        | 'tavus'
+        | 'sesame',
       query?: {
         page?: number;
         keyword?: string;
@@ -20541,13 +22867,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | 'deepgram'
         | 'hume'
         | 'lmnt'
-        | 'neets'
         | 'neuphonic'
         | 'openai'
         | 'playht'
         | 'rime-ai'
         | 'smallest-ai'
-        | 'tavus',
+        | 'tavus'
+        | 'sesame',
       params: RequestParams = {},
     ) =>
       this.request<VoiceLibrary[], any>({
@@ -20577,13 +22903,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | 'deepgram'
         | 'hume'
         | 'lmnt'
-        | 'neets'
         | 'neuphonic'
         | 'openai'
         | 'playht'
         | 'rime-ai'
         | 'smallest-ai'
-        | 'tavus',
+        | 'tavus'
+        | 'sesame',
       params: RequestParams = {},
     ) =>
       this.request<VoiceLibrary[], any>({
@@ -20627,7 +22953,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetWorkflows: (
-      provider: 'make' | 'ghl',
+      provider: 'make' | 'ghl' | 'google.calendar',
       query?: {
         locationId?: string;
       },
@@ -20651,7 +22977,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetWorkflowTriggerHook: (
-      provider: 'make' | 'ghl',
+      provider: 'make' | 'ghl' | 'google.calendar',
       workflowId: string,
       params: RequestParams = {},
     ) =>
@@ -20671,7 +22997,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request GET:/{provider}/locations
      * @secure
      */
-    providerControllerGetLocations: (provider: 'make' | 'ghl', params: RequestParams = {}) =>
+    providerControllerGetLocations: (
+      provider: 'make' | 'ghl' | 'google.calendar',
+      params: RequestParams = {},
+    ) =>
       this.request<SbcConfiguration, any>({
         path: `/${provider}/locations`,
         method: 'GET',
