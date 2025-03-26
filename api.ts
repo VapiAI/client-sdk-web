@@ -943,7 +943,13 @@ export interface TalkscriberTranscriber {
 
 export interface LangfuseObservabilityPlan {
   provider: 'langfuse';
+  /** This is an array of tags to be added to the Langfuse trace. Tags allow you to categorize and filter traces. https://langfuse.com/docs/tracing-features/tags */
   tags: string[];
+  /**
+   * This is a JSON object that will be added to the Langfuse trace. Traces can be enriched with metadata to better understand your users, application, and experiments. https://langfuse.com/docs/tracing-features/metadata
+   * By default it includes the call metadata, assistant metadata, and assistant overrides.
+   */
+  metadata?: object;
 }
 
 export interface TextContent {
@@ -2346,6 +2352,12 @@ export interface CustomLLMModel {
   metadataSendMode?: 'off' | 'variable' | 'destructured';
   /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
   url: string;
+  /**
+   * This sets the timeout for the connection to the custom provider without needing to stream any tokens back. Default is 20 seconds.
+   * @min 20
+   * @max 600
+   */
+  timeoutSeconds?: number;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
@@ -3785,6 +3797,14 @@ export interface OpenAIVoice {
     | 'coral'
     | 'sage'
     | 'verse';
+  /** This is the model that will be used for text-to-speech. */
+  model?: 'tts-1' | 'tts-1-hd' | 'gpt-4o-mini-tts';
+  /**
+   * This is a prompt that allows you to control the voice of your generated audio.
+   * Does not work with 'tts-1' or 'tts-1-hd' models.
+   * @maxLength 10000
+   */
+  instructions?: string;
   /**
    * This is the speed multiplier that will be used.
    * @min 0.25
@@ -4013,6 +4033,26 @@ export interface RimeAIVoice {
    * @example null
    */
   speed?: number;
+  /**
+   * This is a flag that controls whether to add slight pauses using angle brackets. Example: “Hi. <200> I’d love to have a conversation with you.” adds a 200ms pause between the first and second sentences.
+   * @example false
+   */
+  pauseBetweenBrackets?: boolean;
+  /**
+   * This is a flag that controls whether text inside brackets should be phonemized (converted to phonetic pronunciation) - Example: "{h'El.o} World" will pronounce "Hello" as expected.
+   * @example false
+   */
+  phonemizeBetweenBrackets?: boolean;
+  /**
+   * This is a flag that controls whether to optimize for reduced latency in streaming. https://docs.rime.ai/api-reference/endpoint/websockets#param-reduce-latency
+   * @example false
+   */
+  reduceLatency?: boolean;
+  /**
+   * This is a string that allows inline speed control using alpha notation. https://docs.rime.ai/api-reference/endpoint/websockets#param-inline-speed-alpha
+   * @example null
+   */
+  inlineSpeedAlpha?: string;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -4132,6 +4172,61 @@ export interface VapiVoice {
   provider: 'vapi';
   /** The voices provided by Vapi */
   voiceId: 'Elliot' | 'Rohan' | 'Lily' | 'Savannah' | 'Hana' | 'Neha' | 'Cole' | 'Harry' | 'Paige';
+  /**
+   * This is the speed multiplier that will be used.
+   *
+   * @default 1
+   * @min 0.25
+   * @max 2
+   * @default 1
+   */
+  speed?: number;
+  /**
+   * This is the language code (ISO 639-1) that will be used.
+   *
+   * @default 'en-US'
+   * @default "en-US"
+   */
+  language?:
+    | 'en-US'
+    | 'en-GB'
+    | 'en-AU'
+    | 'en-CA'
+    | 'ja'
+    | 'zh'
+    | 'de'
+    | 'hi'
+    | 'fr-FR'
+    | 'fr-CA'
+    | 'ko'
+    | 'pt-BR'
+    | 'pt-PT'
+    | 'it'
+    | 'es-ES'
+    | 'es-MX'
+    | 'id'
+    | 'nl'
+    | 'tr'
+    | 'fil'
+    | 'pl'
+    | 'sv'
+    | 'bg'
+    | 'ro'
+    | 'ar-SA'
+    | 'ar-AE'
+    | 'cs'
+    | 'el'
+    | 'fi'
+    | 'hr'
+    | 'ms'
+    | 'sk'
+    | 'da'
+    | 'ta'
+    | 'uk'
+    | 'ru'
+    | 'hu'
+    | 'no'
+    | 'vi';
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -4434,6 +4529,14 @@ export interface FallbackOpenAIVoice {
     | 'coral'
     | 'sage'
     | 'verse';
+  /** This is the model that will be used for text-to-speech. */
+  model?: 'tts-1' | 'tts-1-hd' | 'gpt-4o-mini-tts';
+  /**
+   * This is a prompt that allows you to control the voice of your generated audio.
+   * Does not work with 'tts-1' or 'tts-1-hd' models.
+   * @maxLength 10000
+   */
+  instructions?: string;
   /**
    * This is the speed multiplier that will be used.
    * @min 0.25
@@ -4658,6 +4761,26 @@ export interface FallbackRimeAIVoice {
    * @example null
    */
   speed?: number;
+  /**
+   * This is a flag that controls whether to add slight pauses using angle brackets. Example: “Hi. <200> I’d love to have a conversation with you.” adds a 200ms pause between the first and second sentences.
+   * @example false
+   */
+  pauseBetweenBrackets?: boolean;
+  /**
+   * This is a flag that controls whether text inside brackets should be phonemized (converted to phonetic pronunciation) - Example: "{h'El.o} World" will pronounce "Hello" as expected.
+   * @example false
+   */
+  phonemizeBetweenBrackets?: boolean;
+  /**
+   * This is a flag that controls whether to optimize for reduced latency in streaming. https://docs.rime.ai/api-reference/endpoint/websockets#param-reduce-latency
+   * @example false
+   */
+  reduceLatency?: boolean;
+  /**
+   * This is a string that allows inline speed control using alpha notation. https://docs.rime.ai/api-reference/endpoint/websockets#param-inline-speed-alpha
+   * @example null
+   */
+  inlineSpeedAlpha?: string;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -4730,6 +4853,61 @@ export interface FallbackVapiVoice {
   provider: 'vapi';
   /** The voices provided by Vapi */
   voiceId: 'Elliot' | 'Rohan' | 'Lily' | 'Savannah' | 'Hana' | 'Neha' | 'Cole' | 'Harry' | 'Paige';
+  /**
+   * This is the speed multiplier that will be used.
+   *
+   * @default 1
+   * @min 0.25
+   * @max 2
+   * @default 1
+   */
+  speed?: number;
+  /**
+   * This is the language code (ISO 639-1) that will be used.
+   *
+   * @default 'en-US'
+   * @default "en-US"
+   */
+  language?:
+    | 'en-US'
+    | 'en-GB'
+    | 'en-AU'
+    | 'en-CA'
+    | 'ja'
+    | 'zh'
+    | 'de'
+    | 'hi'
+    | 'fr-FR'
+    | 'fr-CA'
+    | 'ko'
+    | 'pt-BR'
+    | 'pt-PT'
+    | 'it'
+    | 'es-ES'
+    | 'es-MX'
+    | 'id'
+    | 'nl'
+    | 'tr'
+    | 'fil'
+    | 'pl'
+    | 'sv'
+    | 'bg'
+    | 'ro'
+    | 'ar-SA'
+    | 'ar-AE'
+    | 'cs'
+    | 'el'
+    | 'fi'
+    | 'hr'
+    | 'ms'
+    | 'sk'
+    | 'da'
+    | 'ta'
+    | 'uk'
+    | 'ru'
+    | 'hu'
+    | 'no'
+    | 'vi';
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -5578,6 +5756,28 @@ export interface CreateXAiCredentialDTO {
   name?: string;
 }
 
+export interface CreateGoogleCalendarOAuth2ClientCredentialDTO {
+  provider: 'google.calendar.oauth2-client';
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateGoogleCalendarOAuth2AuthorizationCredentialDTO {
+  provider: 'google.calendar.oauth2-authorization';
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface TransferAssistantHookAction {
   /** This is the type of action - must be "transfer" */
   type: 'transfer';
@@ -5594,7 +5794,7 @@ export interface GoogleVoicemailDetectionPlan {
    * @default 15
    * @min 5
    * @max 60
-   * @default 15
+   * @default 25
    */
   voicemailExpectedDurationSeconds: number;
 }
@@ -5608,7 +5808,7 @@ export interface OpenAIVoicemailDetectionPlan {
    * @default 15
    * @min 5
    * @max 60
-   * @default 15
+   * @default 25
    */
   voicemailExpectedDurationSeconds: number;
 }
@@ -5698,12 +5898,14 @@ export interface TwilioVoicemailDetectionPlan {
 
 export interface CompliancePlan {
   /**
-   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
+   * When this is enabled, no logs, recordings, or transcriptions will be stored.
+   * At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
    * @example {"hipaaEnabled":false}
    */
   hipaaEnabled?: boolean;
   /**
-   * When this is enabled, the user will be restricted to use PCI-compliant providers, and no logs or transcripts are stored. At the end of the call, you will receive an end-of-call-report message to store on your server. Defaults to false.
+   * When this is enabled, the user will be restricted to use PCI-compliant providers, and no logs or transcripts are stored.
+   * At the end of the call, you will receive an end-of-call-report message to store on your server. Defaults to false.
    * @example {"pciEnabled":false}
    */
   pciEnabled?: boolean;
@@ -5757,6 +5959,13 @@ export interface StructuredDataPlan {
    * @max 60
    */
   timeoutSeconds?: number;
+}
+
+export interface StructuredDataMultiPlan {
+  /** This is the key of the structured data plan in the catalog. */
+  key: string;
+  /** This is an individual structured data plan in the catalog. */
+  plan: StructuredDataPlan;
 }
 
 export interface SuccessEvaluationPlan {
@@ -5836,6 +6045,8 @@ export interface AnalysisPlan {
   summaryPlan?: SummaryPlan;
   /** This is the plan for generating the structured data from the call. This outputs to `call.analysis.structuredData`. */
   structuredDataPlan?: StructuredDataPlan;
+  /** This is an array of structured data plan catalogs. Each entry includes a `key` and a `plan` for generating the structured data from the call. This outputs to `call.analysis.structuredDataMulti`. */
+  structuredDataMultiPlan?: StructuredDataMultiPlan[];
   /** This is the plan for generating the success evaluation of the call. This outputs to `call.analysis.successEvaluation`. */
   successEvaluationPlan?: SuccessEvaluationPlan;
 }
@@ -5894,6 +6105,12 @@ export interface ArtifactPlan {
    * @example true
    */
   recordingEnabled?: boolean;
+  /**
+   * This determines the format of the recording. Defaults to `wav;l16`.
+   *
+   * @default 'wav;l16'
+   */
+  recordingFormat?: 'wav;l16' | 'mp3';
   /**
    * This determines whether the video is recorded during the call. Defaults to false. Only relevant for `webCall` type.
    *
@@ -6105,6 +6322,34 @@ export interface BothCustomEndpointingRule {
   timeoutSeconds: number;
 }
 
+export interface VapiSmartEndpointingPlan {
+  /**
+   * This is the provider for the smart endpointing plan.
+   * @example "vapi"
+   */
+  provider: 'vapi' | 'livekit';
+}
+
+export interface LivekitSmartEndpointingPlan {
+  /**
+   * This is the provider for the smart endpointing plan.
+   * @example "livekit"
+   */
+  provider: 'vapi' | 'livekit';
+  /**
+   * This expression describes how long the bot will wait to start speaking based on the likelihood that the user has reached an endpoint.
+   *
+   * This is a millisecond valued function. It maps probabilities (real numbers on [0,1]) to seconds that the user should wait ([0, \infty]). Any negative values that are returned are set to zero (the bot can't start talking in the past).
+   *
+   * A probability of zero represents very high confidence that the caller has stopped speaking, and would like the bot to speak to them. A probability of one represents very high confidence that the caller is still speaking.
+   *
+   * Under the hood, this is parsed into a mathjs expression. Whatever you use to write your expression needs to be valid with respect to mathjs
+   *
+   * @default "200 + 8000 * x"
+   */
+  waitFunction?: string;
+}
+
 export interface TranscriptionEndpointingPlan {
   /**
    * The minimum number of seconds to wait after transcription ending with punctuation before sending a request to the model. Defaults to 0.1.
@@ -6161,19 +6406,17 @@ export interface StartSpeakingPlan {
    */
   waitSeconds?: number;
   /**
-   * This determines if a customer speech is considered done (endpointing) using a Vapi custom-trained model on customer's speech. This is good for middle-of-thought detection. Alternatively, you can use LiveKit's smart endpointing model (it only supports English, though)
-   *
-   * Once an endpoint is triggered, the request is sent to `assistant.model`.
-   *
-   * Usage:
-   * - If your conversations are long-form and you want assistant to wait smartly even if customer pauses for a bit to think, you can use this instead.
-   *
-   * This overrides `transcriptionEndpointingPlan`.
-   *
-   * @default false
+   * @deprecated
    * @example false
    */
-  smartEndpointingEnabled?: 'true' | 'false' | 'livekit';
+  smartEndpointingEnabled?: object;
+  /**
+   * This is the plan for smart endpointing. Pick between Vapi smart endpointing or LiveKit smart endpointing (or nothing). We strongly recommend using livekit endpointing when working in English. LiveKit endpointing is not supported in other languages, yet.
+   *
+   * If this is set, it will override and take precedence over `transcriptionEndpointingPlan`.
+   * This plan will still be overridden by any matching `customEndpointingRules`.
+   */
+  smartEndpointingPlan?: VapiSmartEndpointingPlan | LivekitSmartEndpointingPlan;
   /**
    * These are the custom endpointing rules to set an endpointing timeout based on a regex on the customer's speech or the assistant's last message.
    *
@@ -6182,9 +6425,14 @@ export interface StartSpeakingPlan {
    * - If you have questions where the customer may pause to look up information like "what's my account number?", you can set a longer timeout.
    * - If you want to wait longer while customer is enumerating a list of numbers, you can set a longer timeout.
    *
-   * These override `transcriptionEndpointingPlan` and `smartEndpointingEnabled` when a rule is matched.
+   * These rules have the highest precedence and will override both `smartEndpointingPlan` and `transcriptionEndpointingPlan` when a rule is matched.
    *
    * The rules are evaluated in order and the first one that matches will be used.
+   *
+   * Order of precedence for endpointing:
+   * 1. customEndpointingRules (if any match)
+   * 2. smartEndpointingPlan (if set)
+   * 3. transcriptionEndpointingPlan
    *
    * @default []
    */
@@ -6197,6 +6445,9 @@ export interface StartSpeakingPlan {
    * This determines how a customer speech is considered done (endpointing) using the transcription of customer's speech.
    *
    * Once an endpoint is triggered, the request is sent to `assistant.model`.
+   *
+   * Note: This plan is only used if `smartEndpointingPlan` is not set. If both are provided, `smartEndpointingPlan` takes precedence.
+   * This plan will also be overridden by any matching `customEndpointingRules`.
    */
   transcriptionEndpointingPlan?: TranscriptionEndpointingPlan;
 }
@@ -6481,9 +6732,10 @@ export interface CreateAssistantDTO {
   maxDurationSeconds?: number;
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * @example "office"
+   * You can also provide a custom sound by providing a URL to an audio file.
+   * @maxLength 1000
    */
-  backgroundSound?: 'off' | 'office';
+  backgroundSound?: 'off' | 'office' | string;
   /**
    * This enables filtering of noise and background speech while the user is talking.
    *
@@ -6554,6 +6806,8 @@ export interface CreateAssistantDTO {
     | CreateVonageCredentialDTO
     | CreateWebhookCredentialDTO
     | CreateXAiCredentialDTO
+    | CreateGoogleCalendarOAuth2ClientCredentialDTO
+    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
   )[];
   /**
    * This is the name of the assistant.
@@ -6783,9 +7037,10 @@ export interface AssistantOverrides {
   maxDurationSeconds?: number;
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * @example "office"
+   * You can also provide a custom sound by providing a URL to an audio file.
+   * @maxLength 1000
    */
-  backgroundSound?: 'off' | 'office';
+  backgroundSound?: 'off' | 'office' | string;
   /**
    * This enables filtering of noise and background speech while the user is talking.
    *
@@ -6856,6 +7111,8 @@ export interface AssistantOverrides {
     | CreateVonageCredentialDTO
     | CreateWebhookCredentialDTO
     | CreateXAiCredentialDTO
+    | CreateGoogleCalendarOAuth2ClientCredentialDTO
+    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
   )[];
   /**
    * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
@@ -7162,6 +7419,8 @@ export interface Analysis {
   summary?: string;
   /** This is the structured data extracted from the call. Customize by setting `assistant.analysisPlan.structuredDataPrompt` and/or `assistant.analysisPlan.structuredDataSchema`. */
   structuredData?: object;
+  /** This is the structured data catalog of the call. Customize by setting `assistant.analysisPlan.structuredDataMultiPlan`. */
+  structuredDataMulti?: object[];
   /** This is the evaluation of the call. Customize by setting `assistant.analysisPlan.successEvaluationPrompt` and/or `assistant.analysisPlan.successEvaluationRubric`. */
   successEvaluation?: string;
 }
@@ -7448,6 +7707,16 @@ export interface Call {
     | 'pipeline-error-deepgram-returning-502-network-error'
     | 'pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach'
     | 'pipeline-error-google-transcriber-failed'
+    | 'pipeline-error-openai-transcriber-failed'
+    | 'call.start.error-get-org'
+    | 'call.start.error-get-subscription'
+    | 'call.start.error-get-assistant'
+    | 'call.start.error-get-phone-number'
+    | 'call.start.error-get-customer'
+    | 'call.start.error-get-resources-validation'
+    | 'call.start.error-vapi-number-international'
+    | 'call.start.error-vapi-number-outbound-daily-limit'
+    | 'call.start.error-get-transport'
     | 'silence-timed-out'
     | 'sip-gateway-failed-to-connect-call'
     | 'twilio-failed-to-connect-call'
@@ -7625,7 +7894,7 @@ export interface ChatCompletionMessageMetadata {
   nodeTrace?: string[];
 }
 
-export interface ChatCompletionMessage {
+export interface ChatCompletionMessageWorkflows {
   role: object;
   content: string | null;
   metadata?: ChatCompletionMessageMetadata;
@@ -7741,7 +8010,7 @@ export interface CreateWorkflowDTO {
 }
 
 export interface ChatCompletionsDTO {
-  messages: ChatCompletionMessage[];
+  messages: ChatCompletionMessageWorkflows[];
   workflowId?: string;
   workflow?: CreateWorkflowDTO;
 }
@@ -7887,9 +8156,10 @@ export interface Assistant {
   maxDurationSeconds?: number;
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * @example "office"
+   * You can also provide a custom sound by providing a URL to an audio file.
+   * @maxLength 1000
    */
-  backgroundSound?: 'off' | 'office';
+  backgroundSound?: 'off' | 'office' | string;
   /**
    * This enables filtering of noise and background speech while the user is talking.
    *
@@ -7960,6 +8230,8 @@ export interface Assistant {
     | CreateVonageCredentialDTO
     | CreateWebhookCredentialDTO
     | CreateXAiCredentialDTO
+    | CreateGoogleCalendarOAuth2ClientCredentialDTO
+    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
   )[];
   /**
    * This is the name of the assistant.
@@ -8208,9 +8480,10 @@ export interface UpdateAssistantDTO {
   maxDurationSeconds?: number;
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * @example "office"
+   * You can also provide a custom sound by providing a URL to an audio file.
+   * @maxLength 1000
    */
-  backgroundSound?: 'off' | 'office';
+  backgroundSound?: 'off' | 'office' | string;
   /**
    * This enables filtering of noise and background speech while the user is talking.
    *
@@ -8281,6 +8554,8 @@ export interface UpdateAssistantDTO {
     | CreateVonageCredentialDTO
     | CreateWebhookCredentialDTO
     | CreateXAiCredentialDTO
+    | CreateGoogleCalendarOAuth2ClientCredentialDTO
+    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
   )[];
   /**
    * This is the name of the assistant.
@@ -9940,6 +10215,58 @@ export interface QueryTool {
   server?: Server;
 }
 
+export interface GoogleCalendarCreateEventTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  type: 'google.calendar.event.create';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
 export interface CreateOutputToolDTO {
   /**
    * This determines if the tool is async.
@@ -10141,6 +10468,44 @@ export interface CreateQueryToolDTO {
   type: 'query';
   /** The knowledge bases to query */
   knowledgeBases?: KnowledgeBase[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateGoogleCalendarCreateEventToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  type: 'google.calendar.event.create';
   /**
    * This is the function definition of the tool.
    *
@@ -10593,6 +10958,42 @@ export interface UpdateQueryToolDTO {
   server?: Server;
 }
 
+export interface UpdateGoogleCalendarCreateEventToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
 export interface CreateFileDTO {
   /**
    * This is the File you want to upload for use with the Knowledge Base.
@@ -10895,6 +11296,45 @@ export interface UpdateSquadDTO {
   membersOverrides?: AssistantOverrides;
 }
 
+export interface TesterPlan {
+  /**
+   * Pass a transient assistant to use for the test assistant.
+   *
+   * Make sure to write a detailed system prompt for a test assistant, and use the {{test.script}} variable to access the test script.
+   */
+  assistant?: CreateAssistantDTO;
+  /**
+   * Pass an assistant id that can be access
+   *
+   * Make sure to write a detailed system prompt for the test assistant, and use the {{test.script}} variable to access the test script.
+   */
+  assistantId?: string;
+  /**
+   * Add any assistant overrides to the test assistant.
+   *
+   * One use case is if you want to pass custom variables into the test using variableValues, that you can then access in the script
+   * and rubric using {{varName}}.
+   */
+  assistantOverrides?: AssistantOverrides;
+}
+
+export interface TestSuitePhoneNumber {
+  /** This is the provider of the phone number. */
+  provider: 'test-suite';
+  /**
+   * This is the phone number that is being tested.
+   * @maxLength 50
+   */
+  number: string;
+}
+
+export interface TargetPlan {
+  /** This is the phoneNumberId that is being tested. */
+  phoneNumberId?: string;
+  /** This is the phone number that is being tested. Only use this if you have not imported the phone number to Vapi. */
+  phoneNumber?: TestSuitePhoneNumber;
+}
+
 export interface TestSuite {
   /** This is the unique identifier for the test suite. */
   id: string;
@@ -10915,8 +11355,19 @@ export interface TestSuite {
    * @maxLength 80
    */
   name?: string;
-  /** This is the phone number ID associated with this test suite. */
+  /**
+   * This is the phone number ID associated with this test suite.
+   * @deprecated
+   */
   phoneNumberId?: string;
+  /**
+   * Override the default tester plan by providing custom assistant configuration for the test agent.
+   *
+   * We recommend only using this if you are confident, as we have already set sensible defaults on the tester plan.
+   */
+  testerPlan?: TesterPlan;
+  /** These are the configuration for the assistant / phone number that is being tested. */
+  targetPlan?: TargetPlan;
 }
 
 export interface TestSuitesPaginatedResponse {
@@ -10930,8 +11381,19 @@ export interface CreateTestSuiteDto {
    * @maxLength 80
    */
   name?: string;
-  /** This is the phone number ID associated with this test suite. */
+  /**
+   * This is the phone number ID associated with this test suite.
+   * @deprecated
+   */
   phoneNumberId?: string;
+  /**
+   * Override the default tester plan by providing custom assistant configuration for the test agent.
+   *
+   * We recommend only using this if you are confident, as we have already set sensible defaults on the tester plan.
+   */
+  testerPlan?: TesterPlan;
+  /** These are the configuration for the assistant / phone number that is being tested. */
+  targetPlan?: TargetPlan;
 }
 
 export interface UpdateTestSuiteDto {
@@ -10940,8 +11402,19 @@ export interface UpdateTestSuiteDto {
    * @maxLength 80
    */
   name?: string;
-  /** This is the phone number ID associated with this test suite. */
+  /**
+   * This is the phone number ID associated with this test suite.
+   * @deprecated
+   */
   phoneNumberId?: string;
+  /**
+   * Override the default tester plan by providing custom assistant configuration for the test agent.
+   *
+   * We recommend only using this if you are confident, as we have already set sensible defaults on the tester plan.
+   */
+  testerPlan?: TesterPlan;
+  /** These are the configuration for the assistant / phone number that is being tested. */
+  targetPlan?: TargetPlan;
 }
 
 export interface TestSuiteTestVoice {
@@ -10986,6 +11459,48 @@ export interface TestSuiteTestVoice {
   numAttempts?: number;
 }
 
+export interface TestSuiteTestChat {
+  /** These are the scorers used to evaluate the test. */
+  scorers: TestSuiteTestScorerAI[];
+  /**
+   * This is the type of the test, which must be chat.
+   * @maxLength 100
+   */
+  type: 'chat';
+  /** This is the unique identifier for the test. */
+  id: string;
+  /** This is the unique identifier for the test suite this test belongs to. */
+  testSuiteId: string;
+  /** This is the unique identifier for the organization this test belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the test was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the test was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of the test.
+   * @maxLength 80
+   */
+  name?: string;
+  /**
+   * This is the script to be used for the chat test.
+   * @maxLength 10000
+   */
+  script: string;
+  /**
+   * This is the number of attempts allowed for the test.
+   * @min 1
+   * @max 10
+   */
+  numAttempts?: number;
+}
+
 export interface CreateTestSuiteTestVoiceDto {
   /** These are the scorers used to evaluate the test. */
   scorers: TestSuiteTestScorerAI[];
@@ -10996,6 +11511,32 @@ export interface CreateTestSuiteTestVoiceDto {
   type: 'voice';
   /**
    * This is the script to be used for the voice test.
+   * @maxLength 10000
+   */
+  script: string;
+  /**
+   * This is the number of attempts allowed for the test.
+   * @min 1
+   * @max 10
+   */
+  numAttempts?: number;
+  /**
+   * This is the name of the test.
+   * @maxLength 80
+   */
+  name?: string;
+}
+
+export interface CreateTestSuiteTestChatDto {
+  /** These are the scorers used to evaluate the test. */
+  scorers: TestSuiteTestScorerAI[];
+  /**
+   * This is the type of the test, which must be chat.
+   * @maxLength 100
+   */
+  type: 'chat';
+  /**
+   * This is the script to be used for the chat test.
    * @maxLength 10000
    */
   script: string;
@@ -11033,6 +11574,27 @@ export interface UpdateTestSuiteTestVoiceDto {
   numAttempts?: number;
 }
 
+export interface UpdateTestSuiteTestChatDto {
+  /** These are the scorers used to evaluate the test. */
+  scorers?: TestSuiteTestScorerAI[];
+  /**
+   * This is the name of the test.
+   * @maxLength 80
+   */
+  name?: string;
+  /**
+   * This is the script to be used for the chat test.
+   * @maxLength 10000
+   */
+  script?: string;
+  /**
+   * This is the number of attempts allowed for the test.
+   * @min 1
+   * @max 10
+   */
+  numAttempts?: number;
+}
+
 export interface TestSuiteTestScorerAI {
   /**
    * This is the type of the scorer, which must be AI.
@@ -11048,7 +11610,7 @@ export interface TestSuiteTestScorerAI {
 
 export interface TestSuiteTestsPaginatedResponse {
   /** A list of test suite tests. */
-  results: TestSuiteTestVoice[];
+  results: (TestSuiteTestVoice | TestSuiteTestChat)[];
   /** Metadata about the pagination. */
   metadata: PaginationMeta;
 }
@@ -11403,6 +11965,15 @@ export interface CreateOrgDTO {
    * @max 10
    */
   concurrencyLimit?: number;
+  /**
+   * Stores the information about the compliance plan enforced at the organization level. Currently pciEnabled is supported through this field.
+   * When this is enabled, any logs, recordings, or transcriptions will be shipped to the customer endpoints if provided else lost.
+   * At the end of the call, you will receive an end-of-call-report message to store on your server, if webhook is provided.
+   * Defaults to false.
+   * When PCI is enabled, only PCI-compliant Providers will be available for LLM, Voice and transcribers.
+   * This is due to the compliance requirements of PCI. Other providers may not meet these requirements.
+   */
+  compliancePlan?: CompliancePlan;
 }
 
 export interface AutoReloadPlan {
@@ -11547,6 +12118,13 @@ export interface Subscription {
   couponUsageLeft?: string;
   /** This is the invoice plan for the subscription. */
   invoicePlan?: InvoicePlan;
+  /**
+   * This is the PCI enabled flag for the subscription. It determines whether orgs under this
+   * subscription have the option to enable PCI compliance.
+   */
+  pciEnabled?: boolean;
+  /** This is the ID for the Common Paper agreement outlining the PCI contract. */
+  pciCommonPaperAgreementId?: string;
 }
 
 export interface OrgPlan {
@@ -11622,6 +12200,15 @@ export interface Org {
    * @max 10
    */
   concurrencyLimit?: number;
+  /**
+   * Stores the information about the compliance plan enforced at the organization level. Currently pciEnabled is supported through this field.
+   * When this is enabled, any logs, recordings, or transcriptions will be shipped to the customer endpoints if provided else lost.
+   * At the end of the call, you will receive an end-of-call-report message to store on your server, if webhook is provided.
+   * Defaults to false.
+   * When PCI is enabled, only PCI-compliant Providers will be available for LLM, Voice and transcribers.
+   * This is due to the compliance requirements of PCI. Other providers may not meet these requirements.
+   */
+  compliancePlan?: CompliancePlan;
 }
 
 export interface UpdateOrgDTO {
@@ -11663,6 +12250,15 @@ export interface UpdateOrgDTO {
    * @max 10
    */
   concurrencyLimit?: number;
+  /**
+   * Stores the information about the compliance plan enforced at the organization level. Currently pciEnabled is supported through this field.
+   * When this is enabled, any logs, recordings, or transcriptions will be shipped to the customer endpoints if provided else lost.
+   * At the end of the call, you will receive an end-of-call-report message to store on your server, if webhook is provided.
+   * Defaults to false.
+   * When PCI is enabled, only PCI-compliant Providers will be available for LLM, Voice and transcribers.
+   * This is due to the compliance requirements of PCI. Other providers may not meet these requirements.
+   */
+  compliancePlan?: CompliancePlan;
 }
 
 export interface User {
@@ -13078,6 +13674,56 @@ export interface XAiCredential {
   name?: string;
 }
 
+export interface GoogleCalendarOAuth2ClientCredential {
+  provider: 'google.calendar.oauth2-client';
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface GoogleCalendarOAuth2AuthorizationCredential {
+  provider: 'google.calendar.oauth2-authorization';
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CreateCerebrasCredentialDTO {
   provider: 'cerebras';
   /**
@@ -13818,6 +14464,59 @@ export interface UpdateXAiCredentialDTO {
   name?: string;
 }
 
+export interface UpdateGoogleCalendarOAuth2ClientCredentialDTO {
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface UpdateGoogleCalendarOAuth2AuthorizationCredentialDTO {
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CredentialSessionResponse {
+  sessionToken: string;
+}
+
+export interface CredentialEndUser {
+  endUserId: string;
+  organizationId: string;
+}
+
+export interface CredentialSessionError {
+  type: string;
+  description: string;
+}
+
+export interface CredentialWebhookDTO {
+  type: 'auth' | 'sync' | 'forward';
+  operation: 'creation' | 'override' | 'refresh';
+  from: string;
+  connectionId: string;
+  authMode: 'OAUTH2' | 'API_KEY' | 'BASIC';
+  providerConfigKey: string;
+  provider: string;
+  environment: string;
+  success: boolean;
+  endUser: CredentialEndUser;
+  error?: CredentialSessionError;
+}
+
+export interface CredentialActionRequest {
+  action_name: string;
+  input: object;
+}
+
 export interface ToolTemplateSetup {
   title: string;
   description?: string;
@@ -14147,6 +14846,7 @@ export interface ClientMessageToolCalls {
     | BashToolWithToolCall
     | ComputerToolWithToolCall
     | TextEditorToolWithToolCall
+    | GoogleCalendarCreateEventToolWithToolCall
   )[];
   /** This is the list of tool calls that the model is requesting. */
   toolCallList: ToolCall[];
@@ -14557,6 +15257,16 @@ export interface ServerMessageEndOfCallReport {
     | 'pipeline-error-deepgram-returning-502-network-error'
     | 'pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach'
     | 'pipeline-error-google-transcriber-failed'
+    | 'pipeline-error-openai-transcriber-failed'
+    | 'call.start.error-get-org'
+    | 'call.start.error-get-subscription'
+    | 'call.start.error-get-assistant'
+    | 'call.start.error-get-phone-number'
+    | 'call.start.error-get-customer'
+    | 'call.start.error-get-resources-validation'
+    | 'call.start.error-vapi-number-international'
+    | 'call.start.error-vapi-number-outbound-daily-limit'
+    | 'call.start.error-get-transport'
     | 'silence-timed-out'
     | 'sip-gateway-failed-to-connect-call'
     | 'twilio-failed-to-connect-call'
@@ -15144,6 +15854,16 @@ export interface ServerMessageStatusUpdate {
     | 'pipeline-error-deepgram-returning-502-network-error'
     | 'pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach'
     | 'pipeline-error-google-transcriber-failed'
+    | 'pipeline-error-openai-transcriber-failed'
+    | 'call.start.error-get-org'
+    | 'call.start.error-get-subscription'
+    | 'call.start.error-get-assistant'
+    | 'call.start.error-get-phone-number'
+    | 'call.start.error-get-customer'
+    | 'call.start.error-get-resources-validation'
+    | 'call.start.error-vapi-number-international'
+    | 'call.start.error-vapi-number-outbound-daily-limit'
+    | 'call.start.error-get-transport'
     | 'silence-timed-out'
     | 'sip-gateway-failed-to-connect-call'
     | 'twilio-failed-to-connect-call'
@@ -15227,6 +15947,7 @@ export interface ServerMessageToolCalls {
     | BashToolWithToolCall
     | ComputerToolWithToolCall
     | TextEditorToolWithToolCall
+    | GoogleCalendarCreateEventToolWithToolCall
   )[];
   /** This is the ISO-8601 formatted timestamp of when the message was sent. */
   timestamp?: string;
@@ -16358,6 +17079,45 @@ export interface TextEditorToolWithToolCall {
    * @default "str_replace_editor"
    */
   name: 'str_replace_editor';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoogleCalendarCreateEventToolWithToolCall {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  type: 'google.calendar.event.create';
+  toolCall: ToolCall;
   /**
    * This is the function definition of the tool.
    *
@@ -17755,7 +18515,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & CreateTextEditorToolDTO)
         | ({
             type: 'query';
-          } & CreateQueryToolDTO),
+          } & CreateQueryToolDTO)
+        | ({
+            type: 'google.calendar.event.create';
+          } & CreateGoogleCalendarCreateEventToolDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -17791,7 +18554,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & TextEditorTool)
         | ({
             type: 'query';
-          } & QueryTool),
+          } & QueryTool)
+        | ({
+            type: 'google.calendar.event.create';
+          } & GoogleCalendarCreateEventTool),
         any
       >({
         path: `/tool`,
@@ -17898,6 +18664,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           | ({
               type: 'query';
             } & QueryTool)
+          | ({
+              type: 'google.calendar.event.create';
+            } & GoogleCalendarCreateEventTool)
         )[],
         any
       >({
@@ -17952,7 +18721,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & TextEditorTool)
         | ({
             type: 'query';
-          } & QueryTool),
+          } & QueryTool)
+        | ({
+            type: 'google.calendar.event.create';
+          } & GoogleCalendarCreateEventTool),
         any
       >({
         path: `/tool/${id}`,
@@ -18006,7 +18778,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & UpdateTextEditorToolDTO)
         | ({
             type: 'query';
-          } & UpdateQueryToolDTO),
+          } & UpdateQueryToolDTO)
+        | ({
+            type: 'google.calendar.event.create';
+          } & UpdateGoogleCalendarCreateEventToolDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -18042,7 +18817,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & TextEditorTool)
         | ({
             type: 'query';
-          } & QueryTool),
+          } & QueryTool)
+        | ({
+            type: 'google.calendar.event.create';
+          } & GoogleCalendarCreateEventTool),
         any
       >({
         path: `/tool/${id}`,
@@ -18097,7 +18875,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & TextEditorTool)
         | ({
             type: 'query';
-          } & QueryTool),
+          } & QueryTool)
+        | ({
+            type: 'google.calendar.event.create';
+          } & GoogleCalendarCreateEventTool),
         any
       >({
         path: `/tool/${id}`,
@@ -18912,16 +19693,23 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     testSuiteTestControllerCreate: (
       testSuiteId: string,
-      data: {
-        type: 'voice';
-      } & CreateTestSuiteTestVoiceDto,
+      data:
+        | ({
+            type: 'voice';
+          } & CreateTestSuiteTestVoiceDto)
+        | ({
+            type: 'chat';
+          } & CreateTestSuiteTestChatDto),
       params: RequestParams = {},
     ) =>
       this.request<
-        TestSuiteTestVoice,
-        {
-          type: 'voice';
-        } & TestSuiteTestVoice
+        | ({
+            type: 'voice';
+          } & TestSuiteTestVoice)
+        | ({
+            type: 'chat';
+          } & TestSuiteTestChat),
+        any
       >({
         path: `/test-suite/${testSuiteId}/test`,
         method: 'POST',
@@ -18943,10 +19731,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     testSuiteTestControllerFindOne: (testSuiteId: string, id: string, params: RequestParams = {}) =>
       this.request<
-        TestSuiteTestVoice,
-        {
-          type: 'voice';
-        } & TestSuiteTestVoice
+        | ({
+            type: 'voice';
+          } & TestSuiteTestVoice)
+        | ({
+            type: 'chat';
+          } & TestSuiteTestChat),
+        any
       >({
         path: `/test-suite/${testSuiteId}/test/${id}`,
         method: 'GET',
@@ -18967,16 +19758,23 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     testSuiteTestControllerUpdate: (
       testSuiteId: string,
       id: string,
-      data: {
-        type: 'voice';
-      } & UpdateTestSuiteTestVoiceDto,
+      data:
+        | ({
+            type: 'voice';
+          } & UpdateTestSuiteTestVoiceDto)
+        | ({
+            type: 'chat';
+          } & UpdateTestSuiteTestChatDto),
       params: RequestParams = {},
     ) =>
       this.request<
-        TestSuiteTestVoice,
-        {
-          type: 'voice';
-        } & TestSuiteTestVoice
+        | ({
+            type: 'voice';
+          } & TestSuiteTestVoice)
+        | ({
+            type: 'chat';
+          } & TestSuiteTestChat),
+        any
       >({
         path: `/test-suite/${testSuiteId}/test/${id}`,
         method: 'PATCH',
@@ -18998,9 +19796,12 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     testSuiteTestControllerRemove: (testSuiteId: string, id: string, params: RequestParams = {}) =>
       this.request<
-        {
-          type: 'voice';
-        } & TestSuiteTestVoice,
+        | ({
+            type: 'voice';
+          } & TestSuiteTestVoice)
+        | ({
+            type: 'chat';
+          } & TestSuiteTestChat),
         any
       >({
         path: `/test-suite/${testSuiteId}/test/${id}`,
@@ -19848,7 +20649,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | CreateTwilioCredentialDTO
         | CreateVonageCredentialDTO
         | CreateWebhookCredentialDTO
-        | CreateXAiCredentialDTO,
+        | CreateXAiCredentialDTO
+        | CreateGoogleCalendarOAuth2ClientCredentialDTO
+        | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO,
       params: RequestParams = {},
     ) =>
       this.request<
@@ -19894,7 +20697,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | TwilioCredential
         | VonageCredential
         | WebhookCredential
-        | XAiCredential,
+        | XAiCredential
+        | GoogleCalendarOAuth2ClientCredential
+        | GoogleCalendarOAuth2AuthorizationCredential,
         any
       >({
         path: `/credential`,
@@ -20011,6 +20816,8 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           | VonageCredential
           | WebhookCredential
           | XAiCredential
+          | GoogleCalendarOAuth2ClientCredential
+          | GoogleCalendarOAuth2AuthorizationCredential
         )[],
         any
       >({
@@ -20075,7 +20882,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | TwilioCredential
         | VonageCredential
         | WebhookCredential
-        | XAiCredential,
+        | XAiCredential
+        | GoogleCalendarOAuth2ClientCredential
+        | GoogleCalendarOAuth2AuthorizationCredential,
         any
       >({
         path: `/credential/${id}`,
@@ -20139,7 +20948,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | UpdateTwilioCredentialDTO
         | UpdateVonageCredentialDTO
         | UpdateWebhookCredentialDTO
-        | UpdateXAiCredentialDTO,
+        | UpdateXAiCredentialDTO
+        | UpdateGoogleCalendarOAuth2ClientCredentialDTO
+        | UpdateGoogleCalendarOAuth2AuthorizationCredentialDTO,
       params: RequestParams = {},
     ) =>
       this.request<
@@ -20185,7 +20996,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | TwilioCredential
         | VonageCredential
         | WebhookCredential
-        | XAiCredential,
+        | XAiCredential
+        | GoogleCalendarOAuth2ClientCredential
+        | GoogleCalendarOAuth2AuthorizationCredential,
         any
       >({
         path: `/credential/${id}`,
@@ -20250,13 +21063,72 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         | TwilioCredential
         | VonageCredential
         | WebhookCredential
-        | XAiCredential,
+        | XAiCredential
+        | GoogleCalendarOAuth2ClientCredential
+        | GoogleCalendarOAuth2AuthorizationCredential,
         any
       >({
         path: `/credential/${id}`,
         method: 'DELETE',
         secure: true,
         format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerGenerateSession
+     * @summary Generate a credential session
+     * @request POST:/credential/session
+     * @secure
+     */
+    credentialControllerGenerateSession: (params: RequestParams = {}) =>
+      this.request<CredentialSessionResponse, any>({
+        path: `/credential/session`,
+        method: 'POST',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerHandleWebhook
+     * @summary Handle credential webhook
+     * @request POST:/credential/webhook
+     */
+    credentialControllerHandleWebhook: (data: CredentialWebhookDTO, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/credential/webhook`,
+        method: 'POST',
+        body: data,
+        type: ContentType.Json,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Credentials
+     * @name CredentialControllerTriggerCredentialAction
+     * @summary Trigger a credential action
+     * @request POST:/credential/trigger
+     * @secure
+     */
+    credentialControllerTriggerCredentialAction: (
+      data: CredentialActionRequest,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, any>({
+        path: `/credential/trigger`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         ...params,
       }),
   };
@@ -20627,7 +21499,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetWorkflows: (
-      provider: 'make' | 'ghl',
+      provider: 'make' | 'ghl' | 'google.calendar',
       query?: {
         locationId?: string;
       },
@@ -20651,7 +21523,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetWorkflowTriggerHook: (
-      provider: 'make' | 'ghl',
+      provider: 'make' | 'ghl' | 'google.calendar',
       workflowId: string,
       params: RequestParams = {},
     ) =>
@@ -20671,7 +21543,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request GET:/{provider}/locations
      * @secure
      */
-    providerControllerGetLocations: (provider: 'make' | 'ghl', params: RequestParams = {}) =>
+    providerControllerGetLocations: (
+      provider: 'make' | 'ghl' | 'google.calendar',
+      params: RequestParams = {},
+    ) =>
       this.request<SbcConfiguration, any>({
         path: `/${provider}/locations`,
         method: 'GET',
