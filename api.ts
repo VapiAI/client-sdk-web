@@ -9,6 +9,200 @@
  * ---------------------------------------------------------------
  */
 
+export interface AnalysisCostBreakdown {
+  /** This is the cost to summarize the call. */
+  summary?: number;
+  /** This is the number of prompt tokens used to summarize the call. */
+  summaryPromptTokens?: number;
+  /** This is the number of completion tokens used to summarize the call. */
+  summaryCompletionTokens?: number;
+  /** This is the cost to extract structured data from the call. */
+  structuredData?: number;
+  /** This is the number of prompt tokens used to extract structured data from the call. */
+  structuredDataPromptTokens?: number;
+  /** This is the number of completion tokens used to extract structured data from the call. */
+  structuredDataCompletionTokens?: number;
+  /** This is the cost to evaluate if the call was successful. */
+  successEvaluation?: number;
+  /** This is the number of prompt tokens used to evaluate if the call was successful. */
+  successEvaluationPromptTokens?: number;
+  /** This is the number of completion tokens used to evaluate if the call was successful. */
+  successEvaluationCompletionTokens?: number;
+}
+
+export interface CostBreakdown {
+  /** This is the cost of the transport provider, like Twilio or Vonage. */
+  transport?: number;
+  /** This is the cost of the speech-to-text service. */
+  stt?: number;
+  /** This is the cost of the language model. */
+  llm?: number;
+  /** This is the cost of the text-to-speech service. */
+  tts?: number;
+  /** This is the cost of Vapi. */
+  vapi?: number;
+  /** This is the total cost of the call. */
+  total?: number;
+  /** This is the LLM prompt tokens used for the call. */
+  llmPromptTokens?: number;
+  /** This is the LLM completion tokens used for the call. */
+  llmCompletionTokens?: number;
+  /** This is the TTS characters used for the call. */
+  ttsCharacters?: number;
+  /** This is the cost of the analysis. */
+  analysisCostBreakdown?: AnalysisCostBreakdown;
+}
+
+export interface TranscriptPlan {
+  /**
+   * This determines whether the transcript is stored in `call.artifact.transcript`. Defaults to true.
+   *
+   * @default true
+   * @example true
+   */
+  enabled?: boolean;
+  /**
+   * This is the name of the assistant in the transcript. Defaults to 'AI'.
+   *
+   * Usage:
+   * - If you want to change the name of the assistant in the transcript, set this. Example, here is what the transcript would look like with `assistantName` set to 'Buyer':
+   * ```
+   * User: Hello, how are you?
+   * Buyer: I'm fine.
+   * User: Do you want to buy a car?
+   * Buyer: No.
+   * ```
+   *
+   * @default 'AI'
+   */
+  assistantName?: string;
+  /**
+   * This is the name of the user in the transcript. Defaults to 'User'.
+   *
+   * Usage:
+   * - If you want to change the name of the user in the transcript, set this. Example, here is what the transcript would look like with `userName` set to 'Seller':
+   * ```
+   * Seller: Hello, how are you?
+   * AI: I'm fine.
+   * Seller: Do you want to buy a car?
+   * AI: No.
+   * ```
+   *
+   * @default 'User'
+   */
+  userName?: string;
+}
+
+export interface ArtifactPlan {
+  /**
+   * This determines whether assistant's calls are recorded. Defaults to true.
+   *
+   * Usage:
+   * - If you don't want to record the calls, set this to false.
+   * - If you want to record the calls when `assistant.hipaaEnabled` (deprecated) or `assistant.compliancePlan.hipaaEnabled` explicity set this to true and make sure to provide S3 or GCP credentials on the Provider Credentials page in the Dashboard.
+   *
+   * You can find the recording at `call.artifact.recordingUrl` and `call.artifact.stereoRecordingUrl` after the call is ended.
+   *
+   * @default true
+   * @example true
+   */
+  recordingEnabled?: boolean;
+  /**
+   * This determines the format of the recording. Defaults to `wav;l16`.
+   *
+   * @default 'wav;l16'
+   */
+  recordingFormat?: 'wav;l16' | 'mp3';
+  /**
+   * This determines whether the video is recorded during the call. Defaults to false. Only relevant for `webCall` type.
+   *
+   * You can find the video recording at `call.artifact.videoRecordingUrl` after the call is ended.
+   *
+   * @default false
+   * @example false
+   */
+  videoRecordingEnabled?: boolean;
+  /**
+   * This determines whether the SIP packet capture is enabled. Defaults to true. Only relevant for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`.
+   *
+   * You can find the packet capture at `call.artifact.pcapUrl` after the call is ended.
+   *
+   * @default true
+   * @example true
+   */
+  pcapEnabled?: boolean;
+  /**
+   * This is the path where the SIP packet capture will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
+   *
+   * If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
+   *
+   * Usage:
+   * - If you want to upload the packet capture to a specific path, set this to the path. Example: `/my-assistant-captures`.
+   * - If you want to upload the packet capture to the root of the bucket, set this to `/`.
+   *
+   * @default '/'
+   * @example "/pcaps"
+   */
+  pcapS3PathPrefix?: string;
+  /** This is the plan for `call.artifact.transcript`. To disable, set `transcriptPlan.enabled` to false. */
+  transcriptPlan?: TranscriptPlan;
+  /**
+   * This is the path where the recording will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
+   *
+   * If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
+   *
+   * Usage:
+   * - If you want to upload the recording to a specific path, set this to the path. Example: `/my-assistant-recordings`.
+   * - If you want to upload the recording to the root of the bucket, set this to `/`.
+   *
+   * @default '/'
+   */
+  recordingPath?: string;
+}
+
+export interface Analysis {
+  /** This is the summary of the call. Customize by setting `assistant.analysisPlan.summaryPrompt`. */
+  summary?: string;
+  /** This is the structured data extracted from the call. Customize by setting `assistant.analysisPlan.structuredDataPrompt` and/or `assistant.analysisPlan.structuredDataSchema`. */
+  structuredData?: object;
+  /** This is the structured data catalog of the call. Customize by setting `assistant.analysisPlan.structuredDataMultiPlan`. */
+  structuredDataMulti?: object[];
+  /** This is the evaluation of the call. Customize by setting `assistant.analysisPlan.successEvaluationPrompt` and/or `assistant.analysisPlan.successEvaluationRubric`. */
+  successEvaluation?: string;
+}
+
+export interface Monitor {
+  /** This is the URL where the assistant's calls can be listened to in real-time. To enable, set `assistant.monitorPlan.listenEnabled` to `true`. */
+  listenUrl?: string;
+  /** This is the URL where the assistant's calls can be controlled in real-time. To enable, set `assistant.monitorPlan.controlEnabled` to `true`. */
+  controlUrl?: string;
+}
+
+export interface OpenAIMessage {
+  /** @maxLength 100000000 */
+  content: string | null;
+  role: 'assistant' | 'function' | 'user' | 'system' | 'tool';
+}
+
+export interface Artifact {
+  /** These are the messages that were spoken during the call. */
+  messages?: (UserMessage | SystemMessage | BotMessage | ToolCallMessage | ToolCallResultMessage)[];
+  /** These are the messages that were spoken during the call, formatted for OpenAI. */
+  messagesOpenAIFormatted?: OpenAIMessage[];
+  /** This is the recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`. */
+  recordingUrl?: string;
+  /** This is the stereo recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`. */
+  stereoRecordingUrl?: string;
+  /** This is video recording url for the call. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. */
+  videoRecordingUrl?: string;
+  /** This is video recording start delay in ms. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. This can be used to align the playback of the recording with artifact.messages timestamps. */
+  videoRecordingStartDelaySeconds?: number;
+  /** This is the transcript of the call. This is derived from `artifact.messages` but provided for convenience. */
+  transcript?: string;
+  /** This is the packet capture url for the call. This is only available for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`. */
+  pcapUrl?: string;
+}
+
 export interface FallbackTranscriberPlan {
   transcribers: (
     | FallbackAssemblyAITranscriber
@@ -29,6 +223,15 @@ export interface AssemblyAITranscriber {
   provider: 'assembly-ai';
   /** This is the language that will be set for the transcription. */
   language?: 'en';
+  /**
+   * Transcripts below this confidence threshold will be discarded.
+   *
+   * @default 0.4
+   * @min 0
+   * @max 1
+   * @example 0.4
+   */
+  confidenceThreshold?: number;
   /** The WebSocket URL that the transcriber connects to. */
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
@@ -305,6 +508,7 @@ export interface DeepgramTranscriber {
   model?:
     | 'nova-3'
     | 'nova-3-general'
+    | 'nova-3-medical'
     | 'nova-2'
     | 'nova-2-general'
     | 'nova-2-meeting'
@@ -450,6 +654,15 @@ export interface DeepgramTranscriber {
    * @example false
    */
   numerals?: boolean;
+  /**
+   * Transcripts below this confidence threshold will be discarded.
+   *
+   * @default 0.4
+   * @min 0
+   * @max 1
+   * @example 0.4
+   */
+  confidenceThreshold?: number;
   /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
   /** Keyterm Prompting allows you improve Keyword Recall Rate (KRR) for important keyterms or phrases up to 90%. */
@@ -791,6 +1004,15 @@ export interface GladiaTranscriber {
    * @example false
    */
   audioEnhancer?: boolean;
+  /**
+   * Transcripts below this confidence threshold will be discarded.
+   *
+   * @default 0.4
+   * @min 0
+   * @max 1
+   * @example 0.4
+   */
+  confidenceThreshold?: number;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
@@ -1107,6 +1329,15 @@ export interface FallbackAssemblyAITranscriber {
   provider: 'assembly-ai';
   /** This is the language that will be set for the transcription. */
   language?: 'en';
+  /**
+   * Transcripts below this confidence threshold will be discarded.
+   *
+   * @default 0.4
+   * @min 0
+   * @max 1
+   * @example 0.4
+   */
+  confidenceThreshold?: number;
   /** The WebSocket URL that the transcriber connects to. */
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
@@ -1323,6 +1554,7 @@ export interface FallbackDeepgramTranscriber {
   model?:
     | 'nova-3'
     | 'nova-3-general'
+    | 'nova-3-medical'
     | 'nova-2'
     | 'nova-2-general'
     | 'nova-2-meeting'
@@ -1468,6 +1700,15 @@ export interface FallbackDeepgramTranscriber {
    * @example false
    */
   numerals?: boolean;
+  /**
+   * Transcripts below this confidence threshold will be discarded.
+   *
+   * @default 0.4
+   * @min 0
+   * @max 1
+   * @example 0.4
+   */
+  confidenceThreshold?: number;
   /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
   /** Keyterm Prompting allows you improve Keyword Recall Rate (KRR) for important keyterms or phrases up to 90%. */
@@ -1805,6 +2046,15 @@ export interface FallbackGladiaTranscriber {
    * @example false
    */
   audioEnhancer?: boolean;
+  /**
+   * Transcripts below this confidence threshold will be discarded.
+   *
+   * @default 0.4
+   * @min 0
+   * @max 1
+   * @example 0.4
+   */
+  confidenceThreshold?: number;
 }
 
 export interface FallbackSpeechmaticsTranscriber {
@@ -3256,10 +3506,227 @@ export interface CreateCustomKnowledgeBaseDTO {
   server: Server;
 }
 
-export interface OpenAIMessage {
-  /** @maxLength 100000000 */
-  content: string | null;
-  role: 'assistant' | 'function' | 'user' | 'system' | 'tool';
+export interface KnowledgeBase {
+  /**
+   * The name of the knowledge base
+   * @example "My Knowledge Base"
+   */
+  name: string;
+  /**
+   * The provider of the knowledge base
+   * @example "google"
+   */
+  provider: 'google';
+  /** The model to use for the knowledge base */
+  model?:
+    | 'gemini-2.0-flash-thinking-exp'
+    | 'gemini-2.0-pro-exp-02-05'
+    | 'gemini-2.0-flash'
+    | 'gemini-2.0-flash-lite'
+    | 'gemini-2.0-flash-lite-preview-02-05'
+    | 'gemini-2.0-flash-exp'
+    | 'gemini-2.0-flash-realtime-exp'
+    | 'gemini-1.5-flash'
+    | 'gemini-1.5-flash-002'
+    | 'gemini-1.5-pro'
+    | 'gemini-1.5-pro-002'
+    | 'gemini-1.0-pro';
+  /** A description of the knowledge base */
+  description: string;
+  /** The file IDs associated with this knowledge base */
+  fileIds: string[];
+}
+
+export interface CreateQueryToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "query" for Query tool. */
+  type: 'query';
+  /** The knowledge bases to query */
+  knowledgeBases?: KnowledgeBase[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateGoogleCalendarCreateEventToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  type: 'google.calendar.event.create';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateGoogleSheetsRowAppendToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.sheets.row.append" for Google Sheets tool. */
+  type: 'google.sheets.row.append';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateGoogleCalendarCheckAvailabilityToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.calendar.availability.check" for Google Calendar availability check tool. */
+  type: 'google.calendar.availability.check';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateSlackSendMessageToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "slack.message.send" for Slack send message tool. */
+  type: 'slack.message.send';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
 }
 
 export interface AnyscaleModel {
@@ -3281,6 +3748,8 @@ export interface AnyscaleModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3356,6 +3825,8 @@ export interface AnthropicModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3434,6 +3905,8 @@ export interface CerebrasModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3498,6 +3971,8 @@ export interface CustomLLMModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3583,6 +4058,8 @@ export interface DeepInfraModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3647,6 +4124,8 @@ export interface DeepSeekModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3751,6 +4230,8 @@ export interface GoogleModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3832,6 +4313,8 @@ export interface GroqModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3905,6 +4388,8 @@ export interface InflectionAIModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3969,6 +4454,8 @@ export interface OpenAIModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3984,6 +4471,9 @@ export interface OpenAIModel {
   provider: 'openai';
   /** This is the OpenAI model that will be used. */
   model:
+    | 'gpt-4.1'
+    | 'gpt-4.1-mini'
+    | 'gpt-4.1-nano'
     | 'gpt-4.5-preview'
     | 'chatgpt-4o-latest'
     | 'o3-mini'
@@ -3994,8 +4484,8 @@ export interface OpenAIModel {
     | 'gpt-4o-realtime-preview-2024-10-01'
     | 'gpt-4o-realtime-preview-2024-12-17'
     | 'gpt-4o-mini-realtime-preview-2024-12-17'
-    | 'gpt-4o-mini'
     | 'gpt-4o-mini-2024-07-18'
+    | 'gpt-4o-mini'
     | 'gpt-4o'
     | 'gpt-4o-2024-05-13'
     | 'gpt-4o-2024-08-06'
@@ -4017,6 +4507,9 @@ export interface OpenAIModel {
    * @example ["gpt-4-0125-preview","gpt-4-0613"]
    */
   fallbackModels?:
+    | 'gpt-4.1'
+    | 'gpt-4.1-mini'
+    | 'gpt-4.1-nano'
     | 'gpt-4.5-preview'
     | 'chatgpt-4o-latest'
     | 'o3-mini'
@@ -4027,8 +4520,8 @@ export interface OpenAIModel {
     | 'gpt-4o-realtime-preview-2024-10-01'
     | 'gpt-4o-realtime-preview-2024-12-17'
     | 'gpt-4o-mini-realtime-preview-2024-12-17'
-    | 'gpt-4o-mini'
     | 'gpt-4o-mini-2024-07-18'
+    | 'gpt-4o-mini'
     | 'gpt-4o'
     | 'gpt-4o-2024-05-13'
     | 'gpt-4o-2024-08-06'
@@ -4095,6 +4588,8 @@ export interface OpenRouterModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4159,6 +4654,8 @@ export interface PerplexityAIModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4223,6 +4720,8 @@ export interface TogetherAIModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4270,8 +4769,11 @@ export interface TogetherAIModel {
 
 export interface AIEdgeCondition {
   type: 'ai';
-  /** @maxLength 100 */
-  matches: string[];
+  /**
+   * This is the prompt for the AI edge condition. It should evaluate to a boolean.
+   * @maxLength 1000
+   */
+  prompt: string;
 }
 
 export interface LogicEdgeCondition {
@@ -4296,6 +4798,22 @@ export interface Edge {
 
 export interface Workflow {
   nodes: (Say | Gather | ApiRequest | Hangup | Transfer)[];
+  /** These are the options for the workflow's LLM. */
+  model?:
+    | AnthropicModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel;
   id: string;
   orgId: string;
   /** @format date-time */
@@ -4326,6 +4844,8 @@ export interface VapiModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4394,6 +4914,8 @@ export interface XaiModel {
     | CreateQueryToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateSlackSendMessageToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4451,6 +4973,15 @@ export interface ExactReplacement {
    * - Replace a company name with its phonetic pronunciation: { type: 'exact', key: 'Vapi', value: 'Vappy' }
    */
   type: 'exact';
+  /**
+   * This option let's you control whether to replace all instances of the key or only the first one. By default, it only replaces the first instance.
+   * Examples:
+   * - For { type: 'exact', key: 'hello', value: 'hi', replaceAllEnabled: false }. Before: "hello world, hello universe" | After: "hi world, hello universe"
+   * - For { type: 'exact', key: 'hello', value: 'hi', replaceAllEnabled: true }. Before: "hello world, hello universe" | After: "hi world, hi universe"
+   * @default false
+   * @default false
+   */
+  replaceAllEnabled?: boolean;
   /** This is the key to replace. */
   key: string;
   /**
@@ -4668,8 +5199,7 @@ export interface AzureVoice {
 }
 
 export interface CartesiaExperimentalControls {
-  /** @example "normal" */
-  speed?: 'slowest' | 'slow' | 'normal' | 'fast' | 'fastest';
+  speed?: 'slowest' | 'slow' | 'normal' | 'fast' | 'fastest' | number;
   /** @example ["happiness:high"] */
   emotion?:
     | 'anger:lowest'
@@ -4769,7 +5299,10 @@ export interface CustomVoice {
 export interface DeepgramVoice {
   /** This is the voice provider that will be used. */
   provider: 'deepgram';
-  /** This is the provider-specific ID that will be used. */
+  /**
+   * This is the Deepgram Voice ID
+   * This is the provider-specific ID that will be used.
+   */
   voiceId:
     | 'asteria'
     | 'luna'
@@ -4783,7 +5316,44 @@ export interface DeepgramVoice {
     | 'orpheus'
     | 'helios'
     | 'zeus'
-    | string;
+    | 'thalia'
+    | 'andromeda'
+    | 'helena'
+    | 'apollo'
+    | 'aries'
+    | 'amalthea'
+    | 'atlas'
+    | 'aurora'
+    | 'callista'
+    | 'cora'
+    | 'cordelia'
+    | 'delia'
+    | 'draco'
+    | 'electra'
+    | 'harmonia'
+    | 'hermes'
+    | 'hyperion'
+    | 'iris'
+    | 'janus'
+    | 'juno'
+    | 'jupiter'
+    | 'mars'
+    | 'minerva'
+    | 'neptune'
+    | 'odysseus'
+    | 'ophelia'
+    | 'pandora'
+    | 'phoebe'
+    | 'pluto'
+    | 'saturn'
+    | 'selene'
+    | 'theia'
+    | 'vesta';
+  /**
+   * This is the model that will be used. Defaults to 'aura-2' when not specified.
+   * @example "aura-2"
+   */
+  model?: 'aura' | 'aura-2';
   /**
    * If set to true, this will add mip_opt_out=true as a query parameter of all API requests. See https://developers.deepgram.com/docs/the-deepgram-model-improvement-partnership-program#want-to-opt-out
    *
@@ -4868,6 +5438,11 @@ export interface ElevenLabsVoice {
    * @example false
    */
   enableSsmlParsing?: boolean;
+  /**
+   * Defines the auto mode for voice settings. Defaults to false.
+   * @example false
+   */
+  autoMode?: boolean;
   /**
    * This is the model that will be used. Defaults to 'eleven_turbo_v2' if not specified.
    * @example "eleven_turbo_v2_5"
@@ -4968,18 +5543,7 @@ export interface OpenAIVoice {
    * This is the provider-specific ID that will be used.
    * Please note that ash, ballad, coral, sage, and verse may only be used with realtime models.
    */
-  voiceId:
-    | 'alloy'
-    | 'echo'
-    | 'fable'
-    | 'onyx'
-    | 'nova'
-    | 'shimmer'
-    | 'ash'
-    | 'ballad'
-    | 'coral'
-    | 'sage'
-    | 'verse';
+  voiceId: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' | string;
   /** This is the model that will be used for text-to-speech. */
   model?: 'tts-1' | 'tts-1-hd' | 'gpt-4o-mini-tts';
   /**
@@ -5512,7 +6076,10 @@ export interface FallbackCustomVoice {
 export interface FallbackDeepgramVoice {
   /** This is the voice provider that will be used. */
   provider: 'deepgram';
-  /** This is the provider-specific ID that will be used. */
+  /**
+   * This is the Deepgram Voice ID
+   * This is the provider-specific ID that will be used.
+   */
   voiceId:
     | 'asteria'
     | 'luna'
@@ -5526,7 +6093,44 @@ export interface FallbackDeepgramVoice {
     | 'orpheus'
     | 'helios'
     | 'zeus'
-    | string;
+    | 'thalia'
+    | 'andromeda'
+    | 'helena'
+    | 'apollo'
+    | 'aries'
+    | 'amalthea'
+    | 'atlas'
+    | 'aurora'
+    | 'callista'
+    | 'cora'
+    | 'cordelia'
+    | 'delia'
+    | 'draco'
+    | 'electra'
+    | 'harmonia'
+    | 'hermes'
+    | 'hyperion'
+    | 'iris'
+    | 'janus'
+    | 'juno'
+    | 'jupiter'
+    | 'mars'
+    | 'minerva'
+    | 'neptune'
+    | 'odysseus'
+    | 'ophelia'
+    | 'pandora'
+    | 'phoebe'
+    | 'pluto'
+    | 'saturn'
+    | 'selene'
+    | 'theia'
+    | 'vesta';
+  /**
+   * This is the model that will be used. Defaults to 'aura-2' when not specified.
+   * @example "aura-2"
+   */
+  model?: 'aura' | 'aura-2';
   /**
    * If set to true, this will add mip_opt_out=true as a query parameter of all API requests. See https://developers.deepgram.com/docs/the-deepgram-model-improvement-partnership-program#want-to-opt-out
    *
@@ -5609,6 +6213,11 @@ export interface FallbackElevenLabsVoice {
    * @example false
    */
   enableSsmlParsing?: boolean;
+  /**
+   * Defines the auto mode for voice settings. Defaults to false.
+   * @example false
+   */
+  autoMode?: boolean;
   /**
    * This is the model that will be used. Defaults to 'eleven_turbo_v2' if not specified.
    * @example "eleven_turbo_v2_5"
@@ -5701,18 +6310,7 @@ export interface FallbackOpenAIVoice {
    * This is the provider-specific ID that will be used.
    * Please note that ash, ballad, coral, sage, and verse may only be used with realtime models.
    */
-  voiceId:
-    | 'alloy'
-    | 'echo'
-    | 'fable'
-    | 'onyx'
-    | 'nova'
-    | 'shimmer'
-    | 'ash'
-    | 'ballad'
-    | 'coral'
-    | 'sage'
-    | 'verse';
+  voiceId: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' | string;
   /** This is the model that will be used for text-to-speech. */
   model?: 'tts-1' | 'tts-1-hd' | 'gpt-4o-mini-tts';
   /**
@@ -6973,6 +7571,30 @@ export interface CreateGoogleCalendarOAuth2AuthorizationCredentialDTO {
   name?: string;
 }
 
+export interface CreateGoogleSheetsOAuth2AuthorizationCredentialDTO {
+  provider: 'google.sheets.oauth2-authorization';
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateSlackOAuth2AuthorizationCredentialDTO {
+  provider: 'slack.oauth2-authorization';
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface TransferAssistantHookAction {
   /** This is the type of action - must be "transfer" */
   type: 'transfer';
@@ -7246,113 +7868,6 @@ export interface AnalysisPlan {
   successEvaluationPlan?: SuccessEvaluationPlan;
 }
 
-export interface TranscriptPlan {
-  /**
-   * This determines whether the transcript is stored in `call.artifact.transcript`. Defaults to true.
-   *
-   * @default true
-   * @example true
-   */
-  enabled?: boolean;
-  /**
-   * This is the name of the assistant in the transcript. Defaults to 'AI'.
-   *
-   * Usage:
-   * - If you want to change the name of the assistant in the transcript, set this. Example, here is what the transcript would look like with `assistantName` set to 'Buyer':
-   * ```
-   * User: Hello, how are you?
-   * Buyer: I'm fine.
-   * User: Do you want to buy a car?
-   * Buyer: No.
-   * ```
-   *
-   * @default 'AI'
-   */
-  assistantName?: string;
-  /**
-   * This is the name of the user in the transcript. Defaults to 'User'.
-   *
-   * Usage:
-   * - If you want to change the name of the user in the transcript, set this. Example, here is what the transcript would look like with `userName` set to 'Seller':
-   * ```
-   * Seller: Hello, how are you?
-   * AI: I'm fine.
-   * Seller: Do you want to buy a car?
-   * AI: No.
-   * ```
-   *
-   * @default 'User'
-   */
-  userName?: string;
-}
-
-export interface ArtifactPlan {
-  /**
-   * This determines whether assistant's calls are recorded. Defaults to true.
-   *
-   * Usage:
-   * - If you don't want to record the calls, set this to false.
-   * - If you want to record the calls when `assistant.hipaaEnabled` (deprecated) or `assistant.compliancePlan.hipaaEnabled` explicity set this to true and make sure to provide S3 or GCP credentials on the Provider Credentials page in the Dashboard.
-   *
-   * You can find the recording at `call.artifact.recordingUrl` and `call.artifact.stereoRecordingUrl` after the call is ended.
-   *
-   * @default true
-   * @example true
-   */
-  recordingEnabled?: boolean;
-  /**
-   * This determines the format of the recording. Defaults to `wav;l16`.
-   *
-   * @default 'wav;l16'
-   */
-  recordingFormat?: 'wav;l16' | 'mp3';
-  /**
-   * This determines whether the video is recorded during the call. Defaults to false. Only relevant for `webCall` type.
-   *
-   * You can find the video recording at `call.artifact.videoRecordingUrl` after the call is ended.
-   *
-   * @default false
-   * @example false
-   */
-  videoRecordingEnabled?: boolean;
-  /**
-   * This determines whether the SIP packet capture is enabled. Defaults to true. Only relevant for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`.
-   *
-   * You can find the packet capture at `call.artifact.pcapUrl` after the call is ended.
-   *
-   * @default true
-   * @example true
-   */
-  pcapEnabled?: boolean;
-  /**
-   * This is the path where the SIP packet capture will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
-   *
-   * If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
-   *
-   * Usage:
-   * - If you want to upload the packet capture to a specific path, set this to the path. Example: `/my-assistant-captures`.
-   * - If you want to upload the packet capture to the root of the bucket, set this to `/`.
-   *
-   * @default '/'
-   * @example "/pcaps"
-   */
-  pcapS3PathPrefix?: string;
-  /** This is the plan for `call.artifact.transcript`. To disable, set `transcriptPlan.enabled` to false. */
-  transcriptPlan?: TranscriptPlan;
-  /**
-   * This is the path where the recording will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
-   *
-   * If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
-   *
-   * Usage:
-   * - If you want to upload the recording to a specific path, set this to the path. Example: `/my-assistant-recordings`.
-   * - If you want to upload the recording to the root of the bucket, set this to `/`.
-   *
-   * @default '/'
-   */
-  recordingPath?: string;
-}
-
 export interface MessagePlan {
   /**
    * This are the messages that the assistant will speak when the user hasn't responded for `idleTimeoutSeconds`. Each time the timeout is triggered, a random message will be chosen from this array.
@@ -7372,6 +7887,12 @@ export interface MessagePlan {
    * @max 10
    */
   idleMessageMaxSpokenCount?: number;
+  /**
+   * This determines whether the idle message count is reset whenever the user speaks.
+   *
+   * @default false
+   */
+  idleMessageResetCountOnUserSpeechEnabled?: boolean;
   /**
    * This is the timeout in seconds before a message from `idleMessages` is spoken. The clock starts when the assistant finishes speaking and remains active until the user speaks.
    *
@@ -7534,13 +8055,13 @@ export interface LivekitSmartEndpointingPlan {
   /**
    * This expression describes how long the bot will wait to start speaking based on the likelihood that the user has reached an endpoint.
    *
-   * This is a millisecond valued function. It maps probabilities (real numbers on [0,1]) to seconds that the user should wait ([0, \infty]). Any negative values that are returned are set to zero (the bot can't start talking in the past).
+   * This is a millisecond valued function. It maps probabilities (real numbers on [0,1]) to milliseconds that the bot should wait before speaking ([0, \infty]). Any negative values that are returned are set to zero (the bot can't start talking in the past).
    *
    * A probability of zero represents very high confidence that the caller has stopped speaking, and would like the bot to speak to them. A probability of one represents very high confidence that the caller is still speaking.
    *
    * Under the hood, this is parsed into a mathjs expression. Whatever you use to write your expression needs to be valid with respect to mathjs
    *
-   * @default "200 + 8000 * x"
+   * @default "70 + 4000 * x"
    */
   waitFunction?: string;
 }
@@ -7869,8 +8390,8 @@ export interface CreateAssistantDTO {
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan;
   /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input"]
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
    */
   clientMessages?:
     | 'conversation-update'
@@ -7887,7 +8408,8 @@ export interface CreateAssistantDTO {
     | 'tool-calls-result'
     | 'transfer-update'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+    | 'workflow.node.started';
   /**
    * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
    * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
@@ -7961,51 +8483,147 @@ export interface CreateAssistantDTO {
   observabilityPlan?: LangfuseObservabilityPlan;
   /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
-    | CreateAnthropicCredentialDTO
-    | CreateAnyscaleCredentialDTO
-    | CreateAssemblyAICredentialDTO
-    | CreateAzureCredentialDTO
-    | CreateAzureOpenAICredentialDTO
-    | CreateByoSipTrunkCredentialDTO
-    | CreateCartesiaCredentialDTO
-    | CreateCerebrasCredentialDTO
-    | CreateCloudflareCredentialDTO
-    | CreateCustomLLMCredentialDTO
-    | CreateDeepgramCredentialDTO
-    | CreateDeepInfraCredentialDTO
-    | CreateDeepSeekCredentialDTO
-    | CreateElevenLabsCredentialDTO
-    | CreateGcpCredentialDTO
-    | CreateGladiaCredentialDTO
-    | CreateGoHighLevelCredentialDTO
-    | CreateGoogleCredentialDTO
-    | CreateGroqCredentialDTO
-    | CreateHumeCredentialDTO
-    | CreateInflectionAICredentialDTO
-    | CreateLangfuseCredentialDTO
-    | CreateLmntCredentialDTO
-    | CreateMakeCredentialDTO
-    | CreateMistralCredentialDTO
-    | CreateNeuphonicCredentialDTO
-    | CreateOpenAICredentialDTO
-    | CreateOpenRouterCredentialDTO
-    | CreatePerplexityAICredentialDTO
-    | CreatePlayHTCredentialDTO
-    | CreateRimeAICredentialDTO
-    | CreateRunpodCredentialDTO
-    | CreateS3CredentialDTO
-    | CreateSmallestAICredentialDTO
-    | CreateSpeechmaticsCredentialDTO
-    | CreateSupabaseCredentialDTO
-    | CreateTavusCredentialDTO
-    | CreateTogetherAICredentialDTO
-    | CreateTrieveCredentialDTO
-    | CreateTwilioCredentialDTO
-    | CreateVonageCredentialDTO
-    | CreateWebhookCredentialDTO
-    | CreateXAiCredentialDTO
-    | CreateGoogleCalendarOAuth2ClientCredentialDTO
-    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
+    | ({
+        provider: '11labs';
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: 'anthropic';
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: 'anyscale';
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: 'assembly-ai';
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: 'azure-openai';
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: 'azure';
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: 'byo-sip-trunk';
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: 'cartesia';
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: 'cerebras';
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: 'cloudflare';
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: 'custom-llm';
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: 'deepgram';
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: 'deepinfra';
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: 'deep-seek';
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: 'gcp';
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: 'gladia';
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: 'gohighlevel';
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: 'google';
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: 'groq';
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: 'inflection-ai';
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: 'langfuse';
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: 'lmnt';
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: 'make';
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: 'openai';
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: 'openrouter';
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: 'perplexity-ai';
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: 'playht';
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: 'rime-ai';
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: 'runpod';
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: 's3';
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: 'supabase';
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: 'smallest-ai';
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: 'tavus';
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: 'together-ai';
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: 'twilio';
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: 'vonage';
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: 'webhook';
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: 'xai';
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: 'neuphonic';
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: 'hume';
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: 'mistral';
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: 'speechmatics';
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: 'trieve';
+      } & CreateTrieveCredentialDTO)
+    | ({
+        provider: 'google.calendar.oauth2-client';
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: 'google.calendar.oauth2-authorization';
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'google.sheets.oauth2-authorization';
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'slack.oauth2-authorization';
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
   )[];
   /**
    * This is the name of the assistant.
@@ -8177,8 +8795,8 @@ export interface AssistantOverrides {
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan;
   /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input"]
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
    */
   clientMessages?:
     | 'conversation-update'
@@ -8195,7 +8813,8 @@ export interface AssistantOverrides {
     | 'tool-calls-result'
     | 'transfer-update'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+    | 'workflow.node.started';
   /**
    * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
    * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
@@ -8269,51 +8888,147 @@ export interface AssistantOverrides {
   observabilityPlan?: LangfuseObservabilityPlan;
   /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
-    | CreateAnthropicCredentialDTO
-    | CreateAnyscaleCredentialDTO
-    | CreateAssemblyAICredentialDTO
-    | CreateAzureCredentialDTO
-    | CreateAzureOpenAICredentialDTO
-    | CreateByoSipTrunkCredentialDTO
-    | CreateCartesiaCredentialDTO
-    | CreateCerebrasCredentialDTO
-    | CreateCloudflareCredentialDTO
-    | CreateCustomLLMCredentialDTO
-    | CreateDeepgramCredentialDTO
-    | CreateDeepInfraCredentialDTO
-    | CreateDeepSeekCredentialDTO
-    | CreateElevenLabsCredentialDTO
-    | CreateGcpCredentialDTO
-    | CreateGladiaCredentialDTO
-    | CreateGoHighLevelCredentialDTO
-    | CreateGoogleCredentialDTO
-    | CreateGroqCredentialDTO
-    | CreateHumeCredentialDTO
-    | CreateInflectionAICredentialDTO
-    | CreateLangfuseCredentialDTO
-    | CreateLmntCredentialDTO
-    | CreateMakeCredentialDTO
-    | CreateMistralCredentialDTO
-    | CreateNeuphonicCredentialDTO
-    | CreateOpenAICredentialDTO
-    | CreateOpenRouterCredentialDTO
-    | CreatePerplexityAICredentialDTO
-    | CreatePlayHTCredentialDTO
-    | CreateRimeAICredentialDTO
-    | CreateRunpodCredentialDTO
-    | CreateS3CredentialDTO
-    | CreateSmallestAICredentialDTO
-    | CreateSpeechmaticsCredentialDTO
-    | CreateSupabaseCredentialDTO
-    | CreateTavusCredentialDTO
-    | CreateTogetherAICredentialDTO
-    | CreateTrieveCredentialDTO
-    | CreateTwilioCredentialDTO
-    | CreateVonageCredentialDTO
-    | CreateWebhookCredentialDTO
-    | CreateXAiCredentialDTO
-    | CreateGoogleCalendarOAuth2ClientCredentialDTO
-    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
+    | ({
+        provider: '11labs';
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: 'anthropic';
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: 'anyscale';
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: 'assembly-ai';
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: 'azure-openai';
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: 'azure';
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: 'byo-sip-trunk';
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: 'cartesia';
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: 'cerebras';
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: 'cloudflare';
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: 'custom-llm';
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: 'deepgram';
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: 'deepinfra';
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: 'deep-seek';
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: 'gcp';
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: 'gladia';
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: 'gohighlevel';
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: 'google';
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: 'groq';
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: 'inflection-ai';
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: 'langfuse';
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: 'lmnt';
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: 'make';
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: 'openai';
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: 'openrouter';
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: 'perplexity-ai';
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: 'playht';
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: 'rime-ai';
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: 'runpod';
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: 's3';
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: 'supabase';
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: 'smallest-ai';
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: 'tavus';
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: 'together-ai';
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: 'twilio';
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: 'vonage';
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: 'webhook';
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: 'xai';
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: 'neuphonic';
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: 'hume';
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: 'mistral';
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: 'speechmatics';
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: 'trieve';
+      } & CreateTrieveCredentialDTO)
+    | ({
+        provider: 'google.calendar.oauth2-client';
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: 'google.calendar.oauth2-authorization';
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'google.sheets.oauth2-authorization';
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'slack.oauth2-authorization';
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
   )[];
   /**
    * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
@@ -8444,6 +9159,16 @@ export interface CreateSquadDTO {
   membersOverrides?: AssistantOverrides;
 }
 
+export interface PhoneNumberHookCallRinging {
+  /**
+   * This is the event to trigger the hook on
+   * @maxLength 1000
+   */
+  on: 'call.ringing';
+  /** This is the set of actions to perform when the hook triggers */
+  do: any[];
+}
+
 export interface ImportTwilioPhoneNumberDTO {
   /**
    * This is the fallback destination an inbound call will be transferred to if:
@@ -8454,6 +9179,8 @@ export interface ImportTwilioPhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /**
    * These are the digits of the phone number you own on your Twilio.
    * @deprecated
@@ -8513,6 +9240,11 @@ export interface CreateCustomerDTO {
    */
   extension?: string;
   /**
+   * These are the overrides for the assistant's settings and template variables specific to this customer.
+   * This allows customization of the assistant's behavior for individual customers in batch calls.
+   */
+  assistantOverrides?: AssistantOverrides;
+  /**
    * This is the number of the customer.
    * @minLength 3
    * @maxLength 40
@@ -8529,143 +9261,22 @@ export interface CreateCustomerDTO {
   name?: string;
 }
 
-export interface CreateCallDTO {
+export interface SchedulePlan {
   /**
-   * This is the name of the call. This is just for your own reference.
-   * @maxLength 40
+   * This is the ISO 8601 date-time string of the earliest time the call can be scheduled.
+   * @format date-time
    */
-  name?: string;
-  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
-  assistantId?: string;
-  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
-  assistant?: CreateAssistantDTO;
-  /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
-  assistantOverrides?: AssistantOverrides;
-  /** This is the squad that will be used for the call. To use a transient squad, use `squad` instead. */
-  squadId?: string;
-  /** This is a squad that will be used for the call. To use an existing squad, use `squadId` instead. */
-  squad?: CreateSquadDTO;
+  earliestAt: string;
   /**
-   * This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
-   *
-   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   * This is the ISO 8601 date-time string of the latest time the call can be scheduled.
+   * @format date-time
    */
-  phoneNumberId?: string;
-  /**
-   * This is the phone number that will be used for the call. To use an existing number, use `phoneNumberId` instead.
-   *
-   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
-   */
-  phoneNumber?: ImportTwilioPhoneNumberDTO;
-  /**
-   * This is the customer that will be called. To call a transient customer , use `customer` instead.
-   *
-   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
-   */
-  customerId?: string;
-  /**
-   * This is the customer that will be called. To call an existing customer, use `customerId` instead.
-   *
-   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
-   */
-  customer?: CreateCustomerDTO;
-}
-
-export interface AnalysisCostBreakdown {
-  /** This is the cost to summarize the call. */
-  summary?: number;
-  /** This is the number of prompt tokens used to summarize the call. */
-  summaryPromptTokens?: number;
-  /** This is the number of completion tokens used to summarize the call. */
-  summaryCompletionTokens?: number;
-  /** This is the cost to extract structured data from the call. */
-  structuredData?: number;
-  /** This is the number of prompt tokens used to extract structured data from the call. */
-  structuredDataPromptTokens?: number;
-  /** This is the number of completion tokens used to extract structured data from the call. */
-  structuredDataCompletionTokens?: number;
-  /** This is the cost to evaluate if the call was successful. */
-  successEvaluation?: number;
-  /** This is the number of prompt tokens used to evaluate if the call was successful. */
-  successEvaluationPromptTokens?: number;
-  /** This is the number of completion tokens used to evaluate if the call was successful. */
-  successEvaluationCompletionTokens?: number;
-}
-
-export interface CostBreakdown {
-  /** This is the cost of the transport provider, like Twilio or Vonage. */
-  transport?: number;
-  /** This is the cost of the speech-to-text service. */
-  stt?: number;
-  /** This is the cost of the language model. */
-  llm?: number;
-  /** This is the cost of the text-to-speech service. */
-  tts?: number;
-  /** This is the cost of Vapi. */
-  vapi?: number;
-  /** This is the total cost of the call. */
-  total?: number;
-  /** This is the LLM prompt tokens used for the call. */
-  llmPromptTokens?: number;
-  /** This is the LLM completion tokens used for the call. */
-  llmCompletionTokens?: number;
-  /** This is the TTS characters used for the call. */
-  ttsCharacters?: number;
-  /** This is the cost of the analysis. */
-  analysisCostBreakdown?: AnalysisCostBreakdown;
-}
-
-export interface Analysis {
-  /** This is the summary of the call. Customize by setting `assistant.analysisPlan.summaryPrompt`. */
-  summary?: string;
-  /** This is the structured data extracted from the call. Customize by setting `assistant.analysisPlan.structuredDataPrompt` and/or `assistant.analysisPlan.structuredDataSchema`. */
-  structuredData?: object;
-  /** This is the structured data catalog of the call. Customize by setting `assistant.analysisPlan.structuredDataMultiPlan`. */
-  structuredDataMulti?: object[];
-  /** This is the evaluation of the call. Customize by setting `assistant.analysisPlan.successEvaluationPrompt` and/or `assistant.analysisPlan.successEvaluationRubric`. */
-  successEvaluation?: string;
-}
-
-export interface Monitor {
-  /** This is the URL where the assistant's calls can be listened to in real-time. To enable, set `assistant.monitorPlan.listenEnabled` to `true`. */
-  listenUrl?: string;
-  /** This is the URL where the assistant's calls can be controlled in real-time. To enable, set `assistant.monitorPlan.controlEnabled` to `true`. */
-  controlUrl?: string;
-}
-
-export interface Artifact {
-  /** These are the messages that were spoken during the call. */
-  messages?: (UserMessage | SystemMessage | BotMessage | ToolCallMessage | ToolCallResultMessage)[];
-  /** These are the messages that were spoken during the call, formatted for OpenAI. */
-  messagesOpenAIFormatted?: OpenAIMessage[];
-  /** This is the recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`. */
-  recordingUrl?: string;
-  /** This is the stereo recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`. */
-  stereoRecordingUrl?: string;
-  /** This is video recording url for the call. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. */
-  videoRecordingUrl?: string;
-  /** This is video recording start delay in ms. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. This can be used to align the playback of the recording with artifact.messages timestamps. */
-  videoRecordingStartDelaySeconds?: number;
-  /** This is the transcript of the call. This is derived from `artifact.messages` but provided for convenience. */
-  transcript?: string;
-  /** This is the packet capture url for the call. This is only available for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`. */
-  pcapUrl?: string;
-}
-
-export interface Transport {
-  /** This is the provider used for the call. */
-  provider?: 'twilio' | 'vonage' | 'vapi' | 'daily' | 'telnyx';
-  /**
-   * This is determines whether the assistant will have video enabled.
-   *
-   * Only relevant for `webCall` type.
-   */
-  assistantVideoEnabled?: boolean;
+  latestAt?: string;
 }
 
 export interface Call {
   /** This is the type of call. */
-  type?: 'inboundPhoneCall' | 'outboundPhoneCall' | 'webCall';
+  type?: 'inboundPhoneCall' | 'outboundPhoneCall' | 'webCall' | 'vapi.websocketCall';
   /** These are the costs of individual components of the call in USD. */
   costs?: (
     | TransportCost
@@ -8693,8 +9304,6 @@ export interface Call {
   status?: 'scheduled' | 'queued' | 'ringing' | 'in-progress' | 'forwarding' | 'ended';
   /** This is the explanation for how the call ended. */
   endedReason?:
-    | 'assistant-not-valid'
-    | 'assistant-not-provided'
     | 'call-start-error-neither-assistant-nor-server-set'
     | 'assistant-request-failed'
     | 'assistant-request-returned-error'
@@ -8702,22 +9311,18 @@ export interface Call {
     | 'assistant-request-returned-invalid-assistant'
     | 'assistant-request-returned-no-assistant'
     | 'assistant-request-returned-forwarding-phone-number'
-    | 'assistant-ended-call'
-    | 'assistant-said-end-call-phrase'
-    | 'assistant-ended-call-with-hangup-task'
-    | 'assistant-forwarded-call'
-    | 'assistant-join-timed-out'
-    | 'customer-busy'
-    | 'customer-ended-call'
-    | 'customer-did-not-answer'
-    | 'customer-did-not-give-microphone-permission'
-    | 'assistant-said-message-with-end-call-enabled'
-    | 'exceeded-max-duration'
-    | 'manually-canceled'
-    | 'phone-call-provider-closed-websocket'
-    | 'db-error'
+    | 'call.start.error-get-org'
+    | 'call.start.error-get-subscription'
+    | 'call.start.error-get-assistant'
+    | 'call.start.error-get-phone-number'
+    | 'call.start.error-get-customer'
+    | 'call.start.error-get-resources-validation'
+    | 'call.start.error-vapi-number-international'
+    | 'call.start.error-vapi-number-outbound-daily-limit'
+    | 'call.start.error-get-transport'
+    | 'assistant-not-valid'
+    | 'database-error'
     | 'assistant-not-found'
-    | 'license-check-failed'
     | 'pipeline-error-openai-voice-failed'
     | 'pipeline-error-cartesia-voice-failed'
     | 'pipeline-error-deepgram-voice-failed'
@@ -8730,140 +9335,349 @@ export interface Call {
     | 'pipeline-error-neuphonic-voice-failed'
     | 'pipeline-error-hume-voice-failed'
     | 'pipeline-error-sesame-voice-failed'
-    | 'pipeline-error-deepgram-transcriber-failed'
-    | 'pipeline-error-gladia-transcriber-failed'
-    | 'pipeline-error-speechmatics-transcriber-failed'
-    | 'pipeline-error-assembly-ai-transcriber-failed'
-    | 'pipeline-error-talkscriber-transcriber-failed'
-    | 'pipeline-error-azure-speech-transcriber-failed'
+    | 'pipeline-error-tavus-video-failed'
+    | 'call.in-progress.error-vapifault-openai-voice-failed'
+    | 'call.in-progress.error-vapifault-cartesia-voice-failed'
+    | 'call.in-progress.error-vapifault-deepgram-voice-failed'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-failed'
+    | 'call.in-progress.error-vapifault-playht-voice-failed'
+    | 'call.in-progress.error-vapifault-lmnt-voice-failed'
+    | 'call.in-progress.error-vapifault-azure-voice-failed'
+    | 'call.in-progress.error-vapifault-rime-ai-voice-failed'
+    | 'call.in-progress.error-vapifault-smallest-ai-voice-failed'
+    | 'call.in-progress.error-vapifault-neuphonic-voice-failed'
+    | 'call.in-progress.error-vapifault-hume-voice-failed'
+    | 'call.in-progress.error-vapifault-sesame-voice-failed'
+    | 'call.in-progress.error-vapifault-tavus-video-failed'
     | 'pipeline-error-vapi-llm-failed'
     | 'pipeline-error-vapi-400-bad-request-validation-failed'
     | 'pipeline-error-vapi-401-unauthorized'
     | 'pipeline-error-vapi-403-model-access-denied'
     | 'pipeline-error-vapi-429-exceeded-quota'
     | 'pipeline-error-vapi-500-server-error'
-    | 'pipeline-no-available-model'
+    | 'pipeline-error-vapi-503-server-overloaded-error'
+    | 'call.in-progress.error-vapifault-vapi-llm-failed'
+    | 'call.in-progress.error-vapifault-vapi-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-vapi-401-unauthorized'
+    | 'call.in-progress.error-vapifault-vapi-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-vapi-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-vapi-500-server-error'
+    | 'call.in-progress.error-providerfault-vapi-503-server-overloaded-error'
+    | 'pipeline-error-deepgram-transcriber-failed'
+    | 'call.in-progress.error-vapifault-deepgram-transcriber-failed'
+    | 'pipeline-error-gladia-transcriber-failed'
+    | 'call.in-progress.error-vapifault-gladia-transcriber-failed'
+    | 'pipeline-error-speechmatics-transcriber-failed'
+    | 'call.in-progress.error-vapifault-speechmatics-transcriber-failed'
+    | 'pipeline-error-assembly-ai-transcriber-failed'
+    | 'pipeline-error-assembly-ai-returning-400-insufficent-funds'
+    | 'pipeline-error-assembly-ai-returning-400-paid-only-feature'
+    | 'pipeline-error-assembly-ai-returning-401-invalid-credentials'
+    | 'pipeline-error-assembly-ai-returning-500-invalid-schema'
+    | 'pipeline-error-assembly-ai-returning-500-word-boost-parsing-failed'
+    | 'call.in-progress.error-vapifault-assembly-ai-transcriber-failed'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-400-insufficent-funds'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-400-paid-only-feature'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-401-invalid-credentials'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-500-invalid-schema'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-500-word-boost-parsing-failed'
+    | 'pipeline-error-talkscriber-transcriber-failed'
+    | 'call.in-progress.error-vapifault-talkscriber-transcriber-failed'
+    | 'pipeline-error-azure-speech-transcriber-failed'
+    | 'call.in-progress.error-vapifault-azure-speech-transcriber-failed'
+    | 'call.in-progress.error-pipeline-no-available-llm-model'
     | 'worker-shutdown'
     | 'unknown-error'
     | 'vonage-disconnected'
     | 'vonage-failed-to-connect-call'
     | 'vonage-completed'
     | 'phone-call-provider-bypass-enabled-but-no-call-received'
-    | 'vapifault-phone-call-worker-setup-socket-error'
-    | 'vapifault-phone-call-worker-worker-setup-socket-timeout'
-    | 'vapifault-phone-call-worker-could-not-find-call'
-    | 'vapifault-transport-never-connected'
-    | 'vapifault-web-call-worker-setup-failed'
-    | 'vapifault-transport-connected-but-call-not-active'
-    | 'vapifault-call-started-but-connection-to-transport-missing'
-    | 'pipeline-error-openai-llm-failed'
-    | 'pipeline-error-azure-openai-llm-failed'
-    | 'pipeline-error-groq-llm-failed'
-    | 'pipeline-error-google-llm-failed'
-    | 'pipeline-error-xai-llm-failed'
-    | 'pipeline-error-mistral-llm-failed'
-    | 'pipeline-error-inflection-ai-llm-failed'
-    | 'pipeline-error-cerebras-llm-failed'
-    | 'pipeline-error-deep-seek-llm-failed'
+    | 'call.in-progress.error-vapifault-transport-never-connected'
+    | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
+    | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
+    | 'call.in-progress.error-vapifault-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-azure-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-groq-llm-failed'
+    | 'call.in-progress.error-vapifault-google-llm-failed'
+    | 'call.in-progress.error-vapifault-xai-llm-failed'
+    | 'call.in-progress.error-vapifault-mistral-llm-failed'
+    | 'call.in-progress.error-vapifault-inflection-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-cerebras-llm-failed'
+    | 'call.in-progress.error-vapifault-deep-seek-llm-failed'
     | 'pipeline-error-openai-400-bad-request-validation-failed'
     | 'pipeline-error-openai-401-unauthorized'
+    | 'pipeline-error-openai-401-incorrect-api-key'
+    | 'pipeline-error-openai-401-account-not-in-organization'
     | 'pipeline-error-openai-403-model-access-denied'
     | 'pipeline-error-openai-429-exceeded-quota'
+    | 'pipeline-error-openai-429-rate-limit-reached'
     | 'pipeline-error-openai-500-server-error'
-    | 'pipeline-error-google-400-bad-request-validation-failed'
-    | 'pipeline-error-google-401-unauthorized'
-    | 'pipeline-error-google-403-model-access-denied'
-    | 'pipeline-error-google-429-exceeded-quota'
-    | 'pipeline-error-google-500-server-error'
-    | 'pipeline-error-xai-400-bad-request-validation-failed'
-    | 'pipeline-error-xai-401-unauthorized'
-    | 'pipeline-error-xai-403-model-access-denied'
-    | 'pipeline-error-xai-429-exceeded-quota'
-    | 'pipeline-error-xai-500-server-error'
-    | 'pipeline-error-mistral-400-bad-request-validation-failed'
-    | 'pipeline-error-mistral-401-unauthorized'
-    | 'pipeline-error-mistral-403-model-access-denied'
-    | 'pipeline-error-mistral-429-exceeded-quota'
-    | 'pipeline-error-mistral-500-server-error'
-    | 'pipeline-error-inflection-ai-400-bad-request-validation-failed'
-    | 'pipeline-error-inflection-ai-401-unauthorized'
-    | 'pipeline-error-inflection-ai-403-model-access-denied'
-    | 'pipeline-error-inflection-ai-429-exceeded-quota'
-    | 'pipeline-error-inflection-ai-500-server-error'
-    | 'pipeline-error-deep-seek-400-bad-request-validation-failed'
-    | 'pipeline-error-deep-seek-401-unauthorized'
-    | 'pipeline-error-deep-seek-403-model-access-denied'
-    | 'pipeline-error-deep-seek-429-exceeded-quota'
-    | 'pipeline-error-deep-seek-500-server-error'
+    | 'pipeline-error-openai-503-server-overloaded-error'
+    | 'pipeline-error-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-openai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-openai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-openai-401-incorrect-api-key'
+    | 'call.in-progress.error-vapifault-openai-401-account-not-in-organization'
+    | 'call.in-progress.error-vapifault-openai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-openai-429-exceeded-quota'
+    | 'call.in-progress.error-vapifault-openai-429-rate-limit-reached'
+    | 'call.in-progress.error-providerfault-openai-500-server-error'
+    | 'call.in-progress.error-providerfault-openai-503-server-overloaded-error'
     | 'pipeline-error-azure-openai-400-bad-request-validation-failed'
     | 'pipeline-error-azure-openai-401-unauthorized'
     | 'pipeline-error-azure-openai-403-model-access-denied'
     | 'pipeline-error-azure-openai-429-exceeded-quota'
     | 'pipeline-error-azure-openai-500-server-error'
+    | 'pipeline-error-azure-openai-503-server-overloaded-error'
+    | 'pipeline-error-azure-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-azure-openai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-azure-openai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-azure-openai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-azure-openai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-azure-openai-500-server-error'
+    | 'call.in-progress.error-providerfault-azure-openai-503-server-overloaded-error'
+    | 'pipeline-error-google-400-bad-request-validation-failed'
+    | 'pipeline-error-google-401-unauthorized'
+    | 'pipeline-error-google-403-model-access-denied'
+    | 'pipeline-error-google-429-exceeded-quota'
+    | 'pipeline-error-google-500-server-error'
+    | 'pipeline-error-google-503-server-overloaded-error'
+    | 'pipeline-error-google-llm-failed'
+    | 'call.in-progress.error-vapifault-google-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-google-401-unauthorized'
+    | 'call.in-progress.error-vapifault-google-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-google-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-google-500-server-error'
+    | 'call.in-progress.error-providerfault-google-503-server-overloaded-error'
+    | 'pipeline-error-xai-400-bad-request-validation-failed'
+    | 'pipeline-error-xai-401-unauthorized'
+    | 'pipeline-error-xai-403-model-access-denied'
+    | 'pipeline-error-xai-429-exceeded-quota'
+    | 'pipeline-error-xai-500-server-error'
+    | 'pipeline-error-xai-503-server-overloaded-error'
+    | 'pipeline-error-xai-llm-failed'
+    | 'call.in-progress.error-vapifault-xai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-xai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-xai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-xai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-xai-500-server-error'
+    | 'call.in-progress.error-providerfault-xai-503-server-overloaded-error'
+    | 'pipeline-error-mistral-400-bad-request-validation-failed'
+    | 'pipeline-error-mistral-401-unauthorized'
+    | 'pipeline-error-mistral-403-model-access-denied'
+    | 'pipeline-error-mistral-429-exceeded-quota'
+    | 'pipeline-error-mistral-500-server-error'
+    | 'pipeline-error-mistral-503-server-overloaded-error'
+    | 'pipeline-error-mistral-llm-failed'
+    | 'call.in-progress.error-vapifault-mistral-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-mistral-401-unauthorized'
+    | 'call.in-progress.error-vapifault-mistral-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-mistral-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-mistral-500-server-error'
+    | 'call.in-progress.error-providerfault-mistral-503-server-overloaded-error'
+    | 'pipeline-error-inflection-ai-400-bad-request-validation-failed'
+    | 'pipeline-error-inflection-ai-401-unauthorized'
+    | 'pipeline-error-inflection-ai-403-model-access-denied'
+    | 'pipeline-error-inflection-ai-429-exceeded-quota'
+    | 'pipeline-error-inflection-ai-500-server-error'
+    | 'pipeline-error-inflection-ai-503-server-overloaded-error'
+    | 'pipeline-error-inflection-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-inflection-ai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-inflection-ai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-inflection-ai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-inflection-ai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-inflection-ai-500-server-error'
+    | 'call.in-progress.error-providerfault-inflection-ai-503-server-overloaded-error'
+    | 'pipeline-error-deep-seek-400-bad-request-validation-failed'
+    | 'pipeline-error-deep-seek-401-unauthorized'
+    | 'pipeline-error-deep-seek-403-model-access-denied'
+    | 'pipeline-error-deep-seek-429-exceeded-quota'
+    | 'pipeline-error-deep-seek-500-server-error'
+    | 'pipeline-error-deep-seek-503-server-overloaded-error'
+    | 'pipeline-error-deep-seek-llm-failed'
+    | 'call.in-progress.error-vapifault-deep-seek-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-deep-seek-401-unauthorized'
+    | 'call.in-progress.error-vapifault-deep-seek-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-deep-seek-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-deep-seek-500-server-error'
+    | 'call.in-progress.error-providerfault-deep-seek-503-server-overloaded-error'
     | 'pipeline-error-groq-400-bad-request-validation-failed'
     | 'pipeline-error-groq-401-unauthorized'
     | 'pipeline-error-groq-403-model-access-denied'
     | 'pipeline-error-groq-429-exceeded-quota'
     | 'pipeline-error-groq-500-server-error'
+    | 'pipeline-error-groq-503-server-overloaded-error'
+    | 'pipeline-error-groq-llm-failed'
+    | 'call.in-progress.error-vapifault-groq-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-groq-401-unauthorized'
+    | 'call.in-progress.error-vapifault-groq-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-groq-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-groq-500-server-error'
+    | 'call.in-progress.error-providerfault-groq-503-server-overloaded-error'
     | 'pipeline-error-cerebras-400-bad-request-validation-failed'
     | 'pipeline-error-cerebras-401-unauthorized'
     | 'pipeline-error-cerebras-403-model-access-denied'
     | 'pipeline-error-cerebras-429-exceeded-quota'
     | 'pipeline-error-cerebras-500-server-error'
+    | 'pipeline-error-cerebras-503-server-overloaded-error'
+    | 'pipeline-error-cerebras-llm-failed'
+    | 'call.in-progress.error-vapifault-cerebras-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-cerebras-401-unauthorized'
+    | 'call.in-progress.error-vapifault-cerebras-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-cerebras-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-cerebras-500-server-error'
+    | 'call.in-progress.error-providerfault-cerebras-503-server-overloaded-error'
     | 'pipeline-error-anthropic-400-bad-request-validation-failed'
     | 'pipeline-error-anthropic-401-unauthorized'
     | 'pipeline-error-anthropic-403-model-access-denied'
     | 'pipeline-error-anthropic-429-exceeded-quota'
     | 'pipeline-error-anthropic-500-server-error'
+    | 'pipeline-error-anthropic-503-server-overloaded-error'
     | 'pipeline-error-anthropic-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anthropic-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anthropic-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anthropic-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anthropic-500-server-error'
+    | 'call.in-progress.error-providerfault-anthropic-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-bedrock-400-bad-request-validation-failed'
+    | 'pipeline-error-anthropic-bedrock-401-unauthorized'
+    | 'pipeline-error-anthropic-bedrock-403-model-access-denied'
+    | 'pipeline-error-anthropic-bedrock-429-exceeded-quota'
+    | 'pipeline-error-anthropic-bedrock-500-server-error'
+    | 'pipeline-error-anthropic-bedrock-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-bedrock-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anthropic-bedrock-500-server-error'
+    | 'call.in-progress.error-providerfault-anthropic-bedrock-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-vertex-400-bad-request-validation-failed'
+    | 'pipeline-error-anthropic-vertex-401-unauthorized'
+    | 'pipeline-error-anthropic-vertex-403-model-access-denied'
+    | 'pipeline-error-anthropic-vertex-429-exceeded-quota'
+    | 'pipeline-error-anthropic-vertex-500-server-error'
+    | 'pipeline-error-anthropic-vertex-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-vertex-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anthropic-vertex-500-server-error'
+    | 'call.in-progress.error-providerfault-anthropic-vertex-503-server-overloaded-error'
     | 'pipeline-error-together-ai-400-bad-request-validation-failed'
     | 'pipeline-error-together-ai-401-unauthorized'
     | 'pipeline-error-together-ai-403-model-access-denied'
     | 'pipeline-error-together-ai-429-exceeded-quota'
     | 'pipeline-error-together-ai-500-server-error'
+    | 'pipeline-error-together-ai-503-server-overloaded-error'
     | 'pipeline-error-together-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-together-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-together-ai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-together-ai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-together-ai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-together-ai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-together-ai-500-server-error'
+    | 'call.in-progress.error-providerfault-together-ai-503-server-overloaded-error'
     | 'pipeline-error-anyscale-400-bad-request-validation-failed'
     | 'pipeline-error-anyscale-401-unauthorized'
     | 'pipeline-error-anyscale-403-model-access-denied'
     | 'pipeline-error-anyscale-429-exceeded-quota'
     | 'pipeline-error-anyscale-500-server-error'
+    | 'pipeline-error-anyscale-503-server-overloaded-error'
     | 'pipeline-error-anyscale-llm-failed'
+    | 'call.in-progress.error-vapifault-anyscale-llm-failed'
+    | 'call.in-progress.error-vapifault-anyscale-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anyscale-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anyscale-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anyscale-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anyscale-500-server-error'
+    | 'call.in-progress.error-providerfault-anyscale-503-server-overloaded-error'
     | 'pipeline-error-openrouter-400-bad-request-validation-failed'
     | 'pipeline-error-openrouter-401-unauthorized'
     | 'pipeline-error-openrouter-403-model-access-denied'
     | 'pipeline-error-openrouter-429-exceeded-quota'
     | 'pipeline-error-openrouter-500-server-error'
+    | 'pipeline-error-openrouter-503-server-overloaded-error'
     | 'pipeline-error-openrouter-llm-failed'
+    | 'call.in-progress.error-vapifault-openrouter-llm-failed'
+    | 'call.in-progress.error-vapifault-openrouter-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-openrouter-401-unauthorized'
+    | 'call.in-progress.error-vapifault-openrouter-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-openrouter-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-openrouter-500-server-error'
+    | 'call.in-progress.error-providerfault-openrouter-503-server-overloaded-error'
     | 'pipeline-error-perplexity-ai-400-bad-request-validation-failed'
     | 'pipeline-error-perplexity-ai-401-unauthorized'
     | 'pipeline-error-perplexity-ai-403-model-access-denied'
     | 'pipeline-error-perplexity-ai-429-exceeded-quota'
     | 'pipeline-error-perplexity-ai-500-server-error'
+    | 'pipeline-error-perplexity-ai-503-server-overloaded-error'
     | 'pipeline-error-perplexity-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-perplexity-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-perplexity-ai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-perplexity-ai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-perplexity-ai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-perplexity-ai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-perplexity-ai-500-server-error'
+    | 'call.in-progress.error-providerfault-perplexity-ai-503-server-overloaded-error'
     | 'pipeline-error-deepinfra-400-bad-request-validation-failed'
     | 'pipeline-error-deepinfra-401-unauthorized'
     | 'pipeline-error-deepinfra-403-model-access-denied'
     | 'pipeline-error-deepinfra-429-exceeded-quota'
     | 'pipeline-error-deepinfra-500-server-error'
+    | 'pipeline-error-deepinfra-503-server-overloaded-error'
     | 'pipeline-error-deepinfra-llm-failed'
+    | 'call.in-progress.error-vapifault-deepinfra-llm-failed'
+    | 'call.in-progress.error-vapifault-deepinfra-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-deepinfra-401-unauthorized'
+    | 'call.in-progress.error-vapifault-deepinfra-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-deepinfra-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-deepinfra-500-server-error'
+    | 'call.in-progress.error-providerfault-deepinfra-503-server-overloaded-error'
     | 'pipeline-error-runpod-400-bad-request-validation-failed'
     | 'pipeline-error-runpod-401-unauthorized'
     | 'pipeline-error-runpod-403-model-access-denied'
     | 'pipeline-error-runpod-429-exceeded-quota'
     | 'pipeline-error-runpod-500-server-error'
+    | 'pipeline-error-runpod-503-server-overloaded-error'
     | 'pipeline-error-runpod-llm-failed'
+    | 'call.in-progress.error-vapifault-runpod-llm-failed'
+    | 'call.in-progress.error-vapifault-runpod-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-runpod-401-unauthorized'
+    | 'call.in-progress.error-vapifault-runpod-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-runpod-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-runpod-500-server-error'
+    | 'call.in-progress.error-providerfault-runpod-503-server-overloaded-error'
     | 'pipeline-error-custom-llm-400-bad-request-validation-failed'
     | 'pipeline-error-custom-llm-401-unauthorized'
     | 'pipeline-error-custom-llm-403-model-access-denied'
     | 'pipeline-error-custom-llm-429-exceeded-quota'
     | 'pipeline-error-custom-llm-500-server-error'
+    | 'pipeline-error-custom-llm-503-server-overloaded-error'
     | 'pipeline-error-custom-llm-llm-failed'
+    | 'call.in-progress.error-vapifault-custom-llm-llm-failed'
+    | 'call.in-progress.error-vapifault-custom-llm-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-custom-llm-401-unauthorized'
+    | 'call.in-progress.error-vapifault-custom-llm-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-custom-llm-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-custom-llm-500-server-error'
+    | 'call.in-progress.error-providerfault-custom-llm-503-server-overloaded-error'
     | 'pipeline-error-custom-voice-failed'
     | 'pipeline-error-cartesia-socket-hang-up'
     | 'pipeline-error-cartesia-requested-payment'
     | 'pipeline-error-cartesia-500-server-error'
     | 'pipeline-error-cartesia-503-server-error'
     | 'pipeline-error-cartesia-522-server-error'
+    | 'call.in-progress.error-vapifault-cartesia-socket-hang-up'
+    | 'call.in-progress.error-vapifault-cartesia-requested-payment'
+    | 'call.in-progress.error-providerfault-cartesia-500-server-error'
+    | 'call.in-progress.error-providerfault-cartesia-503-server-error'
+    | 'call.in-progress.error-providerfault-cartesia-522-server-error'
     | 'pipeline-error-eleven-labs-voice-not-found'
     | 'pipeline-error-eleven-labs-quota-exceeded'
     | 'pipeline-error-eleven-labs-unauthorized-access'
@@ -8882,9 +9696,30 @@ export interface Call {
     | 'pipeline-error-eleven-labs-missing-samples-for-voice-clone'
     | 'pipeline-error-eleven-labs-voice-not-fine-tuned-and-cannot-be-used'
     | 'pipeline-error-eleven-labs-voice-not-allowed-for-free-users'
-    | 'pipeline-error-eleven-labs-500-server-error'
     | 'pipeline-error-eleven-labs-max-character-limit-exceeded'
     | 'pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
+    | 'pipeline-error-eleven-labs-500-server-error'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-found'
+    | 'call.in-progress.error-vapifault-eleven-labs-quota-exceeded'
+    | 'call.in-progress.error-vapifault-eleven-labs-unauthorized-access'
+    | 'call.in-progress.error-vapifault-eleven-labs-unauthorized-to-access-model'
+    | 'call.in-progress.error-vapifault-eleven-labs-professional-voices-only-for-creator-plus'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-free-plan-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-concurrent-requests-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-using-instant-voice-clone-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-system-busy-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-fine-tuned'
+    | 'call.in-progress.error-vapifault-eleven-labs-invalid-api-key'
+    | 'call.in-progress.error-vapifault-eleven-labs-invalid-voice-samples'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-disabled-by-owner'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-account-in-probation'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-content-against-their-policy'
+    | 'call.in-progress.error-vapifault-eleven-labs-missing-samples-for-voice-clone'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-fine-tuned-and-cannot-be-used'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-allowed-for-free-users'
+    | 'call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
+    | 'call.in-progress.error-providerfault-eleven-labs-500-server-error'
     | 'pipeline-error-playht-request-timed-out'
     | 'pipeline-error-playht-invalid-voice'
     | 'pipeline-error-playht-unexpected-error'
@@ -8897,29 +9732,58 @@ export interface Call {
     | 'pipeline-error-playht-429-exceeded-quota'
     | 'pipeline-error-playht-502-gateway-error'
     | 'pipeline-error-playht-504-gateway-error'
-    | 'pipeline-error-tavus-video-failed'
+    | 'call.in-progress.error-vapifault-playht-request-timed-out'
+    | 'call.in-progress.error-vapifault-playht-invalid-voice'
+    | 'call.in-progress.error-vapifault-playht-unexpected-error'
+    | 'call.in-progress.error-vapifault-playht-out-of-credits'
+    | 'call.in-progress.error-vapifault-playht-invalid-emotion'
+    | 'call.in-progress.error-vapifault-playht-voice-must-be-a-valid-voice-manifest-uri'
+    | 'call.in-progress.error-vapifault-playht-401-unauthorized'
+    | 'call.in-progress.error-vapifault-playht-403-forbidden-out-of-characters'
+    | 'call.in-progress.error-vapifault-playht-403-forbidden-api-access-not-available'
+    | 'call.in-progress.error-vapifault-playht-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-playht-502-gateway-error'
+    | 'call.in-progress.error-providerfault-playht-504-gateway-error'
     | 'pipeline-error-custom-transcriber-failed'
-    | 'pipeline-error-11labs-transcriber-failed'
-    | 'pipeline-error-deepgram-returning-403-model-access-denied'
-    | 'pipeline-error-deepgram-returning-401-invalid-credentials'
-    | 'pipeline-error-deepgram-returning-404-not-found'
+    | 'call.in-progress.error-vapifault-custom-transcriber-failed'
+    | 'pipeline-error-eleven-labs-transcriber-failed'
+    | 'call.in-progress.error-vapifault-eleven-labs-transcriber-failed'
     | 'pipeline-error-deepgram-returning-400-no-such-model-language-tier-combination'
+    | 'pipeline-error-deepgram-returning-401-invalid-credentials'
+    | 'pipeline-error-deepgram-returning-403-model-access-denied'
+    | 'pipeline-error-deepgram-returning-404-not-found'
     | 'pipeline-error-deepgram-returning-500-invalid-json'
     | 'pipeline-error-deepgram-returning-502-network-error'
     | 'pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach'
+    | 'call.in-progress.error-vapifault-deepgram-returning-400-no-such-model-language-tier-combination'
+    | 'call.in-progress.error-vapifault-deepgram-returning-401-invalid-credentials'
+    | 'call.in-progress.error-vapifault-deepgram-returning-404-not-found'
+    | 'call.in-progress.error-vapifault-deepgram-returning-403-model-access-denied'
+    | 'call.in-progress.error-providerfault-deepgram-returning-500-invalid-json'
+    | 'call.in-progress.error-providerfault-deepgram-returning-502-network-error'
+    | 'call.in-progress.error-providerfault-deepgram-returning-502-bad-gateway-ehostunreach'
     | 'pipeline-error-google-transcriber-failed'
+    | 'call.in-progress.error-vapifault-google-transcriber-failed'
     | 'pipeline-error-openai-transcriber-failed'
-    | 'call.start.error-get-org'
-    | 'call.start.error-get-subscription'
-    | 'call.start.error-get-assistant'
-    | 'call.start.error-get-phone-number'
-    | 'call.start.error-get-customer'
-    | 'call.start.error-get-resources-validation'
-    | 'call.start.error-vapi-number-international'
-    | 'call.start.error-vapi-number-outbound-daily-limit'
-    | 'call.start.error-get-transport'
+    | 'call.in-progress.error-vapifault-openai-transcriber-failed'
+    | 'assistant-ended-call'
+    | 'assistant-said-end-call-phrase'
+    | 'assistant-ended-call-with-hangup-task'
+    | 'assistant-ended-call-after-message-spoken'
+    | 'assistant-forwarded-call'
+    | 'assistant-join-timed-out'
+    | 'call.in-progress.error-assistant-did-not-receive-customer-audio'
+    | 'customer-busy'
+    | 'customer-ended-call'
+    | 'customer-did-not-answer'
+    | 'customer-did-not-give-microphone-permission'
+    | 'exceeded-max-duration'
+    | 'manually-canceled'
+    | 'phone-call-provider-closed-websocket'
     | 'silence-timed-out'
-    | 'sip-gateway-failed-to-connect-call'
+    | 'call.in-progress.error-sip-telephony-provider-failed-to-connect-call'
+    | 'call.ringing.hook-executed-say'
+    | 'call.ringing.hook-executed-transfer'
     | 'twilio-failed-to-connect-call'
     | 'twilio-reported-customer-misdialed'
     | 'vonage-rejected'
@@ -8962,8 +9826,6 @@ export interface Call {
   monitor?: Monitor;
   /** These are the artifacts created from the call. Configure in `assistant.artifactPlan`. */
   artifact?: Artifact;
-  /** This is the transport used for the call. */
-  transport?: Transport;
   /**
    * The ID of the call as provided by the phone number service. callSid in Twilio. conversationUuid in Vonage. callControlId in Telnyx.
    *
@@ -9009,6 +9871,74 @@ export interface Call {
    * @maxLength 40
    */
   name?: string;
+  /** This is the schedule plan of the call. */
+  schedulePlan?: SchedulePlan;
+  /** This is the transport of the call. */
+  transport?: object;
+}
+
+export interface CallBatchError {
+  customer: CreateCustomerDTO;
+  error: string;
+}
+
+export interface CallBatchResponse {
+  /** This is the list of calls that were created. */
+  results: Call[];
+  /** This is the list of calls that failed to be created. */
+  errors: CallBatchError[];
+}
+
+export interface CreateCallDTO {
+  /**
+   * This is used to issue batch calls to multiple customers.
+   *
+   * Only relevant for `outboundPhoneCall`. To call a single customer, use `customer` instead.
+   */
+  customers?: CreateCustomerDTO[];
+  /**
+   * This is the name of the call. This is just for your own reference.
+   * @maxLength 40
+   */
+  name?: string;
+  /** This is the schedule plan of the call. */
+  schedulePlan?: SchedulePlan;
+  /** This is the transport of the call. */
+  transport?: object;
+  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
+  assistantId?: string;
+  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
+  /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
+  assistantOverrides?: AssistantOverrides;
+  /** This is the squad that will be used for the call. To use a transient squad, use `squad` instead. */
+  squadId?: string;
+  /** This is a squad that will be used for the call. To use an existing squad, use `squadId` instead. */
+  squad?: CreateSquadDTO;
+  /**
+   * This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  phoneNumberId?: string;
+  /**
+   * This is the phone number that will be used for the call. To use an existing number, use `phoneNumberId` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  phoneNumber?: ImportTwilioPhoneNumberDTO;
+  /**
+   * This is the customer that will be called. To call a transient customer , use `customer` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  customerId?: string;
+  /**
+   * This is the customer that will be called. To call an existing customer, use `customerId` instead.
+   *
+   * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   */
+  customer?: CreateCustomerDTO;
 }
 
 export interface PaginationMeta {
@@ -9024,10 +9954,20 @@ export interface CallPaginatedResponse {
 
 export interface CreateOutboundCallDTO {
   /**
+   * This is used to issue batch calls to multiple customers.
+   *
+   * Only relevant for `outboundPhoneCall`. To call a single customer, use `customer` instead.
+   */
+  customers?: CreateCustomerDTO[];
+  /**
    * This is the name of the call. This is just for your own reference.
    * @maxLength 40
    */
   name?: string;
+  /** This is the schedule plan of the call. */
+  schedulePlan?: SchedulePlan;
+  /** This is the transport of the call. */
+  transport?: object;
   /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
   assistantId?: string;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
@@ -9205,6 +10145,22 @@ export interface Transfer {
 
 export interface CreateWorkflowDTO {
   nodes: (Say | Gather | ApiRequest | Hangup | Transfer)[];
+  /** These are the options for the workflow's LLM. */
+  model?:
+    | AnthropicModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
@@ -9299,8 +10255,8 @@ export interface Assistant {
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan;
   /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input"]
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
    */
   clientMessages?:
     | 'conversation-update'
@@ -9317,7 +10273,8 @@ export interface Assistant {
     | 'tool-calls-result'
     | 'transfer-update'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+    | 'workflow.node.started';
   /**
    * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
    * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
@@ -9391,51 +10348,147 @@ export interface Assistant {
   observabilityPlan?: LangfuseObservabilityPlan;
   /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
-    | CreateAnthropicCredentialDTO
-    | CreateAnyscaleCredentialDTO
-    | CreateAssemblyAICredentialDTO
-    | CreateAzureCredentialDTO
-    | CreateAzureOpenAICredentialDTO
-    | CreateByoSipTrunkCredentialDTO
-    | CreateCartesiaCredentialDTO
-    | CreateCerebrasCredentialDTO
-    | CreateCloudflareCredentialDTO
-    | CreateCustomLLMCredentialDTO
-    | CreateDeepgramCredentialDTO
-    | CreateDeepInfraCredentialDTO
-    | CreateDeepSeekCredentialDTO
-    | CreateElevenLabsCredentialDTO
-    | CreateGcpCredentialDTO
-    | CreateGladiaCredentialDTO
-    | CreateGoHighLevelCredentialDTO
-    | CreateGoogleCredentialDTO
-    | CreateGroqCredentialDTO
-    | CreateHumeCredentialDTO
-    | CreateInflectionAICredentialDTO
-    | CreateLangfuseCredentialDTO
-    | CreateLmntCredentialDTO
-    | CreateMakeCredentialDTO
-    | CreateMistralCredentialDTO
-    | CreateNeuphonicCredentialDTO
-    | CreateOpenAICredentialDTO
-    | CreateOpenRouterCredentialDTO
-    | CreatePerplexityAICredentialDTO
-    | CreatePlayHTCredentialDTO
-    | CreateRimeAICredentialDTO
-    | CreateRunpodCredentialDTO
-    | CreateS3CredentialDTO
-    | CreateSmallestAICredentialDTO
-    | CreateSpeechmaticsCredentialDTO
-    | CreateSupabaseCredentialDTO
-    | CreateTavusCredentialDTO
-    | CreateTogetherAICredentialDTO
-    | CreateTrieveCredentialDTO
-    | CreateTwilioCredentialDTO
-    | CreateVonageCredentialDTO
-    | CreateWebhookCredentialDTO
-    | CreateXAiCredentialDTO
-    | CreateGoogleCalendarOAuth2ClientCredentialDTO
-    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
+    | ({
+        provider: '11labs';
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: 'anthropic';
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: 'anyscale';
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: 'assembly-ai';
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: 'azure-openai';
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: 'azure';
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: 'byo-sip-trunk';
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: 'cartesia';
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: 'cerebras';
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: 'cloudflare';
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: 'custom-llm';
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: 'deepgram';
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: 'deepinfra';
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: 'deep-seek';
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: 'gcp';
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: 'gladia';
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: 'gohighlevel';
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: 'google';
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: 'groq';
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: 'inflection-ai';
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: 'langfuse';
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: 'lmnt';
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: 'make';
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: 'openai';
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: 'openrouter';
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: 'perplexity-ai';
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: 'playht';
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: 'rime-ai';
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: 'runpod';
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: 's3';
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: 'supabase';
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: 'smallest-ai';
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: 'tavus';
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: 'together-ai';
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: 'twilio';
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: 'vonage';
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: 'webhook';
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: 'xai';
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: 'neuphonic';
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: 'hume';
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: 'mistral';
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: 'speechmatics';
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: 'trieve';
+      } & CreateTrieveCredentialDTO)
+    | ({
+        provider: 'google.calendar.oauth2-client';
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: 'google.calendar.oauth2-authorization';
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'google.sheets.oauth2-authorization';
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'slack.oauth2-authorization';
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
   )[];
   /**
    * This is the name of the assistant.
@@ -9626,8 +10679,8 @@ export interface UpdateAssistantDTO {
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan;
   /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input"]
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
    */
   clientMessages?:
     | 'conversation-update'
@@ -9644,7 +10697,8 @@ export interface UpdateAssistantDTO {
     | 'tool-calls-result'
     | 'transfer-update'
     | 'user-interrupted'
-    | 'voice-input';
+    | 'voice-input'
+    | 'workflow.node.started';
   /**
    * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
    * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
@@ -9718,51 +10772,147 @@ export interface UpdateAssistantDTO {
   observabilityPlan?: LangfuseObservabilityPlan;
   /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
-    | CreateAnthropicCredentialDTO
-    | CreateAnyscaleCredentialDTO
-    | CreateAssemblyAICredentialDTO
-    | CreateAzureCredentialDTO
-    | CreateAzureOpenAICredentialDTO
-    | CreateByoSipTrunkCredentialDTO
-    | CreateCartesiaCredentialDTO
-    | CreateCerebrasCredentialDTO
-    | CreateCloudflareCredentialDTO
-    | CreateCustomLLMCredentialDTO
-    | CreateDeepgramCredentialDTO
-    | CreateDeepInfraCredentialDTO
-    | CreateDeepSeekCredentialDTO
-    | CreateElevenLabsCredentialDTO
-    | CreateGcpCredentialDTO
-    | CreateGladiaCredentialDTO
-    | CreateGoHighLevelCredentialDTO
-    | CreateGoogleCredentialDTO
-    | CreateGroqCredentialDTO
-    | CreateHumeCredentialDTO
-    | CreateInflectionAICredentialDTO
-    | CreateLangfuseCredentialDTO
-    | CreateLmntCredentialDTO
-    | CreateMakeCredentialDTO
-    | CreateMistralCredentialDTO
-    | CreateNeuphonicCredentialDTO
-    | CreateOpenAICredentialDTO
-    | CreateOpenRouterCredentialDTO
-    | CreatePerplexityAICredentialDTO
-    | CreatePlayHTCredentialDTO
-    | CreateRimeAICredentialDTO
-    | CreateRunpodCredentialDTO
-    | CreateS3CredentialDTO
-    | CreateSmallestAICredentialDTO
-    | CreateSpeechmaticsCredentialDTO
-    | CreateSupabaseCredentialDTO
-    | CreateTavusCredentialDTO
-    | CreateTogetherAICredentialDTO
-    | CreateTrieveCredentialDTO
-    | CreateTwilioCredentialDTO
-    | CreateVonageCredentialDTO
-    | CreateWebhookCredentialDTO
-    | CreateXAiCredentialDTO
-    | CreateGoogleCalendarOAuth2ClientCredentialDTO
-    | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO
+    | ({
+        provider: '11labs';
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: 'anthropic';
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: 'anyscale';
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: 'assembly-ai';
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: 'azure-openai';
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: 'azure';
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: 'byo-sip-trunk';
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: 'cartesia';
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: 'cerebras';
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: 'cloudflare';
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: 'custom-llm';
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: 'deepgram';
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: 'deepinfra';
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: 'deep-seek';
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: 'gcp';
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: 'gladia';
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: 'gohighlevel';
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: 'google';
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: 'groq';
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: 'inflection-ai';
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: 'langfuse';
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: 'lmnt';
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: 'make';
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: 'openai';
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: 'openrouter';
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: 'perplexity-ai';
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: 'playht';
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: 'rime-ai';
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: 'runpod';
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: 's3';
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: 'supabase';
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: 'smallest-ai';
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: 'tavus';
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: 'together-ai';
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: 'twilio';
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: 'vonage';
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: 'webhook';
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: 'xai';
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: 'neuphonic';
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: 'hume';
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: 'mistral';
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: 'speechmatics';
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: 'trieve';
+      } & CreateTrieveCredentialDTO)
+    | ({
+        provider: 'google.calendar.oauth2-client';
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: 'google.calendar.oauth2-authorization';
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'google.sheets.oauth2-authorization';
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'slack.oauth2-authorization';
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
   )[];
   /**
    * This is the name of the assistant.
@@ -9861,6 +11011,8 @@ export interface ByoPhoneNumber {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /** This is to bring your own phone numbers from your own SIP trunks or Carriers. */
   provider: 'byo-phone-number';
   /**
@@ -9943,6 +11095,8 @@ export interface TwilioPhoneNumber {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /** This is to use numbers bought on Twilio. */
   provider: 'twilio';
   /** This is the unique identifier for the phone number. */
@@ -10006,6 +11160,8 @@ export interface VonagePhoneNumber {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /** This is to use numbers bought on Vonage. */
   provider: 'vonage';
   /** This is the unique identifier for the phone number. */
@@ -10084,6 +11240,8 @@ export interface VapiPhoneNumber {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /** This is to create free SIP phone numbers on Vapi. */
   provider: 'vapi';
   /** This is the unique identifier for the phone number. */
@@ -10161,6 +11319,8 @@ export interface TelnyxPhoneNumber {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /** This is to use numbers bought on Telnyx. */
   provider: 'telnyx';
   /** This is the unique identifier for the phone number. */
@@ -10222,6 +11382,8 @@ export interface CreateByoPhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /** This is to bring your own phone numbers from your own SIP trunks or Carriers. */
   provider: 'byo-phone-number';
   /**
@@ -10288,6 +11450,8 @@ export interface CreateTwilioPhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /** This is to use numbers bought on Twilio. */
   provider: 'twilio';
   /** These are the digits of the phone number you own on your Twilio. */
@@ -10335,6 +11499,8 @@ export interface CreateVonagePhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /** This is to use numbers bought on Vonage. */
   provider: 'vonage';
   /** These are the digits of the phone number you own on your Vonage. */
@@ -10380,6 +11546,8 @@ export interface CreateVapiPhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /** This is to create free SIP phone numbers on Vapi. */
   provider: 'vapi';
   /**
@@ -10439,6 +11607,8 @@ export interface CreateTelnyxPhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /** This is to use numbers bought on Telnyx. */
   provider: 'telnyx';
   /** These are the digits of the phone number you own on your Telnyx. */
@@ -10484,6 +11654,8 @@ export interface UpdateByoPhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /**
    * This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
    *
@@ -10548,6 +11720,8 @@ export interface UpdateTwilioPhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
@@ -10593,6 +11767,8 @@ export interface UpdateVonagePhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
@@ -10636,6 +11812,8 @@ export interface UpdateVapiPhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
@@ -10687,6 +11865,8 @@ export interface UpdateTelnyxPhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
@@ -10730,6 +11910,8 @@ export interface ImportVonagePhoneNumberDTO {
    * If this is not set and above conditions are met, the inbound call is hung up with an error message.
    */
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
+  /** This is the hooks that will be used for incoming calls to this phone number. */
+  hooks?: PhoneNumberHookCallRinging[];
   /**
    * These are the digits of the phone number you own on your Vonage.
    * @deprecated
@@ -11334,40 +12516,6 @@ export interface TextEditorTool {
   name: 'str_replace_editor';
 }
 
-export interface KnowledgeBase {
-  /**
-   * The name of the knowledge base
-   * @example "My Knowledge Base"
-   */
-  name: string;
-  /**
-   * The provider of the knowledge base
-   * @example "google"
-   */
-  provider: 'google';
-  /**
-   * The model to use for the knowledge base
-   * @example "gemini-1.5-flash"
-   */
-  model:
-    | 'gemini-2.0-flash-thinking-exp'
-    | 'gemini-2.0-pro-exp-02-05'
-    | 'gemini-2.0-flash'
-    | 'gemini-2.0-flash-lite'
-    | 'gemini-2.0-flash-lite-preview-02-05'
-    | 'gemini-2.0-flash-exp'
-    | 'gemini-2.0-flash-realtime-exp'
-    | 'gemini-1.5-flash'
-    | 'gemini-1.5-flash-002'
-    | 'gemini-1.5-pro'
-    | 'gemini-1.5-pro-002'
-    | 'gemini-1.0-pro';
-  /** A description of the knowledge base */
-  description: string;
-  /** The file IDs associated with this knowledge base */
-  fileIds: string[];
-}
-
 export interface QueryTool {
   /**
    * This determines if the tool is async.
@@ -11494,6 +12642,214 @@ export interface GoogleSheetsRowAppendTool {
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
   /** The type of tool. "google.sheets.row.append" for Google Sheets tool. */
   type: 'google.sheets.row.append';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoogleCalendarCheckAvailabilityTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "google.calendar.availability.check" for Google Calendar availability check tool. */
+  type: 'google.calendar.availability.check';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface SlackSendMessageTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "slack.message.send" for Slack send message tool. */
+  type: 'slack.message.send';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface SmsSendTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "sms" for Twilio SMS sending tool. */
+  type: 'sms';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface McpTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "mcp" for MCP tool. */
+  type: 'mcp';
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -11705,7 +13061,7 @@ export interface CreateTextEditorToolDTO {
   server?: Server;
 }
 
-export interface CreateQueryToolDTO {
+export interface CreateSmsSendToolDTO {
   /**
    * This determines if the tool is async.
    *
@@ -11723,10 +13079,8 @@ export interface CreateQueryToolDTO {
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
-  /** The type of tool. "query" for Query tool. */
-  type: 'query';
-  /** The knowledge bases to query */
-  knowledgeBases?: KnowledgeBase[];
+  /** The type of tool. "sms" for Twilio SMS sending tool. */
+  type: 'sms';
   /**
    * This is the function definition of the tool.
    *
@@ -11745,7 +13099,7 @@ export interface CreateQueryToolDTO {
   server?: Server;
 }
 
-export interface CreateGoogleCalendarCreateEventToolDTO {
+export interface CreateMcpToolDTO {
   /**
    * This determines if the tool is async.
    *
@@ -11763,46 +13117,8 @@ export interface CreateGoogleCalendarCreateEventToolDTO {
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
-  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
-  type: 'google.calendar.event.create';
-  /**
-   * This is the function definition of the tool.
-   *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-   *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-   */
-  function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
-}
-
-export interface CreateGoogleSheetsRowAppendToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
-  /** The type of tool. "google.sheets.row.append" for Google Sheets tool. */
-  type: 'google.sheets.row.append';
+  /** The type of tool. "mcp" for MCP tool. */
+  type: 'mcp';
   /**
    * This is the function definition of the tool.
    *
@@ -12327,6 +13643,150 @@ export interface UpdateGoogleSheetsRowAppendToolDTO {
   server?: Server;
 }
 
+export interface UpdateGoogleCalendarCheckAvailabilityToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateSlackSendMessageToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateSmsSendToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateMcpToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
 export interface CreateFileDTO {
   /**
    * This is the File you want to upload for use with the Knowledge Base.
@@ -12576,6 +14036,22 @@ export interface TrieveKnowledgeBaseImport {
 
 export interface UpdateWorkflowDTO {
   nodes?: (Say | Gather | ApiRequest | Hangup | Transfer)[];
+  /** These are the options for the workflow's LLM. */
+  model?:
+    | AnthropicModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel;
   /** @maxLength 80 */
   name?: string;
   edges?: Edge[];
@@ -12662,10 +14138,26 @@ export interface TestSuitePhoneNumber {
 }
 
 export interface TargetPlan {
-  /** This is the phoneNumberId that is being tested. */
+  /**
+   * This is the phone number that is being tested.
+   * During the actual test, it'll be called and the assistant attached to it will pick up and be tested.
+   * To test an assistant directly, send assistantId instead.
+   */
   phoneNumberId?: string;
-  /** This is the phone number that is being tested. Only use this if you have not imported the phone number to Vapi. */
+  /**
+   * This can be any phone number (even not on Vapi).
+   * During the actual test, it'll be called.
+   * To test a Vapi number, send phoneNumberId. To test an assistant directly, send assistantId instead.
+   */
   phoneNumber?: TestSuitePhoneNumber;
+  /**
+   * This is the assistant being tested.
+   * During the actual test, it'll invoked directly.
+   * To test the assistant over phone number, send phoneNumberId instead.
+   */
+  assistantId?: string;
+  /** This is the assistant overrides applied to assistantId before it is tested. */
+  assistantOverrides?: AssistantOverrides;
 }
 
 export interface TestSuite {
@@ -12982,15 +14474,24 @@ export interface TestSuiteRunScorerAI {
 }
 
 export interface TestSuiteRunTestAttemptCall {
-  /** This is the artifact associated with the call. */
+  /** This is the artifact of the call. */
   artifact: Artifact;
+}
+
+export interface TestSuiteRunTestAttemptMetadata {
+  /** This is the session ID for the test attempt. */
+  sessionId: string;
 }
 
 export interface TestSuiteRunTestAttempt {
   /** These are the results of the scorers used to evaluate the test attempt. */
   scorerResults: TestSuiteRunScorerAI[];
   /** This is the call made during the test attempt. */
-  call: TestSuiteRunTestAttemptCall;
+  call?: TestSuiteRunTestAttemptCall;
+  /** This is the call ID for the test attempt. */
+  callId?: string;
+  /** This is the metadata for the test attempt. */
+  metadata?: TestSuiteRunTestAttemptMetadata;
 }
 
 export interface TestSuiteRunTestResult {
@@ -15068,6 +16569,58 @@ export interface GoogleCalendarOAuth2AuthorizationCredential {
   name?: string;
 }
 
+export interface GoogleSheetsOAuth2AuthorizationCredential {
+  provider: 'google.sheets.oauth2-authorization';
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface SlackOAuth2AuthorizationCredential {
+  provider: 'slack.oauth2-authorization';
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CreateCerebrasCredentialDTO {
   provider: 'cerebras';
   /**
@@ -15829,6 +17382,28 @@ export interface UpdateGoogleCalendarOAuth2AuthorizationCredentialDTO {
   name?: string;
 }
 
+export interface UpdateGoogleSheetsOAuth2AuthorizationCredentialDTO {
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface UpdateSlackOAuth2AuthorizationCredentialDTO {
+  /** The authorization ID for the OAuth2 authorization */
+  authorizationId?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CredentialSessionResponse {
   sessionToken: string;
 }
@@ -15867,7 +17442,8 @@ export interface CredentialSessionDTO {
   provider:
     | 'google.calendar.oauth2-client'
     | 'google.calendar.oauth2-authorization'
-    | 'google.sheets.oauth2-authorization';
+    | 'google.sheets.oauth2-authorization'
+    | 'slack.oauth2-authorization';
 }
 
 export interface ToolTemplateSetup {
@@ -16118,6 +17694,13 @@ export interface SyncVoiceLibraryDTO {
     | 'sesame';
 }
 
+export interface CreateSesameVoiceDTO {
+  /** The name of the voice. */
+  voiceName?: string;
+  /** The transcript of the utterance. */
+  transcription?: string;
+}
+
 export interface VoiceLibraryVoiceResponse {
   voiceId: string;
   name: string;
@@ -16196,6 +17779,8 @@ export interface ClientMessageSpeechUpdate {
   status: 'started' | 'stopped';
   /** This is the role which the speech update is for. */
   role: 'assistant' | 'user';
+  /** This is the turn number of the speech update (0-indexed). */
+  turn?: number;
 }
 
 export interface ClientMessageTranscript {
@@ -16320,8 +17905,8 @@ export interface ServerMessageAssistantRequest {
     | CreateVapiPhoneNumberDTO;
   /** This is the type of the message. "assistant-request" is sent to fetch assistant configuration for an incoming call. */
   type: 'assistant-request';
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -16377,8 +17962,8 @@ export interface ServerMessageConversationUpdate {
   messages?: (UserMessage | SystemMessage | BotMessage | ToolCallMessage | ToolCallResultMessage)[];
   /** This is the most up-to-date conversation history at the time the message is sent, formatted for OpenAI. */
   messagesOpenAIFormatted: OpenAIMessage[];
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -16432,8 +18017,6 @@ export interface ServerMessageEndOfCallReport {
   type: 'end-of-call-report';
   /** This is the reason the call ended. This can also be found at `call.endedReason` on GET /call/:id. */
   endedReason:
-    | 'assistant-not-valid'
-    | 'assistant-not-provided'
     | 'call-start-error-neither-assistant-nor-server-set'
     | 'assistant-request-failed'
     | 'assistant-request-returned-error'
@@ -16441,22 +18024,18 @@ export interface ServerMessageEndOfCallReport {
     | 'assistant-request-returned-invalid-assistant'
     | 'assistant-request-returned-no-assistant'
     | 'assistant-request-returned-forwarding-phone-number'
-    | 'assistant-ended-call'
-    | 'assistant-said-end-call-phrase'
-    | 'assistant-ended-call-with-hangup-task'
-    | 'assistant-forwarded-call'
-    | 'assistant-join-timed-out'
-    | 'customer-busy'
-    | 'customer-ended-call'
-    | 'customer-did-not-answer'
-    | 'customer-did-not-give-microphone-permission'
-    | 'assistant-said-message-with-end-call-enabled'
-    | 'exceeded-max-duration'
-    | 'manually-canceled'
-    | 'phone-call-provider-closed-websocket'
-    | 'db-error'
+    | 'call.start.error-get-org'
+    | 'call.start.error-get-subscription'
+    | 'call.start.error-get-assistant'
+    | 'call.start.error-get-phone-number'
+    | 'call.start.error-get-customer'
+    | 'call.start.error-get-resources-validation'
+    | 'call.start.error-vapi-number-international'
+    | 'call.start.error-vapi-number-outbound-daily-limit'
+    | 'call.start.error-get-transport'
+    | 'assistant-not-valid'
+    | 'database-error'
     | 'assistant-not-found'
-    | 'license-check-failed'
     | 'pipeline-error-openai-voice-failed'
     | 'pipeline-error-cartesia-voice-failed'
     | 'pipeline-error-deepgram-voice-failed'
@@ -16469,140 +18048,349 @@ export interface ServerMessageEndOfCallReport {
     | 'pipeline-error-neuphonic-voice-failed'
     | 'pipeline-error-hume-voice-failed'
     | 'pipeline-error-sesame-voice-failed'
-    | 'pipeline-error-deepgram-transcriber-failed'
-    | 'pipeline-error-gladia-transcriber-failed'
-    | 'pipeline-error-speechmatics-transcriber-failed'
-    | 'pipeline-error-assembly-ai-transcriber-failed'
-    | 'pipeline-error-talkscriber-transcriber-failed'
-    | 'pipeline-error-azure-speech-transcriber-failed'
+    | 'pipeline-error-tavus-video-failed'
+    | 'call.in-progress.error-vapifault-openai-voice-failed'
+    | 'call.in-progress.error-vapifault-cartesia-voice-failed'
+    | 'call.in-progress.error-vapifault-deepgram-voice-failed'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-failed'
+    | 'call.in-progress.error-vapifault-playht-voice-failed'
+    | 'call.in-progress.error-vapifault-lmnt-voice-failed'
+    | 'call.in-progress.error-vapifault-azure-voice-failed'
+    | 'call.in-progress.error-vapifault-rime-ai-voice-failed'
+    | 'call.in-progress.error-vapifault-smallest-ai-voice-failed'
+    | 'call.in-progress.error-vapifault-neuphonic-voice-failed'
+    | 'call.in-progress.error-vapifault-hume-voice-failed'
+    | 'call.in-progress.error-vapifault-sesame-voice-failed'
+    | 'call.in-progress.error-vapifault-tavus-video-failed'
     | 'pipeline-error-vapi-llm-failed'
     | 'pipeline-error-vapi-400-bad-request-validation-failed'
     | 'pipeline-error-vapi-401-unauthorized'
     | 'pipeline-error-vapi-403-model-access-denied'
     | 'pipeline-error-vapi-429-exceeded-quota'
     | 'pipeline-error-vapi-500-server-error'
-    | 'pipeline-no-available-model'
+    | 'pipeline-error-vapi-503-server-overloaded-error'
+    | 'call.in-progress.error-vapifault-vapi-llm-failed'
+    | 'call.in-progress.error-vapifault-vapi-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-vapi-401-unauthorized'
+    | 'call.in-progress.error-vapifault-vapi-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-vapi-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-vapi-500-server-error'
+    | 'call.in-progress.error-providerfault-vapi-503-server-overloaded-error'
+    | 'pipeline-error-deepgram-transcriber-failed'
+    | 'call.in-progress.error-vapifault-deepgram-transcriber-failed'
+    | 'pipeline-error-gladia-transcriber-failed'
+    | 'call.in-progress.error-vapifault-gladia-transcriber-failed'
+    | 'pipeline-error-speechmatics-transcriber-failed'
+    | 'call.in-progress.error-vapifault-speechmatics-transcriber-failed'
+    | 'pipeline-error-assembly-ai-transcriber-failed'
+    | 'pipeline-error-assembly-ai-returning-400-insufficent-funds'
+    | 'pipeline-error-assembly-ai-returning-400-paid-only-feature'
+    | 'pipeline-error-assembly-ai-returning-401-invalid-credentials'
+    | 'pipeline-error-assembly-ai-returning-500-invalid-schema'
+    | 'pipeline-error-assembly-ai-returning-500-word-boost-parsing-failed'
+    | 'call.in-progress.error-vapifault-assembly-ai-transcriber-failed'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-400-insufficent-funds'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-400-paid-only-feature'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-401-invalid-credentials'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-500-invalid-schema'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-500-word-boost-parsing-failed'
+    | 'pipeline-error-talkscriber-transcriber-failed'
+    | 'call.in-progress.error-vapifault-talkscriber-transcriber-failed'
+    | 'pipeline-error-azure-speech-transcriber-failed'
+    | 'call.in-progress.error-vapifault-azure-speech-transcriber-failed'
+    | 'call.in-progress.error-pipeline-no-available-llm-model'
     | 'worker-shutdown'
     | 'unknown-error'
     | 'vonage-disconnected'
     | 'vonage-failed-to-connect-call'
     | 'vonage-completed'
     | 'phone-call-provider-bypass-enabled-but-no-call-received'
-    | 'vapifault-phone-call-worker-setup-socket-error'
-    | 'vapifault-phone-call-worker-worker-setup-socket-timeout'
-    | 'vapifault-phone-call-worker-could-not-find-call'
-    | 'vapifault-transport-never-connected'
-    | 'vapifault-web-call-worker-setup-failed'
-    | 'vapifault-transport-connected-but-call-not-active'
-    | 'vapifault-call-started-but-connection-to-transport-missing'
-    | 'pipeline-error-openai-llm-failed'
-    | 'pipeline-error-azure-openai-llm-failed'
-    | 'pipeline-error-groq-llm-failed'
-    | 'pipeline-error-google-llm-failed'
-    | 'pipeline-error-xai-llm-failed'
-    | 'pipeline-error-mistral-llm-failed'
-    | 'pipeline-error-inflection-ai-llm-failed'
-    | 'pipeline-error-cerebras-llm-failed'
-    | 'pipeline-error-deep-seek-llm-failed'
+    | 'call.in-progress.error-vapifault-transport-never-connected'
+    | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
+    | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
+    | 'call.in-progress.error-vapifault-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-azure-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-groq-llm-failed'
+    | 'call.in-progress.error-vapifault-google-llm-failed'
+    | 'call.in-progress.error-vapifault-xai-llm-failed'
+    | 'call.in-progress.error-vapifault-mistral-llm-failed'
+    | 'call.in-progress.error-vapifault-inflection-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-cerebras-llm-failed'
+    | 'call.in-progress.error-vapifault-deep-seek-llm-failed'
     | 'pipeline-error-openai-400-bad-request-validation-failed'
     | 'pipeline-error-openai-401-unauthorized'
+    | 'pipeline-error-openai-401-incorrect-api-key'
+    | 'pipeline-error-openai-401-account-not-in-organization'
     | 'pipeline-error-openai-403-model-access-denied'
     | 'pipeline-error-openai-429-exceeded-quota'
+    | 'pipeline-error-openai-429-rate-limit-reached'
     | 'pipeline-error-openai-500-server-error'
-    | 'pipeline-error-google-400-bad-request-validation-failed'
-    | 'pipeline-error-google-401-unauthorized'
-    | 'pipeline-error-google-403-model-access-denied'
-    | 'pipeline-error-google-429-exceeded-quota'
-    | 'pipeline-error-google-500-server-error'
-    | 'pipeline-error-xai-400-bad-request-validation-failed'
-    | 'pipeline-error-xai-401-unauthorized'
-    | 'pipeline-error-xai-403-model-access-denied'
-    | 'pipeline-error-xai-429-exceeded-quota'
-    | 'pipeline-error-xai-500-server-error'
-    | 'pipeline-error-mistral-400-bad-request-validation-failed'
-    | 'pipeline-error-mistral-401-unauthorized'
-    | 'pipeline-error-mistral-403-model-access-denied'
-    | 'pipeline-error-mistral-429-exceeded-quota'
-    | 'pipeline-error-mistral-500-server-error'
-    | 'pipeline-error-inflection-ai-400-bad-request-validation-failed'
-    | 'pipeline-error-inflection-ai-401-unauthorized'
-    | 'pipeline-error-inflection-ai-403-model-access-denied'
-    | 'pipeline-error-inflection-ai-429-exceeded-quota'
-    | 'pipeline-error-inflection-ai-500-server-error'
-    | 'pipeline-error-deep-seek-400-bad-request-validation-failed'
-    | 'pipeline-error-deep-seek-401-unauthorized'
-    | 'pipeline-error-deep-seek-403-model-access-denied'
-    | 'pipeline-error-deep-seek-429-exceeded-quota'
-    | 'pipeline-error-deep-seek-500-server-error'
+    | 'pipeline-error-openai-503-server-overloaded-error'
+    | 'pipeline-error-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-openai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-openai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-openai-401-incorrect-api-key'
+    | 'call.in-progress.error-vapifault-openai-401-account-not-in-organization'
+    | 'call.in-progress.error-vapifault-openai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-openai-429-exceeded-quota'
+    | 'call.in-progress.error-vapifault-openai-429-rate-limit-reached'
+    | 'call.in-progress.error-providerfault-openai-500-server-error'
+    | 'call.in-progress.error-providerfault-openai-503-server-overloaded-error'
     | 'pipeline-error-azure-openai-400-bad-request-validation-failed'
     | 'pipeline-error-azure-openai-401-unauthorized'
     | 'pipeline-error-azure-openai-403-model-access-denied'
     | 'pipeline-error-azure-openai-429-exceeded-quota'
     | 'pipeline-error-azure-openai-500-server-error'
+    | 'pipeline-error-azure-openai-503-server-overloaded-error'
+    | 'pipeline-error-azure-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-azure-openai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-azure-openai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-azure-openai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-azure-openai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-azure-openai-500-server-error'
+    | 'call.in-progress.error-providerfault-azure-openai-503-server-overloaded-error'
+    | 'pipeline-error-google-400-bad-request-validation-failed'
+    | 'pipeline-error-google-401-unauthorized'
+    | 'pipeline-error-google-403-model-access-denied'
+    | 'pipeline-error-google-429-exceeded-quota'
+    | 'pipeline-error-google-500-server-error'
+    | 'pipeline-error-google-503-server-overloaded-error'
+    | 'pipeline-error-google-llm-failed'
+    | 'call.in-progress.error-vapifault-google-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-google-401-unauthorized'
+    | 'call.in-progress.error-vapifault-google-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-google-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-google-500-server-error'
+    | 'call.in-progress.error-providerfault-google-503-server-overloaded-error'
+    | 'pipeline-error-xai-400-bad-request-validation-failed'
+    | 'pipeline-error-xai-401-unauthorized'
+    | 'pipeline-error-xai-403-model-access-denied'
+    | 'pipeline-error-xai-429-exceeded-quota'
+    | 'pipeline-error-xai-500-server-error'
+    | 'pipeline-error-xai-503-server-overloaded-error'
+    | 'pipeline-error-xai-llm-failed'
+    | 'call.in-progress.error-vapifault-xai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-xai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-xai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-xai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-xai-500-server-error'
+    | 'call.in-progress.error-providerfault-xai-503-server-overloaded-error'
+    | 'pipeline-error-mistral-400-bad-request-validation-failed'
+    | 'pipeline-error-mistral-401-unauthorized'
+    | 'pipeline-error-mistral-403-model-access-denied'
+    | 'pipeline-error-mistral-429-exceeded-quota'
+    | 'pipeline-error-mistral-500-server-error'
+    | 'pipeline-error-mistral-503-server-overloaded-error'
+    | 'pipeline-error-mistral-llm-failed'
+    | 'call.in-progress.error-vapifault-mistral-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-mistral-401-unauthorized'
+    | 'call.in-progress.error-vapifault-mistral-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-mistral-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-mistral-500-server-error'
+    | 'call.in-progress.error-providerfault-mistral-503-server-overloaded-error'
+    | 'pipeline-error-inflection-ai-400-bad-request-validation-failed'
+    | 'pipeline-error-inflection-ai-401-unauthorized'
+    | 'pipeline-error-inflection-ai-403-model-access-denied'
+    | 'pipeline-error-inflection-ai-429-exceeded-quota'
+    | 'pipeline-error-inflection-ai-500-server-error'
+    | 'pipeline-error-inflection-ai-503-server-overloaded-error'
+    | 'pipeline-error-inflection-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-inflection-ai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-inflection-ai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-inflection-ai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-inflection-ai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-inflection-ai-500-server-error'
+    | 'call.in-progress.error-providerfault-inflection-ai-503-server-overloaded-error'
+    | 'pipeline-error-deep-seek-400-bad-request-validation-failed'
+    | 'pipeline-error-deep-seek-401-unauthorized'
+    | 'pipeline-error-deep-seek-403-model-access-denied'
+    | 'pipeline-error-deep-seek-429-exceeded-quota'
+    | 'pipeline-error-deep-seek-500-server-error'
+    | 'pipeline-error-deep-seek-503-server-overloaded-error'
+    | 'pipeline-error-deep-seek-llm-failed'
+    | 'call.in-progress.error-vapifault-deep-seek-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-deep-seek-401-unauthorized'
+    | 'call.in-progress.error-vapifault-deep-seek-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-deep-seek-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-deep-seek-500-server-error'
+    | 'call.in-progress.error-providerfault-deep-seek-503-server-overloaded-error'
     | 'pipeline-error-groq-400-bad-request-validation-failed'
     | 'pipeline-error-groq-401-unauthorized'
     | 'pipeline-error-groq-403-model-access-denied'
     | 'pipeline-error-groq-429-exceeded-quota'
     | 'pipeline-error-groq-500-server-error'
+    | 'pipeline-error-groq-503-server-overloaded-error'
+    | 'pipeline-error-groq-llm-failed'
+    | 'call.in-progress.error-vapifault-groq-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-groq-401-unauthorized'
+    | 'call.in-progress.error-vapifault-groq-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-groq-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-groq-500-server-error'
+    | 'call.in-progress.error-providerfault-groq-503-server-overloaded-error'
     | 'pipeline-error-cerebras-400-bad-request-validation-failed'
     | 'pipeline-error-cerebras-401-unauthorized'
     | 'pipeline-error-cerebras-403-model-access-denied'
     | 'pipeline-error-cerebras-429-exceeded-quota'
     | 'pipeline-error-cerebras-500-server-error'
+    | 'pipeline-error-cerebras-503-server-overloaded-error'
+    | 'pipeline-error-cerebras-llm-failed'
+    | 'call.in-progress.error-vapifault-cerebras-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-cerebras-401-unauthorized'
+    | 'call.in-progress.error-vapifault-cerebras-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-cerebras-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-cerebras-500-server-error'
+    | 'call.in-progress.error-providerfault-cerebras-503-server-overloaded-error'
     | 'pipeline-error-anthropic-400-bad-request-validation-failed'
     | 'pipeline-error-anthropic-401-unauthorized'
     | 'pipeline-error-anthropic-403-model-access-denied'
     | 'pipeline-error-anthropic-429-exceeded-quota'
     | 'pipeline-error-anthropic-500-server-error'
+    | 'pipeline-error-anthropic-503-server-overloaded-error'
     | 'pipeline-error-anthropic-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anthropic-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anthropic-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anthropic-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anthropic-500-server-error'
+    | 'call.in-progress.error-providerfault-anthropic-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-bedrock-400-bad-request-validation-failed'
+    | 'pipeline-error-anthropic-bedrock-401-unauthorized'
+    | 'pipeline-error-anthropic-bedrock-403-model-access-denied'
+    | 'pipeline-error-anthropic-bedrock-429-exceeded-quota'
+    | 'pipeline-error-anthropic-bedrock-500-server-error'
+    | 'pipeline-error-anthropic-bedrock-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-bedrock-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anthropic-bedrock-500-server-error'
+    | 'call.in-progress.error-providerfault-anthropic-bedrock-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-vertex-400-bad-request-validation-failed'
+    | 'pipeline-error-anthropic-vertex-401-unauthorized'
+    | 'pipeline-error-anthropic-vertex-403-model-access-denied'
+    | 'pipeline-error-anthropic-vertex-429-exceeded-quota'
+    | 'pipeline-error-anthropic-vertex-500-server-error'
+    | 'pipeline-error-anthropic-vertex-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-vertex-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anthropic-vertex-500-server-error'
+    | 'call.in-progress.error-providerfault-anthropic-vertex-503-server-overloaded-error'
     | 'pipeline-error-together-ai-400-bad-request-validation-failed'
     | 'pipeline-error-together-ai-401-unauthorized'
     | 'pipeline-error-together-ai-403-model-access-denied'
     | 'pipeline-error-together-ai-429-exceeded-quota'
     | 'pipeline-error-together-ai-500-server-error'
+    | 'pipeline-error-together-ai-503-server-overloaded-error'
     | 'pipeline-error-together-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-together-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-together-ai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-together-ai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-together-ai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-together-ai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-together-ai-500-server-error'
+    | 'call.in-progress.error-providerfault-together-ai-503-server-overloaded-error'
     | 'pipeline-error-anyscale-400-bad-request-validation-failed'
     | 'pipeline-error-anyscale-401-unauthorized'
     | 'pipeline-error-anyscale-403-model-access-denied'
     | 'pipeline-error-anyscale-429-exceeded-quota'
     | 'pipeline-error-anyscale-500-server-error'
+    | 'pipeline-error-anyscale-503-server-overloaded-error'
     | 'pipeline-error-anyscale-llm-failed'
+    | 'call.in-progress.error-vapifault-anyscale-llm-failed'
+    | 'call.in-progress.error-vapifault-anyscale-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anyscale-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anyscale-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anyscale-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anyscale-500-server-error'
+    | 'call.in-progress.error-providerfault-anyscale-503-server-overloaded-error'
     | 'pipeline-error-openrouter-400-bad-request-validation-failed'
     | 'pipeline-error-openrouter-401-unauthorized'
     | 'pipeline-error-openrouter-403-model-access-denied'
     | 'pipeline-error-openrouter-429-exceeded-quota'
     | 'pipeline-error-openrouter-500-server-error'
+    | 'pipeline-error-openrouter-503-server-overloaded-error'
     | 'pipeline-error-openrouter-llm-failed'
+    | 'call.in-progress.error-vapifault-openrouter-llm-failed'
+    | 'call.in-progress.error-vapifault-openrouter-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-openrouter-401-unauthorized'
+    | 'call.in-progress.error-vapifault-openrouter-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-openrouter-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-openrouter-500-server-error'
+    | 'call.in-progress.error-providerfault-openrouter-503-server-overloaded-error'
     | 'pipeline-error-perplexity-ai-400-bad-request-validation-failed'
     | 'pipeline-error-perplexity-ai-401-unauthorized'
     | 'pipeline-error-perplexity-ai-403-model-access-denied'
     | 'pipeline-error-perplexity-ai-429-exceeded-quota'
     | 'pipeline-error-perplexity-ai-500-server-error'
+    | 'pipeline-error-perplexity-ai-503-server-overloaded-error'
     | 'pipeline-error-perplexity-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-perplexity-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-perplexity-ai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-perplexity-ai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-perplexity-ai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-perplexity-ai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-perplexity-ai-500-server-error'
+    | 'call.in-progress.error-providerfault-perplexity-ai-503-server-overloaded-error'
     | 'pipeline-error-deepinfra-400-bad-request-validation-failed'
     | 'pipeline-error-deepinfra-401-unauthorized'
     | 'pipeline-error-deepinfra-403-model-access-denied'
     | 'pipeline-error-deepinfra-429-exceeded-quota'
     | 'pipeline-error-deepinfra-500-server-error'
+    | 'pipeline-error-deepinfra-503-server-overloaded-error'
     | 'pipeline-error-deepinfra-llm-failed'
+    | 'call.in-progress.error-vapifault-deepinfra-llm-failed'
+    | 'call.in-progress.error-vapifault-deepinfra-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-deepinfra-401-unauthorized'
+    | 'call.in-progress.error-vapifault-deepinfra-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-deepinfra-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-deepinfra-500-server-error'
+    | 'call.in-progress.error-providerfault-deepinfra-503-server-overloaded-error'
     | 'pipeline-error-runpod-400-bad-request-validation-failed'
     | 'pipeline-error-runpod-401-unauthorized'
     | 'pipeline-error-runpod-403-model-access-denied'
     | 'pipeline-error-runpod-429-exceeded-quota'
     | 'pipeline-error-runpod-500-server-error'
+    | 'pipeline-error-runpod-503-server-overloaded-error'
     | 'pipeline-error-runpod-llm-failed'
+    | 'call.in-progress.error-vapifault-runpod-llm-failed'
+    | 'call.in-progress.error-vapifault-runpod-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-runpod-401-unauthorized'
+    | 'call.in-progress.error-vapifault-runpod-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-runpod-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-runpod-500-server-error'
+    | 'call.in-progress.error-providerfault-runpod-503-server-overloaded-error'
     | 'pipeline-error-custom-llm-400-bad-request-validation-failed'
     | 'pipeline-error-custom-llm-401-unauthorized'
     | 'pipeline-error-custom-llm-403-model-access-denied'
     | 'pipeline-error-custom-llm-429-exceeded-quota'
     | 'pipeline-error-custom-llm-500-server-error'
+    | 'pipeline-error-custom-llm-503-server-overloaded-error'
     | 'pipeline-error-custom-llm-llm-failed'
+    | 'call.in-progress.error-vapifault-custom-llm-llm-failed'
+    | 'call.in-progress.error-vapifault-custom-llm-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-custom-llm-401-unauthorized'
+    | 'call.in-progress.error-vapifault-custom-llm-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-custom-llm-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-custom-llm-500-server-error'
+    | 'call.in-progress.error-providerfault-custom-llm-503-server-overloaded-error'
     | 'pipeline-error-custom-voice-failed'
     | 'pipeline-error-cartesia-socket-hang-up'
     | 'pipeline-error-cartesia-requested-payment'
     | 'pipeline-error-cartesia-500-server-error'
     | 'pipeline-error-cartesia-503-server-error'
     | 'pipeline-error-cartesia-522-server-error'
+    | 'call.in-progress.error-vapifault-cartesia-socket-hang-up'
+    | 'call.in-progress.error-vapifault-cartesia-requested-payment'
+    | 'call.in-progress.error-providerfault-cartesia-500-server-error'
+    | 'call.in-progress.error-providerfault-cartesia-503-server-error'
+    | 'call.in-progress.error-providerfault-cartesia-522-server-error'
     | 'pipeline-error-eleven-labs-voice-not-found'
     | 'pipeline-error-eleven-labs-quota-exceeded'
     | 'pipeline-error-eleven-labs-unauthorized-access'
@@ -16621,9 +18409,30 @@ export interface ServerMessageEndOfCallReport {
     | 'pipeline-error-eleven-labs-missing-samples-for-voice-clone'
     | 'pipeline-error-eleven-labs-voice-not-fine-tuned-and-cannot-be-used'
     | 'pipeline-error-eleven-labs-voice-not-allowed-for-free-users'
-    | 'pipeline-error-eleven-labs-500-server-error'
     | 'pipeline-error-eleven-labs-max-character-limit-exceeded'
     | 'pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
+    | 'pipeline-error-eleven-labs-500-server-error'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-found'
+    | 'call.in-progress.error-vapifault-eleven-labs-quota-exceeded'
+    | 'call.in-progress.error-vapifault-eleven-labs-unauthorized-access'
+    | 'call.in-progress.error-vapifault-eleven-labs-unauthorized-to-access-model'
+    | 'call.in-progress.error-vapifault-eleven-labs-professional-voices-only-for-creator-plus'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-free-plan-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-concurrent-requests-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-using-instant-voice-clone-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-system-busy-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-fine-tuned'
+    | 'call.in-progress.error-vapifault-eleven-labs-invalid-api-key'
+    | 'call.in-progress.error-vapifault-eleven-labs-invalid-voice-samples'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-disabled-by-owner'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-account-in-probation'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-content-against-their-policy'
+    | 'call.in-progress.error-vapifault-eleven-labs-missing-samples-for-voice-clone'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-fine-tuned-and-cannot-be-used'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-allowed-for-free-users'
+    | 'call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
+    | 'call.in-progress.error-providerfault-eleven-labs-500-server-error'
     | 'pipeline-error-playht-request-timed-out'
     | 'pipeline-error-playht-invalid-voice'
     | 'pipeline-error-playht-unexpected-error'
@@ -16636,29 +18445,58 @@ export interface ServerMessageEndOfCallReport {
     | 'pipeline-error-playht-429-exceeded-quota'
     | 'pipeline-error-playht-502-gateway-error'
     | 'pipeline-error-playht-504-gateway-error'
-    | 'pipeline-error-tavus-video-failed'
+    | 'call.in-progress.error-vapifault-playht-request-timed-out'
+    | 'call.in-progress.error-vapifault-playht-invalid-voice'
+    | 'call.in-progress.error-vapifault-playht-unexpected-error'
+    | 'call.in-progress.error-vapifault-playht-out-of-credits'
+    | 'call.in-progress.error-vapifault-playht-invalid-emotion'
+    | 'call.in-progress.error-vapifault-playht-voice-must-be-a-valid-voice-manifest-uri'
+    | 'call.in-progress.error-vapifault-playht-401-unauthorized'
+    | 'call.in-progress.error-vapifault-playht-403-forbidden-out-of-characters'
+    | 'call.in-progress.error-vapifault-playht-403-forbidden-api-access-not-available'
+    | 'call.in-progress.error-vapifault-playht-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-playht-502-gateway-error'
+    | 'call.in-progress.error-providerfault-playht-504-gateway-error'
     | 'pipeline-error-custom-transcriber-failed'
-    | 'pipeline-error-11labs-transcriber-failed'
-    | 'pipeline-error-deepgram-returning-403-model-access-denied'
-    | 'pipeline-error-deepgram-returning-401-invalid-credentials'
-    | 'pipeline-error-deepgram-returning-404-not-found'
+    | 'call.in-progress.error-vapifault-custom-transcriber-failed'
+    | 'pipeline-error-eleven-labs-transcriber-failed'
+    | 'call.in-progress.error-vapifault-eleven-labs-transcriber-failed'
     | 'pipeline-error-deepgram-returning-400-no-such-model-language-tier-combination'
+    | 'pipeline-error-deepgram-returning-401-invalid-credentials'
+    | 'pipeline-error-deepgram-returning-403-model-access-denied'
+    | 'pipeline-error-deepgram-returning-404-not-found'
     | 'pipeline-error-deepgram-returning-500-invalid-json'
     | 'pipeline-error-deepgram-returning-502-network-error'
     | 'pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach'
+    | 'call.in-progress.error-vapifault-deepgram-returning-400-no-such-model-language-tier-combination'
+    | 'call.in-progress.error-vapifault-deepgram-returning-401-invalid-credentials'
+    | 'call.in-progress.error-vapifault-deepgram-returning-404-not-found'
+    | 'call.in-progress.error-vapifault-deepgram-returning-403-model-access-denied'
+    | 'call.in-progress.error-providerfault-deepgram-returning-500-invalid-json'
+    | 'call.in-progress.error-providerfault-deepgram-returning-502-network-error'
+    | 'call.in-progress.error-providerfault-deepgram-returning-502-bad-gateway-ehostunreach'
     | 'pipeline-error-google-transcriber-failed'
+    | 'call.in-progress.error-vapifault-google-transcriber-failed'
     | 'pipeline-error-openai-transcriber-failed'
-    | 'call.start.error-get-org'
-    | 'call.start.error-get-subscription'
-    | 'call.start.error-get-assistant'
-    | 'call.start.error-get-phone-number'
-    | 'call.start.error-get-customer'
-    | 'call.start.error-get-resources-validation'
-    | 'call.start.error-vapi-number-international'
-    | 'call.start.error-vapi-number-outbound-daily-limit'
-    | 'call.start.error-get-transport'
+    | 'call.in-progress.error-vapifault-openai-transcriber-failed'
+    | 'assistant-ended-call'
+    | 'assistant-said-end-call-phrase'
+    | 'assistant-ended-call-with-hangup-task'
+    | 'assistant-ended-call-after-message-spoken'
+    | 'assistant-forwarded-call'
+    | 'assistant-join-timed-out'
+    | 'call.in-progress.error-assistant-did-not-receive-customer-audio'
+    | 'customer-busy'
+    | 'customer-ended-call'
+    | 'customer-did-not-answer'
+    | 'customer-did-not-give-microphone-permission'
+    | 'exceeded-max-duration'
+    | 'manually-canceled'
+    | 'phone-call-provider-closed-websocket'
     | 'silence-timed-out'
-    | 'sip-gateway-failed-to-connect-call'
+    | 'call.in-progress.error-sip-telephony-provider-failed-to-connect-call'
+    | 'call.ringing.hook-executed-say'
+    | 'call.ringing.hook-executed-transfer'
     | 'twilio-failed-to-connect-call'
     | 'twilio-reported-customer-misdialed'
     | 'vonage-rejected'
@@ -16675,8 +18513,8 @@ export interface ServerMessageEndOfCallReport {
     | VoicemailDetectionCost
     | AnalysisCost
   )[];
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /** These are the artifacts from the call. This can also be found at `call.artifact` on GET /call/:id. */
   artifact: Artifact;
   /**
@@ -16742,8 +18580,8 @@ export interface ServerMessageHang {
    * - etc.
    */
   type: 'hang';
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -16799,8 +18637,8 @@ export interface ServerMessageKnowledgeBaseRequest {
   messages?: (UserMessage | SystemMessage | BotMessage | ToolCallMessage | ToolCallResultMessage)[];
   /** This is just `messages` formatted for OpenAI. */
   messagesOpenAIFormatted: OpenAIMessage[];
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -16852,8 +18690,8 @@ export interface ServerMessageModelOutput {
     | CreateVapiPhoneNumberDTO;
   /** This is the type of the message. "model-output" is sent as the model outputs tokens. */
   type: 'model-output';
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -16915,8 +18753,8 @@ export interface ServerMessagePhoneCallControl {
   request: 'forward' | 'hang-up';
   /** This is the destination to forward the call to if the request is "forward". */
   destination?: TransferDestinationNumber | TransferDestinationSip;
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -16972,8 +18810,10 @@ export interface ServerMessageSpeechUpdate {
   status: 'started' | 'stopped';
   /** This is the role which the speech update is for. */
   role: 'assistant' | 'user';
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the turn number of the speech update (0-indexed). */
+  turn?: number;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -17029,8 +18869,6 @@ export interface ServerMessageStatusUpdate {
   status: 'scheduled' | 'queued' | 'ringing' | 'in-progress' | 'forwarding' | 'ended';
   /** This is the reason the call ended. This is only sent if the status is "ended". */
   endedReason?:
-    | 'assistant-not-valid'
-    | 'assistant-not-provided'
     | 'call-start-error-neither-assistant-nor-server-set'
     | 'assistant-request-failed'
     | 'assistant-request-returned-error'
@@ -17038,22 +18876,18 @@ export interface ServerMessageStatusUpdate {
     | 'assistant-request-returned-invalid-assistant'
     | 'assistant-request-returned-no-assistant'
     | 'assistant-request-returned-forwarding-phone-number'
-    | 'assistant-ended-call'
-    | 'assistant-said-end-call-phrase'
-    | 'assistant-ended-call-with-hangup-task'
-    | 'assistant-forwarded-call'
-    | 'assistant-join-timed-out'
-    | 'customer-busy'
-    | 'customer-ended-call'
-    | 'customer-did-not-answer'
-    | 'customer-did-not-give-microphone-permission'
-    | 'assistant-said-message-with-end-call-enabled'
-    | 'exceeded-max-duration'
-    | 'manually-canceled'
-    | 'phone-call-provider-closed-websocket'
-    | 'db-error'
+    | 'call.start.error-get-org'
+    | 'call.start.error-get-subscription'
+    | 'call.start.error-get-assistant'
+    | 'call.start.error-get-phone-number'
+    | 'call.start.error-get-customer'
+    | 'call.start.error-get-resources-validation'
+    | 'call.start.error-vapi-number-international'
+    | 'call.start.error-vapi-number-outbound-daily-limit'
+    | 'call.start.error-get-transport'
+    | 'assistant-not-valid'
+    | 'database-error'
     | 'assistant-not-found'
-    | 'license-check-failed'
     | 'pipeline-error-openai-voice-failed'
     | 'pipeline-error-cartesia-voice-failed'
     | 'pipeline-error-deepgram-voice-failed'
@@ -17066,140 +18900,349 @@ export interface ServerMessageStatusUpdate {
     | 'pipeline-error-neuphonic-voice-failed'
     | 'pipeline-error-hume-voice-failed'
     | 'pipeline-error-sesame-voice-failed'
-    | 'pipeline-error-deepgram-transcriber-failed'
-    | 'pipeline-error-gladia-transcriber-failed'
-    | 'pipeline-error-speechmatics-transcriber-failed'
-    | 'pipeline-error-assembly-ai-transcriber-failed'
-    | 'pipeline-error-talkscriber-transcriber-failed'
-    | 'pipeline-error-azure-speech-transcriber-failed'
+    | 'pipeline-error-tavus-video-failed'
+    | 'call.in-progress.error-vapifault-openai-voice-failed'
+    | 'call.in-progress.error-vapifault-cartesia-voice-failed'
+    | 'call.in-progress.error-vapifault-deepgram-voice-failed'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-failed'
+    | 'call.in-progress.error-vapifault-playht-voice-failed'
+    | 'call.in-progress.error-vapifault-lmnt-voice-failed'
+    | 'call.in-progress.error-vapifault-azure-voice-failed'
+    | 'call.in-progress.error-vapifault-rime-ai-voice-failed'
+    | 'call.in-progress.error-vapifault-smallest-ai-voice-failed'
+    | 'call.in-progress.error-vapifault-neuphonic-voice-failed'
+    | 'call.in-progress.error-vapifault-hume-voice-failed'
+    | 'call.in-progress.error-vapifault-sesame-voice-failed'
+    | 'call.in-progress.error-vapifault-tavus-video-failed'
     | 'pipeline-error-vapi-llm-failed'
     | 'pipeline-error-vapi-400-bad-request-validation-failed'
     | 'pipeline-error-vapi-401-unauthorized'
     | 'pipeline-error-vapi-403-model-access-denied'
     | 'pipeline-error-vapi-429-exceeded-quota'
     | 'pipeline-error-vapi-500-server-error'
-    | 'pipeline-no-available-model'
+    | 'pipeline-error-vapi-503-server-overloaded-error'
+    | 'call.in-progress.error-vapifault-vapi-llm-failed'
+    | 'call.in-progress.error-vapifault-vapi-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-vapi-401-unauthorized'
+    | 'call.in-progress.error-vapifault-vapi-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-vapi-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-vapi-500-server-error'
+    | 'call.in-progress.error-providerfault-vapi-503-server-overloaded-error'
+    | 'pipeline-error-deepgram-transcriber-failed'
+    | 'call.in-progress.error-vapifault-deepgram-transcriber-failed'
+    | 'pipeline-error-gladia-transcriber-failed'
+    | 'call.in-progress.error-vapifault-gladia-transcriber-failed'
+    | 'pipeline-error-speechmatics-transcriber-failed'
+    | 'call.in-progress.error-vapifault-speechmatics-transcriber-failed'
+    | 'pipeline-error-assembly-ai-transcriber-failed'
+    | 'pipeline-error-assembly-ai-returning-400-insufficent-funds'
+    | 'pipeline-error-assembly-ai-returning-400-paid-only-feature'
+    | 'pipeline-error-assembly-ai-returning-401-invalid-credentials'
+    | 'pipeline-error-assembly-ai-returning-500-invalid-schema'
+    | 'pipeline-error-assembly-ai-returning-500-word-boost-parsing-failed'
+    | 'call.in-progress.error-vapifault-assembly-ai-transcriber-failed'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-400-insufficent-funds'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-400-paid-only-feature'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-401-invalid-credentials'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-500-invalid-schema'
+    | 'call.in-progress.error-vapifault-assembly-ai-returning-500-word-boost-parsing-failed'
+    | 'pipeline-error-talkscriber-transcriber-failed'
+    | 'call.in-progress.error-vapifault-talkscriber-transcriber-failed'
+    | 'pipeline-error-azure-speech-transcriber-failed'
+    | 'call.in-progress.error-vapifault-azure-speech-transcriber-failed'
+    | 'call.in-progress.error-pipeline-no-available-llm-model'
     | 'worker-shutdown'
     | 'unknown-error'
     | 'vonage-disconnected'
     | 'vonage-failed-to-connect-call'
     | 'vonage-completed'
     | 'phone-call-provider-bypass-enabled-but-no-call-received'
-    | 'vapifault-phone-call-worker-setup-socket-error'
-    | 'vapifault-phone-call-worker-worker-setup-socket-timeout'
-    | 'vapifault-phone-call-worker-could-not-find-call'
-    | 'vapifault-transport-never-connected'
-    | 'vapifault-web-call-worker-setup-failed'
-    | 'vapifault-transport-connected-but-call-not-active'
-    | 'vapifault-call-started-but-connection-to-transport-missing'
-    | 'pipeline-error-openai-llm-failed'
-    | 'pipeline-error-azure-openai-llm-failed'
-    | 'pipeline-error-groq-llm-failed'
-    | 'pipeline-error-google-llm-failed'
-    | 'pipeline-error-xai-llm-failed'
-    | 'pipeline-error-mistral-llm-failed'
-    | 'pipeline-error-inflection-ai-llm-failed'
-    | 'pipeline-error-cerebras-llm-failed'
-    | 'pipeline-error-deep-seek-llm-failed'
+    | 'call.in-progress.error-vapifault-transport-never-connected'
+    | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
+    | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
+    | 'call.in-progress.error-vapifault-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-azure-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-groq-llm-failed'
+    | 'call.in-progress.error-vapifault-google-llm-failed'
+    | 'call.in-progress.error-vapifault-xai-llm-failed'
+    | 'call.in-progress.error-vapifault-mistral-llm-failed'
+    | 'call.in-progress.error-vapifault-inflection-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-cerebras-llm-failed'
+    | 'call.in-progress.error-vapifault-deep-seek-llm-failed'
     | 'pipeline-error-openai-400-bad-request-validation-failed'
     | 'pipeline-error-openai-401-unauthorized'
+    | 'pipeline-error-openai-401-incorrect-api-key'
+    | 'pipeline-error-openai-401-account-not-in-organization'
     | 'pipeline-error-openai-403-model-access-denied'
     | 'pipeline-error-openai-429-exceeded-quota'
+    | 'pipeline-error-openai-429-rate-limit-reached'
     | 'pipeline-error-openai-500-server-error'
-    | 'pipeline-error-google-400-bad-request-validation-failed'
-    | 'pipeline-error-google-401-unauthorized'
-    | 'pipeline-error-google-403-model-access-denied'
-    | 'pipeline-error-google-429-exceeded-quota'
-    | 'pipeline-error-google-500-server-error'
-    | 'pipeline-error-xai-400-bad-request-validation-failed'
-    | 'pipeline-error-xai-401-unauthorized'
-    | 'pipeline-error-xai-403-model-access-denied'
-    | 'pipeline-error-xai-429-exceeded-quota'
-    | 'pipeline-error-xai-500-server-error'
-    | 'pipeline-error-mistral-400-bad-request-validation-failed'
-    | 'pipeline-error-mistral-401-unauthorized'
-    | 'pipeline-error-mistral-403-model-access-denied'
-    | 'pipeline-error-mistral-429-exceeded-quota'
-    | 'pipeline-error-mistral-500-server-error'
-    | 'pipeline-error-inflection-ai-400-bad-request-validation-failed'
-    | 'pipeline-error-inflection-ai-401-unauthorized'
-    | 'pipeline-error-inflection-ai-403-model-access-denied'
-    | 'pipeline-error-inflection-ai-429-exceeded-quota'
-    | 'pipeline-error-inflection-ai-500-server-error'
-    | 'pipeline-error-deep-seek-400-bad-request-validation-failed'
-    | 'pipeline-error-deep-seek-401-unauthorized'
-    | 'pipeline-error-deep-seek-403-model-access-denied'
-    | 'pipeline-error-deep-seek-429-exceeded-quota'
-    | 'pipeline-error-deep-seek-500-server-error'
+    | 'pipeline-error-openai-503-server-overloaded-error'
+    | 'pipeline-error-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-openai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-openai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-openai-401-incorrect-api-key'
+    | 'call.in-progress.error-vapifault-openai-401-account-not-in-organization'
+    | 'call.in-progress.error-vapifault-openai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-openai-429-exceeded-quota'
+    | 'call.in-progress.error-vapifault-openai-429-rate-limit-reached'
+    | 'call.in-progress.error-providerfault-openai-500-server-error'
+    | 'call.in-progress.error-providerfault-openai-503-server-overloaded-error'
     | 'pipeline-error-azure-openai-400-bad-request-validation-failed'
     | 'pipeline-error-azure-openai-401-unauthorized'
     | 'pipeline-error-azure-openai-403-model-access-denied'
     | 'pipeline-error-azure-openai-429-exceeded-quota'
     | 'pipeline-error-azure-openai-500-server-error'
+    | 'pipeline-error-azure-openai-503-server-overloaded-error'
+    | 'pipeline-error-azure-openai-llm-failed'
+    | 'call.in-progress.error-vapifault-azure-openai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-azure-openai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-azure-openai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-azure-openai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-azure-openai-500-server-error'
+    | 'call.in-progress.error-providerfault-azure-openai-503-server-overloaded-error'
+    | 'pipeline-error-google-400-bad-request-validation-failed'
+    | 'pipeline-error-google-401-unauthorized'
+    | 'pipeline-error-google-403-model-access-denied'
+    | 'pipeline-error-google-429-exceeded-quota'
+    | 'pipeline-error-google-500-server-error'
+    | 'pipeline-error-google-503-server-overloaded-error'
+    | 'pipeline-error-google-llm-failed'
+    | 'call.in-progress.error-vapifault-google-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-google-401-unauthorized'
+    | 'call.in-progress.error-vapifault-google-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-google-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-google-500-server-error'
+    | 'call.in-progress.error-providerfault-google-503-server-overloaded-error'
+    | 'pipeline-error-xai-400-bad-request-validation-failed'
+    | 'pipeline-error-xai-401-unauthorized'
+    | 'pipeline-error-xai-403-model-access-denied'
+    | 'pipeline-error-xai-429-exceeded-quota'
+    | 'pipeline-error-xai-500-server-error'
+    | 'pipeline-error-xai-503-server-overloaded-error'
+    | 'pipeline-error-xai-llm-failed'
+    | 'call.in-progress.error-vapifault-xai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-xai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-xai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-xai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-xai-500-server-error'
+    | 'call.in-progress.error-providerfault-xai-503-server-overloaded-error'
+    | 'pipeline-error-mistral-400-bad-request-validation-failed'
+    | 'pipeline-error-mistral-401-unauthorized'
+    | 'pipeline-error-mistral-403-model-access-denied'
+    | 'pipeline-error-mistral-429-exceeded-quota'
+    | 'pipeline-error-mistral-500-server-error'
+    | 'pipeline-error-mistral-503-server-overloaded-error'
+    | 'pipeline-error-mistral-llm-failed'
+    | 'call.in-progress.error-vapifault-mistral-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-mistral-401-unauthorized'
+    | 'call.in-progress.error-vapifault-mistral-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-mistral-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-mistral-500-server-error'
+    | 'call.in-progress.error-providerfault-mistral-503-server-overloaded-error'
+    | 'pipeline-error-inflection-ai-400-bad-request-validation-failed'
+    | 'pipeline-error-inflection-ai-401-unauthorized'
+    | 'pipeline-error-inflection-ai-403-model-access-denied'
+    | 'pipeline-error-inflection-ai-429-exceeded-quota'
+    | 'pipeline-error-inflection-ai-500-server-error'
+    | 'pipeline-error-inflection-ai-503-server-overloaded-error'
+    | 'pipeline-error-inflection-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-inflection-ai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-inflection-ai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-inflection-ai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-inflection-ai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-inflection-ai-500-server-error'
+    | 'call.in-progress.error-providerfault-inflection-ai-503-server-overloaded-error'
+    | 'pipeline-error-deep-seek-400-bad-request-validation-failed'
+    | 'pipeline-error-deep-seek-401-unauthorized'
+    | 'pipeline-error-deep-seek-403-model-access-denied'
+    | 'pipeline-error-deep-seek-429-exceeded-quota'
+    | 'pipeline-error-deep-seek-500-server-error'
+    | 'pipeline-error-deep-seek-503-server-overloaded-error'
+    | 'pipeline-error-deep-seek-llm-failed'
+    | 'call.in-progress.error-vapifault-deep-seek-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-deep-seek-401-unauthorized'
+    | 'call.in-progress.error-vapifault-deep-seek-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-deep-seek-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-deep-seek-500-server-error'
+    | 'call.in-progress.error-providerfault-deep-seek-503-server-overloaded-error'
     | 'pipeline-error-groq-400-bad-request-validation-failed'
     | 'pipeline-error-groq-401-unauthorized'
     | 'pipeline-error-groq-403-model-access-denied'
     | 'pipeline-error-groq-429-exceeded-quota'
     | 'pipeline-error-groq-500-server-error'
+    | 'pipeline-error-groq-503-server-overloaded-error'
+    | 'pipeline-error-groq-llm-failed'
+    | 'call.in-progress.error-vapifault-groq-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-groq-401-unauthorized'
+    | 'call.in-progress.error-vapifault-groq-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-groq-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-groq-500-server-error'
+    | 'call.in-progress.error-providerfault-groq-503-server-overloaded-error'
     | 'pipeline-error-cerebras-400-bad-request-validation-failed'
     | 'pipeline-error-cerebras-401-unauthorized'
     | 'pipeline-error-cerebras-403-model-access-denied'
     | 'pipeline-error-cerebras-429-exceeded-quota'
     | 'pipeline-error-cerebras-500-server-error'
+    | 'pipeline-error-cerebras-503-server-overloaded-error'
+    | 'pipeline-error-cerebras-llm-failed'
+    | 'call.in-progress.error-vapifault-cerebras-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-cerebras-401-unauthorized'
+    | 'call.in-progress.error-vapifault-cerebras-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-cerebras-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-cerebras-500-server-error'
+    | 'call.in-progress.error-providerfault-cerebras-503-server-overloaded-error'
     | 'pipeline-error-anthropic-400-bad-request-validation-failed'
     | 'pipeline-error-anthropic-401-unauthorized'
     | 'pipeline-error-anthropic-403-model-access-denied'
     | 'pipeline-error-anthropic-429-exceeded-quota'
     | 'pipeline-error-anthropic-500-server-error'
+    | 'pipeline-error-anthropic-503-server-overloaded-error'
     | 'pipeline-error-anthropic-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anthropic-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anthropic-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anthropic-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anthropic-500-server-error'
+    | 'call.in-progress.error-providerfault-anthropic-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-bedrock-400-bad-request-validation-failed'
+    | 'pipeline-error-anthropic-bedrock-401-unauthorized'
+    | 'pipeline-error-anthropic-bedrock-403-model-access-denied'
+    | 'pipeline-error-anthropic-bedrock-429-exceeded-quota'
+    | 'pipeline-error-anthropic-bedrock-500-server-error'
+    | 'pipeline-error-anthropic-bedrock-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-bedrock-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anthropic-bedrock-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anthropic-bedrock-500-server-error'
+    | 'call.in-progress.error-providerfault-anthropic-bedrock-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-vertex-400-bad-request-validation-failed'
+    | 'pipeline-error-anthropic-vertex-401-unauthorized'
+    | 'pipeline-error-anthropic-vertex-403-model-access-denied'
+    | 'pipeline-error-anthropic-vertex-429-exceeded-quota'
+    | 'pipeline-error-anthropic-vertex-500-server-error'
+    | 'pipeline-error-anthropic-vertex-503-server-overloaded-error'
+    | 'pipeline-error-anthropic-vertex-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-llm-failed'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anthropic-vertex-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anthropic-vertex-500-server-error'
+    | 'call.in-progress.error-providerfault-anthropic-vertex-503-server-overloaded-error'
     | 'pipeline-error-together-ai-400-bad-request-validation-failed'
     | 'pipeline-error-together-ai-401-unauthorized'
     | 'pipeline-error-together-ai-403-model-access-denied'
     | 'pipeline-error-together-ai-429-exceeded-quota'
     | 'pipeline-error-together-ai-500-server-error'
+    | 'pipeline-error-together-ai-503-server-overloaded-error'
     | 'pipeline-error-together-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-together-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-together-ai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-together-ai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-together-ai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-together-ai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-together-ai-500-server-error'
+    | 'call.in-progress.error-providerfault-together-ai-503-server-overloaded-error'
     | 'pipeline-error-anyscale-400-bad-request-validation-failed'
     | 'pipeline-error-anyscale-401-unauthorized'
     | 'pipeline-error-anyscale-403-model-access-denied'
     | 'pipeline-error-anyscale-429-exceeded-quota'
     | 'pipeline-error-anyscale-500-server-error'
+    | 'pipeline-error-anyscale-503-server-overloaded-error'
     | 'pipeline-error-anyscale-llm-failed'
+    | 'call.in-progress.error-vapifault-anyscale-llm-failed'
+    | 'call.in-progress.error-vapifault-anyscale-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-anyscale-401-unauthorized'
+    | 'call.in-progress.error-vapifault-anyscale-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-anyscale-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-anyscale-500-server-error'
+    | 'call.in-progress.error-providerfault-anyscale-503-server-overloaded-error'
     | 'pipeline-error-openrouter-400-bad-request-validation-failed'
     | 'pipeline-error-openrouter-401-unauthorized'
     | 'pipeline-error-openrouter-403-model-access-denied'
     | 'pipeline-error-openrouter-429-exceeded-quota'
     | 'pipeline-error-openrouter-500-server-error'
+    | 'pipeline-error-openrouter-503-server-overloaded-error'
     | 'pipeline-error-openrouter-llm-failed'
+    | 'call.in-progress.error-vapifault-openrouter-llm-failed'
+    | 'call.in-progress.error-vapifault-openrouter-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-openrouter-401-unauthorized'
+    | 'call.in-progress.error-vapifault-openrouter-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-openrouter-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-openrouter-500-server-error'
+    | 'call.in-progress.error-providerfault-openrouter-503-server-overloaded-error'
     | 'pipeline-error-perplexity-ai-400-bad-request-validation-failed'
     | 'pipeline-error-perplexity-ai-401-unauthorized'
     | 'pipeline-error-perplexity-ai-403-model-access-denied'
     | 'pipeline-error-perplexity-ai-429-exceeded-quota'
     | 'pipeline-error-perplexity-ai-500-server-error'
+    | 'pipeline-error-perplexity-ai-503-server-overloaded-error'
     | 'pipeline-error-perplexity-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-perplexity-ai-llm-failed'
+    | 'call.in-progress.error-vapifault-perplexity-ai-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-perplexity-ai-401-unauthorized'
+    | 'call.in-progress.error-vapifault-perplexity-ai-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-perplexity-ai-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-perplexity-ai-500-server-error'
+    | 'call.in-progress.error-providerfault-perplexity-ai-503-server-overloaded-error'
     | 'pipeline-error-deepinfra-400-bad-request-validation-failed'
     | 'pipeline-error-deepinfra-401-unauthorized'
     | 'pipeline-error-deepinfra-403-model-access-denied'
     | 'pipeline-error-deepinfra-429-exceeded-quota'
     | 'pipeline-error-deepinfra-500-server-error'
+    | 'pipeline-error-deepinfra-503-server-overloaded-error'
     | 'pipeline-error-deepinfra-llm-failed'
+    | 'call.in-progress.error-vapifault-deepinfra-llm-failed'
+    | 'call.in-progress.error-vapifault-deepinfra-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-deepinfra-401-unauthorized'
+    | 'call.in-progress.error-vapifault-deepinfra-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-deepinfra-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-deepinfra-500-server-error'
+    | 'call.in-progress.error-providerfault-deepinfra-503-server-overloaded-error'
     | 'pipeline-error-runpod-400-bad-request-validation-failed'
     | 'pipeline-error-runpod-401-unauthorized'
     | 'pipeline-error-runpod-403-model-access-denied'
     | 'pipeline-error-runpod-429-exceeded-quota'
     | 'pipeline-error-runpod-500-server-error'
+    | 'pipeline-error-runpod-503-server-overloaded-error'
     | 'pipeline-error-runpod-llm-failed'
+    | 'call.in-progress.error-vapifault-runpod-llm-failed'
+    | 'call.in-progress.error-vapifault-runpod-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-runpod-401-unauthorized'
+    | 'call.in-progress.error-vapifault-runpod-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-runpod-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-runpod-500-server-error'
+    | 'call.in-progress.error-providerfault-runpod-503-server-overloaded-error'
     | 'pipeline-error-custom-llm-400-bad-request-validation-failed'
     | 'pipeline-error-custom-llm-401-unauthorized'
     | 'pipeline-error-custom-llm-403-model-access-denied'
     | 'pipeline-error-custom-llm-429-exceeded-quota'
     | 'pipeline-error-custom-llm-500-server-error'
+    | 'pipeline-error-custom-llm-503-server-overloaded-error'
     | 'pipeline-error-custom-llm-llm-failed'
+    | 'call.in-progress.error-vapifault-custom-llm-llm-failed'
+    | 'call.in-progress.error-vapifault-custom-llm-400-bad-request-validation-failed'
+    | 'call.in-progress.error-vapifault-custom-llm-401-unauthorized'
+    | 'call.in-progress.error-vapifault-custom-llm-403-model-access-denied'
+    | 'call.in-progress.error-vapifault-custom-llm-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-custom-llm-500-server-error'
+    | 'call.in-progress.error-providerfault-custom-llm-503-server-overloaded-error'
     | 'pipeline-error-custom-voice-failed'
     | 'pipeline-error-cartesia-socket-hang-up'
     | 'pipeline-error-cartesia-requested-payment'
     | 'pipeline-error-cartesia-500-server-error'
     | 'pipeline-error-cartesia-503-server-error'
     | 'pipeline-error-cartesia-522-server-error'
+    | 'call.in-progress.error-vapifault-cartesia-socket-hang-up'
+    | 'call.in-progress.error-vapifault-cartesia-requested-payment'
+    | 'call.in-progress.error-providerfault-cartesia-500-server-error'
+    | 'call.in-progress.error-providerfault-cartesia-503-server-error'
+    | 'call.in-progress.error-providerfault-cartesia-522-server-error'
     | 'pipeline-error-eleven-labs-voice-not-found'
     | 'pipeline-error-eleven-labs-quota-exceeded'
     | 'pipeline-error-eleven-labs-unauthorized-access'
@@ -17218,9 +19261,30 @@ export interface ServerMessageStatusUpdate {
     | 'pipeline-error-eleven-labs-missing-samples-for-voice-clone'
     | 'pipeline-error-eleven-labs-voice-not-fine-tuned-and-cannot-be-used'
     | 'pipeline-error-eleven-labs-voice-not-allowed-for-free-users'
-    | 'pipeline-error-eleven-labs-500-server-error'
     | 'pipeline-error-eleven-labs-max-character-limit-exceeded'
     | 'pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
+    | 'pipeline-error-eleven-labs-500-server-error'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-found'
+    | 'call.in-progress.error-vapifault-eleven-labs-quota-exceeded'
+    | 'call.in-progress.error-vapifault-eleven-labs-unauthorized-access'
+    | 'call.in-progress.error-vapifault-eleven-labs-unauthorized-to-access-model'
+    | 'call.in-progress.error-vapifault-eleven-labs-professional-voices-only-for-creator-plus'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-free-plan-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-concurrent-requests-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-using-instant-voice-clone-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-system-busy-and-requested-upgrade'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-fine-tuned'
+    | 'call.in-progress.error-vapifault-eleven-labs-invalid-api-key'
+    | 'call.in-progress.error-vapifault-eleven-labs-invalid-voice-samples'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-disabled-by-owner'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-account-in-probation'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-content-against-their-policy'
+    | 'call.in-progress.error-vapifault-eleven-labs-missing-samples-for-voice-clone'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-fine-tuned-and-cannot-be-used'
+    | 'call.in-progress.error-vapifault-eleven-labs-voice-not-allowed-for-free-users'
+    | 'call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded'
+    | 'call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
+    | 'call.in-progress.error-providerfault-eleven-labs-500-server-error'
     | 'pipeline-error-playht-request-timed-out'
     | 'pipeline-error-playht-invalid-voice'
     | 'pipeline-error-playht-unexpected-error'
@@ -17233,29 +19297,58 @@ export interface ServerMessageStatusUpdate {
     | 'pipeline-error-playht-429-exceeded-quota'
     | 'pipeline-error-playht-502-gateway-error'
     | 'pipeline-error-playht-504-gateway-error'
-    | 'pipeline-error-tavus-video-failed'
+    | 'call.in-progress.error-vapifault-playht-request-timed-out'
+    | 'call.in-progress.error-vapifault-playht-invalid-voice'
+    | 'call.in-progress.error-vapifault-playht-unexpected-error'
+    | 'call.in-progress.error-vapifault-playht-out-of-credits'
+    | 'call.in-progress.error-vapifault-playht-invalid-emotion'
+    | 'call.in-progress.error-vapifault-playht-voice-must-be-a-valid-voice-manifest-uri'
+    | 'call.in-progress.error-vapifault-playht-401-unauthorized'
+    | 'call.in-progress.error-vapifault-playht-403-forbidden-out-of-characters'
+    | 'call.in-progress.error-vapifault-playht-403-forbidden-api-access-not-available'
+    | 'call.in-progress.error-vapifault-playht-429-exceeded-quota'
+    | 'call.in-progress.error-providerfault-playht-502-gateway-error'
+    | 'call.in-progress.error-providerfault-playht-504-gateway-error'
     | 'pipeline-error-custom-transcriber-failed'
-    | 'pipeline-error-11labs-transcriber-failed'
-    | 'pipeline-error-deepgram-returning-403-model-access-denied'
-    | 'pipeline-error-deepgram-returning-401-invalid-credentials'
-    | 'pipeline-error-deepgram-returning-404-not-found'
+    | 'call.in-progress.error-vapifault-custom-transcriber-failed'
+    | 'pipeline-error-eleven-labs-transcriber-failed'
+    | 'call.in-progress.error-vapifault-eleven-labs-transcriber-failed'
     | 'pipeline-error-deepgram-returning-400-no-such-model-language-tier-combination'
+    | 'pipeline-error-deepgram-returning-401-invalid-credentials'
+    | 'pipeline-error-deepgram-returning-403-model-access-denied'
+    | 'pipeline-error-deepgram-returning-404-not-found'
     | 'pipeline-error-deepgram-returning-500-invalid-json'
     | 'pipeline-error-deepgram-returning-502-network-error'
     | 'pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach'
+    | 'call.in-progress.error-vapifault-deepgram-returning-400-no-such-model-language-tier-combination'
+    | 'call.in-progress.error-vapifault-deepgram-returning-401-invalid-credentials'
+    | 'call.in-progress.error-vapifault-deepgram-returning-404-not-found'
+    | 'call.in-progress.error-vapifault-deepgram-returning-403-model-access-denied'
+    | 'call.in-progress.error-providerfault-deepgram-returning-500-invalid-json'
+    | 'call.in-progress.error-providerfault-deepgram-returning-502-network-error'
+    | 'call.in-progress.error-providerfault-deepgram-returning-502-bad-gateway-ehostunreach'
     | 'pipeline-error-google-transcriber-failed'
+    | 'call.in-progress.error-vapifault-google-transcriber-failed'
     | 'pipeline-error-openai-transcriber-failed'
-    | 'call.start.error-get-org'
-    | 'call.start.error-get-subscription'
-    | 'call.start.error-get-assistant'
-    | 'call.start.error-get-phone-number'
-    | 'call.start.error-get-customer'
-    | 'call.start.error-get-resources-validation'
-    | 'call.start.error-vapi-number-international'
-    | 'call.start.error-vapi-number-outbound-daily-limit'
-    | 'call.start.error-get-transport'
+    | 'call.in-progress.error-vapifault-openai-transcriber-failed'
+    | 'assistant-ended-call'
+    | 'assistant-said-end-call-phrase'
+    | 'assistant-ended-call-with-hangup-task'
+    | 'assistant-ended-call-after-message-spoken'
+    | 'assistant-forwarded-call'
+    | 'assistant-join-timed-out'
+    | 'call.in-progress.error-assistant-did-not-receive-customer-audio'
+    | 'customer-busy'
+    | 'customer-ended-call'
+    | 'customer-did-not-answer'
+    | 'customer-did-not-give-microphone-permission'
+    | 'exceeded-max-duration'
+    | 'manually-canceled'
+    | 'phone-call-provider-closed-websocket'
     | 'silence-timed-out'
-    | 'sip-gateway-failed-to-connect-call'
+    | 'call.in-progress.error-sip-telephony-provider-failed-to-connect-call'
+    | 'call.ringing.hook-executed-say'
+    | 'call.ringing.hook-executed-transfer'
     | 'twilio-failed-to-connect-call'
     | 'twilio-reported-customer-misdialed'
     | 'vonage-rejected'
@@ -17266,8 +19359,8 @@ export interface ServerMessageStatusUpdate {
   messagesOpenAIFormatted?: OpenAIMessage[];
   /** This is the destination the call is being transferred to. This is only sent if the status is "forwarding". */
   destination?: TransferDestinationNumber | TransferDestinationSip;
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -17339,8 +19432,8 @@ export interface ServerMessageToolCalls {
     | TextEditorToolWithToolCall
     | GoogleCalendarCreateEventToolWithToolCall
   )[];
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -17394,8 +19487,8 @@ export interface ServerMessageTransferDestinationRequest {
     | CreateVapiPhoneNumberDTO;
   /** This is the type of the message. "transfer-destination-request" is sent when the model is requesting transfer but destination is unknown. */
   type: 'transfer-destination-request';
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -17453,8 +19546,8 @@ export interface ServerMessageTransferUpdate {
     | TransferDestinationStep
     | TransferDestinationNumber
     | TransferDestinationSip;
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -17514,8 +19607,8 @@ export interface ServerMessageTranscript {
     | CreateVapiPhoneNumberDTO;
   /** This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript. */
   type: 'transcript' | "transcript[transcriptType='final']";
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -17573,8 +19666,8 @@ export interface ServerMessageUserInterrupted {
     | CreateVapiPhoneNumberDTO;
   /** This is the type of the message. "user-interrupted" is sent when the user interrupts the assistant. */
   type: 'user-interrupted';
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -17626,8 +19719,8 @@ export interface ServerMessageLanguageChangeDetected {
     | CreateVapiPhoneNumberDTO;
   /** This is the type of the message. "language-change-detected" is sent when the transcriber is automatically switched based on the detected language. */
   type: 'language-change-detected';
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -17681,8 +19774,8 @@ export interface ServerMessageVoiceInput {
     | CreateVapiPhoneNumberDTO;
   /** This is the type of the message. "voice-input" is sent when a generation is requested from voice provider. */
   type: 'voice-input';
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -17759,8 +19852,8 @@ export interface ServerMessageVoiceRequest {
    * ```
    */
   type: 'voice-request';
-  /** This is the ISO-8601 formatted timestamp of when the message was sent. */
-  timestamp?: string;
+  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
    *
@@ -18809,7 +20902,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     callControllerCreate: (data: CreateCallDTO, params: RequestParams = {}) =>
-      this.request<Call, any>({
+      this.request<Call | CallBatchResponse, any>({
         path: `/call`,
         method: 'POST',
         body: data,
@@ -18965,7 +21058,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     callControllerCreatePhoneCall: (data: CreateOutboundCallDTO, params: RequestParams = {}) =>
-      this.request<Call, any>({
+      this.request<Call | CallBatchResponse, any>({
         path: `/call/phone`,
         method: 'POST',
         body: data,
@@ -19952,7 +22045,19 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & CreateGoogleCalendarCreateEventToolDTO)
         | ({
             type: 'google.sheets.row.append';
-          } & CreateGoogleSheetsRowAppendToolDTO),
+          } & CreateGoogleSheetsRowAppendToolDTO)
+        | ({
+            type: 'google.calendar.availability.check';
+          } & CreateGoogleCalendarCheckAvailabilityToolDTO)
+        | ({
+            type: 'slack.message.send';
+          } & CreateSlackSendMessageToolDTO)
+        | ({
+            type: 'sms';
+          } & CreateSmsSendToolDTO)
+        | ({
+            type: 'mcp';
+          } & CreateMcpToolDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -19994,7 +22099,19 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & GoogleCalendarCreateEventTool)
         | ({
             type: 'google.sheets.row.append';
-          } & GoogleSheetsRowAppendTool),
+          } & GoogleSheetsRowAppendTool)
+        | ({
+            type: 'google.calendar.availability.check';
+          } & GoogleCalendarCheckAvailabilityTool)
+        | ({
+            type: 'slack.message.send';
+          } & SlackSendMessageTool)
+        | ({
+            type: 'sms';
+          } & SmsSendTool)
+        | ({
+            type: 'mcp';
+          } & McpTool),
         any
       >({
         path: `/tool`,
@@ -20107,6 +22224,18 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           | ({
               type: 'google.sheets.row.append';
             } & GoogleSheetsRowAppendTool)
+          | ({
+              type: 'google.calendar.availability.check';
+            } & GoogleCalendarCheckAvailabilityTool)
+          | ({
+              type: 'slack.message.send';
+            } & SlackSendMessageTool)
+          | ({
+              type: 'sms';
+            } & SmsSendTool)
+          | ({
+              type: 'mcp';
+            } & McpTool)
         )[],
         any
       >({
@@ -20167,7 +22296,19 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & GoogleCalendarCreateEventTool)
         | ({
             type: 'google.sheets.row.append';
-          } & GoogleSheetsRowAppendTool),
+          } & GoogleSheetsRowAppendTool)
+        | ({
+            type: 'google.calendar.availability.check';
+          } & GoogleCalendarCheckAvailabilityTool)
+        | ({
+            type: 'slack.message.send';
+          } & SlackSendMessageTool)
+        | ({
+            type: 'sms';
+          } & SmsSendTool)
+        | ({
+            type: 'mcp';
+          } & McpTool),
         any
       >({
         path: `/tool/${id}`,
@@ -20227,7 +22368,19 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & UpdateGoogleCalendarCreateEventToolDTO)
         | ({
             type: 'google.sheets.row.append';
-          } & UpdateGoogleSheetsRowAppendToolDTO),
+          } & UpdateGoogleSheetsRowAppendToolDTO)
+        | ({
+            type: 'google.calendar.availability.check';
+          } & UpdateGoogleCalendarCheckAvailabilityToolDTO)
+        | ({
+            type: 'slack.message.send';
+          } & UpdateSlackSendMessageToolDTO)
+        | ({
+            type: 'sms';
+          } & UpdateSmsSendToolDTO)
+        | ({
+            type: 'mcp';
+          } & UpdateMcpToolDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -20269,7 +22422,19 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & GoogleCalendarCreateEventTool)
         | ({
             type: 'google.sheets.row.append';
-          } & GoogleSheetsRowAppendTool),
+          } & GoogleSheetsRowAppendTool)
+        | ({
+            type: 'google.calendar.availability.check';
+          } & GoogleCalendarCheckAvailabilityTool)
+        | ({
+            type: 'slack.message.send';
+          } & SlackSendMessageTool)
+        | ({
+            type: 'sms';
+          } & SmsSendTool)
+        | ({
+            type: 'mcp';
+          } & McpTool),
         any
       >({
         path: `/tool/${id}`,
@@ -20330,7 +22495,19 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & GoogleCalendarCreateEventTool)
         | ({
             type: 'google.sheets.row.append';
-          } & GoogleSheetsRowAppendTool),
+          } & GoogleSheetsRowAppendTool)
+        | ({
+            type: 'google.calendar.availability.check';
+          } & GoogleCalendarCheckAvailabilityTool)
+        | ({
+            type: 'slack.message.send';
+          } & SlackSendMessageTool)
+        | ({
+            type: 'sms';
+          } & SmsSendTool)
+        | ({
+            type: 'mcp';
+          } & McpTool),
         any
       >({
         path: `/tool/${id}`,
@@ -22059,99 +24236,294 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     credentialControllerCreate: (
       data:
-        | CreateAnthropicCredentialDTO
-        | CreateAnyscaleCredentialDTO
-        | CreateAssemblyAICredentialDTO
-        | CreateAzureCredentialDTO
-        | CreateAzureOpenAICredentialDTO
-        | CreateByoSipTrunkCredentialDTO
-        | CreateCartesiaCredentialDTO
-        | CreateCerebrasCredentialDTO
-        | CreateCloudflareCredentialDTO
-        | CreateCustomLLMCredentialDTO
-        | CreateDeepgramCredentialDTO
-        | CreateDeepInfraCredentialDTO
-        | CreateDeepSeekCredentialDTO
-        | CreateElevenLabsCredentialDTO
-        | CreateGcpCredentialDTO
-        | CreateGladiaCredentialDTO
-        | CreateGoHighLevelCredentialDTO
-        | CreateGoogleCredentialDTO
-        | CreateGroqCredentialDTO
-        | CreateHumeCredentialDTO
-        | CreateInflectionAICredentialDTO
-        | CreateLangfuseCredentialDTO
-        | CreateLmntCredentialDTO
-        | CreateMakeCredentialDTO
-        | CreateMistralCredentialDTO
-        | CreateNeuphonicCredentialDTO
-        | CreateOpenAICredentialDTO
-        | CreateOpenRouterCredentialDTO
-        | CreatePerplexityAICredentialDTO
-        | CreatePlayHTCredentialDTO
-        | CreateRimeAICredentialDTO
-        | CreateRunpodCredentialDTO
-        | CreateS3CredentialDTO
-        | CreateSmallestAICredentialDTO
-        | CreateSpeechmaticsCredentialDTO
-        | CreateSupabaseCredentialDTO
-        | CreateTavusCredentialDTO
-        | CreateTogetherAICredentialDTO
-        | CreateTrieveCredentialDTO
-        | CreateTwilioCredentialDTO
-        | CreateVonageCredentialDTO
-        | CreateWebhookCredentialDTO
-        | CreateXAiCredentialDTO
-        | CreateGoogleCalendarOAuth2ClientCredentialDTO
-        | CreateGoogleCalendarOAuth2AuthorizationCredentialDTO,
+        | ({
+            provider: '11labs';
+          } & CreateElevenLabsCredentialDTO)
+        | ({
+            provider: 'anthropic';
+          } & CreateAnthropicCredentialDTO)
+        | ({
+            provider: 'anyscale';
+          } & CreateAnyscaleCredentialDTO)
+        | ({
+            provider: 'assembly-ai';
+          } & CreateAssemblyAICredentialDTO)
+        | ({
+            provider: 'azure-openai';
+          } & CreateAzureOpenAICredentialDTO)
+        | ({
+            provider: 'azure';
+          } & CreateAzureCredentialDTO)
+        | ({
+            provider: 'byo-sip-trunk';
+          } & CreateByoSipTrunkCredentialDTO)
+        | ({
+            provider: 'cartesia';
+          } & CreateCartesiaCredentialDTO)
+        | ({
+            provider: 'cerebras';
+          } & CreateCerebrasCredentialDTO)
+        | ({
+            provider: 'cloudflare';
+          } & CreateCloudflareCredentialDTO)
+        | ({
+            provider: 'custom-llm';
+          } & CreateCustomLLMCredentialDTO)
+        | ({
+            provider: 'deepgram';
+          } & CreateDeepgramCredentialDTO)
+        | ({
+            provider: 'deepinfra';
+          } & CreateDeepInfraCredentialDTO)
+        | ({
+            provider: 'deep-seek';
+          } & CreateDeepSeekCredentialDTO)
+        | ({
+            provider: 'gcp';
+          } & CreateGcpCredentialDTO)
+        | ({
+            provider: 'gladia';
+          } & CreateGladiaCredentialDTO)
+        | ({
+            provider: 'gohighlevel';
+          } & CreateGoHighLevelCredentialDTO)
+        | ({
+            provider: 'google';
+          } & CreateGoogleCredentialDTO)
+        | ({
+            provider: 'groq';
+          } & CreateGroqCredentialDTO)
+        | ({
+            provider: 'inflection-ai';
+          } & CreateInflectionAICredentialDTO)
+        | ({
+            provider: 'langfuse';
+          } & CreateLangfuseCredentialDTO)
+        | ({
+            provider: 'lmnt';
+          } & CreateLmntCredentialDTO)
+        | ({
+            provider: 'make';
+          } & CreateMakeCredentialDTO)
+        | ({
+            provider: 'openai';
+          } & CreateOpenAICredentialDTO)
+        | ({
+            provider: 'openrouter';
+          } & CreateOpenRouterCredentialDTO)
+        | ({
+            provider: 'perplexity-ai';
+          } & CreatePerplexityAICredentialDTO)
+        | ({
+            provider: 'playht';
+          } & CreatePlayHTCredentialDTO)
+        | ({
+            provider: 'rime-ai';
+          } & CreateRimeAICredentialDTO)
+        | ({
+            provider: 'runpod';
+          } & CreateRunpodCredentialDTO)
+        | ({
+            provider: 's3';
+          } & CreateS3CredentialDTO)
+        | ({
+            provider: 'supabase';
+          } & CreateSupabaseCredentialDTO)
+        | ({
+            provider: 'smallest-ai';
+          } & CreateSmallestAICredentialDTO)
+        | ({
+            provider: 'tavus';
+          } & CreateTavusCredentialDTO)
+        | ({
+            provider: 'together-ai';
+          } & CreateTogetherAICredentialDTO)
+        | ({
+            provider: 'twilio';
+          } & CreateTwilioCredentialDTO)
+        | ({
+            provider: 'vonage';
+          } & CreateVonageCredentialDTO)
+        | ({
+            provider: 'webhook';
+          } & CreateWebhookCredentialDTO)
+        | ({
+            provider: 'xai';
+          } & CreateXAiCredentialDTO)
+        | ({
+            provider: 'neuphonic';
+          } & CreateNeuphonicCredentialDTO)
+        | ({
+            provider: 'hume';
+          } & CreateHumeCredentialDTO)
+        | ({
+            provider: 'mistral';
+          } & CreateMistralCredentialDTO)
+        | ({
+            provider: 'speechmatics';
+          } & CreateSpeechmaticsCredentialDTO)
+        | ({
+            provider: 'trieve';
+          } & CreateTrieveCredentialDTO)
+        | ({
+            provider: 'google.calendar.oauth2-client';
+          } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+        | ({
+            provider: 'google.calendar.oauth2-authorization';
+          } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+        | ({
+            provider: 'google.sheets.oauth2-authorization';
+          } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+        | ({
+            provider: 'slack.oauth2-authorization';
+          } & CreateSlackOAuth2AuthorizationCredentialDTO),
       params: RequestParams = {},
     ) =>
       this.request<
-        | AnthropicCredential
-        | AnyscaleCredential
-        | AssemblyAICredential
-        | AzureCredential
-        | AzureOpenAICredential
-        | ByoSipTrunkCredential
-        | CartesiaCredential
-        | CerebrasCredential
-        | CloudflareCredential
-        | CustomLLMCredential
-        | DeepgramCredential
-        | DeepInfraCredential
-        | DeepSeekCredential
-        | ElevenLabsCredential
-        | GcpCredential
-        | GladiaCredential
-        | GoHighLevelCredential
-        | GoogleCredential
-        | GroqCredential
-        | HumeCredential
-        | InflectionAICredential
-        | LangfuseCredential
-        | LmntCredential
-        | MakeCredential
-        | MistralCredential
-        | NeuphonicCredential
-        | OpenAICredential
-        | OpenRouterCredential
-        | PerplexityAICredential
-        | PlayHTCredential
-        | RimeAICredential
-        | RunpodCredential
-        | S3Credential
-        | SmallestAICredential
-        | SpeechmaticsCredential
-        | SupabaseCredential
-        | TavusCredential
-        | TogetherAICredential
-        | TrieveCredential
-        | TwilioCredential
-        | VonageCredential
-        | WebhookCredential
-        | XAiCredential
-        | GoogleCalendarOAuth2ClientCredential
-        | GoogleCalendarOAuth2AuthorizationCredential,
+        | ({
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'assembly-ai';
+          } & AssemblyAICredential)
+        | ({
+            provider: 'azure';
+          } & AzureCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'byo-sip-trunk';
+          } & ByoSipTrunkCredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'cerebras';
+          } & CerebrasCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
+        | ({
+            provider: 'deepgram';
+          } & DeepgramCredential)
+        | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'deep-seek';
+          } & DeepSeekCredential)
+        | ({
+            provider: 'gcp';
+          } & GcpCredential)
+        | ({
+            provider: 'gladia';
+          } & GladiaCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'google';
+          } & GoogleCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'inflection-ai';
+          } & InflectionAICredential)
+        | ({
+            provider: 'langfuse';
+          } & LangfuseCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
+            provider: 'openai';
+          } & OpenAICredential)
+        | ({
+            provider: 'openrouter';
+          } & OpenRouterCredential)
+        | ({
+            provider: 'perplexity-ai';
+          } & PerplexityAICredential)
+        | ({
+            provider: 'playht';
+          } & PlayHTCredential)
+        | ({
+            provider: 'rime-ai';
+          } & RimeAICredential)
+        | ({
+            provider: 'runpod';
+          } & RunpodCredential)
+        | ({
+            provider: 's3';
+          } & S3Credential)
+        | ({
+            provider: 'supabase';
+          } & SupabaseCredential)
+        | ({
+            provider: 'smallest-ai';
+          } & SmallestAICredential)
+        | ({
+            provider: 'neuphonic';
+          } & NeuphonicCredential)
+        | ({
+            provider: 'hume';
+          } & HumeCredential)
+        | ({
+            provider: 'tavus';
+          } & TavusCredential)
+        | ({
+            provider: 'together-ai';
+          } & TogetherAICredential)
+        | ({
+            provider: 'twilio';
+          } & TwilioCredential)
+        | ({
+            provider: 'vonage';
+          } & VonageCredential)
+        | ({
+            provider: 'webhook';
+          } & WebhookCredential)
+        | ({
+            provider: 'xai';
+          } & XAiCredential)
+        | ({
+            provider: 'mistral';
+          } & MistralCredential)
+        | ({
+            provider: 'speechmatics';
+          } & SpeechmaticsCredential)
+        | ({
+            provider: 'trieve';
+          } & TrieveCredential)
+        | ({
+            provider: 'telnyx';
+          } & any)
+        | ({
+            provider: 'cloudflare';
+          } & CloudflareCredential)
+        | ({
+            provider: 'google.calendar.oauth2-client';
+          } & GoogleCalendarOAuth2ClientCredential)
+        | ({
+            provider: 'google.calendar.oauth2-authorization';
+          } & GoogleCalendarOAuth2AuthorizationCredential)
+        | ({
+            provider: 'google.sheets.oauth2-authorization';
+          } & GoogleSheetsOAuth2AuthorizationCredential)
+        | ({
+            provider: 'slack.oauth2-authorization';
+          } & SlackOAuth2AuthorizationCredential),
         any
       >({
         path: `/credential`,
@@ -22225,51 +24597,150 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     ) =>
       this.request<
         (
-          | AnthropicCredential
-          | AnyscaleCredential
-          | AssemblyAICredential
-          | AzureCredential
-          | AzureOpenAICredential
-          | ByoSipTrunkCredential
-          | CartesiaCredential
-          | CerebrasCredential
-          | CloudflareCredential
-          | CustomLLMCredential
-          | DeepgramCredential
-          | DeepInfraCredential
-          | DeepSeekCredential
-          | ElevenLabsCredential
-          | GcpCredential
-          | GladiaCredential
-          | GoHighLevelCredential
-          | GoogleCredential
-          | GroqCredential
-          | HumeCredential
-          | InflectionAICredential
-          | LangfuseCredential
-          | LmntCredential
-          | MakeCredential
-          | MistralCredential
-          | NeuphonicCredential
-          | OpenAICredential
-          | OpenRouterCredential
-          | PerplexityAICredential
-          | PlayHTCredential
-          | RimeAICredential
-          | RunpodCredential
-          | S3Credential
-          | SmallestAICredential
-          | SpeechmaticsCredential
-          | SupabaseCredential
-          | TavusCredential
-          | TogetherAICredential
-          | TrieveCredential
-          | TwilioCredential
-          | VonageCredential
-          | WebhookCredential
-          | XAiCredential
-          | GoogleCalendarOAuth2ClientCredential
-          | GoogleCalendarOAuth2AuthorizationCredential
+          | ({
+              provider: '11labs';
+            } & ElevenLabsCredential)
+          | ({
+              provider: 'anthropic';
+            } & AnthropicCredential)
+          | ({
+              provider: 'anyscale';
+            } & AnyscaleCredential)
+          | ({
+              provider: 'assembly-ai';
+            } & AssemblyAICredential)
+          | ({
+              provider: 'azure';
+            } & AzureCredential)
+          | ({
+              provider: 'azure-openai';
+            } & AzureOpenAICredential)
+          | ({
+              provider: 'byo-sip-trunk';
+            } & ByoSipTrunkCredential)
+          | ({
+              provider: 'cartesia';
+            } & CartesiaCredential)
+          | ({
+              provider: 'cerebras';
+            } & CerebrasCredential)
+          | ({
+              provider: 'custom-llm';
+            } & CustomLLMCredential)
+          | ({
+              provider: 'deepgram';
+            } & DeepgramCredential)
+          | ({
+              provider: 'deepinfra';
+            } & DeepInfraCredential)
+          | ({
+              provider: 'deep-seek';
+            } & DeepSeekCredential)
+          | ({
+              provider: 'gcp';
+            } & GcpCredential)
+          | ({
+              provider: 'gladia';
+            } & GladiaCredential)
+          | ({
+              provider: 'gohighlevel';
+            } & GoHighLevelCredential)
+          | ({
+              provider: 'google';
+            } & GoogleCredential)
+          | ({
+              provider: 'groq';
+            } & GroqCredential)
+          | ({
+              provider: 'inflection-ai';
+            } & InflectionAICredential)
+          | ({
+              provider: 'langfuse';
+            } & LangfuseCredential)
+          | ({
+              provider: 'lmnt';
+            } & LmntCredential)
+          | ({
+              provider: 'make';
+            } & MakeCredential)
+          | ({
+              provider: 'openai';
+            } & OpenAICredential)
+          | ({
+              provider: 'openrouter';
+            } & OpenRouterCredential)
+          | ({
+              provider: 'perplexity-ai';
+            } & PerplexityAICredential)
+          | ({
+              provider: 'playht';
+            } & PlayHTCredential)
+          | ({
+              provider: 'rime-ai';
+            } & RimeAICredential)
+          | ({
+              provider: 'runpod';
+            } & RunpodCredential)
+          | ({
+              provider: 's3';
+            } & S3Credential)
+          | ({
+              provider: 'supabase';
+            } & SupabaseCredential)
+          | ({
+              provider: 'smallest-ai';
+            } & SmallestAICredential)
+          | ({
+              provider: 'neuphonic';
+            } & NeuphonicCredential)
+          | ({
+              provider: 'hume';
+            } & HumeCredential)
+          | ({
+              provider: 'tavus';
+            } & TavusCredential)
+          | ({
+              provider: 'together-ai';
+            } & TogetherAICredential)
+          | ({
+              provider: 'twilio';
+            } & TwilioCredential)
+          | ({
+              provider: 'vonage';
+            } & VonageCredential)
+          | ({
+              provider: 'webhook';
+            } & WebhookCredential)
+          | ({
+              provider: 'xai';
+            } & XAiCredential)
+          | ({
+              provider: 'mistral';
+            } & MistralCredential)
+          | ({
+              provider: 'speechmatics';
+            } & SpeechmaticsCredential)
+          | ({
+              provider: 'trieve';
+            } & TrieveCredential)
+          | ({
+              provider: 'telnyx';
+            } & any)
+          | ({
+              provider: 'cloudflare';
+            } & CloudflareCredential)
+          | ({
+              provider: 'google.calendar.oauth2-client';
+            } & GoogleCalendarOAuth2ClientCredential)
+          | ({
+              provider: 'google.calendar.oauth2-authorization';
+            } & GoogleCalendarOAuth2AuthorizationCredential)
+          | ({
+              provider: 'google.sheets.oauth2-authorization';
+            } & GoogleSheetsOAuth2AuthorizationCredential)
+          | ({
+              provider: 'slack.oauth2-authorization';
+            } & SlackOAuth2AuthorizationCredential)
         )[],
         any
       >({
@@ -22292,51 +24763,150 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     credentialControllerFindOne: (id: string, params: RequestParams = {}) =>
       this.request<
-        | AnthropicCredential
-        | AnyscaleCredential
-        | AssemblyAICredential
-        | AzureCredential
-        | AzureOpenAICredential
-        | ByoSipTrunkCredential
-        | CartesiaCredential
-        | CerebrasCredential
-        | CloudflareCredential
-        | CustomLLMCredential
-        | DeepgramCredential
-        | DeepInfraCredential
-        | DeepSeekCredential
-        | ElevenLabsCredential
-        | GcpCredential
-        | GladiaCredential
-        | GoHighLevelCredential
-        | GoogleCredential
-        | GroqCredential
-        | HumeCredential
-        | InflectionAICredential
-        | LangfuseCredential
-        | LmntCredential
-        | MakeCredential
-        | MistralCredential
-        | NeuphonicCredential
-        | OpenAICredential
-        | OpenRouterCredential
-        | PerplexityAICredential
-        | PlayHTCredential
-        | RimeAICredential
-        | RunpodCredential
-        | S3Credential
-        | SmallestAICredential
-        | SpeechmaticsCredential
-        | SupabaseCredential
-        | TavusCredential
-        | TogetherAICredential
-        | TrieveCredential
-        | TwilioCredential
-        | VonageCredential
-        | WebhookCredential
-        | XAiCredential
-        | GoogleCalendarOAuth2ClientCredential
-        | GoogleCalendarOAuth2AuthorizationCredential,
+        | ({
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'assembly-ai';
+          } & AssemblyAICredential)
+        | ({
+            provider: 'azure';
+          } & AzureCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'byo-sip-trunk';
+          } & ByoSipTrunkCredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'cerebras';
+          } & CerebrasCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
+        | ({
+            provider: 'deepgram';
+          } & DeepgramCredential)
+        | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'deep-seek';
+          } & DeepSeekCredential)
+        | ({
+            provider: 'gcp';
+          } & GcpCredential)
+        | ({
+            provider: 'gladia';
+          } & GladiaCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'google';
+          } & GoogleCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'inflection-ai';
+          } & InflectionAICredential)
+        | ({
+            provider: 'langfuse';
+          } & LangfuseCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
+            provider: 'openai';
+          } & OpenAICredential)
+        | ({
+            provider: 'openrouter';
+          } & OpenRouterCredential)
+        | ({
+            provider: 'perplexity-ai';
+          } & PerplexityAICredential)
+        | ({
+            provider: 'playht';
+          } & PlayHTCredential)
+        | ({
+            provider: 'rime-ai';
+          } & RimeAICredential)
+        | ({
+            provider: 'runpod';
+          } & RunpodCredential)
+        | ({
+            provider: 's3';
+          } & S3Credential)
+        | ({
+            provider: 'supabase';
+          } & SupabaseCredential)
+        | ({
+            provider: 'smallest-ai';
+          } & SmallestAICredential)
+        | ({
+            provider: 'neuphonic';
+          } & NeuphonicCredential)
+        | ({
+            provider: 'hume';
+          } & HumeCredential)
+        | ({
+            provider: 'tavus';
+          } & TavusCredential)
+        | ({
+            provider: 'together-ai';
+          } & TogetherAICredential)
+        | ({
+            provider: 'twilio';
+          } & TwilioCredential)
+        | ({
+            provider: 'vonage';
+          } & VonageCredential)
+        | ({
+            provider: 'webhook';
+          } & WebhookCredential)
+        | ({
+            provider: 'xai';
+          } & XAiCredential)
+        | ({
+            provider: 'mistral';
+          } & MistralCredential)
+        | ({
+            provider: 'speechmatics';
+          } & SpeechmaticsCredential)
+        | ({
+            provider: 'trieve';
+          } & TrieveCredential)
+        | ({
+            provider: 'telnyx';
+          } & any)
+        | ({
+            provider: 'cloudflare';
+          } & CloudflareCredential)
+        | ({
+            provider: 'google.calendar.oauth2-client';
+          } & GoogleCalendarOAuth2ClientCredential)
+        | ({
+            provider: 'google.calendar.oauth2-authorization';
+          } & GoogleCalendarOAuth2AuthorizationCredential)
+        | ({
+            provider: 'google.sheets.oauth2-authorization';
+          } & GoogleSheetsOAuth2AuthorizationCredential)
+        | ({
+            provider: 'slack.oauth2-authorization';
+          } & SlackOAuth2AuthorizationCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -22358,99 +24928,270 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     credentialControllerUpdate: (
       id: string,
       data:
-        | UpdateAnthropicCredentialDTO
-        | UpdateAnyscaleCredentialDTO
-        | UpdateAssemblyAICredentialDTO
-        | UpdateAzureCredentialDTO
-        | UpdateAzureOpenAICredentialDTO
-        | UpdateByoSipTrunkCredentialDTO
-        | UpdateCartesiaCredentialDTO
-        | UpdateCerebrasCredentialDTO
-        | UpdateCloudflareCredentialDTO
-        | UpdateCustomLLMCredentialDTO
-        | UpdateDeepgramCredentialDTO
-        | UpdateDeepInfraCredentialDTO
-        | UpdateDeepSeekCredentialDTO
-        | UpdateElevenLabsCredentialDTO
-        | UpdateGcpCredentialDTO
-        | UpdateGladiaCredentialDTO
-        | UpdateGoHighLevelCredentialDTO
-        | UpdateGoogleCredentialDTO
-        | UpdateGroqCredentialDTO
-        | UpdateHumeCredentialDTO
-        | UpdateInflectionAICredentialDTO
-        | UpdateLangfuseCredentialDTO
-        | UpdateLmntCredentialDTO
-        | UpdateMakeCredentialDTO
-        | UpdateMistralCredentialDTO
-        | UpdateNeuphonicCredentialDTO
-        | UpdateOpenAICredentialDTO
-        | UpdateOpenRouterCredentialDTO
-        | UpdatePerplexityAICredentialDTO
-        | UpdatePlayHTCredentialDTO
-        | UpdateRimeAICredentialDTO
-        | UpdateRunpodCredentialDTO
-        | UpdateS3CredentialDTO
-        | UpdateSmallestAICredentialDTO
-        | UpdateSpeechmaticsCredentialDTO
-        | UpdateSupabaseCredentialDTO
-        | UpdateTavusCredentialDTO
-        | UpdateTogetherAICredentialDTO
-        | UpdateTrieveCredentialDTO
-        | UpdateTwilioCredentialDTO
-        | UpdateVonageCredentialDTO
-        | UpdateWebhookCredentialDTO
-        | UpdateXAiCredentialDTO
-        | UpdateGoogleCalendarOAuth2ClientCredentialDTO
-        | UpdateGoogleCalendarOAuth2AuthorizationCredentialDTO,
+        | ({
+            provider: '11labs';
+          } & UpdateElevenLabsCredentialDTO)
+        | ({
+            provider: 'anthropic';
+          } & UpdateAnthropicCredentialDTO)
+        | ({
+            provider: 'anyscale';
+          } & UpdateAnyscaleCredentialDTO)
+        | ({
+            provider: 'assembly-ai';
+          } & UpdateAssemblyAICredentialDTO)
+        | ({
+            provider: 'azure-openai';
+          } & UpdateAzureOpenAICredentialDTO)
+        | ({
+            provider: 'azure';
+          } & UpdateAzureCredentialDTO)
+        | ({
+            provider: 'byo-sip-trunk';
+          } & UpdateByoSipTrunkCredentialDTO)
+        | ({
+            provider: 'cartesia';
+          } & UpdateCartesiaCredentialDTO)
+        | ({
+            provider: 'cerebras';
+          } & UpdateCerebrasCredentialDTO)
+        | ({
+            provider: 'custom-llm';
+          } & UpdateCustomLLMCredentialDTO)
+        | ({
+            provider: 'deepgram';
+          } & UpdateDeepgramCredentialDTO)
+        | ({
+            provider: 'deepinfra';
+          } & UpdateDeepInfraCredentialDTO)
+        | ({
+            provider: 'deep-seek';
+          } & UpdateDeepSeekCredentialDTO)
+        | ({
+            provider: 'gcp';
+          } & UpdateGcpCredentialDTO)
+        | ({
+            provider: 'gladia';
+          } & UpdateGladiaCredentialDTO)
+        | ({
+            provider: 'gohighlevel';
+          } & UpdateGoHighLevelCredentialDTO)
+        | ({
+            provider: 'google';
+          } & UpdateGoogleCredentialDTO)
+        | ({
+            provider: 'groq';
+          } & UpdateGroqCredentialDTO)
+        | ({
+            provider: 'inflection-ai';
+          } & UpdateInflectionAICredentialDTO)
+        | ({
+            provider: 'langfuse';
+          } & UpdateLangfuseCredentialDTO)
+        | ({
+            provider: 'lmnt';
+          } & UpdateLmntCredentialDTO)
+        | ({
+            provider: 'make';
+          } & UpdateMakeCredentialDTO)
+        | ({
+            provider: 'openai';
+          } & UpdateOpenAICredentialDTO)
+        | ({
+            provider: 'openrouter';
+          } & UpdateOpenRouterCredentialDTO)
+        | ({
+            provider: 'perplexity-ai';
+          } & UpdatePerplexityAICredentialDTO)
+        | ({
+            provider: 'playht';
+          } & UpdatePlayHTCredentialDTO)
+        | ({
+            provider: 'rime-ai';
+          } & UpdateRimeAICredentialDTO)
+        | ({
+            provider: 'runpod';
+          } & UpdateRunpodCredentialDTO)
+        | ({
+            provider: 's3';
+          } & UpdateS3CredentialDTO)
+        | ({
+            provider: 'supabase';
+          } & UpdateSupabaseCredentialDTO)
+        | ({
+            provider: 'smallest-ai';
+          } & UpdateSmallestAICredentialDTO)
+        | ({
+            provider: 'neuphonic';
+          } & UpdateNeuphonicCredentialDTO)
+        | ({
+            provider: 'hume';
+          } & UpdateHumeCredentialDTO)
+        | ({
+            provider: 'tavus';
+          } & UpdateTavusCredentialDTO)
+        | ({
+            provider: 'together-ai';
+          } & UpdateTogetherAICredentialDTO)
+        | ({
+            provider: 'twilio';
+          } & UpdateTwilioCredentialDTO)
+        | ({
+            provider: 'vonage';
+          } & UpdateVonageCredentialDTO)
+        | ({
+            provider: 'webhook';
+          } & UpdateWebhookCredentialDTO)
+        | ({
+            provider: 'xai';
+          } & UpdateXAiCredentialDTO),
       params: RequestParams = {},
     ) =>
       this.request<
-        | AnthropicCredential
-        | AnyscaleCredential
-        | AssemblyAICredential
-        | AzureCredential
-        | AzureOpenAICredential
-        | ByoSipTrunkCredential
-        | CartesiaCredential
-        | CerebrasCredential
-        | CloudflareCredential
-        | CustomLLMCredential
-        | DeepgramCredential
-        | DeepInfraCredential
-        | DeepSeekCredential
-        | ElevenLabsCredential
-        | GcpCredential
-        | GladiaCredential
-        | GoHighLevelCredential
-        | GoogleCredential
-        | GroqCredential
-        | HumeCredential
-        | InflectionAICredential
-        | LangfuseCredential
-        | LmntCredential
-        | MakeCredential
-        | MistralCredential
-        | NeuphonicCredential
-        | OpenAICredential
-        | OpenRouterCredential
-        | PerplexityAICredential
-        | PlayHTCredential
-        | RimeAICredential
-        | RunpodCredential
-        | S3Credential
-        | SmallestAICredential
-        | SpeechmaticsCredential
-        | SupabaseCredential
-        | TavusCredential
-        | TogetherAICredential
-        | TrieveCredential
-        | TwilioCredential
-        | VonageCredential
-        | WebhookCredential
-        | XAiCredential
-        | GoogleCalendarOAuth2ClientCredential
-        | GoogleCalendarOAuth2AuthorizationCredential,
+        | ({
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'assembly-ai';
+          } & AssemblyAICredential)
+        | ({
+            provider: 'azure';
+          } & AzureCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'byo-sip-trunk';
+          } & ByoSipTrunkCredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'cerebras';
+          } & CerebrasCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
+        | ({
+            provider: 'deepgram';
+          } & DeepgramCredential)
+        | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'deep-seek';
+          } & DeepSeekCredential)
+        | ({
+            provider: 'gcp';
+          } & GcpCredential)
+        | ({
+            provider: 'gladia';
+          } & GladiaCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'google';
+          } & GoogleCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'inflection-ai';
+          } & InflectionAICredential)
+        | ({
+            provider: 'langfuse';
+          } & LangfuseCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
+            provider: 'openai';
+          } & OpenAICredential)
+        | ({
+            provider: 'openrouter';
+          } & OpenRouterCredential)
+        | ({
+            provider: 'perplexity-ai';
+          } & PerplexityAICredential)
+        | ({
+            provider: 'playht';
+          } & PlayHTCredential)
+        | ({
+            provider: 'rime-ai';
+          } & RimeAICredential)
+        | ({
+            provider: 'runpod';
+          } & RunpodCredential)
+        | ({
+            provider: 's3';
+          } & S3Credential)
+        | ({
+            provider: 'supabase';
+          } & SupabaseCredential)
+        | ({
+            provider: 'smallest-ai';
+          } & SmallestAICredential)
+        | ({
+            provider: 'neuphonic';
+          } & NeuphonicCredential)
+        | ({
+            provider: 'hume';
+          } & HumeCredential)
+        | ({
+            provider: 'tavus';
+          } & TavusCredential)
+        | ({
+            provider: 'together-ai';
+          } & TogetherAICredential)
+        | ({
+            provider: 'twilio';
+          } & TwilioCredential)
+        | ({
+            provider: 'vonage';
+          } & VonageCredential)
+        | ({
+            provider: 'webhook';
+          } & WebhookCredential)
+        | ({
+            provider: 'xai';
+          } & XAiCredential)
+        | ({
+            provider: 'mistral';
+          } & MistralCredential)
+        | ({
+            provider: 'speechmatics';
+          } & SpeechmaticsCredential)
+        | ({
+            provider: 'trieve';
+          } & TrieveCredential)
+        | ({
+            provider: 'telnyx';
+          } & any)
+        | ({
+            provider: 'cloudflare';
+          } & CloudflareCredential)
+        | ({
+            provider: 'google.calendar.oauth2-client';
+          } & GoogleCalendarOAuth2ClientCredential)
+        | ({
+            provider: 'google.calendar.oauth2-authorization';
+          } & GoogleCalendarOAuth2AuthorizationCredential)
+        | ({
+            provider: 'google.sheets.oauth2-authorization';
+          } & GoogleSheetsOAuth2AuthorizationCredential)
+        | ({
+            provider: 'slack.oauth2-authorization';
+          } & SlackOAuth2AuthorizationCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -22473,51 +25214,150 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      */
     credentialControllerRemove: (id: string, params: RequestParams = {}) =>
       this.request<
-        | AnthropicCredential
-        | AnyscaleCredential
-        | AssemblyAICredential
-        | AzureCredential
-        | AzureOpenAICredential
-        | ByoSipTrunkCredential
-        | CartesiaCredential
-        | CerebrasCredential
-        | CloudflareCredential
-        | CustomLLMCredential
-        | DeepgramCredential
-        | DeepInfraCredential
-        | DeepSeekCredential
-        | ElevenLabsCredential
-        | GcpCredential
-        | GladiaCredential
-        | GoHighLevelCredential
-        | GoogleCredential
-        | GroqCredential
-        | HumeCredential
-        | InflectionAICredential
-        | LangfuseCredential
-        | LmntCredential
-        | MakeCredential
-        | MistralCredential
-        | NeuphonicCredential
-        | OpenAICredential
-        | OpenRouterCredential
-        | PerplexityAICredential
-        | PlayHTCredential
-        | RimeAICredential
-        | RunpodCredential
-        | S3Credential
-        | SmallestAICredential
-        | SpeechmaticsCredential
-        | SupabaseCredential
-        | TavusCredential
-        | TogetherAICredential
-        | TrieveCredential
-        | TwilioCredential
-        | VonageCredential
-        | WebhookCredential
-        | XAiCredential
-        | GoogleCalendarOAuth2ClientCredential
-        | GoogleCalendarOAuth2AuthorizationCredential,
+        | ({
+            provider: '11labs';
+          } & ElevenLabsCredential)
+        | ({
+            provider: 'anthropic';
+          } & AnthropicCredential)
+        | ({
+            provider: 'anyscale';
+          } & AnyscaleCredential)
+        | ({
+            provider: 'assembly-ai';
+          } & AssemblyAICredential)
+        | ({
+            provider: 'azure';
+          } & AzureCredential)
+        | ({
+            provider: 'azure-openai';
+          } & AzureOpenAICredential)
+        | ({
+            provider: 'byo-sip-trunk';
+          } & ByoSipTrunkCredential)
+        | ({
+            provider: 'cartesia';
+          } & CartesiaCredential)
+        | ({
+            provider: 'cerebras';
+          } & CerebrasCredential)
+        | ({
+            provider: 'custom-llm';
+          } & CustomLLMCredential)
+        | ({
+            provider: 'deepgram';
+          } & DeepgramCredential)
+        | ({
+            provider: 'deepinfra';
+          } & DeepInfraCredential)
+        | ({
+            provider: 'deep-seek';
+          } & DeepSeekCredential)
+        | ({
+            provider: 'gcp';
+          } & GcpCredential)
+        | ({
+            provider: 'gladia';
+          } & GladiaCredential)
+        | ({
+            provider: 'gohighlevel';
+          } & GoHighLevelCredential)
+        | ({
+            provider: 'google';
+          } & GoogleCredential)
+        | ({
+            provider: 'groq';
+          } & GroqCredential)
+        | ({
+            provider: 'inflection-ai';
+          } & InflectionAICredential)
+        | ({
+            provider: 'langfuse';
+          } & LangfuseCredential)
+        | ({
+            provider: 'lmnt';
+          } & LmntCredential)
+        | ({
+            provider: 'make';
+          } & MakeCredential)
+        | ({
+            provider: 'openai';
+          } & OpenAICredential)
+        | ({
+            provider: 'openrouter';
+          } & OpenRouterCredential)
+        | ({
+            provider: 'perplexity-ai';
+          } & PerplexityAICredential)
+        | ({
+            provider: 'playht';
+          } & PlayHTCredential)
+        | ({
+            provider: 'rime-ai';
+          } & RimeAICredential)
+        | ({
+            provider: 'runpod';
+          } & RunpodCredential)
+        | ({
+            provider: 's3';
+          } & S3Credential)
+        | ({
+            provider: 'supabase';
+          } & SupabaseCredential)
+        | ({
+            provider: 'smallest-ai';
+          } & SmallestAICredential)
+        | ({
+            provider: 'neuphonic';
+          } & NeuphonicCredential)
+        | ({
+            provider: 'hume';
+          } & HumeCredential)
+        | ({
+            provider: 'tavus';
+          } & TavusCredential)
+        | ({
+            provider: 'together-ai';
+          } & TogetherAICredential)
+        | ({
+            provider: 'twilio';
+          } & TwilioCredential)
+        | ({
+            provider: 'vonage';
+          } & VonageCredential)
+        | ({
+            provider: 'webhook';
+          } & WebhookCredential)
+        | ({
+            provider: 'xai';
+          } & XAiCredential)
+        | ({
+            provider: 'mistral';
+          } & MistralCredential)
+        | ({
+            provider: 'speechmatics';
+          } & SpeechmaticsCredential)
+        | ({
+            provider: 'trieve';
+          } & TrieveCredential)
+        | ({
+            provider: 'telnyx';
+          } & any)
+        | ({
+            provider: 'cloudflare';
+          } & CloudflareCredential)
+        | ({
+            provider: 'google.calendar.oauth2-client';
+          } & GoogleCalendarOAuth2ClientCredential)
+        | ({
+            provider: 'google.calendar.oauth2-authorization';
+          } & GoogleCalendarOAuth2AuthorizationCredential)
+        | ({
+            provider: 'google.sheets.oauth2-authorization';
+          } & GoogleSheetsOAuth2AuthorizationCredential)
+        | ({
+            provider: 'slack.oauth2-authorization';
+          } & SlackOAuth2AuthorizationCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -22942,6 +25782,28 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         format: 'json',
         ...params,
       }),
+
+    /**
+     * No description
+     *
+     * @tags Voice Library
+     * @name VoiceLibraryControllerVoiceLibraryCreateSesameVoice
+     * @summary Create a new voice in the Voice Library using Sesame
+     * @request POST:/voice-library/create-sesame-voice
+     * @secure
+     */
+    voiceLibraryControllerVoiceLibraryCreateSesameVoice: (
+      data: CreateSesameVoiceDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, any>({
+        path: `/voice-library/create-sesame-voice`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
   };
   provider = {
     /**
@@ -22953,7 +25815,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetWorkflows: (
-      provider: 'make' | 'ghl' | 'google.calendar',
+      provider: 'make' | 'ghl' | 'google.calendar' | 'slack' | 'mcp',
       query?: {
         locationId?: string;
       },
@@ -22977,7 +25839,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetWorkflowTriggerHook: (
-      provider: 'make' | 'ghl' | 'google.calendar',
+      provider: 'make' | 'ghl' | 'google.calendar' | 'slack' | 'mcp',
       workflowId: string,
       params: RequestParams = {},
     ) =>
@@ -22998,7 +25860,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetLocations: (
-      provider: 'make' | 'ghl' | 'google.calendar',
+      provider: 'make' | 'ghl' | 'google.calendar' | 'slack' | 'mcp',
       params: RequestParams = {},
     ) =>
       this.request<SbcConfiguration, any>({
