@@ -225,7 +225,7 @@ export default class Vapi extends VapiEventEmitter {
       const isVideoRecordingEnabled =
         webCall?.artifactPlan?.videoRecordingEnabled ?? false;
 
-      const isVideoEnabled = webCall.transport?.assistantVideoEnabled ?? false;
+      const isVideoEnabled = webCall?.assistant?.voice?.provider === 'tavus';
 
       this.call = DailyIframe.createCallObject({
         audioSource: this.dailyCallObject.audioSource ?? true,
