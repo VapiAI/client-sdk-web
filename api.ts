@@ -537,10 +537,15 @@ export interface DeepgramTranscriber {
     | 'base-conversationalai'
     | 'base-voicemail'
     | 'base-video'
+    | 'whisper'
     | string;
   /** This is the language that will be set for the transcription. The list of languages Deepgram supports can be found here: https://developers.deepgram.com/docs/models-languages-overview */
   language?:
+    | 'ar'
+    | 'az'
+    | 'ba'
     | 'bg'
+    | 'br'
     | 'ca'
     | 'cs'
     | 'da'
@@ -558,19 +563,28 @@ export interface DeepgramTranscriber {
     | 'es-419'
     | 'es-LATAM'
     | 'et'
+    | 'eu'
     | 'fi'
     | 'fr'
     | 'fr-CA'
+    | 'ha'
+    | 'haw'
+    | 'he'
     | 'hi'
     | 'hi-Latn'
     | 'hu'
     | 'id'
+    | 'is'
     | 'it'
     | 'ja'
+    | 'jw'
+    | 'kn'
     | 'ko'
     | 'ko-KR'
+    | 'ln'
     | 'lt'
     | 'lv'
+    | 'mk'
     | 'ms'
     | 'multi'
     | 'nl'
@@ -582,6 +596,11 @@ export interface DeepgramTranscriber {
     | 'ro'
     | 'ru'
     | 'sk'
+    | 'sl'
+    | 'sn'
+    | 'so'
+    | 'sr'
+    | 'su'
     | 'sv'
     | 'sv-SE'
     | 'ta'
@@ -589,8 +608,11 @@ export interface DeepgramTranscriber {
     | 'th'
     | 'th-TH'
     | 'tr'
+    | 'tt'
     | 'uk'
+    | 'ur'
     | 'vi'
+    | 'yo'
     | 'zh'
     | 'zh-CN'
     | 'zh-HK'
@@ -1583,10 +1605,15 @@ export interface FallbackDeepgramTranscriber {
     | 'base-conversationalai'
     | 'base-voicemail'
     | 'base-video'
+    | 'whisper'
     | string;
   /** This is the language that will be set for the transcription. The list of languages Deepgram supports can be found here: https://developers.deepgram.com/docs/models-languages-overview */
   language?:
+    | 'ar'
+    | 'az'
+    | 'ba'
     | 'bg'
+    | 'br'
     | 'ca'
     | 'cs'
     | 'da'
@@ -1604,19 +1631,28 @@ export interface FallbackDeepgramTranscriber {
     | 'es-419'
     | 'es-LATAM'
     | 'et'
+    | 'eu'
     | 'fi'
     | 'fr'
     | 'fr-CA'
+    | 'ha'
+    | 'haw'
+    | 'he'
     | 'hi'
     | 'hi-Latn'
     | 'hu'
     | 'id'
+    | 'is'
     | 'it'
     | 'ja'
+    | 'jw'
+    | 'kn'
     | 'ko'
     | 'ko-KR'
+    | 'ln'
     | 'lt'
     | 'lv'
+    | 'mk'
     | 'ms'
     | 'multi'
     | 'nl'
@@ -1628,6 +1664,11 @@ export interface FallbackDeepgramTranscriber {
     | 'ro'
     | 'ru'
     | 'sk'
+    | 'sl'
+    | 'sn'
+    | 'so'
+    | 'sr'
+    | 'su'
     | 'sv'
     | 'sv-SE'
     | 'ta'
@@ -1635,8 +1676,11 @@ export interface FallbackDeepgramTranscriber {
     | 'th'
     | 'th-TH'
     | 'tr'
+    | 'tt'
     | 'uk'
+    | 'ur'
     | 'vi'
+    | 'yo'
     | 'zh'
     | 'zh-CN'
     | 'zh-HK'
@@ -2570,7 +2614,7 @@ export interface Condition {
    * This is the value you want to compare against the parameter.
    * @maxLength 1000
    */
-  value: object;
+  value: string;
 }
 
 export interface ToolMessageStart {
@@ -4476,7 +4520,9 @@ export interface OpenAIModel {
     | 'gpt-4.1-nano'
     | 'gpt-4.5-preview'
     | 'chatgpt-4o-latest'
+    | 'o3'
     | 'o3-mini'
+    | 'o4-mini'
     | 'o1-preview'
     | 'o1-preview-2024-09-12'
     | 'o1-mini'
@@ -4512,7 +4558,9 @@ export interface OpenAIModel {
     | 'gpt-4.1-nano'
     | 'gpt-4.5-preview'
     | 'chatgpt-4o-latest'
+    | 'o3'
     | 'o3-mini'
+    | 'o4-mini'
     | 'o1-preview'
     | 'o1-preview-2024-09-12'
     | 'o1-mini'
@@ -5182,6 +5230,12 @@ export interface FallbackPlan {
 }
 
 export interface AzureVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'azure';
   /** This is the provider-specific ID that will be used. */
@@ -5225,6 +5279,12 @@ export interface CartesiaExperimentalControls {
 }
 
 export interface CartesiaVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'cartesia';
   /** The ID of the particular voice you want to use. */
@@ -5263,6 +5323,12 @@ export interface CartesiaVoice {
 }
 
 export interface CustomVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. Use `custom-voice` for providers that are not natively supported. */
   provider: 'custom-voice';
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
@@ -5297,6 +5363,12 @@ export interface CustomVoice {
 }
 
 export interface DeepgramVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'deepgram';
   /**
@@ -5371,6 +5443,12 @@ export interface DeepgramVoice {
 }
 
 export interface ElevenLabsVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: '11labs';
   /** This is the provider-specific ID that will be used. Ensure the Voice is present in your 11Labs Voice Library. */
@@ -5463,6 +5541,12 @@ export interface ElevenLabsVoice {
 }
 
 export interface HumeVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'hume';
   /**
@@ -5491,6 +5575,12 @@ export interface HumeVoice {
 }
 
 export interface LMNTVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'lmnt';
   /** This is the provider-specific ID that will be used. */
@@ -5509,6 +5599,12 @@ export interface LMNTVoice {
 }
 
 export interface NeuphonicVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'neuphonic';
   /** This is the provider-specific ID that will be used. */
@@ -5537,6 +5633,12 @@ export interface NeuphonicVoice {
 }
 
 export interface OpenAIVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'openai';
   /**
@@ -5566,6 +5668,12 @@ export interface OpenAIVoice {
 }
 
 export interface PlayHTVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'playht';
   /** This is the provider-specific ID that will be used. */
@@ -5681,6 +5789,12 @@ export interface PlayHTVoice {
 }
 
 export interface RimeAIVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'rime-ai';
   /** This is the provider-specific ID that will be used. */
@@ -5807,6 +5921,12 @@ export interface RimeAIVoice {
 }
 
 export interface SmallestAIVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'smallest-ai';
   /** This is the provider-specific ID that will be used. */
@@ -5892,6 +6012,12 @@ export interface TavusConversationProperties {
 }
 
 export interface TavusVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'tavus';
   /** This is the provider-specific ID that will be used. */
@@ -5915,6 +6041,12 @@ export interface TavusVoice {
 }
 
 export interface VapiVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'vapi';
   /** The voices provided by Vapi */
@@ -5991,6 +6123,12 @@ export interface VapiVoice {
 }
 
 export interface FallbackAzureVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'azure';
   /** This is the provider-specific ID that will be used. */
@@ -6006,6 +6144,12 @@ export interface FallbackAzureVoice {
 }
 
 export interface FallbackCartesiaVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'cartesia';
   /** The ID of the particular voice you want to use. */
@@ -6042,6 +6186,12 @@ export interface FallbackCartesiaVoice {
 }
 
 export interface FallbackCustomVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. Use `custom-voice` for providers that are not natively supported. */
   provider: 'custom-voice';
   /**
@@ -6074,6 +6224,12 @@ export interface FallbackCustomVoice {
 }
 
 export interface FallbackDeepgramVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'deepgram';
   /**
@@ -6146,6 +6302,12 @@ export interface FallbackDeepgramVoice {
 }
 
 export interface FallbackElevenLabsVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: '11labs';
   /** This is the provider-specific ID that will be used. Ensure the Voice is present in your 11Labs Voice Library. */
@@ -6236,6 +6398,12 @@ export interface FallbackElevenLabsVoice {
 }
 
 export interface FallbackHumeVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'hume';
   /**
@@ -6262,6 +6430,12 @@ export interface FallbackHumeVoice {
 }
 
 export interface FallbackLMNTVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'lmnt';
   /** This is the provider-specific ID that will be used. */
@@ -6278,6 +6452,12 @@ export interface FallbackLMNTVoice {
 }
 
 export interface FallbackNeuphonicVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'neuphonic';
   /** This is the provider-specific ID that will be used. */
@@ -6304,6 +6484,12 @@ export interface FallbackNeuphonicVoice {
 }
 
 export interface FallbackOpenAIVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'openai';
   /**
@@ -6331,6 +6517,12 @@ export interface FallbackOpenAIVoice {
 }
 
 export interface FallbackPlayHTVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'playht';
   /** This is the provider-specific ID that will be used. */
@@ -6444,6 +6636,12 @@ export interface FallbackPlayHTVoice {
 }
 
 export interface FallbackRimeAIVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'rime-ai';
   /** This is the provider-specific ID that will be used. */
@@ -6568,6 +6766,12 @@ export interface FallbackRimeAIVoice {
 }
 
 export interface FallbackSmallestAIVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'smallest-ai';
   /** This is the provider-specific ID that will be used. */
@@ -6610,6 +6814,12 @@ export interface FallbackSmallestAIVoice {
 }
 
 export interface FallbackTavusVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'tavus';
   /** This is the provider-specific ID that will be used. */
@@ -6631,6 +6841,12 @@ export interface FallbackTavusVoice {
 }
 
 export interface FallbackVapiVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: 'vapi';
   /** The voices provided by Vapi */
@@ -7047,7 +7263,7 @@ export interface CreateCloudflareCredentialDTO {
 }
 
 export interface OAuth2AuthenticationPlan {
-  type: 'oauth2';
+  type: 'oauth2' | 'aws-sts';
   /** This is the OAuth2 URL. */
   url: string;
   /** This is the OAuth2 client ID. */
@@ -8406,6 +8622,7 @@ export interface CreateAssistantDTO {
     | 'transcript'
     | 'tool-calls'
     | 'tool-calls-result'
+    | 'tool.completed'
     | 'transfer-update'
     | 'user-interrupted'
     | 'voice-input'
@@ -8811,6 +9028,7 @@ export interface AssistantOverrides {
     | 'transcript'
     | 'tool-calls'
     | 'tool-calls-result'
+    | 'tool.completed'
     | 'transfer-update'
     | 'user-interrupted'
     | 'voice-input'
@@ -9392,6 +9610,8 @@ export interface Call {
     | 'vonage-failed-to-connect-call'
     | 'vonage-completed'
     | 'phone-call-provider-bypass-enabled-but-no-call-received'
+    | 'call.in-progress.error-providerfault-transport-never-connected'
+    | 'call.in-progress.error-vapifault-worker-not-available'
     | 'call.in-progress.error-vapifault-transport-never-connected'
     | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
     | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
@@ -9780,6 +10000,7 @@ export interface Call {
     | 'exceeded-max-duration'
     | 'manually-canceled'
     | 'phone-call-provider-closed-websocket'
+    | 'call.forwarding.operator-busy'
     | 'silence-timed-out'
     | 'call.in-progress.error-sip-telephony-provider-failed-to-connect-call'
     | 'call.ringing.hook-executed-say'
@@ -10271,6 +10492,7 @@ export interface Assistant {
     | 'transcript'
     | 'tool-calls'
     | 'tool-calls-result'
+    | 'tool.completed'
     | 'transfer-update'
     | 'user-interrupted'
     | 'voice-input'
@@ -10695,6 +10917,7 @@ export interface UpdateAssistantDTO {
     | 'transcript'
     | 'tool-calls'
     | 'tool-calls-result'
+    | 'tool.completed'
     | 'transfer-update'
     | 'user-interrupted'
     | 'voice-input'
@@ -15015,6 +15238,8 @@ export interface Org {
   stripeSubscriptionStatus?: string;
   /** This is the plan for the org. */
   plan?: OrgPlan;
+  /** This is the secret key used for signing JWT tokens for the org. */
+  jwtSecret?: string;
   /**
    * This is the name of the org. This is just for your own reference.
    * @maxLength 40
@@ -15134,6 +15359,11 @@ export interface InviteUserDTO {
 export interface UpdateUserRoleDTO {
   userId: string;
   role: 'admin' | 'editor' | 'viewer';
+}
+
+export interface JwtResponse {
+  accessToken: string;
+  aud: object;
 }
 
 export interface TokenRestrictions {
@@ -18105,6 +18335,8 @@ export interface ServerMessageEndOfCallReport {
     | 'vonage-failed-to-connect-call'
     | 'vonage-completed'
     | 'phone-call-provider-bypass-enabled-but-no-call-received'
+    | 'call.in-progress.error-providerfault-transport-never-connected'
+    | 'call.in-progress.error-vapifault-worker-not-available'
     | 'call.in-progress.error-vapifault-transport-never-connected'
     | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
     | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
@@ -18493,6 +18725,7 @@ export interface ServerMessageEndOfCallReport {
     | 'exceeded-max-duration'
     | 'manually-canceled'
     | 'phone-call-provider-closed-websocket'
+    | 'call.forwarding.operator-busy'
     | 'silence-timed-out'
     | 'call.in-progress.error-sip-telephony-provider-failed-to-connect-call'
     | 'call.ringing.hook-executed-say'
@@ -18957,6 +19190,8 @@ export interface ServerMessageStatusUpdate {
     | 'vonage-failed-to-connect-call'
     | 'vonage-completed'
     | 'phone-call-provider-bypass-enabled-but-no-call-received'
+    | 'call.in-progress.error-providerfault-transport-never-connected'
+    | 'call.in-progress.error-vapifault-worker-not-available'
     | 'call.in-progress.error-vapifault-transport-never-connected'
     | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
     | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
@@ -19345,6 +19580,7 @@ export interface ServerMessageStatusUpdate {
     | 'exceeded-max-duration'
     | 'manually-canceled'
     | 'phone-call-provider-closed-websocket'
+    | 'call.forwarding.operator-busy'
     | 'silence-timed-out'
     | 'call.in-progress.error-sip-telephony-provider-failed-to-connect-call'
     | 'call.ringing.hook-executed-say'
@@ -20001,6 +20237,8 @@ export interface ToolCallResult {
    * 3. a response generated by the model, if neither exist
    */
   error?: string;
+  /** This is optional metadata for the tool call result to be sent to the client. */
+  metadata?: object;
 }
 
 export interface ServerMessageResponseToolCalls {
@@ -20197,6 +20435,8 @@ export interface ToolCallResultMessage {
   time: number;
   /** The number of seconds from the start of the conversation. */
   secondsFromStart: number;
+  /** The metadata for the tool call result. */
+  metadata?: object;
 }
 
 export interface TransportCost {
@@ -24077,6 +24317,24 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         type: ContentType.Json,
         ...params,
       }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs
+     * @name OrgControllerOrgToken
+     * @summary Generate User Org JWT
+     * @request GET:/org/{id}/auth
+     * @secure
+     */
+    orgControllerOrgToken: (id: string, params: RequestParams = {}) =>
+      this.request<JwtResponse, any>({
+        path: `/org/${id}/auth`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
   };
   token = {
     /**
@@ -24523,7 +24781,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & GoogleSheetsOAuth2AuthorizationCredential)
         | ({
             provider: 'slack.oauth2-authorization';
-          } & SlackOAuth2AuthorizationCredential),
+          } & SlackOAuth2AuthorizationCredential)
+        | ({
+            provider: 'aws';
+          } & any),
         any
       >({
         path: `/credential`,
@@ -24741,6 +25002,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           | ({
               provider: 'slack.oauth2-authorization';
             } & SlackOAuth2AuthorizationCredential)
+          | ({
+              provider: 'aws';
+            } & any)
         )[],
         any
       >({
@@ -24906,7 +25170,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & GoogleSheetsOAuth2AuthorizationCredential)
         | ({
             provider: 'slack.oauth2-authorization';
-          } & SlackOAuth2AuthorizationCredential),
+          } & SlackOAuth2AuthorizationCredential)
+        | ({
+            provider: 'aws';
+          } & any),
         any
       >({
         path: `/credential/${id}`,
@@ -25191,7 +25458,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & GoogleSheetsOAuth2AuthorizationCredential)
         | ({
             provider: 'slack.oauth2-authorization';
-          } & SlackOAuth2AuthorizationCredential),
+          } & SlackOAuth2AuthorizationCredential)
+        | ({
+            provider: 'aws';
+          } & any),
         any
       >({
         path: `/credential/${id}`,
@@ -25357,7 +25627,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & GoogleSheetsOAuth2AuthorizationCredential)
         | ({
             provider: 'slack.oauth2-authorization';
-          } & SlackOAuth2AuthorizationCredential),
+          } & SlackOAuth2AuthorizationCredential)
+        | ({
+            provider: 'aws';
+          } & any),
         any
       >({
         path: `/credential/${id}`,
