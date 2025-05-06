@@ -1,6 +1,6 @@
 {
   "name": "@vapi-ai/web",
-  "version": "2.2.7",
+  "version": "2.2.8",
   "description": "",
   "main": "dist/vapi.js",
   "types": "dist/vapi.d.ts",
@@ -9,7 +9,8 @@
     "build": "tsc && tsc --declaration",
     "start": "npm run generate-api && npm run build && node dist/vapi.js",
     "generate-api": "./generate-api.sh",
-    "update": "./update.sh"
+    "update": "./update.sh",
+    "generate-local-build": "npm install && npm run build && npm pack"
   },
   "repository": {
     "type": "git",
