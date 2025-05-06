@@ -184,19 +184,53 @@ export interface OpenAIMessage {
   role: 'assistant' | 'function' | 'user' | 'system' | 'tool';
 }
 
+export interface Mono {
+  /** This is the combined recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`. */
+  combinedUrl?: string;
+  /** This is the mono recording url for the assistant. To enable, set `assistant.artifactPlan.recordingEnabled`. */
+  assistantUrl?: string;
+  /** This is the mono recording url for the customer. To enable, set `assistant.artifactPlan.recordingEnabled`. */
+  customerUrl?: string;
+}
+
+export interface Recording {
+  /** This is the stereo recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`. */
+  stereoUrl?: string;
+  /** This is the video recording url for the call. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. */
+  videoUrl?: string;
+  /** This is video recording start delay in ms. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. This can be used to align the playback of the recording with artifact.messages timestamps. */
+  videoRecordingStartDelaySeconds?: number;
+  /** This is the mono recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`. */
+  mono?: Mono;
+}
+
 export interface Artifact {
   /** These are the messages that were spoken during the call. */
   messages?: (UserMessage | SystemMessage | BotMessage | ToolCallMessage | ToolCallResultMessage)[];
   /** These are the messages that were spoken during the call, formatted for OpenAI. */
   messagesOpenAIFormatted?: OpenAIMessage[];
-  /** This is the recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`. */
+  /**
+   * This is the recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
+   * @deprecated
+   */
   recordingUrl?: string;
-  /** This is the stereo recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`. */
+  /**
+   * This is the stereo recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
+   * @deprecated
+   */
   stereoRecordingUrl?: string;
-  /** This is video recording url for the call. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. */
+  /**
+   * This is video recording url for the call. To enable, set `assistant.artifactPlan.videoRecordingEnabled`.
+   * @deprecated
+   */
   videoRecordingUrl?: string;
-  /** This is video recording start delay in ms. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. This can be used to align the playback of the recording with artifact.messages timestamps. */
+  /**
+   * This is video recording start delay in ms. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. This can be used to align the playback of the recording with artifact.messages timestamps.
+   * @deprecated
+   */
   videoRecordingStartDelaySeconds?: number;
+  /** This is the recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`. */
+  recording?: Recording;
   /** This is the transcript of the call. This is derived from `artifact.messages` but provided for convenience. */
   transcript?: string;
   /** This is the packet capture url for the call. This is only available for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`. */
@@ -1221,6 +1255,7 @@ export interface GoogleTranscriber {
   provider: 'google';
   /** This is the model that will be used for the transcription. */
   model?:
+    | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
     | 'gemini-2.0-flash'
@@ -2279,6 +2314,7 @@ export interface FallbackGoogleTranscriber {
   provider: 'google';
   /** This is the model that will be used for the transcription. */
   model?:
+    | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
     | 'gemini-2.0-flash'
@@ -3264,6 +3300,20 @@ export interface TransferDestinationStep {
   description?: string;
 }
 
+export interface TransferFallbackPlan {
+  /** This is the message the assistant will deliver to the customer if the transfer fails. */
+  message: string | CustomMessage;
+  /**
+   * This controls what happens after delivering the failure message to the customer.
+   * - true: End the call after delivering the failure message (default)
+   * - false: Keep the assistant on the call to continue handling the customer's request
+   *
+   * @default true
+   * @default true
+   */
+  endCallEnabled?: boolean;
+}
+
 export interface SummaryPlan {
   /**
    * These are the messages used to generate the summary.
@@ -3320,6 +3370,7 @@ export interface TransferPlan {
    * - `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`: The assistant dials the destination, waits for the operator to speak, delivers the `message` to the destination party, and then connects the customer.
    * - `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary`: The assistant dials the destination, waits for the operator to speak, provides a summary of the call to the destination party, and then connects the customer.
    * - `warm-transfer-twiml`: The assistant dials the destination, executes the twiml instructions on the destination call leg, connects the customer, and leaves the call.
+   * - `warm-transfer-experimental`: The assistant puts the customer on hold, dials the destination, and if the destination answers (and is human), delivers a message or summary before connecting the customer. If the destination is unreachable or not human (e.g., with voicemail detection), the assistant delivers the `fallbackMessage` to the customer and optionally ends the call.
    *
    * @default 'blind-transfer'
    */
@@ -3330,12 +3381,13 @@ export interface TransferPlan {
     | 'warm-transfer-say-summary'
     | 'warm-transfer-twiml'
     | 'warm-transfer-wait-for-operator-to-speak-first-and-then-say-message'
-    | 'warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary';
+    | 'warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary'
+    | 'warm-transfer-experimental';
   /**
    * This is the message the assistant will deliver to the destination party before connecting the customer.
    *
    * Usage:
-   * - Used only when `mode` is `blind-transfer-add-summary-to-sip-header`, `warm-transfer-say-message` or `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`.
+   * - Used only when `mode` is `blind-transfer-add-summary-to-sip-header`, `warm-transfer-say-message`, `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`, or `warm-transfer-experimental`.
    */
   message?: string | CustomMessage;
   /**
@@ -3346,6 +3398,17 @@ export interface TransferPlan {
    * @default "refer"
    */
   sipVerb?: 'refer' | 'bye' | 'dial';
+  /**
+   * This is the URL to an audio file played while the customer is on hold during transfer.
+   *
+   * Usage:
+   * - Used only when `mode` is `warm-transfer-experimental`.
+   * - Used when transferring calls to play hold audio for the customer.
+   * - Must be a publicly accessible URL to an audio file.
+   * - Supported formats: MP3 and WAV.
+   * - If not provided, the default hold audio will be used.
+   */
+  holdAudioUrl?: string;
   /**
    * This is the TwiML instructions to execute on the destination call leg before connecting the customer.
    *
@@ -3367,9 +3430,23 @@ export interface TransferPlan {
    * This is the plan for generating a summary of the call to present to the destination party.
    *
    * Usage:
-   * - Used only when `mode` is `blind-transfer-add-summary-to-sip-header` or `warm-transfer-say-summary` or `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary`.
+   * - Used only when `mode` is `blind-transfer-add-summary-to-sip-header` or `warm-transfer-say-summary` or `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary` or `warm-transfer-experimental`.
    */
   summaryPlan?: SummaryPlan;
+  /**
+   * This flag includes the sipHeaders from above in the refer to sip uri as url encoded query params.
+   *
+   * @default false
+   */
+  sipHeadersInReferToEnabled?: boolean;
+  /**
+   * This configures the fallback plan when the transfer fails (destination unreachable, busy, or not human).
+   *
+   * Usage:
+   * - Used only when `mode` is `warm-transfer-experimental`.
+   * - If not provided when using `warm-transfer-experimental`, a default message will be used.
+   */
+  fallbackPlan?: TransferFallbackPlan;
 }
 
 export interface TransferDestinationNumber {
@@ -3563,6 +3640,7 @@ export interface KnowledgeBase {
   provider: 'google';
   /** The model to use for the knowledge base */
   model?:
+    | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
     | 'gemini-2.0-flash'
@@ -4289,6 +4367,7 @@ export interface GoogleModel {
   knowledgeBaseId?: string;
   /** This is the Google model that will be used. */
   model:
+    | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
     | 'gemini-2.0-flash'
@@ -4815,6 +4894,125 @@ export interface TogetherAIModel {
   numFastTurns?: number;
 }
 
+export interface Start {
+  type: 'start';
+  /** @maxLength 80 */
+  name: string;
+  /** This is for metadata you want to store on the task. */
+  metadata?: object;
+}
+
+export interface Assistant {
+  type: 'assistant';
+  assistantId: string;
+  /** @maxLength 80 */
+  name: string;
+  /** This is for metadata you want to store on the task. */
+  metadata?: object;
+}
+
+export interface Say {
+  type: 'say';
+  /** @maxLength 1000 */
+  exact?: string;
+  /** @maxLength 1000 */
+  prompt?: string;
+  /** @maxLength 80 */
+  name: string;
+  /** This is for metadata you want to store on the task. */
+  metadata?: object;
+}
+
+export interface SayHook {
+  type: 'say';
+  /** This is for metadata you want to store on the task. */
+  metadata?: object;
+  /** @maxLength 1000 */
+  exact?: string;
+  /** @maxLength 1000 */
+  prompt?: string;
+}
+
+export interface Hook {
+  /** @maxLength 80 */
+  on: 'task.start' | 'task.output.confirmation' | 'task.delayed';
+  do: SayHook[];
+}
+
+export interface Gather {
+  type: 'gather';
+  output: JsonSchema;
+  /** This is whether or not the workflow should read back the gathered data to the user, and ask about its correctness. */
+  confirmContent?: boolean;
+  /**
+   * This is a list of hooks for a task.
+   * Each hook is a list of tasks to run on a trigger (such as on start, on failure, etc).
+   * Only Say is supported for now.
+   */
+  hooks?: Hook[];
+  /** This is the number of times we should try to gather the information from the user before we failover to the fail path. An example of this would be a user refusing to give their phone number for privacy reasons, and then going down a different path on account of this */
+  maxRetries?: number;
+  /** This is a liquid templating string. On the first call to Gather, the template will be filled out with variables from the context, and will be spoken verbatim to the user. An example would be "Base on your zipcode, it looks like you could be in one of these counties: {{ counties | join: ", " }}. Which one do you live in?" */
+  literalTemplate?: string;
+  /** @maxLength 80 */
+  name: string;
+  /** This is for metadata you want to store on the task. */
+  metadata?: object;
+}
+
+export interface ApiRequest {
+  type: 'apiRequest';
+  method: 'POST' | 'GET';
+  /** Api endpoint to send requests to. */
+  url: string;
+  /**
+   * These are the custom headers to include in the Api Request sent.
+   *
+   * Each key-value pair represents a header name and its value.
+   */
+  headers?: JsonSchema;
+  /**
+   * This defined the JSON body of your Api Request. For example, if `body_schema`
+   * included "my_field": "my_gather_statement.user_age", then the json body sent to the server would have that particular value assign to it.
+   * Right now, only data from gather statements are supported.
+   */
+  body?: JsonSchema;
+  /**
+   * This is the mode of the Api Request.
+   * We only support BLOCKING and BACKGROUND for now.
+   */
+  mode: 'blocking' | 'background';
+  /**
+   * This is a list of hooks for a task.
+   * Each hook is a list of tasks to run on a trigger (such as on start, on failure, etc).
+   * Only Say is supported for now.
+   */
+  hooks?: Hook[];
+  /** This is the schema for the outputs of the Api Request. */
+  output?: JsonSchema;
+  /** @maxLength 80 */
+  name: string;
+  /** This is for metadata you want to store on the task. */
+  metadata?: object;
+}
+
+export interface Hangup {
+  type: 'hangup';
+  /** @maxLength 80 */
+  name: string;
+  /** This is for metadata you want to store on the task. */
+  metadata?: object;
+}
+
+export interface Transfer {
+  type: 'transfer';
+  destination: object;
+  /** @maxLength 80 */
+  name: string;
+  /** This is for metadata you want to store on the task. */
+  metadata?: object;
+}
+
 export interface AIEdgeCondition {
   type: 'ai';
   /**
@@ -4826,7 +5024,7 @@ export interface AIEdgeCondition {
 
 export interface LogicEdgeCondition {
   type: 'logic';
-  /** @maxLength 100 */
+  /** @maxLength 1000 */
   liquid: string;
 }
 
@@ -4844,8 +5042,8 @@ export interface Edge {
   metadata?: object;
 }
 
-export interface Workflow {
-  nodes: (Say | Gather | ApiRequest | Hangup | Transfer)[];
+export interface WorkflowUserEditable {
+  nodes: (Start | Assistant | Say | Gather | ApiRequest | Hangup | Transfer)[];
   /** These are the options for the workflow's LLM. */
   model?:
     | AnthropicModel
@@ -4862,12 +5060,6 @@ export interface Workflow {
     | PerplexityAIModel
     | TogetherAIModel
     | XaiModel;
-  id: string;
-  orgId: string;
-  /** @format date-time */
-  createdAt: string;
-  /** @format date-time */
-  updatedAt: string;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
@@ -4909,7 +5101,7 @@ export interface VapiModel {
   /** This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead. */
   workflowId?: string;
   /** This is the workflow that will be used for the call. To use an existing workflow, use `workflowId` instead. */
-  workflow?: Workflow;
+  workflow?: WorkflowUserEditable;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
@@ -7714,7 +7906,11 @@ export interface CreateTogetherAICredentialDTO {
 export interface CreateTwilioCredentialDTO {
   provider: 'twilio';
   /** This is not returned in the API. */
-  authToken: string;
+  authToken?: string;
+  /** This is not returned in the API. */
+  apiKey?: string;
+  /** This is not returned in the API. */
+  apiSecret?: string;
   accountSid: string;
   /**
    * This is the name of credential. This is just for your reference.
@@ -7818,32 +8014,135 @@ export interface TransferAssistantHookAction {
   destination?: TransferDestinationNumber | TransferDestinationSip;
 }
 
+export interface FunctionCallAssistantHookAction {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "function" for Function tool. */
+  type: 'function';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface AssistantHookFilter {
+  /**
+   * This is the type of filter - currently only "oneOf" is supported
+   * @maxLength 1000
+   */
+  type: 'oneOf';
+  /**
+   * This is the key to filter on (e.g. "call.endedReason")
+   * @maxLength 1000
+   */
+  key: string;
+  /** This is the array of possible values to match against */
+  oneOf: string[];
+}
+
+export interface AssistantHookCallEnding {
+  /**
+   * This is the event that triggers this hook
+   * @maxLength 1000
+   */
+  on: 'call.ending';
+  /** This is the set of actions to perform when the hook triggers */
+  do: (TransferAssistantHookAction | FunctionCallAssistantHookAction)[];
+  /** This is the set of filters that must match for the hook to trigger */
+  filters?: AssistantHookFilter[];
+}
+
+export interface VoicemailDetectionBackoffPlan {
+  /**
+   * This is the number of seconds to wait before starting the first retry attempt.
+   * @min 0
+   * @default 5
+   */
+  startAtSeconds?: number;
+  /**
+   * This is the interval in seconds between retry attempts.
+   * @min 2.5
+   * @default 5
+   */
+  frequencySeconds?: number;
+  /**
+   * This is the maximum number of retry attempts before giving up.
+   * @min 1
+   * @max 10
+   * @default 6
+   */
+  maxRetries?: number;
+}
+
 export interface GoogleVoicemailDetectionPlan {
+  /**
+   * This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
+   *
+   * - If we detect a voicemail beep before this, we will speak the message at that point.
+   *
+   * - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
+   *
+   * @default 30
+   * @min 0
+   * @max 60
+   * @min 0
+   * @max 30
+   * @default 30
+   */
+  beepMaxAwaitSeconds?: number;
   /** This is the provider to use for voicemail detection. */
   provider: 'google';
-  /**
-   * This is how long should we listen in order to determine if we were sent to voicemail or not?
-   *
-   * @default 15
-   * @min 5
-   * @max 60
-   * @default 25
-   */
-  voicemailExpectedDurationSeconds: number;
+  /** This is the backoff plan for the voicemail detection. */
+  backoffPlan?: VoicemailDetectionBackoffPlan;
 }
 
 export interface OpenAIVoicemailDetectionPlan {
+  /**
+   * This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
+   *
+   * - If we detect a voicemail beep before this, we will speak the message at that point.
+   *
+   * - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
+   *
+   * @default 30
+   * @min 0
+   * @max 60
+   * @min 0
+   * @max 30
+   * @default 30
+   */
+  beepMaxAwaitSeconds?: number;
   /** This is the provider to use for voicemail detection. */
   provider: 'openai';
-  /**
-   * This is how long should we listen in order to determine if we were sent to voicemail or not?
-   *
-   * @default 15
-   * @min 5
-   * @max 60
-   * @default 25
-   */
-  voicemailExpectedDurationSeconds: number;
+  /** This is the backoff plan for the voicemail detection. */
+  backoffPlan?: VoicemailDetectionBackoffPlan;
 }
 
 export interface TwilioVoicemailDetectionPlan {
@@ -7927,6 +8226,28 @@ export interface TwilioVoicemailDetectionPlan {
    * @max 10000
    */
   machineDetectionSilenceTimeout?: number;
+}
+
+export interface VapiVoicemailDetectionPlan {
+  /**
+   * This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
+   *
+   * - If we detect a voicemail beep before this, we will speak the message at that point.
+   *
+   * - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
+   *
+   * @default 30
+   * @min 0
+   * @max 60
+   * @min 0
+   * @max 30
+   * @default 30
+   */
+  beepMaxAwaitSeconds?: number;
+  /** This is the provider to use for voicemail detection. */
+  provider: 'vapi';
+  /** This is the backoff plan for the voicemail detection. */
+  backoffPlan?: VoicemailDetectionBackoffPlan;
 }
 
 export interface CompliancePlan {
@@ -8341,7 +8662,7 @@ export interface StartSpeakingPlan {
    * @deprecated
    * @example false
    */
-  smartEndpointingEnabled?: object;
+  smartEndpointingEnabled?: boolean | 'livekit';
   /**
    * This is the plan for smart endpointing. Pick between Vapi smart endpointing or LiveKit smart endpointing (or nothing). We strongly recommend using livekit endpointing when working in English. LiveKit endpointing is not supported in other languages, yet.
    *
@@ -8469,35 +8790,6 @@ export interface MonitorPlan {
   controlEnabled?: boolean;
 }
 
-export interface AssistantHookFilter {
-  /**
-   * This is the type of filter - currently only "oneOf" is supported
-   * @maxLength 1000
-   */
-  type: 'oneOf';
-  /**
-   * This is the key to filter on (e.g. "call.endedReason")
-   * @maxLength 1000
-   */
-  key: string;
-  /** This is the array of possible values to match against */
-  oneOf: string[];
-}
-
-export type AssistantHookActionBase = object;
-
-export interface AssistantHooks {
-  /**
-   * This is the event that triggers this hook
-   * @maxLength 1000
-   */
-  on: 'call.ending';
-  /** This is the set of filters that must match for the hook to trigger */
-  filters?: AssistantHookFilter[];
-  /** This is the set of actions to perform when the hook triggers */
-  do: AssistantHookActionBase[];
-}
-
 export interface KeypadInputPlan {
   /**
    * This keeps track of whether the user has enabled keypad input.
@@ -8604,51 +8896,10 @@ export interface CreateAssistantDTO {
   voicemailDetection?:
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
-    | TwilioVoicemailDetectionPlan;
-  /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
-   */
-  clientMessages?:
-    | 'conversation-update'
-    | 'function-call'
-    | 'function-call-result'
-    | 'hang'
-    | 'language-changed'
-    | 'metadata'
-    | 'model-output'
-    | 'speech-update'
-    | 'status-update'
-    | 'transcript'
-    | 'tool-calls'
-    | 'tool-calls-result'
-    | 'tool.completed'
-    | 'transfer-update'
-    | 'user-interrupted'
-    | 'voice-input'
-    | 'workflow.node.started';
-  /**
-   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
-   */
-  serverMessages?:
-    | 'conversation-update'
-    | 'end-of-call-report'
-    | 'function-call'
-    | 'hang'
-    | 'language-changed'
-    | 'language-change-detected'
-    | 'model-output'
-    | 'phone-call-control'
-    | 'speech-update'
-    | 'status-update'
-    | 'transcript'
-    | "transcript[transcriptType='final']"
-    | 'tool-calls'
-    | 'transfer-destination-request'
-    | 'transfer-update'
-    | 'user-interrupted'
-    | 'voice-input';
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  clientMessages: object[][];
+  serverMessages: object[][];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    *
@@ -8842,6 +9093,8 @@ export interface CreateAssistantDTO {
         provider: 'slack.oauth2-authorization';
       } & CreateSlackOAuth2AuthorizationCredentialDTO)
   )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: AssistantHookCallEnding[];
   /**
    * This is the name of the assistant.
    *
@@ -8924,8 +9177,6 @@ export interface CreateAssistantDTO {
    * 3. org.serverUrl
    */
   server?: Server;
-  /** This is a set of actions that will be performed on certain events. */
-  hooks?: AssistantHooks[];
   keypadInputPlan?: KeypadInputPlan;
 }
 
@@ -9010,51 +9261,10 @@ export interface AssistantOverrides {
   voicemailDetection?:
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
-    | TwilioVoicemailDetectionPlan;
-  /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
-   */
-  clientMessages?:
-    | 'conversation-update'
-    | 'function-call'
-    | 'function-call-result'
-    | 'hang'
-    | 'language-changed'
-    | 'metadata'
-    | 'model-output'
-    | 'speech-update'
-    | 'status-update'
-    | 'transcript'
-    | 'tool-calls'
-    | 'tool-calls-result'
-    | 'tool.completed'
-    | 'transfer-update'
-    | 'user-interrupted'
-    | 'voice-input'
-    | 'workflow.node.started';
-  /**
-   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
-   */
-  serverMessages?:
-    | 'conversation-update'
-    | 'end-of-call-report'
-    | 'function-call'
-    | 'hang'
-    | 'language-changed'
-    | 'language-change-detected'
-    | 'model-output'
-    | 'phone-call-control'
-    | 'speech-update'
-    | 'status-update'
-    | 'transcript'
-    | "transcript[transcriptType='final']"
-    | 'tool-calls'
-    | 'transfer-destination-request'
-    | 'transfer-update'
-    | 'user-interrupted'
-    | 'voice-input';
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  clientMessages: object[][];
+  serverMessages: object[][];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    *
@@ -9248,6 +9458,8 @@ export interface AssistantOverrides {
         provider: 'slack.oauth2-authorization';
       } & CreateSlackOAuth2AuthorizationCredentialDTO)
   )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: AssistantHookCallEnding[];
   /**
    * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
    * This uses LiquidJS syntax. https://liquidjs.com/tutorials/intro-to-liquid.html
@@ -9340,8 +9552,6 @@ export interface AssistantOverrides {
    * 3. org.serverUrl
    */
   server?: Server;
-  /** This is a set of actions that will be performed on certain events. */
-  hooks?: AssistantHooks[];
   keypadInputPlan?: KeypadInputPlan;
 }
 
@@ -9377,6 +9587,46 @@ export interface CreateSquadDTO {
   membersOverrides?: AssistantOverrides;
 }
 
+export interface CreateWorkflowDTO {
+  nodes: (Start | Assistant | Say | Gather | ApiRequest | Hangup | Transfer)[];
+  /** These are the options for the workflow's LLM. */
+  model?:
+    | AnthropicModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel;
+  /** @maxLength 80 */
+  name: string;
+  edges: Edge[];
+}
+
+export interface TransferPhoneNumberHookAction {
+  /** This is the type of action - must be "transfer" */
+  type: 'transfer';
+  /** This is the destination details for the transfer - can be a phone number or SIP URI */
+  destination?: TransferDestinationNumber | TransferDestinationSip;
+}
+
+export interface SayPhoneNumberHookAction {
+  /** This is the type of action - must be "say" */
+  type: 'say';
+  /**
+   * This is the message to say
+   * @maxLength 4000
+   */
+  exact: string;
+}
+
 export interface PhoneNumberHookCallRinging {
   /**
    * This is the event to trigger the hook on
@@ -9384,7 +9634,7 @@ export interface PhoneNumberHookCallRinging {
    */
   on: 'call.ringing';
   /** This is the set of actions to perform when the hook triggers */
-  do: any[];
+  do: (TransferPhoneNumberHookAction | SayPhoneNumberHookAction)[];
 }
 
 export interface ImportTwilioPhoneNumberDTO {
@@ -9400,6 +9650,16 @@ export interface ImportTwilioPhoneNumberDTO {
   /** This is the hooks that will be used for incoming calls to this phone number. */
   hooks?: PhoneNumberHookCallRinging[];
   /**
+   * Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
+   *
+   * If set to `false`, Vapi will not update the Twilio messaging URL, leaving it as is.
+   * If `true` or omitted (default), Vapi will configure both the voice and messaging URLs.
+   *
+   * @default true
+   * @default true
+   */
+  smsEnabled?: boolean;
+  /**
    * These are the digits of the phone number you own on your Twilio.
    * @deprecated
    */
@@ -9407,7 +9667,11 @@ export interface ImportTwilioPhoneNumberDTO {
   /** This is your Twilio Account SID that will be used to handle this phone number. */
   twilioAccountSid: string;
   /** This is the Twilio Auth Token that will be used to handle this phone number. */
-  twilioAuthToken: string;
+  twilioAuthToken?: string;
+  /** This is the Twilio API Key that will be used to handle this phone number. If AuthToken is provided, this will be ignored. */
+  twilioApiKey?: string;
+  /** This is the Twilio API Secret that will be used to handle this phone number. If AuthToken is provided, this will be ignored. */
+  twilioApiSecret?: string;
   /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
@@ -9416,13 +9680,19 @@ export interface ImportTwilioPhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -9504,6 +9774,7 @@ export interface Call {
     | VapiCost
     | VoicemailDetectionCost
     | AnalysisCost
+    | KnowledgeBaseCost
   )[];
   messages?: (UserMessage | SystemMessage | BotMessage | ToolCallMessage | ToolCallResultMessage)[];
   /**
@@ -10053,16 +10324,56 @@ export interface Call {
    * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
    */
   phoneCallProviderId?: string;
-  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
+  /**
+   * This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   assistantId?: string;
-  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  /**
+   * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   assistant?: CreateAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
-  /** This is the squad that will be used for the call. To use a transient squad, use `squad` instead. */
+  /**
+   * This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   squadId?: string;
-  /** This is a squad that will be used for the call. To use an existing squad, use `squadId` instead. */
+  /**
+   * This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   squad?: CreateSquadDTO;
+  /**
+   * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
+  workflowId?: string;
+  /**
+   * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
+  workflow?: CreateWorkflowDTO;
   /**
    * This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
    *
@@ -10126,16 +10437,56 @@ export interface CreateCallDTO {
   schedulePlan?: SchedulePlan;
   /** This is the transport of the call. */
   transport?: object;
-  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
+  /**
+   * This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   assistantId?: string;
-  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  /**
+   * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   assistant?: CreateAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
-  /** This is the squad that will be used for the call. To use a transient squad, use `squad` instead. */
+  /**
+   * This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   squadId?: string;
-  /** This is a squad that will be used for the call. To use an existing squad, use `squadId` instead. */
+  /**
+   * This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   squad?: CreateSquadDTO;
+  /**
+   * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
+  workflowId?: string;
+  /**
+   * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
+  workflow?: CreateWorkflowDTO;
   /**
    * This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
    *
@@ -10189,16 +10540,56 @@ export interface CreateOutboundCallDTO {
   schedulePlan?: SchedulePlan;
   /** This is the transport of the call. */
   transport?: object;
-  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
+  /**
+   * This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   assistantId?: string;
-  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  /**
+   * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   assistant?: CreateAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
-  /** This is the squad that will be used for the call. To use a transient squad, use `squad` instead. */
+  /**
+   * This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   squadId?: string;
-  /** This is a squad that will be used for the call. To use an existing squad, use `squadId` instead. */
+  /**
+   * This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   squad?: CreateSquadDTO;
+  /**
+   * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
+  workflowId?: string;
+  /**
+   * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
+  workflow?: CreateWorkflowDTO;
   /**
    * This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
    *
@@ -10226,16 +10617,56 @@ export interface CreateOutboundCallDTO {
 }
 
 export interface CreateWebCallDTO {
-  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
+  /**
+   * This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   assistantId?: string;
-  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  /**
+   * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   assistant?: CreateAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
-  /** This is the squad that will be used for the call. To use a transient squad, use `squad` instead. */
+  /**
+   * This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   squadId?: string;
-  /** This is a squad that will be used for the call. To use an existing squad, use `squadId` instead. */
+  /**
+   * This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
   squad?: CreateSquadDTO;
+  /**
+   * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
+  workflowId?: string;
+  /**
+   * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+   * Usage:
+   *     To start the call with Assistant as entrypoint, use assistant or assistantId
+   *     To start the call with Squad as entrypoint, use squad or squadId
+   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   */
+  workflow?: CreateWorkflowDTO;
 }
 
 export interface UpdateCallDTO {
@@ -10262,560 +10693,21 @@ export interface ChatCompletionMessageWorkflows {
   metadata?: ChatCompletionMessageMetadata;
 }
 
-export interface Say {
-  type: 'say';
-  /** @maxLength 1000 */
-  exact?: string;
-  /** @maxLength 1000 */
-  prompt?: string;
-  /** @maxLength 80 */
-  name: string;
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-}
-
-export interface SayHook {
-  type: 'say';
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-  /** @maxLength 1000 */
-  exact?: string;
-  /** @maxLength 1000 */
-  prompt?: string;
-}
-
-export interface Hook {
-  /** @maxLength 80 */
-  on: 'task.start' | 'task.output.confirmation' | 'task.delayed';
-  do: SayHook[];
-}
-
-export interface Gather {
-  type: 'gather';
-  output: JsonSchema;
-  /** This is whether or not the workflow should read back the gathered data to the user, and ask about its correctness. */
-  confirmContent?: boolean;
-  /**
-   * This is a list of hooks for a task.
-   * Each hook is a list of tasks to run on a trigger (such as on start, on failure, etc).
-   * Only Say is supported for now.
-   */
-  hooks?: Hook[];
-  /** This is the number of times we should try to gather the information from the user before we failover to the fail path. An example of this would be a user refusing to give their phone number for privacy reasons, and then going down a different path on account of this */
-  maxRetries?: number;
-  /** This is a liquid templating string. On the first call to Gather, the template will be filled out with variables from the context, and will be spoken verbatim to the user. An example would be "Base on your zipcode, it looks like you could be in one of these counties: {{ counties | join: ", " }}. Which one do you live in?" */
-  literalTemplate?: string;
-  /** @maxLength 80 */
-  name: string;
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-}
-
-export interface ApiRequest {
-  type: 'apiRequest';
-  method: 'POST' | 'GET';
-  /** Api endpoint to send requests to. */
-  url: string;
-  /**
-   * These are the custom headers to include in the Api Request sent.
-   *
-   * Each key-value pair represents a header name and its value.
-   */
-  headers?: JsonSchema;
-  /**
-   * This defined the JSON body of your Api Request. For example, if `body_schema`
-   * included "my_field": "my_gather_statement.user_age", then the json body sent to the server would have that particular value assign to it.
-   * Right now, only data from gather statements are supported.
-   */
-  body?: JsonSchema;
-  /**
-   * This is the mode of the Api Request.
-   * We only support BLOCKING and BACKGROUND for now.
-   */
-  mode: 'blocking' | 'background';
-  /**
-   * This is a list of hooks for a task.
-   * Each hook is a list of tasks to run on a trigger (such as on start, on failure, etc).
-   * Only Say is supported for now.
-   */
-  hooks?: Hook[];
-  /** This is the schema for the outputs of the Api Request. */
-  output?: JsonSchema;
-  /** @maxLength 80 */
-  name: string;
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-}
-
-export interface Hangup {
-  type: 'hangup';
-  /** @maxLength 80 */
-  name: string;
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-}
-
-export interface Transfer {
-  type: 'transfer';
-  destination: object;
-  /** @maxLength 80 */
-  name: string;
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-}
-
-export interface CreateWorkflowDTO {
-  nodes: (Say | Gather | ApiRequest | Hangup | Transfer)[];
-  /** These are the options for the workflow's LLM. */
-  model?:
-    | AnthropicModel
-    | AnyscaleModel
-    | CerebrasModel
-    | CustomLLMModel
-    | DeepInfraModel
-    | DeepSeekModel
-    | GoogleModel
-    | GroqModel
-    | InflectionAIModel
-    | OpenAIModel
-    | OpenRouterModel
-    | PerplexityAIModel
-    | TogetherAIModel
-    | XaiModel;
-  /** @maxLength 80 */
-  name: string;
-  edges: Edge[];
-}
-
 export interface ChatCompletionsDTO {
   messages: ChatCompletionMessageWorkflows[];
   workflowId?: string;
   workflow?: CreateWorkflowDTO;
 }
 
-export interface Assistant {
-  /** These are the options for the assistant's transcriber. */
-  transcriber?:
-    | AssemblyAITranscriber
-    | AzureSpeechTranscriber
-    | CustomTranscriber
-    | DeepgramTranscriber
-    | ElevenLabsTranscriber
-    | GladiaTranscriber
-    | SpeechmaticsTranscriber
-    | TalkscriberTranscriber
-    | GoogleTranscriber
-    | OpenAITranscriber;
-  /** These are the options for the assistant's LLM. */
-  model?:
-    | AnyscaleModel
-    | AnthropicModel
-    | CerebrasModel
-    | CustomLLMModel
-    | DeepInfraModel
-    | DeepSeekModel
-    | GoogleModel
-    | GroqModel
-    | InflectionAIModel
-    | OpenAIModel
-    | OpenRouterModel
-    | PerplexityAIModel
-    | TogetherAIModel
-    | VapiModel
-    | XaiModel;
-  /**
-   * These are the options for the assistant's voice.
-   * @default {"provider":"playht","voiceId":"jennifer"}
-   */
-  voice?:
-    | AzureVoice
-    | CartesiaVoice
-    | CustomVoice
-    | DeepgramVoice
-    | ElevenLabsVoice
-    | HumeVoice
-    | LMNTVoice
-    | NeuphonicVoice
-    | OpenAIVoice
-    | PlayHTVoice
-    | RimeAIVoice
-    | SmallestAIVoice
-    | TavusVoice
-    | VapiVoice;
-  /**
-   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
-   *
-   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
-   * @example "Hello! How can I help you today?"
-   */
-  firstMessage?: string;
-  /** @default false */
-  firstMessageInterruptionsEnabled?: boolean;
-  /**
-   * This is the mode for the first message. Default is 'assistant-speaks-first'.
-   *
-   * Use:
-   * - 'assistant-speaks-first' to have the assistant speak first.
-   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
-   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
-   *
-   * @default 'assistant-speaks-first'
-   * @example "assistant-speaks-first"
-   */
-  firstMessageMode?:
-    | 'assistant-speaks-first'
-    | 'assistant-speaks-first-with-model-generated-message'
-    | 'assistant-waits-for-user';
-  /**
-   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
-   * This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
-   * You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
-   */
-  voicemailDetection?:
-    | GoogleVoicemailDetectionPlan
-    | OpenAIVoicemailDetectionPlan
-    | TwilioVoicemailDetectionPlan;
-  /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
-   */
-  clientMessages?:
-    | 'conversation-update'
-    | 'function-call'
-    | 'function-call-result'
-    | 'hang'
-    | 'language-changed'
-    | 'metadata'
-    | 'model-output'
-    | 'speech-update'
-    | 'status-update'
-    | 'transcript'
-    | 'tool-calls'
-    | 'tool-calls-result'
-    | 'tool.completed'
-    | 'transfer-update'
-    | 'user-interrupted'
-    | 'voice-input'
-    | 'workflow.node.started';
-  /**
-   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
-   */
-  serverMessages?:
-    | 'conversation-update'
-    | 'end-of-call-report'
-    | 'function-call'
-    | 'hang'
-    | 'language-changed'
-    | 'language-change-detected'
-    | 'model-output'
-    | 'phone-call-control'
-    | 'speech-update'
-    | 'status-update'
-    | 'transcript'
-    | "transcript[transcriptType='final']"
-    | 'tool-calls'
-    | 'transfer-destination-request'
-    | 'transfer-update'
-    | 'user-interrupted'
-    | 'voice-input';
-  /**
-   * How many seconds of silence to wait before ending the call. Defaults to 30.
-   *
-   * @default 30
-   * @min 10
-   * @max 3600
-   * @example 30
-   */
-  silenceTimeoutSeconds?: number;
-  /**
-   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
-   *
-   * @default 600 (10 minutes)
-   * @min 10
-   * @max 43200
-   * @example 600
-   */
-  maxDurationSeconds?: number;
-  /**
-   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * You can also provide a custom sound by providing a URL to an audio file.
-   * @maxLength 1000
-   */
-  backgroundSound?: 'off' | 'office' | string;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @example false
-   */
-  backgroundDenoisingEnabled?: boolean;
-  /**
-   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @example false
-   */
-  modelOutputInMessagesEnabled?: boolean;
-  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
-  transportConfigurations?: TransportConfigurationTwilio[];
-  /**
-   * This is the plan for observability configuration of assistant's calls.
-   * Currently supports Langfuse for tracing and monitoring.
-   */
-  observabilityPlan?: LangfuseObservabilityPlan;
-  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
-  credentials?: (
-    | ({
-        provider: '11labs';
-      } & CreateElevenLabsCredentialDTO)
-    | ({
-        provider: 'anthropic';
-      } & CreateAnthropicCredentialDTO)
-    | ({
-        provider: 'anyscale';
-      } & CreateAnyscaleCredentialDTO)
-    | ({
-        provider: 'assembly-ai';
-      } & CreateAssemblyAICredentialDTO)
-    | ({
-        provider: 'azure-openai';
-      } & CreateAzureOpenAICredentialDTO)
-    | ({
-        provider: 'azure';
-      } & CreateAzureCredentialDTO)
-    | ({
-        provider: 'byo-sip-trunk';
-      } & CreateByoSipTrunkCredentialDTO)
-    | ({
-        provider: 'cartesia';
-      } & CreateCartesiaCredentialDTO)
-    | ({
-        provider: 'cerebras';
-      } & CreateCerebrasCredentialDTO)
-    | ({
-        provider: 'cloudflare';
-      } & CreateCloudflareCredentialDTO)
-    | ({
-        provider: 'custom-llm';
-      } & CreateCustomLLMCredentialDTO)
-    | ({
-        provider: 'deepgram';
-      } & CreateDeepgramCredentialDTO)
-    | ({
-        provider: 'deepinfra';
-      } & CreateDeepInfraCredentialDTO)
-    | ({
-        provider: 'deep-seek';
-      } & CreateDeepSeekCredentialDTO)
-    | ({
-        provider: 'gcp';
-      } & CreateGcpCredentialDTO)
-    | ({
-        provider: 'gladia';
-      } & CreateGladiaCredentialDTO)
-    | ({
-        provider: 'gohighlevel';
-      } & CreateGoHighLevelCredentialDTO)
-    | ({
-        provider: 'google';
-      } & CreateGoogleCredentialDTO)
-    | ({
-        provider: 'groq';
-      } & CreateGroqCredentialDTO)
-    | ({
-        provider: 'inflection-ai';
-      } & CreateInflectionAICredentialDTO)
-    | ({
-        provider: 'langfuse';
-      } & CreateLangfuseCredentialDTO)
-    | ({
-        provider: 'lmnt';
-      } & CreateLmntCredentialDTO)
-    | ({
-        provider: 'make';
-      } & CreateMakeCredentialDTO)
-    | ({
-        provider: 'openai';
-      } & CreateOpenAICredentialDTO)
-    | ({
-        provider: 'openrouter';
-      } & CreateOpenRouterCredentialDTO)
-    | ({
-        provider: 'perplexity-ai';
-      } & CreatePerplexityAICredentialDTO)
-    | ({
-        provider: 'playht';
-      } & CreatePlayHTCredentialDTO)
-    | ({
-        provider: 'rime-ai';
-      } & CreateRimeAICredentialDTO)
-    | ({
-        provider: 'runpod';
-      } & CreateRunpodCredentialDTO)
-    | ({
-        provider: 's3';
-      } & CreateS3CredentialDTO)
-    | ({
-        provider: 'supabase';
-      } & CreateSupabaseCredentialDTO)
-    | ({
-        provider: 'smallest-ai';
-      } & CreateSmallestAICredentialDTO)
-    | ({
-        provider: 'tavus';
-      } & CreateTavusCredentialDTO)
-    | ({
-        provider: 'together-ai';
-      } & CreateTogetherAICredentialDTO)
-    | ({
-        provider: 'twilio';
-      } & CreateTwilioCredentialDTO)
-    | ({
-        provider: 'vonage';
-      } & CreateVonageCredentialDTO)
-    | ({
-        provider: 'webhook';
-      } & CreateWebhookCredentialDTO)
-    | ({
-        provider: 'xai';
-      } & CreateXAiCredentialDTO)
-    | ({
-        provider: 'neuphonic';
-      } & CreateNeuphonicCredentialDTO)
-    | ({
-        provider: 'hume';
-      } & CreateHumeCredentialDTO)
-    | ({
-        provider: 'mistral';
-      } & CreateMistralCredentialDTO)
-    | ({
-        provider: 'speechmatics';
-      } & CreateSpeechmaticsCredentialDTO)
-    | ({
-        provider: 'trieve';
-      } & CreateTrieveCredentialDTO)
-    | ({
-        provider: 'google.calendar.oauth2-client';
-      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
-    | ({
-        provider: 'google.calendar.oauth2-authorization';
-      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
-    | ({
-        provider: 'google.sheets.oauth2-authorization';
-      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
-    | ({
-        provider: 'slack.oauth2-authorization';
-      } & CreateSlackOAuth2AuthorizationCredentialDTO)
-  )[];
-  /**
-   * This is the name of the assistant.
-   *
-   * This is required when you want to transfer between assistants in a call.
-   * @maxLength 40
-   */
-  name?: string;
-  /**
-   * This is the message that the assistant will say if the call is forwarded to voicemail.
-   *
-   * If unspecified, it will hang up.
-   * @maxLength 1000
-   */
-  voicemailMessage?: string;
-  /**
-   * This is the message that the assistant will say if it ends the call.
-   *
-   * If unspecified, it will hang up without saying anything.
-   * @maxLength 1000
-   */
-  endCallMessage?: string;
-  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
-  endCallPhrases?: string[];
-  compliancePlan?: CompliancePlan;
-  /** This is for metadata you want to store on the assistant. */
-  metadata?: object;
-  /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
-  analysisPlan?: AnalysisPlan;
-  /**
-   * This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`.
-   *
-   * Note: `recordingEnabled` is currently at the root level. It will be moved to `artifactPlan` in the future, but will remain backwards compatible.
-   */
-  artifactPlan?: ArtifactPlan;
-  /**
-   * This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
-   *
-   * Note: `firstMessage`, `voicemailMessage`, and `endCallMessage` are currently at the root level. They will be moved to `messagePlan` in the future, but will remain backwards compatible.
-   */
-  messagePlan?: MessagePlan;
-  /**
-   * This is the plan for when the assistant should start talking.
-   *
-   * You should configure this if you're running into these issues:
-   * - The assistant is too slow to start talking after the customer is done speaking.
-   * - The assistant is too fast to start talking after the customer is done speaking.
-   * - The assistant is so fast that it's actually interrupting the customer.
-   */
-  startSpeakingPlan?: StartSpeakingPlan;
-  /**
-   * This is the plan for when assistant should stop talking on customer interruption.
-   *
-   * You should configure this if you're running into these issues:
-   * - The assistant is too slow to recognize customer's interruption.
-   * - The assistant is too fast to recognize customer's interruption.
-   * - The assistant is getting interrupted by phrases that are just acknowledgments.
-   * - The assistant is getting interrupted by background noises.
-   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
-   */
-  stopSpeakingPlan?: StopSpeakingPlan;
-  /**
-   * This is the plan for real-time monitoring of the assistant's calls.
-   *
-   * Usage:
-   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
-   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
-   *
-   * Note, `serverMessages`, `clientMessages`, `serverUrl` and `serverUrlSecret` are currently at the root level but will be moved to `monitorPlan` in the future. Will remain backwards compatible
-   */
-  monitorPlan?: MonitorPlan;
-  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
-  credentialIds?: string[];
-  /**
-   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
-   *
-   * The order of precedence is:
-   *
-   * 1. assistant.server.url
-   * 2. phoneNumber.serverUrl
-   * 3. org.serverUrl
-   */
-  server?: Server;
-  /** This is a set of actions that will be performed on certain events. */
-  hooks?: AssistantHooks[];
-  keypadInputPlan?: KeypadInputPlan;
-  /** This is the unique identifier for the assistant. */
-  id: string;
-  /** This is the unique identifier for the org that this assistant belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-}
-
 export interface AssistantPaginatedResponse {
   results: Assistant[];
   metadata: PaginationMeta;
+}
+
+export interface AssistantVersionPaginatedResponse {
+  results: any[];
+  metadata: PaginationMeta;
+  nextPageState?: string;
 }
 
 export interface UpdateAssistantDTO {
@@ -10899,51 +10791,10 @@ export interface UpdateAssistantDTO {
   voicemailDetection?:
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
-    | TwilioVoicemailDetectionPlan;
-  /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
-   */
-  clientMessages?:
-    | 'conversation-update'
-    | 'function-call'
-    | 'function-call-result'
-    | 'hang'
-    | 'language-changed'
-    | 'metadata'
-    | 'model-output'
-    | 'speech-update'
-    | 'status-update'
-    | 'transcript'
-    | 'tool-calls'
-    | 'tool-calls-result'
-    | 'tool.completed'
-    | 'transfer-update'
-    | 'user-interrupted'
-    | 'voice-input'
-    | 'workflow.node.started';
-  /**
-   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
-   */
-  serverMessages?:
-    | 'conversation-update'
-    | 'end-of-call-report'
-    | 'function-call'
-    | 'hang'
-    | 'language-changed'
-    | 'language-change-detected'
-    | 'model-output'
-    | 'phone-call-control'
-    | 'speech-update'
-    | 'status-update'
-    | 'transcript'
-    | "transcript[transcriptType='final']"
-    | 'tool-calls'
-    | 'transfer-destination-request'
-    | 'transfer-update'
-    | 'user-interrupted'
-    | 'voice-input';
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  clientMessages: object[][];
+  serverMessages: object[][];
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    *
@@ -11137,6 +10988,8 @@ export interface UpdateAssistantDTO {
         provider: 'slack.oauth2-authorization';
       } & CreateSlackOAuth2AuthorizationCredentialDTO)
   )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: AssistantHookCallEnding[];
   /**
    * This is the name of the assistant.
    *
@@ -11219,8 +11072,6 @@ export interface UpdateAssistantDTO {
    * 3. org.serverUrl
    */
   server?: Server;
-  /** This is a set of actions that will be performed on certain events. */
-  hooks?: AssistantHooks[];
   keypadInputPlan?: KeypadInputPlan;
 }
 
@@ -11275,13 +11126,19 @@ export interface ByoPhoneNumber {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11322,6 +11179,16 @@ export interface TwilioPhoneNumber {
   hooks?: PhoneNumberHookCallRinging[];
   /** This is to use numbers bought on Twilio. */
   provider: 'twilio';
+  /**
+   * Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
+   *
+   * If set to `false`, Vapi will not update the Twilio messaging URL, leaving it as is.
+   * If `true` or omitted (default), Vapi will configure both the voice and messaging URLs.
+   *
+   * @default true
+   * @default true
+   */
+  smsEnabled?: boolean;
   /** This is the unique identifier for the phone number. */
   id: string;
   /** This is the unique identifier for the org that this phone number belongs to. */
@@ -11338,6 +11205,12 @@ export interface TwilioPhoneNumber {
   updatedAt: string;
   /** This is the status of the phone number. */
   status?: 'active' | 'activating' | 'blocked';
+  /** This is the Twilio Auth Token for the phone number. */
+  twilioAuthToken?: string;
+  /** This is the Twilio API Key for the phone number. */
+  twilioApiKey?: string;
+  /** This is the Twilio API Secret for the phone number. */
+  twilioApiSecret?: string;
   /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
@@ -11346,13 +11219,19 @@ export interface TwilioPhoneNumber {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11369,8 +11248,6 @@ export interface TwilioPhoneNumber {
   number: string;
   /** This is the Twilio Account SID for the phone number. */
   twilioAccountSid: string;
-  /** This is the Twilio Auth Token for the phone number. */
-  twilioAuthToken: string;
 }
 
 export interface VonagePhoneNumber {
@@ -11411,13 +11288,19 @@ export interface VonagePhoneNumber {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11493,13 +11376,19 @@ export interface VapiPhoneNumber {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11570,13 +11459,19 @@ export interface TelnyxPhoneNumber {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11642,13 +11537,19 @@ export interface CreateByoPhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11677,12 +11578,26 @@ export interface CreateTwilioPhoneNumberDTO {
   hooks?: PhoneNumberHookCallRinging[];
   /** This is to use numbers bought on Twilio. */
   provider: 'twilio';
+  /**
+   * Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
+   *
+   * If set to `false`, Vapi will not update the Twilio messaging URL, leaving it as is.
+   * If `true` or omitted (default), Vapi will configure both the voice and messaging URLs.
+   *
+   * @default true
+   * @default true
+   */
+  smsEnabled?: boolean;
   /** These are the digits of the phone number you own on your Twilio. */
   number: string;
   /** This is the Twilio Account SID for the phone number. */
   twilioAccountSid: string;
   /** This is the Twilio Auth Token for the phone number. */
-  twilioAuthToken: string;
+  twilioAuthToken?: string;
+  /** This is the Twilio API Key for the phone number. */
+  twilioApiKey?: string;
+  /** This is the Twilio API Secret for the phone number. */
+  twilioApiSecret?: string;
   /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
@@ -11691,13 +11606,19 @@ export interface CreateTwilioPhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11738,13 +11659,19 @@ export interface CreateVonagePhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11799,13 +11726,19 @@ export interface CreateVapiPhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11846,13 +11779,19 @@ export interface CreateTelnyxPhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11900,13 +11839,19 @@ export interface UpdateByoPhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11946,6 +11891,16 @@ export interface UpdateTwilioPhoneNumberDTO {
   /** This is the hooks that will be used for incoming calls to this phone number. */
   hooks?: PhoneNumberHookCallRinging[];
   /**
+   * Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
+   *
+   * If set to `false`, Vapi will not update the Twilio messaging URL, leaving it as is.
+   * If `true` or omitted (default), Vapi will configure both the voice and messaging URLs.
+   *
+   * @default true
+   * @default true
+   */
+  smsEnabled?: boolean;
+  /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
    */
@@ -11953,13 +11908,19 @@ export interface UpdateTwilioPhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -11978,6 +11939,10 @@ export interface UpdateTwilioPhoneNumberDTO {
   twilioAccountSid?: string;
   /** This is the Twilio Auth Token for the phone number. */
   twilioAuthToken?: string;
+  /** This is the Twilio API Key for the phone number. */
+  twilioApiKey?: string;
+  /** This is the Twilio API Secret for the phone number. */
+  twilioApiSecret?: string;
 }
 
 export interface UpdateVonagePhoneNumberDTO {
@@ -12000,13 +11965,19 @@ export interface UpdateVonagePhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -12045,13 +12016,19 @@ export interface UpdateVapiPhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -12098,13 +12075,19 @@ export interface UpdateTelnyxPhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -12150,13 +12133,19 @@ export interface ImportVonagePhoneNumberDTO {
   /**
    * This is the assistant that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   assistantId?: string;
   /**
+   * This is the workflow that will be used for incoming calls to this phone number.
+   *
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   */
+  workflowId?: string;
+  /**
    * This is the squad that will be used for incoming calls to this phone number.
    *
-   * If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+   * If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
    */
   squadId?: string;
   /**
@@ -14257,8 +14246,37 @@ export interface TrieveKnowledgeBaseImport {
   providerId: string;
 }
 
+export interface Workflow {
+  nodes: (Start | Assistant | Say | Gather | ApiRequest | Hangup | Transfer)[];
+  /** These are the options for the workflow's LLM. */
+  model?:
+    | AnthropicModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel;
+  id: string;
+  orgId: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+  /** @maxLength 80 */
+  name: string;
+  edges: Edge[];
+}
+
 export interface UpdateWorkflowDTO {
-  nodes?: (Say | Gather | ApiRequest | Hangup | Transfer)[];
+  nodes?: (Start | Assistant | Say | Gather | ApiRequest | Hangup | Transfer)[];
   /** These are the options for the workflow's LLM. */
   model?:
     | AnthropicModel
@@ -14661,7 +14679,7 @@ export interface TestSuiteTestScorerAI {
   type: 'ai';
   /**
    * This is the rubric used by the AI scorer.
-   * @maxLength 1000
+   * @maxLength 10000
    */
   rubric: string;
 }
@@ -14691,7 +14709,7 @@ export interface TestSuiteRunScorerAI {
   reasoning: string;
   /**
    * This is the rubric used by the AI scorer.
-   * @maxLength 1000
+   * @maxLength 10000
    */
   rubric: string;
 }
@@ -16628,7 +16646,11 @@ export interface TrieveCredential {
 export interface TwilioCredential {
   provider: 'twilio';
   /** This is not returned in the API. */
-  authToken: string;
+  authToken?: string;
+  /** This is not returned in the API. */
+  apiKey?: string;
+  /** This is not returned in the API. */
+  apiSecret?: string;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -17546,6 +17568,10 @@ export interface UpdateTrieveCredentialDTO {
 export interface UpdateTwilioCredentialDTO {
   /** This is not returned in the API. */
   authToken?: string;
+  /** This is not returned in the API. */
+  apiKey?: string;
+  /** This is not returned in the API. */
+  apiSecret?: string;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -20546,7 +20572,7 @@ export interface VoicemailDetectionCost {
   /** This is the model that was used to perform the analysis. */
   model: object;
   /** This is the provider that was used to detect the voicemail. */
-  provider: 'twilio' | 'google' | 'openai';
+  provider: 'twilio' | 'google' | 'openai' | 'vapi';
   /** This is the number of prompt text tokens used in the voicemail detection. */
   promptTextTokens: number;
   /** This is the number of prompt audio tokens used in the voicemail detection. */
@@ -20555,6 +20581,19 @@ export interface VoicemailDetectionCost {
   completionTextTokens: number;
   /** This is the number of completion audio tokens used in the voicemail detection. */
   completionAudioTokens: number;
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface KnowledgeBaseCost {
+  /** This is the type of cost, always 'knowledge-base' for this class. */
+  type: 'knowledge-base';
+  /** This is the model that was used for processing the knowledge base. */
+  model: object;
+  /** This is the number of prompt tokens used in the knowledge base query. */
+  promptTokens: number;
+  /** This is the number of completion tokens generated in the knowledge base query. */
+  completionTokens: number;
   /** This is the cost of the component in USD. */
   cost: number;
 }
@@ -21878,6 +21917,33 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       this.request<Assistant, any>({
         path: `/assistant/${id}`,
         method: 'DELETE',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
+     * @name AssistantControllerFindVersions
+     * @summary List Assistant Versions
+     * @request GET:/assistant/{id}/version
+     * @secure
+     */
+    assistantControllerFindVersions: (
+      id: string,
+      query?: {
+        page?: number;
+        limit?: number;
+        pageState?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantVersionPaginatedResponse, any>({
+        path: `/assistant/${id}/version`,
+        method: 'GET',
+        query: query,
         secure: true,
         format: 'json',
         ...params,
