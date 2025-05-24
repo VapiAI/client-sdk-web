@@ -435,6 +435,13 @@ export interface AzureSpeechTranscriber {
 
 export interface BackoffPlan {
   /**
+   * This is the type of backoff plan to use. Defaults to fixed.
+   *
+   * @default fixed
+   * @example "fixed"
+   */
+  type: 'fixed' | 'exponential';
+  /**
    * This is the maximum number of retries to attempt if the request fails. Defaults to 0 (no retries).
    *
    * @default 0
@@ -443,13 +450,6 @@ export interface BackoffPlan {
    * @example 0
    */
   maxRetries: number;
-  /**
-   * This is the type of backoff plan to use. Defaults to fixed.
-   *
-   * @default fixed
-   * @example "fixed"
-   */
-  type: 'fixed' | 'exponential';
   /**
    * This is the base delay in seconds. For linear backoff, this is the delay between each retry. For exponential backoff, this is the initial delay.
    * @min 0
@@ -461,29 +461,27 @@ export interface BackoffPlan {
 
 export interface Server {
   /**
-   * This is the timeout in seconds for the request to your server. Defaults to 20 seconds.
+   * This is the timeout in seconds for the request. Defaults to 20 seconds.
    *
    * @default 20
    * @min 1
-   * @max 120
+   * @max 300
    * @example 20
    */
   timeoutSeconds?: number;
-  /** API endpoint to send requests to. */
-  url: string;
+  /** This is where the request will be sent. */
+  url?: string;
   /**
-   * This is the secret you can set that Vapi will send with every request to your server. Will be sent as a header called x-vapi-secret.
-   *
-   * Same precedence logic as server.
-   */
-  secret?: string;
-  /**
-   * These are the custom headers to include in the request sent to your server.
+   * These are the headers to include in the request.
    *
    * Each key-value pair represents a header name and its value.
    */
   headers?: object;
-  /** This is the backoff plan to use if the request fails. */
+  /**
+   * This is the backoff plan if the request fails. Defaults to undefined (the request will not be retried).
+   *
+   * @default undefined (the request will not be retried)
+   */
   backoffPlan?: BackoffPlan;
 }
 
@@ -1255,6 +1253,7 @@ export interface GoogleTranscriber {
   provider: 'google';
   /** This is the model that will be used for the transcription. */
   model?:
+    | 'gemini-2.5-pro-preview-05-06'
     | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
@@ -2314,6 +2313,7 @@ export interface FallbackGoogleTranscriber {
   provider: 'google';
   /** This is the model that will be used for the transcription. */
   model?:
+    | 'gemini-2.5-pro-preview-05-06'
     | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
@@ -3003,7 +3003,10 @@ export interface CreateVoicemailToolDTO {
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
-  /** The type of tool. "voicemail". This uses the model itself to determine if a voicemil was reached. Can be used alternatively/alongside with TwilioVoicemailDetection */
+  /**
+   * The type of tool. "voicemail". This uses the model itself to determine if a voicemil was reached. Can be used alternatively/alongside with TwilioVoicemailDetection
+   * @deprecated
+   */
   type: 'voicemail';
   /**
    * This is the function definition of the tool.
@@ -3282,24 +3285,6 @@ export interface TransferDestinationAssistant {
   description?: string;
 }
 
-export interface TransferDestinationStep {
-  /**
-   * This is spoken to the customer before connecting them to the destination.
-   *
-   * Usage:
-   * - If this is not provided and transfer tool messages is not provided, default is "Transferring the call now".
-   * - If set to "", nothing is spoken. This is useful when you want to silently transfer. This is especially useful when transferring between assistants in a squad. In this scenario, you likely also want to set `assistant.firstMessageMode=assistant-speaks-first-with-model-generated-message` for the destination assistant.
-   *
-   * This accepts a string or a ToolMessageStart class. Latter is useful if you want to specify multiple messages for different languages through the `contents` field.
-   */
-  message?: string | CustomMessage;
-  type: 'step';
-  /** This is the step to transfer to. */
-  stepName: string;
-  /** This is the description of the destination, used by the AI to choose when and how to transfer the call. */
-  description?: string;
-}
-
 export interface TransferFallbackPlan {
   /** This is the message the assistant will deliver to the customer if the transfer fails. */
   message: string | CustomMessage;
@@ -3326,14 +3311,14 @@ export interface SummaryPlan {
    *   },
    *   {
    *     "role": "user",
-   *     "content": "Here is the transcript:\n\n{{transcript}}\n\n"
+   *     "content": "Here is the transcript:\n\n{{transcript}}\n\n. Here is the ended reason of the call:\n\n{{endedReason}}\n\n"
    *   }
    * ]```
    *
    * You can customize by providing any messages you want.
    *
    * Here are the template variables available:
-   * - {{transcript}}: The transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: The system prompt of the call from `assistant.model.messages[type=system].content`
+   * - {{transcript}}: The transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: The system prompt of the call from `assistant.model.messages[type=system].content`- {{endedReason}}: The ended reason of the call from `call.endedReason`
    */
   messages?: object[];
   /**
@@ -3558,7 +3543,6 @@ export interface CreateTransferCallToolDTO {
   /** These are the destinations that the call can be transferred to. If no destinations are provided, server.url will be used to get the transfer destination once the tool is called. */
   destinations?: (
     | TransferDestinationAssistant
-    | TransferDestinationStep
     | TransferDestinationNumber
     | TransferDestinationSip
   )[];
@@ -3640,6 +3624,7 @@ export interface KnowledgeBase {
   provider: 'google';
   /** The model to use for the knowledge base */
   model?:
+    | 'gemini-2.5-pro-preview-05-06'
     | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
@@ -3851,6 +3836,196 @@ export interface CreateSlackSendMessageToolDTO {
   server?: Server;
 }
 
+export interface CreateMcpToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "mcp" for MCP tool. */
+  type: 'mcp';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateGoHighLevelCalendarAvailabilityToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar availability check tool. */
+  type: 'gohighlevel.calendar.availability.check';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateGoHighLevelCalendarEventCreateToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar event create tool. */
+  type: 'gohighlevel.calendar.event.create';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateGoHighLevelContactCreateToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel contact create tool. */
+  type: 'gohighlevel.contact.create';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateGoHighLevelContactGetToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel contact get tool. */
+  type: 'gohighlevel.contact.get';
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
 export interface AnyscaleModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
@@ -3860,18 +4035,25 @@ export interface AnyscaleModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3937,18 +4119,25 @@ export interface AnthropicModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -3968,7 +4157,9 @@ export interface AnthropicModel {
     | 'claude-3-5-sonnet-20240620'
     | 'claude-3-5-sonnet-20241022'
     | 'claude-3-5-haiku-20241022'
-    | 'claude-3-7-sonnet-20250219';
+    | 'claude-3-7-sonnet-20250219'
+    | 'claude-opus-4-20250514'
+    | 'claude-sonnet-4-20250514';
   /** The provider identifier for Anthropic. */
   provider: 'anthropic';
   /**
@@ -4017,18 +4208,25 @@ export interface CerebrasModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4083,18 +4281,25 @@ export interface CustomLLMModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4170,18 +4375,25 @@ export interface DeepInfraModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4236,18 +4448,25 @@ export interface DeepSeekModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4342,18 +4561,25 @@ export interface GoogleModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4367,6 +4593,7 @@ export interface GoogleModel {
   knowledgeBaseId?: string;
   /** This is the Google model that will be used. */
   model:
+    | 'gemini-2.5-pro-preview-05-06'
     | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
@@ -4426,18 +4653,25 @@ export interface GroqModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4454,12 +4688,15 @@ export interface GroqModel {
     | 'deepseek-r1-distill-llama-70b'
     | 'llama-3.3-70b-versatile'
     | 'llama-3.1-405b-reasoning'
-    | 'llama-3.1-70b-versatile'
     | 'llama-3.1-8b-instant'
-    | 'mixtral-8x7b-32768'
     | 'llama3-8b-8192'
     | 'llama3-70b-8192'
-    | 'gemma2-9b-it';
+    | 'gemma2-9b-it'
+    | 'meta-llama/llama-4-maverick-17b-128e-instruct'
+    | 'meta-llama/llama-4-scout-17b-16e-instruct'
+    | 'mistral-saba-24b'
+    | 'compound-beta'
+    | 'compound-beta-mini';
   provider: 'groq';
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
@@ -4501,18 +4738,25 @@ export interface InflectionAIModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4567,18 +4811,25 @@ export interface OpenAIModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4705,18 +4956,25 @@ export interface OpenRouterModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4771,18 +5029,25 @@ export interface PerplexityAIModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4837,18 +5102,25 @@ export interface TogetherAIModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -4894,121 +5166,247 @@ export interface TogetherAIModel {
   numFastTurns?: number;
 }
 
-export interface Start {
-  type: 'start';
-  /** @maxLength 80 */
-  name: string;
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-}
-
-export interface Assistant {
-  type: 'assistant';
-  assistantId: string;
-  /** @maxLength 80 */
-  name: string;
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-}
-
-export interface Say {
-  type: 'say';
-  /** @maxLength 1000 */
-  exact?: string;
-  /** @maxLength 1000 */
-  prompt?: string;
-  /** @maxLength 80 */
-  name: string;
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-}
-
-export interface SayHook {
-  type: 'say';
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-  /** @maxLength 1000 */
-  exact?: string;
-  /** @maxLength 1000 */
-  prompt?: string;
-}
-
-export interface Hook {
-  /** @maxLength 80 */
-  on: 'task.start' | 'task.output.confirmation' | 'task.delayed';
-  do: SayHook[];
-}
-
-export interface Gather {
-  type: 'gather';
-  output: JsonSchema;
-  /** This is whether or not the workflow should read back the gathered data to the user, and ask about its correctness. */
-  confirmContent?: boolean;
-  /**
-   * This is a list of hooks for a task.
-   * Each hook is a list of tasks to run on a trigger (such as on start, on failure, etc).
-   * Only Say is supported for now.
-   */
-  hooks?: Hook[];
-  /** This is the number of times we should try to gather the information from the user before we failover to the fail path. An example of this would be a user refusing to give their phone number for privacy reasons, and then going down a different path on account of this */
-  maxRetries?: number;
-  /** This is a liquid templating string. On the first call to Gather, the template will be filled out with variables from the context, and will be spoken verbatim to the user. An example would be "Base on your zipcode, it looks like you could be in one of these counties: {{ counties | join: ", " }}. Which one do you live in?" */
-  literalTemplate?: string;
-  /** @maxLength 80 */
-  name: string;
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-}
-
-export interface ApiRequest {
-  type: 'apiRequest';
-  method: 'POST' | 'GET';
-  /** Api endpoint to send requests to. */
-  url: string;
-  /**
-   * These are the custom headers to include in the Api Request sent.
-   *
-   * Each key-value pair represents a header name and its value.
-   */
-  headers?: JsonSchema;
-  /**
-   * This defined the JSON body of your Api Request. For example, if `body_schema`
-   * included "my_field": "my_gather_statement.user_age", then the json body sent to the server would have that particular value assign to it.
-   * Right now, only data from gather statements are supported.
-   */
-  body?: JsonSchema;
-  /**
-   * This is the mode of the Api Request.
-   * We only support BLOCKING and BACKGROUND for now.
-   */
-  mode: 'blocking' | 'background';
-  /**
-   * This is a list of hooks for a task.
-   * Each hook is a list of tasks to run on a trigger (such as on start, on failure, etc).
-   * Only Say is supported for now.
-   */
-  hooks?: Hook[];
-  /** This is the schema for the outputs of the Api Request. */
-  output?: JsonSchema;
-  /** @maxLength 80 */
-  name: string;
-  /** This is for metadata you want to store on the task. */
-  metadata?: object;
-}
-
-export interface Hangup {
+export interface HangupNode {
   type: 'hangup';
   /** @maxLength 80 */
   name: string;
+  /** This is whether or not the node is the start of the workflow. */
+  isStart?: boolean;
   /** This is for metadata you want to store on the task. */
   metadata?: object;
 }
 
-export interface Transfer {
-  type: 'transfer';
-  destination: object;
+export interface WorkflowOpenAIModel {
+  /** This is the provider of the model (`openai`). */
+  provider: 'openai';
+  /**
+   * This is the specific OpenAI model that will be used.
+   * @maxLength 100
+   */
+  model:
+    | 'gpt-4.1'
+    | 'gpt-4.1-mini'
+    | 'gpt-4.1-nano'
+    | 'gpt-4.5-preview'
+    | 'chatgpt-4o-latest'
+    | 'o3'
+    | 'o3-mini'
+    | 'o4-mini'
+    | 'o1-preview'
+    | 'o1-preview-2024-09-12'
+    | 'o1-mini'
+    | 'o1-mini-2024-09-12'
+    | 'gpt-4o-realtime-preview-2024-10-01'
+    | 'gpt-4o-realtime-preview-2024-12-17'
+    | 'gpt-4o-mini-realtime-preview-2024-12-17'
+    | 'gpt-4o-mini-2024-07-18'
+    | 'gpt-4o-mini'
+    | 'gpt-4o'
+    | 'gpt-4o-2024-05-13'
+    | 'gpt-4o-2024-08-06'
+    | 'gpt-4o-2024-11-20'
+    | 'gpt-4-turbo'
+    | 'gpt-4-turbo-2024-04-09'
+    | 'gpt-4-turbo-preview'
+    | 'gpt-4-0125-preview'
+    | 'gpt-4-1106-preview'
+    | 'gpt-4'
+    | 'gpt-4-0613'
+    | 'gpt-3.5-turbo'
+    | 'gpt-3.5-turbo-0125'
+    | 'gpt-3.5-turbo-1106'
+    | 'gpt-3.5-turbo-16k'
+    | 'gpt-3.5-turbo-0613';
+  /**
+   * This is the temperature of the model.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /**
+   * This is the max tokens of the model.
+   * @min 50
+   * @max 10000
+   */
+  maxTokens?: number;
+}
+
+export interface WorkflowAnthropicModel {
+  /** This is the provider of the model (`anthropic`). */
+  provider: 'anthropic';
+  /**
+   * This is the specific model that will be used.
+   * @maxLength 100
+   */
+  model:
+    | 'claude-3-opus-20240229'
+    | 'claude-3-sonnet-20240229'
+    | 'claude-3-haiku-20240307'
+    | 'claude-3-5-sonnet-20240620'
+    | 'claude-3-5-sonnet-20241022'
+    | 'claude-3-5-haiku-20241022'
+    | 'claude-3-7-sonnet-20250219'
+    | 'claude-opus-4-20250514'
+    | 'claude-sonnet-4-20250514';
+  /**
+   * This is the optional configuration for Anthropic's thinking feature.
+   *
+   * - Only applicable for `claude-3-7-sonnet-20250219` model.
+   * - If provided, `maxTokens` must be greater than `thinking.budgetTokens`.
+   */
+  thinking?: AnthropicThinkingConfig;
+  /**
+   * This is the temperature of the model.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /**
+   * This is the max tokens of the model.
+   * @min 50
+   * @max 10000
+   */
+  maxTokens?: number;
+}
+
+export interface GlobalNodePlan {
+  /**
+   * This is the flag to determine if this node is a global node
+   *
+   * @default false
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * This is the condition that will be checked to determine if the global node should be executed.
+   *
+   * @default ''
+   * @maxLength 1000
+   * @default ""
+   */
+  enterCondition?: string;
+}
+
+export interface VariableExtractionSchema {
+  /**
+   * This is the type of output you'd like.
+   *
+   * `string`, `number`, `boolean` are primitive types.
+   */
+  type: 'string' | 'number' | 'integer' | 'boolean';
+  /**
+   * This is the title of the variable.
+   *
+   * It can only contain letters, numbers, and underscores.
+   * @pattern /^[a-zA-Z0-9_]+$/
+   */
+  title: string;
+  /** This is the description to help the model understand what it needs to output. */
+  description: string;
+  /** This is the enum values to choose from. Only used if the type is `string`. */
+  enum?: string[];
+}
+
+export interface VariableExtractionPlan {
+  output: VariableExtractionSchema[];
+}
+
+export interface ConversationNode {
+  /**
+   * This is the Conversation node. This can be used to start a conversation with the customer.
+   *
+   * The flow is:
+   * - Workflow starts the conversation node
+   * - Model is active with the `prompt` and global context.
+   * - Model will call a tool to exit this node.
+   * - Workflow will extract variables from the conversation.
+   * - Workflow continues.
+   */
+  type: 'conversation';
+  /** This is the model for the Conversation Task. */
+  model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
+  /** These are the options for the assistant's transcriber. */
+  transcriber?:
+    | AssemblyAITranscriber
+    | AzureSpeechTranscriber
+    | CustomTranscriber
+    | DeepgramTranscriber
+    | ElevenLabsTranscriber
+    | GladiaTranscriber
+    | GoogleTranscriber
+    | SpeechmaticsTranscriber
+    | TalkscriberTranscriber
+    | OpenAITranscriber;
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | TavusVoice
+    | VapiVoice
+    | SesameVoice;
+  /** @maxLength 5000 */
+  prompt?: string;
+  /** This is the plan for the global node. */
+  globalNodePlan?: GlobalNodePlan;
+  /** This is the plan that controls the variable extraction from the user's response. */
+  variableExtractionPlan?: VariableExtractionPlan;
   /** @maxLength 80 */
   name: string;
+  /** This is whether or not the node is the start of the workflow. */
+  isStart?: boolean;
+  /** This is for metadata you want to store on the task. */
+  metadata?: object;
+}
+
+export interface ToolNode {
+  /**
+   * This is the Tool node. This can be used to call a tool in your workflow.
+   *
+   * The flow is:
+   * - Workflow starts the tool node
+   * - Model is called to extract parameters needed by the tool from the conversation history
+   * - Tool is called with the parameters
+   * - Server returns a response
+   * - Workflow continues with the response
+   */
+  type: 'tool';
+  /** This is the tool to call. To use an existing tool, send `toolId` instead. */
+  tool?:
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
+    | CreateDtmfToolDTO
+    | CreateEndCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO;
+  /** This is the tool to call. To use a transient tool, send `tool` instead. */
+  toolId?: string;
+  /** @maxLength 80 */
+  name: string;
+  /** This is whether or not the node is the start of the workflow. */
+  isStart?: boolean;
   /** This is for metadata you want to store on the task. */
   metadata?: object;
 }
@@ -5043,23 +5441,9 @@ export interface Edge {
 }
 
 export interface WorkflowUserEditable {
-  nodes: (Start | Assistant | Say | Gather | ApiRequest | Hangup | Transfer)[];
+  nodes: (ConversationNode | ToolNode)[];
   /** These are the options for the workflow's LLM. */
-  model?:
-    | AnthropicModel
-    | AnyscaleModel
-    | CerebrasModel
-    | CustomLLMModel
-    | DeepInfraModel
-    | DeepSeekModel
-    | GoogleModel
-    | GroqModel
-    | InflectionAIModel
-    | OpenAIModel
-    | OpenRouterModel
-    | PerplexityAIModel
-    | TogetherAIModel
-    | XaiModel;
+  model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
@@ -5074,18 +5458,25 @@ export interface VapiModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -5144,18 +5535,25 @@ export interface XaiModel {
    * Both `tools` and `toolIds` can be used together.
    */
   tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
-    | CreateQueryToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
     | CreateGoogleSheetsRowAppendToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
     | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -5342,7 +5740,8 @@ export interface FormatPlan {
     | 'unit'
     | 'percentage'
     | 'phoneNumber'
-    | 'number';
+    | 'number'
+    | 'stripAsterisk';
 }
 
 export interface ChunkPlan {
@@ -6087,7 +6486,7 @@ export interface RimeAIVoice {
    */
   speed?: number;
   /**
-   * This is a flag that controls whether to add slight pauses using angle brackets. Example: “Hi. <200> I’d love to have a conversation with you.” adds a 200ms pause between the first and second sentences.
+   * This is a flag that controls whether to add slight pauses using angle brackets. Example: "Hi. <200> I'd love to have a conversation with you." adds a 200ms pause between the first and second sentences.
    * @example false
    */
   pauseBetweenBrackets?: boolean;
@@ -6106,6 +6505,28 @@ export interface RimeAIVoice {
    * @example null
    */
   inlineSpeedAlpha?: string;
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackPlan;
+}
+
+export interface SesameVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: 'sesame';
+  /**
+   * Sesame Voice ID. This should be either a name (a built-in voice) or a UUID (a custom voice).
+   * This is the provider-specific ID that will be used.
+   */
+  voiceId: string;
+  /** This is the model that will be used. */
+  model: 'csm-1b';
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -6244,6 +6665,7 @@ export interface VapiVoice {
   /** The voices provided by Vapi */
   voiceId:
     | 'Elliot'
+    | 'Kylie'
     | 'Rohan'
     | 'Lily'
     | 'Savannah'
@@ -6934,7 +7356,7 @@ export interface FallbackRimeAIVoice {
    */
   speed?: number;
   /**
-   * This is a flag that controls whether to add slight pauses using angle brackets. Example: “Hi. <200> I’d love to have a conversation with you.” adds a 200ms pause between the first and second sentences.
+   * This is a flag that controls whether to add slight pauses using angle brackets. Example: "Hi. <200> I'd love to have a conversation with you." adds a 200ms pause between the first and second sentences.
    * @example false
    */
   pauseBetweenBrackets?: boolean;
@@ -6953,6 +7375,26 @@ export interface FallbackRimeAIVoice {
    * @example null
    */
   inlineSpeedAlpha?: string;
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
+}
+
+export interface FallbackSesameVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: 'sesame';
+  /**
+   * Sesame Voice ID. This should be either a name (a built-in voice) or a UUID (a custom voice).
+   * This is the provider-specific ID that will be used.
+   */
+  voiceId: string;
+  /** This is the model that will be used. */
+  model: 'csm-1b';
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -7044,6 +7486,7 @@ export interface FallbackVapiVoice {
   /** The voices provided by Vapi */
   voiceId:
     | 'Elliot'
+    | 'Kylie'
     | 'Rohan'
     | 'Lily'
     | 'Savannah'
@@ -7274,10 +7717,13 @@ export interface CreateAzureOpenAICredentialDTO {
     | 'westus3';
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models:
+    | 'gpt-4.1-2025-04-14'
+    | 'gpt-4.1-mini-2025-04-14'
+    | 'gpt-4.1-nano-2025-04-14'
     | 'gpt-4o-2024-11-20'
     | 'gpt-4o-2024-08-06'
-    | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4o-2024-05-13'
+    | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4-turbo-2024-04-09'
     | 'gpt-4-0125-preview'
     | 'gpt-4-1106-preview'
@@ -8052,6 +8498,13 @@ export interface FunctionCallAssistantHookAction {
   server?: Server;
 }
 
+export interface SayAssistantHookAction {
+  /** This is the type of action - must be "say" */
+  type: 'say';
+  /** This is the message to say */
+  exact: object;
+}
+
 export interface AssistantHookFilter {
   /**
    * This is the type of filter - currently only "oneOf" is supported
@@ -8077,6 +8530,26 @@ export interface AssistantHookCallEnding {
   do: (TransferAssistantHookAction | FunctionCallAssistantHookAction)[];
   /** This is the set of filters that must match for the hook to trigger */
   filters?: AssistantHookFilter[];
+}
+
+export interface AssistantHookAssistantSpeechInterrupted {
+  /**
+   * This is the event that triggers this hook
+   * @maxLength 1000
+   */
+  on: 'assistant.speech.interrupted';
+  /** This is the set of actions to perform when the hook triggers */
+  do: (TransferAssistantHookAction | FunctionCallAssistantHookAction | SayAssistantHookAction)[];
+}
+
+export interface AssistantHookCustomerSpeechInterrupted {
+  /**
+   * This is the event that triggers this hook
+   * @maxLength 1000
+   */
+  on: 'customer.speech.interrupted';
+  /** This is the set of actions to perform when the hook triggers */
+  do: (TransferAssistantHookAction | FunctionCallAssistantHookAction | SayAssistantHookAction)[];
 }
 
 export interface VoicemailDetectionBackoffPlan {
@@ -8277,14 +8750,14 @@ export interface StructuredDataPlan {
    *   },
    *   {
    *     "role": "user",
-   *     "content": "Here is the transcript:\n\n{{transcript}}\n\n"
+   *     "content": "Here is the transcript:\n\n{{transcript}}\n\n. Here is the ended reason of the call:\n\n{{endedReason}}\n\n"
    *   }
    * ]```
    *
    * You can customize by providing any messages you want.
    *
    * Here are the template variables available:
-   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{schema}}: the schema of the structured data from `structuredDataPlan.schema`
+   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{schema}}: the schema of the structured data from `structuredDataPlan.schema`- {{endedReason}}: the ended reason of the call from `call.endedReason`
    */
   messages?: object[];
   /**
@@ -8362,14 +8835,14 @@ export interface SuccessEvaluationPlan {
    *   },
    *   {
    *     "role": "user",
-   *     "content": "Here was the system prompt of the call:\n\n{{systemPrompt}}\n\n"
+   *     "content": "Here was the system prompt of the call:\n\n{{systemPrompt}}\n\n. Here is the ended reason of the call:\n\n{{endedReason}}\n\n"
    *   }
    * ]```
    *
    * You can customize by providing any messages you want.
    *
    * Here are the template variables available:
-   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{rubric}}: the rubric of the success evaluation from `successEvaluationPlan.rubric`
+   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{rubric}}: the rubric of the success evaluation from `successEvaluationPlan.rubric`- {{endedReason}}: the ended reason of the call from `call.endedReason`
    */
   messages?: object[];
   /**
@@ -8598,7 +9071,7 @@ export interface LivekitSmartEndpointingPlan {
    *
    * Under the hood, this is parsed into a mathjs expression. Whatever you use to write your expression needs to be valid with respect to mathjs
    *
-   * @default "70 + 4000 * x"
+   * @default "20 + 500 * sqrt(x) + 2500 * x^3"
    */
   waitFunction?: string;
 }
@@ -8778,6 +9251,15 @@ export interface MonitorPlan {
    */
   listenEnabled?: boolean;
   /**
+   * This enables authentication on the `call.monitor.listenUrl`.
+   *
+   * If `listenAuthenticationEnabled` is `true`, the `call.monitor.listenUrl` will require an `Authorization: Bearer <vapi-public-api-key>` header.
+   *
+   * @default false
+   * @example false
+   */
+  listenAuthenticationEnabled?: boolean;
+  /**
    * This determines whether the assistant's calls allow live control. Defaults to true.
    *
    * Fetch `call.monitor.controlUrl` to get the live control URL.
@@ -8788,6 +9270,15 @@ export interface MonitorPlan {
    * @example false
    */
   controlEnabled?: boolean;
+  /**
+   * This enables authentication on the `call.monitor.controlUrl`.
+   *
+   * If `controlAuthenticationEnabled` is `true`, the `call.monitor.controlUrl` will require an `Authorization: Bearer <vapi-public-api-key>` header.
+   *
+   * @default false
+   * @example false
+   */
+  controlAuthenticationEnabled?: boolean;
 }
 
 export interface KeypadInputPlan {
@@ -8824,14 +9315,14 @@ export interface CreateAssistantDTO {
     | DeepgramTranscriber
     | ElevenLabsTranscriber
     | GladiaTranscriber
+    | GoogleTranscriber
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
-    | GoogleTranscriber
     | OpenAITranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
-    | AnyscaleModel
     | AnthropicModel
+    | AnyscaleModel
     | CerebrasModel
     | CustomLLMModel
     | DeepInfraModel
@@ -8843,12 +9334,8 @@ export interface CreateAssistantDTO {
     | OpenRouterModel
     | PerplexityAIModel
     | TogetherAIModel
-    | VapiModel
     | XaiModel;
-  /**
-   * These are the options for the assistant's voice.
-   * @default {"provider":"playht","voiceId":"jennifer"}
-   */
+  /** These are the options for the assistant's voice. */
   voice?:
     | AzureVoice
     | CartesiaVoice
@@ -8863,7 +9350,8 @@ export interface CreateAssistantDTO {
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
-    | VapiVoice;
+    | VapiVoice
+    | SesameVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -8898,8 +9386,50 @@ export interface CreateAssistantDTO {
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
     | VapiVoicemailDetectionPlan;
-  clientMessages: object[][];
-  serverMessages: object[][];
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
+   */
+  clientMessages?:
+    | 'conversation-update'
+    | 'function-call'
+    | 'function-call-result'
+    | 'hang'
+    | 'language-changed'
+    | 'metadata'
+    | 'model-output'
+    | 'speech-update'
+    | 'status-update'
+    | 'transcript'
+    | 'tool-calls'
+    | 'tool-calls-result'
+    | 'tool.completed'
+    | 'transfer-update'
+    | 'user-interrupted'
+    | 'voice-input'
+    | 'workflow.node.started';
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
+   */
+  serverMessages?:
+    | 'conversation-update'
+    | 'end-of-call-report'
+    | 'function-call'
+    | 'hang'
+    | 'language-changed'
+    | 'language-change-detected'
+    | 'model-output'
+    | 'phone-call-control'
+    | 'speech-update'
+    | 'status-update'
+    | 'transcript'
+    | "transcript[transcriptType='final']"
+    | 'tool-calls'
+    | 'transfer-destination-request'
+    | 'transfer-update'
+    | 'user-interrupted'
+    | 'voice-input';
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    *
@@ -8921,7 +9451,6 @@ export interface CreateAssistantDTO {
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
    * You can also provide a custom sound by providing a URL to an audio file.
-   * @maxLength 1000
    */
   backgroundSound?: 'off' | 'office' | string;
   /**
@@ -9092,9 +9621,16 @@ export interface CreateAssistantDTO {
     | ({
         provider: 'slack.oauth2-authorization';
       } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'ghl.oauth2-authorization';
+      } & CreateGoHighLevelMCPCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
-  hooks?: AssistantHookCallEnding[];
+  hooks?: (
+    | AssistantHookCallEnding
+    | AssistantHookAssistantSpeechInterrupted
+    | AssistantHookCustomerSpeechInterrupted
+  )[];
   /**
    * This is the name of the assistant.
    *
@@ -9189,14 +9725,14 @@ export interface AssistantOverrides {
     | DeepgramTranscriber
     | ElevenLabsTranscriber
     | GladiaTranscriber
+    | GoogleTranscriber
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
-    | GoogleTranscriber
     | OpenAITranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
-    | AnyscaleModel
     | AnthropicModel
+    | AnyscaleModel
     | CerebrasModel
     | CustomLLMModel
     | DeepInfraModel
@@ -9208,12 +9744,8 @@ export interface AssistantOverrides {
     | OpenRouterModel
     | PerplexityAIModel
     | TogetherAIModel
-    | VapiModel
     | XaiModel;
-  /**
-   * These are the options for the assistant's voice.
-   * @default {"provider":"playht","voiceId":"jennifer"}
-   */
+  /** These are the options for the assistant's voice. */
   voice?:
     | AzureVoice
     | CartesiaVoice
@@ -9228,7 +9760,8 @@ export interface AssistantOverrides {
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
-    | VapiVoice;
+    | VapiVoice
+    | SesameVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -9263,8 +9796,50 @@ export interface AssistantOverrides {
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
     | VapiVoicemailDetectionPlan;
-  clientMessages: object[][];
-  serverMessages: object[][];
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
+   */
+  clientMessages?:
+    | 'conversation-update'
+    | 'function-call'
+    | 'function-call-result'
+    | 'hang'
+    | 'language-changed'
+    | 'metadata'
+    | 'model-output'
+    | 'speech-update'
+    | 'status-update'
+    | 'transcript'
+    | 'tool-calls'
+    | 'tool-calls-result'
+    | 'tool.completed'
+    | 'transfer-update'
+    | 'user-interrupted'
+    | 'voice-input'
+    | 'workflow.node.started';
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
+   */
+  serverMessages?:
+    | 'conversation-update'
+    | 'end-of-call-report'
+    | 'function-call'
+    | 'hang'
+    | 'language-changed'
+    | 'language-change-detected'
+    | 'model-output'
+    | 'phone-call-control'
+    | 'speech-update'
+    | 'status-update'
+    | 'transcript'
+    | "transcript[transcriptType='final']"
+    | 'tool-calls'
+    | 'transfer-destination-request'
+    | 'transfer-update'
+    | 'user-interrupted'
+    | 'voice-input';
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    *
@@ -9286,7 +9861,6 @@ export interface AssistantOverrides {
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
    * You can also provide a custom sound by providing a URL to an audio file.
-   * @maxLength 1000
    */
   backgroundSound?: 'off' | 'office' | string;
   /**
@@ -9457,9 +10031,16 @@ export interface AssistantOverrides {
     | ({
         provider: 'slack.oauth2-authorization';
       } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'ghl.oauth2-authorization';
+      } & CreateGoHighLevelMCPCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
-  hooks?: AssistantHookCallEnding[];
+  hooks?: (
+    | AssistantHookCallEnding
+    | AssistantHookAssistantSpeechInterrupted
+    | AssistantHookCustomerSpeechInterrupted
+  )[];
   /**
    * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
    * This uses LiquidJS syntax. https://liquidjs.com/tutorials/intro-to-liquid.html
@@ -9588,23 +10169,9 @@ export interface CreateSquadDTO {
 }
 
 export interface CreateWorkflowDTO {
-  nodes: (Start | Assistant | Say | Gather | ApiRequest | Hangup | Transfer)[];
+  nodes: (ConversationNode | ToolNode)[];
   /** These are the options for the workflow's LLM. */
-  model?:
-    | AnthropicModel
-    | AnyscaleModel
-    | CerebrasModel
-    | CustomLLMModel
-    | DeepInfraModel
-    | DeepSeekModel
-    | GoogleModel
-    | GroqModel
-    | InflectionAIModel
-    | OpenAIModel
-    | OpenRouterModel
-    | PerplexityAIModel
-    | TogetherAIModel
-    | XaiModel;
+  model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
@@ -9781,6 +10348,7 @@ export interface Call {
    * This is the provider of the call.
    *
    * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   * @deprecated
    */
   phoneCallProvider?: 'twilio' | 'vonage' | 'vapi' | 'telnyx';
   /**
@@ -10322,56 +10890,67 @@ export interface Call {
    * The ID of the call as provided by the phone number service. callSid in Twilio. conversationUuid in Vonage. callControlId in Telnyx.
    *
    * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
+   * @deprecated
    */
   phoneCallProviderId?: string;
   /**
-   * This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   * This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
+   *
+   * To start a call with:
+   * - Assistant, use `assistantId` or `assistant`
+   * - Squad, use `squadId` or `squad`
+   * - Workflow, use `workflowId` or `workflow`
    */
   assistantId?: string;
   /**
    * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant`
+   * - Squad, use `squad`
+   * - Workflow, use `workflow`
    */
   assistant?: CreateAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
   /**
    * This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   squadId?: string;
   /**
    * This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   squad?: CreateSquadDTO;
   /**
+   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+   *
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   workflowId?: string;
   /**
+   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+   *
    * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   workflow?: CreateWorkflowDTO;
   /**
@@ -10438,53 +11017,63 @@ export interface CreateCallDTO {
   /** This is the transport of the call. */
   transport?: object;
   /**
-   * This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   * This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
+   *
+   * To start a call with:
+   * - Assistant, use `assistantId` or `assistant`
+   * - Squad, use `squadId` or `squad`
+   * - Workflow, use `workflowId` or `workflow`
    */
   assistantId?: string;
   /**
    * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant`
+   * - Squad, use `squad`
+   * - Workflow, use `workflow`
    */
   assistant?: CreateAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
   /**
    * This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   squadId?: string;
   /**
    * This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   squad?: CreateSquadDTO;
   /**
+   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+   *
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   workflowId?: string;
   /**
+   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+   *
    * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   workflow?: CreateWorkflowDTO;
   /**
@@ -10541,53 +11130,63 @@ export interface CreateOutboundCallDTO {
   /** This is the transport of the call. */
   transport?: object;
   /**
-   * This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   * This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
+   *
+   * To start a call with:
+   * - Assistant, use `assistantId` or `assistant`
+   * - Squad, use `squadId` or `squad`
+   * - Workflow, use `workflowId` or `workflow`
    */
   assistantId?: string;
   /**
    * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant`
+   * - Squad, use `squad`
+   * - Workflow, use `workflow`
    */
   assistant?: CreateAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
   /**
    * This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   squadId?: string;
   /**
    * This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   squad?: CreateSquadDTO;
   /**
+   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+   *
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   workflowId?: string;
   /**
+   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+   *
    * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   workflow?: CreateWorkflowDTO;
   /**
@@ -10618,53 +11217,63 @@ export interface CreateOutboundCallDTO {
 
 export interface CreateWebCallDTO {
   /**
-   * This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   * This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
+   *
+   * To start a call with:
+   * - Assistant, use `assistantId` or `assistant`
+   * - Squad, use `squadId` or `squad`
+   * - Workflow, use `workflowId` or `workflow`
    */
   assistantId?: string;
   /**
    * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant`
+   * - Squad, use `squad`
+   * - Workflow, use `workflow`
    */
   assistant?: CreateAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
   /**
    * This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   squadId?: string;
   /**
    * This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   squad?: CreateSquadDTO;
   /**
+   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+   *
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   workflowId?: string;
   /**
+   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+   *
    * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
-   * Usage:
-   *     To start the call with Assistant as entrypoint, use assistant or assistantId
-   *     To start the call with Squad as entrypoint, use squad or squadId
-   *     To start the call with Workflow as entrypoint, use workflow or workflowId
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
    */
   workflow?: CreateWorkflowDTO;
 }
@@ -10677,40 +11286,321 @@ export interface UpdateCallDTO {
   name?: string;
 }
 
-export type ChatServiceResponse = object;
-
-export interface ChatCompletionMessageMetadata {
-  taskName: string;
-  taskType: string;
-  taskOutput: string;
-  taskState?: object;
-  nodeTrace?: string[];
+export interface DeveloperMessage {
+  /** This is the role of the message author */
+  role: 'developer';
+  /**
+   * This is the content of the developer message
+   * @maxLength 10000
+   */
+  content: string;
+  /**
+   * This is an optional name for the participant
+   * @maxLength 40
+   */
+  name?: string;
 }
 
-export interface ChatCompletionMessageWorkflows {
-  role: object;
-  content: string | null;
-  metadata?: ChatCompletionMessageMetadata;
+export interface SystemMessage {
+  /** The role of the system in the conversation. */
+  role: string;
+  /** The message content from the system. */
+  message: string;
+  /** The timestamp when the message was sent. */
+  time: number;
+  /** The number of seconds from the start of the conversation. */
+  secondsFromStart: number;
 }
 
-export interface ChatCompletionsDTO {
-  messages: ChatCompletionMessageWorkflows[];
-  workflowId?: string;
-  workflow?: CreateWorkflowDTO;
+export interface UserMessage {
+  /** The role of the user in the conversation. */
+  role: string;
+  /** The message content from the user. */
+  message: string;
+  /** The timestamp when the message was sent. */
+  time: number;
+  /** The timestamp when the message ended. */
+  endTime: number;
+  /** The number of seconds from the start of the conversation. */
+  secondsFromStart: number;
+  /** The duration of the message in seconds. */
+  duration?: number;
 }
 
-export interface AssistantPaginatedResponse {
-  results: Assistant[];
+export interface ToolCallFunction {
+  /** This is the arguments to call the function with */
+  arguments: string;
+  /**
+   * This is the name of the function to call
+   * @maxLength 40
+   */
+  name: string;
+}
+
+export interface ToolCall {
+  /** This is the ID of the tool call */
+  id: string;
+  /** This is the type of tool */
+  type: string;
+  /** This is the function that was called */
+  function: ToolCallFunction;
+}
+
+export interface AssistantMessage {
+  /** This is the role of the message author */
+  role: 'assistant';
+  /**
+   * This is the content of the assistant message
+   * @maxLength 10000
+   */
+  content?: string;
+  /**
+   * This is the refusal message generated by the model
+   * @maxLength 10000
+   */
+  refusal?: string;
+  /** This is the tool calls generated by the model */
+  tool_calls?: ToolCall[];
+  /**
+   * This is an optional name for the participant
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface ToolMessage {
+  /** This is the role of the message author */
+  role: 'tool';
+  /**
+   * This is the content of the tool message
+   * @maxLength 10000
+   */
+  content: string;
+  /** This is the ID of the tool call this message is responding to */
+  tool_call_id: string;
+  /**
+   * This is an optional name for the participant
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateChatStreamResponse {
+  /** This is the unique identifier for the streaming response. */
+  id: string;
+  /**
+   * This is the path to the content being updated.
+   * Format: `chat.output[{contentIndex}].content` where contentIndex identifies the specific content item.
+   * @example "chat.output[0].content"
+   */
+  path: string;
+  /** This is the incremental content chunk being streamed. */
+  delta: string;
+}
+
+export interface Chat {
+  /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
+  assistantId?: string;
+  /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
+  /**
+   * This is the name of the chat. This is just for your own reference.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the ID of the session that will be used for the chat.
+   * Mutually exclusive with previousChatId.
+   */
+  sessionId?: string;
+  /** Chat input as a string or an array of messages. When using message array, each message requires a role and content. */
+  input?:
+    | string
+    | (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
+  /**
+   * This is a flag that determines whether the response should be streamed.
+   * When true, the response will be sent as chunks of text.
+   * @default false
+   */
+  stream?: boolean;
+  /**
+   * This is the ID of the chat that will be used as context for the new chat.
+   * The messages from the previous chat will be used as context.
+   * Mutually exclusive with sessionId.
+   */
+  previousChatId?: string;
+  /** This is the unique identifier for the chat. */
+  id: string;
+  /** This is the unique identifier for the org that this chat belongs to. */
+  orgId: string;
+  /** Array of messages used as context for the chat */
+  messages?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
+  /** Output messages generated by the system in response to the input */
+  output?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
+  /**
+   * This is the ISO 8601 date-time string of when the chat was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the chat was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface ChatPaginatedResponse {
+  results: Chat[];
   metadata: PaginationMeta;
 }
 
-export interface AssistantVersionPaginatedResponse {
-  results: any[];
-  metadata: PaginationMeta;
-  nextPageState?: string;
+export interface CreateChatDTO {
+  /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
+  assistantId?: string;
+  /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
+  /**
+   * This is the name of the chat. This is just for your own reference.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the ID of the session that will be used for the chat.
+   * Mutually exclusive with previousChatId.
+   */
+  sessionId?: string;
+  /** Chat input as a string or an array of messages. When using message array, each message requires a role and content. */
+  input:
+    | string
+    | (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
+  /**
+   * This is a flag that determines whether the response should be streamed.
+   * When true, the response will be sent as chunks of text.
+   * @default false
+   */
+  stream?: boolean;
+  /**
+   * This is the ID of the chat that will be used as context for the new chat.
+   * The messages from the previous chat will be used as context.
+   * Mutually exclusive with sessionId.
+   */
+  previousChatId?: string;
 }
 
-export interface UpdateAssistantDTO {
+export interface OpenAIResponsesRequest {
+  /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
+  assistantId?: string;
+  /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
+  /**
+   * This is the name of the chat. This is just for your own reference.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the ID of the session that will be used for the chat.
+   * Mutually exclusive with previousChatId.
+   */
+  sessionId?: string;
+  /** Chat input as a string or an array of messages. When using message array, each message requires a role and content. */
+  input:
+    | string
+    | (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
+  /**
+   * Whether to stream the response or not.
+   * @default true
+   */
+  stream?: boolean;
+  /**
+   * This is the ID of the chat that will be used as context for the new chat.
+   * The messages from the previous chat will be used as context.
+   * Mutually exclusive with sessionId.
+   */
+  previousChatId?: string;
+}
+
+export interface CreateSessionDTO {
+  /**
+   * This is a user-defined name for the session. Maximum length is 40 characters.
+   * @maxLength 40
+   */
+  name?: string;
+  /** This is the current status of the session. Can be either 'active' or 'completed'. */
+  status?: 'active' | 'completed';
+  /** This is the ID of the assistant associated with this session. Use this when referencing an existing assistant. */
+  assistantId?: string;
+  /**
+   * This is the assistant configuration for this session. Use this when creating a new assistant configuration.
+   * If assistantId is provided, this will be ignored.
+   */
+  assistant?: CreateAssistantDTO;
+  /** Array of chat messages in the session */
+  messages?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
+  /** This is the customer information associated with this session. */
+  customer?: CreateCustomerDTO;
+  /** This is the ID of the phone number associated with this session. */
+  phoneNumberId?: string;
+  /** This is the phone number configuration for this session. */
+  phoneNumber?: ImportTwilioPhoneNumberDTO;
+}
+
+export interface Session {
+  /** This is the unique identifier for the session. */
+  id: string;
+  /** This is the unique identifier for the organization that owns this session. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 timestamp indicating when the session was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 timestamp indicating when the session was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is a user-defined name for the session. Maximum length is 40 characters.
+   * @maxLength 40
+   */
+  name?: string;
+  /** This is the current status of the session. Can be either 'active' or 'completed'. */
+  status?: 'active' | 'completed';
+  /** This is the ID of the assistant associated with this session. Use this when referencing an existing assistant. */
+  assistantId?: string;
+  /**
+   * This is the assistant configuration for this session. Use this when creating a new assistant configuration.
+   * If assistantId is provided, this will be ignored.
+   */
+  assistant?: CreateAssistantDTO;
+  /** Array of chat messages in the session */
+  messages?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
+  /** This is the customer information associated with this session. */
+  customer?: CreateCustomerDTO;
+  /** This is the ID of the phone number associated with this session. */
+  phoneNumberId?: string;
+  /** This is the phone number configuration for this session. */
+  phoneNumber?: ImportTwilioPhoneNumberDTO;
+}
+
+export interface SessionPaginatedResponse {
+  results: Session[];
+  metadata: PaginationMeta;
+}
+
+export interface UpdateSessionDTO {
+  /**
+   * This is the new name for the session. Maximum length is 40 characters.
+   * @maxLength 40
+   */
+  name?: string;
+  /** This is the new status for the session. */
+  status?: 'active' | 'completed';
+  /** Array of updated chat messages */
+  messages?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
+}
+
+export interface Assistant {
   /** These are the options for the assistant's transcriber. */
   transcriber?:
     | AssemblyAITranscriber
@@ -10719,14 +11609,14 @@ export interface UpdateAssistantDTO {
     | DeepgramTranscriber
     | ElevenLabsTranscriber
     | GladiaTranscriber
+    | GoogleTranscriber
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
-    | GoogleTranscriber
     | OpenAITranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
-    | AnyscaleModel
     | AnthropicModel
+    | AnyscaleModel
     | CerebrasModel
     | CustomLLMModel
     | DeepInfraModel
@@ -10738,12 +11628,8 @@ export interface UpdateAssistantDTO {
     | OpenRouterModel
     | PerplexityAIModel
     | TogetherAIModel
-    | VapiModel
     | XaiModel;
-  /**
-   * These are the options for the assistant's voice.
-   * @default {"provider":"playht","voiceId":"jennifer"}
-   */
+  /** These are the options for the assistant's voice. */
   voice?:
     | AzureVoice
     | CartesiaVoice
@@ -10758,7 +11644,8 @@ export interface UpdateAssistantDTO {
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
-    | VapiVoice;
+    | VapiVoice
+    | SesameVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -10793,8 +11680,50 @@ export interface UpdateAssistantDTO {
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
     | VapiVoicemailDetectionPlan;
-  clientMessages: object[][];
-  serverMessages: object[][];
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
+   */
+  clientMessages?:
+    | 'conversation-update'
+    | 'function-call'
+    | 'function-call-result'
+    | 'hang'
+    | 'language-changed'
+    | 'metadata'
+    | 'model-output'
+    | 'speech-update'
+    | 'status-update'
+    | 'transcript'
+    | 'tool-calls'
+    | 'tool-calls-result'
+    | 'tool.completed'
+    | 'transfer-update'
+    | 'user-interrupted'
+    | 'voice-input'
+    | 'workflow.node.started';
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
+   */
+  serverMessages?:
+    | 'conversation-update'
+    | 'end-of-call-report'
+    | 'function-call'
+    | 'hang'
+    | 'language-changed'
+    | 'language-change-detected'
+    | 'model-output'
+    | 'phone-call-control'
+    | 'speech-update'
+    | 'status-update'
+    | 'transcript'
+    | "transcript[transcriptType='final']"
+    | 'tool-calls'
+    | 'transfer-destination-request'
+    | 'transfer-update'
+    | 'user-interrupted'
+    | 'voice-input';
   /**
    * How many seconds of silence to wait before ending the call. Defaults to 30.
    *
@@ -10816,7 +11745,6 @@ export interface UpdateAssistantDTO {
   /**
    * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
    * You can also provide a custom sound by providing a URL to an audio file.
-   * @maxLength 1000
    */
   backgroundSound?: 'off' | 'office' | string;
   /**
@@ -10987,9 +11915,451 @@ export interface UpdateAssistantDTO {
     | ({
         provider: 'slack.oauth2-authorization';
       } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'ghl.oauth2-authorization';
+      } & CreateGoHighLevelMCPCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
-  hooks?: AssistantHookCallEnding[];
+  hooks?: (
+    | AssistantHookCallEnding
+    | AssistantHookAssistantSpeechInterrupted
+    | AssistantHookCustomerSpeechInterrupted
+  )[];
+  /**
+   * This is the name of the assistant.
+   *
+   * This is required when you want to transfer between assistants in a call.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 1000
+   */
+  endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
+  compliancePlan?: CompliancePlan;
+  /** This is for metadata you want to store on the assistant. */
+  metadata?: object;
+  /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
+  analysisPlan?: AnalysisPlan;
+  /**
+   * This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`.
+   *
+   * Note: `recordingEnabled` is currently at the root level. It will be moved to `artifactPlan` in the future, but will remain backwards compatible.
+   */
+  artifactPlan?: ArtifactPlan;
+  /**
+   * This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
+   *
+   * Note: `firstMessage`, `voicemailMessage`, and `endCallMessage` are currently at the root level. They will be moved to `messagePlan` in the future, but will remain backwards compatible.
+   */
+  messagePlan?: MessagePlan;
+  /**
+   * This is the plan for when the assistant should start talking.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to start talking after the customer is done speaking.
+   * - The assistant is too fast to start talking after the customer is done speaking.
+   * - The assistant is so fast that it's actually interrupting the customer.
+   */
+  startSpeakingPlan?: StartSpeakingPlan;
+  /**
+   * This is the plan for when assistant should stop talking on customer interruption.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to recognize customer's interruption.
+   * - The assistant is too fast to recognize customer's interruption.
+   * - The assistant is getting interrupted by phrases that are just acknowledgments.
+   * - The assistant is getting interrupted by background noises.
+   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+   */
+  stopSpeakingPlan?: StopSpeakingPlan;
+  /**
+   * This is the plan for real-time monitoring of the assistant's calls.
+   *
+   * Usage:
+   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
+   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   *
+   * Note, `serverMessages`, `clientMessages`, `serverUrl` and `serverUrlSecret` are currently at the root level but will be moved to `monitorPlan` in the future. Will remain backwards compatible
+   */
+  monitorPlan?: MonitorPlan;
+  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
+  credentialIds?: string[];
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. assistant.server.url
+   * 2. phoneNumber.serverUrl
+   * 3. org.serverUrl
+   */
+  server?: Server;
+  keypadInputPlan?: KeypadInputPlan;
+  /** This is the unique identifier for the assistant. */
+  id: string;
+  /** This is the unique identifier for the org that this assistant belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface AssistantPaginatedResponse {
+  results: Assistant[];
+  metadata: PaginationMeta;
+}
+
+export interface AssistantVersionPaginatedResponse {
+  results: any[];
+  metadata: PaginationMeta;
+  nextPageState?: string;
+}
+
+export interface UpdateAssistantDTO {
+  /** These are the options for the assistant's transcriber. */
+  transcriber?:
+    | AssemblyAITranscriber
+    | AzureSpeechTranscriber
+    | CustomTranscriber
+    | DeepgramTranscriber
+    | ElevenLabsTranscriber
+    | GladiaTranscriber
+    | GoogleTranscriber
+    | SpeechmaticsTranscriber
+    | TalkscriberTranscriber
+    | OpenAITranscriber;
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | AnthropicModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel;
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | TavusVoice
+    | VapiVoice
+    | SesameVoice;
+  /**
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
+   *
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
+   * @example "Hello! How can I help you today?"
+   */
+  firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Use:
+   * - 'assistant-speaks-first' to have the assistant speak first.
+   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
+   *
+   * @default 'assistant-speaks-first'
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?:
+    | 'assistant-speaks-first'
+    | 'assistant-speaks-first-with-model-generated-message'
+    | 'assistant-waits-for-user';
+  /**
+   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+   * This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
+   * You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+   */
+  voicemailDetection?:
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
+   */
+  clientMessages?:
+    | 'conversation-update'
+    | 'function-call'
+    | 'function-call-result'
+    | 'hang'
+    | 'language-changed'
+    | 'metadata'
+    | 'model-output'
+    | 'speech-update'
+    | 'status-update'
+    | 'transcript'
+    | 'tool-calls'
+    | 'tool-calls-result'
+    | 'tool.completed'
+    | 'transfer-update'
+    | 'user-interrupted'
+    | 'voice-input'
+    | 'workflow.node.started';
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","user-interrupted"]
+   */
+  serverMessages?:
+    | 'conversation-update'
+    | 'end-of-call-report'
+    | 'function-call'
+    | 'hang'
+    | 'language-changed'
+    | 'language-change-detected'
+    | 'model-output'
+    | 'phone-call-control'
+    | 'speech-update'
+    | 'status-update'
+    | 'transcript'
+    | "transcript[transcriptType='final']"
+    | 'tool-calls'
+    | 'transfer-destination-request'
+    | 'transfer-update'
+    | 'user-interrupted'
+    | 'voice-input';
+  /**
+   * How many seconds of silence to wait before ending the call. Defaults to 30.
+   *
+   * @default 30
+   * @min 10
+   * @max 3600
+   * @example 30
+   */
+  silenceTimeoutSeconds?: number;
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   *
+   * @default 600 (10 minutes)
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: 'off' | 'office' | string;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Default `false` while in beta.
+   *
+   * @default false
+   * @example false
+   */
+  backgroundDenoisingEnabled?: boolean;
+  /**
+   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
+   *
+   * Default `false` while in beta.
+   *
+   * @default false
+   * @example false
+   */
+  modelOutputInMessagesEnabled?: boolean;
+  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
+  transportConfigurations?: TransportConfigurationTwilio[];
+  /**
+   * This is the plan for observability configuration of assistant's calls.
+   * Currently supports Langfuse for tracing and monitoring.
+   */
+  observabilityPlan?: LangfuseObservabilityPlan;
+  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
+  credentials?: (
+    | ({
+        provider: '11labs';
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: 'anthropic';
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: 'anyscale';
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: 'assembly-ai';
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: 'azure-openai';
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: 'azure';
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: 'byo-sip-trunk';
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: 'cartesia';
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: 'cerebras';
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: 'cloudflare';
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: 'custom-llm';
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: 'deepgram';
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: 'deepinfra';
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: 'deep-seek';
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: 'gcp';
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: 'gladia';
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: 'gohighlevel';
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: 'google';
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: 'groq';
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: 'inflection-ai';
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: 'langfuse';
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: 'lmnt';
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: 'make';
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: 'openai';
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: 'openrouter';
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: 'perplexity-ai';
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: 'playht';
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: 'rime-ai';
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: 'runpod';
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: 's3';
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: 'supabase';
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: 'smallest-ai';
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: 'tavus';
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: 'together-ai';
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: 'twilio';
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: 'vonage';
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: 'webhook';
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: 'xai';
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: 'neuphonic';
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: 'hume';
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: 'mistral';
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: 'speechmatics';
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: 'trieve';
+      } & CreateTrieveCredentialDTO)
+    | ({
+        provider: 'google.calendar.oauth2-client';
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: 'google.calendar.oauth2-authorization';
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'google.sheets.oauth2-authorization';
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'slack.oauth2-authorization';
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: 'ghl.oauth2-authorization';
+      } & CreateGoHighLevelMCPCredentialDTO)
+  )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | AssistantHookCallEnding
+    | AssistantHookAssistantSpeechInterrupted
+    | AssistantHookCustomerSpeechInterrupted
+  )[];
   /**
    * This is the name of the assistant.
    *
@@ -12457,7 +13827,6 @@ export interface TransferCallTool {
   /** These are the destinations that the call can be transferred to. If no destinations are provided, server.url will be used to get the transfer destination once the tool is called. */
   destinations?: (
     | TransferDestinationAssistant
-    | TransferDestinationStep
     | TransferDestinationNumber
     | TransferDestinationSip
   )[];
@@ -12990,7 +14359,7 @@ export interface SlackSendMessageTool {
   server?: Server;
 }
 
-export interface SmsSendTool {
+export interface SmsTool {
   /**
    * This determines if the tool is async.
    *
@@ -13076,6 +14445,284 @@ export interface McpTool {
    * @format date-time
    */
   updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoHighLevelCalendarAvailabilityTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar availability check tool. */
+  type: 'gohighlevel.calendar.availability.check';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoHighLevelCalendarEventCreateTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar event create tool. */
+  type: 'gohighlevel.calendar.event.create';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoHighLevelContactCreateTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel contact create tool. */
+  type: 'gohighlevel.contact.create';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoHighLevelContactGetTool {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel contact get tool. */
+  type: 'gohighlevel.contact.get';
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface CreateApiRequestToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "apiRequest" for API request tool. */
+  type: 'apiRequest';
+  method: 'POST' | 'GET';
+  /**
+   * This is the timeout in seconds for the request. Defaults to 20 seconds.
+   *
+   * @default 20
+   * @min 1
+   * @max 300
+   * @example 20
+   */
+  timeoutSeconds?: number;
+  /**
+   * This is the name of the tool. This will be passed to the model.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the description of the tool. This will be passed to the model.
+   * @maxLength 1000
+   */
+  description?: string;
+  /** This is where the request will be sent. */
+  url: string;
+  /** This is the body of the request. */
+  body: JsonSchema;
+  /** These are the headers to send in the request. */
+  headers?: JsonSchema;
+  /**
+   * This is the backoff plan if the request fails. Defaults to undefined (the request will not be retried).
+   *
+   * @default undefined (the request will not be retried)
+   */
+  backoffPlan?: BackoffPlan;
   /**
    * This is the function definition of the tool.
    *
@@ -13273,7 +14920,7 @@ export interface CreateTextEditorToolDTO {
   server?: Server;
 }
 
-export interface CreateSmsSendToolDTO {
+export interface CreateSmsToolDTO {
   /**
    * This determines if the tool is async.
    *
@@ -13293,44 +14940,6 @@ export interface CreateSmsSendToolDTO {
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
   /** The type of tool. "sms" for Twilio SMS sending tool. */
   type: 'sms';
-  /**
-   * This is the function definition of the tool.
-   *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-   *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-   */
-  function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
-}
-
-export interface CreateMcpToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
-  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
-  /** The type of tool. "mcp" for MCP tool. */
-  type: 'mcp';
   /**
    * This is the function definition of the tool.
    *
@@ -13552,7 +15161,6 @@ export interface UpdateTransferCallToolDTO {
   /** These are the destinations that the call can be transferred to. If no destinations are provided, server.url will be used to get the transfer destination once the tool is called. */
   destinations?: (
     | TransferDestinationAssistant
-    | TransferDestinationStep
     | TransferDestinationNumber
     | TransferDestinationSip
   )[];
@@ -13927,7 +15535,7 @@ export interface UpdateSlackSendMessageToolDTO {
   server?: Server;
 }
 
-export interface UpdateSmsSendToolDTO {
+export interface UpdateSmsToolDTO {
   /**
    * This determines if the tool is async.
    *
@@ -13964,6 +15572,150 @@ export interface UpdateSmsSendToolDTO {
 }
 
 export interface UpdateMcpToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateGoHighLevelCalendarAvailabilityToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateGoHighLevelCalendarEventCreateToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateGoHighLevelContactCreateToolDTO {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface UpdateGoHighLevelContactGetToolDTO {
   /**
    * This determines if the tool is async.
    *
@@ -14247,23 +15999,9 @@ export interface TrieveKnowledgeBaseImport {
 }
 
 export interface Workflow {
-  nodes: (Start | Assistant | Say | Gather | ApiRequest | Hangup | Transfer)[];
+  nodes: (ConversationNode | ToolNode)[];
   /** These are the options for the workflow's LLM. */
-  model?:
-    | AnthropicModel
-    | AnyscaleModel
-    | CerebrasModel
-    | CustomLLMModel
-    | DeepInfraModel
-    | DeepSeekModel
-    | GoogleModel
-    | GroqModel
-    | InflectionAIModel
-    | OpenAIModel
-    | OpenRouterModel
-    | PerplexityAIModel
-    | TogetherAIModel
-    | XaiModel;
+  model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   id: string;
   orgId: string;
   /** @format date-time */
@@ -14276,23 +16014,9 @@ export interface Workflow {
 }
 
 export interface UpdateWorkflowDTO {
-  nodes?: (Start | Assistant | Say | Gather | ApiRequest | Hangup | Transfer)[];
+  nodes?: (ConversationNode | ToolNode)[];
   /** These are the options for the workflow's LLM. */
-  model?:
-    | AnthropicModel
-    | AnyscaleModel
-    | CerebrasModel
-    | CustomLLMModel
-    | DeepInfraModel
-    | DeepSeekModel
-    | GoogleModel
-    | GroqModel
-    | InflectionAIModel
-    | OpenAIModel
-    | OpenRouterModel
-    | PerplexityAIModel
-    | TogetherAIModel
-    | XaiModel;
+  model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   /** @maxLength 80 */
   name?: string;
   edges?: Edge[];
@@ -15624,10 +17348,13 @@ export interface AzureOpenAICredential {
     | 'westus3';
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models:
+    | 'gpt-4.1-2025-04-14'
+    | 'gpt-4.1-mini-2025-04-14'
+    | 'gpt-4.1-nano-2025-04-14'
     | 'gpt-4o-2024-11-20'
     | 'gpt-4o-2024-08-06'
-    | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4o-2024-05-13'
+    | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4-turbo-2024-04-09'
     | 'gpt-4-0125-preview'
     | 'gpt-4-1106-preview'
@@ -15811,6 +17538,8 @@ export interface Oauth2AuthenticationSession {
    * @format date-time
    */
   expiresAt?: string;
+  /** This is the OAuth2 refresh token. */
+  refreshToken?: string;
 }
 
 export interface CustomLLMCredential {
@@ -16873,6 +18602,32 @@ export interface SlackOAuth2AuthorizationCredential {
   name?: string;
 }
 
+export interface GoHighLevelMCPCredential {
+  provider: 'ghl.oauth2-authorization';
+  /** This is the authentication session for the credential. */
+  authenticationSession: Oauth2AuthenticationSession;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CreateCerebrasCredentialDTO {
   provider: 'cerebras';
   /**
@@ -16986,6 +18741,18 @@ export interface CreateTrieveCredentialDTO {
   name?: string;
 }
 
+export interface CreateGoHighLevelMCPCredentialDTO {
+  provider: 'ghl.oauth2-authorization';
+  /** This is the authentication session for the credential. */
+  authenticationSession: Oauth2AuthenticationSession;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface UpdateAnthropicCredentialDTO {
   /**
    * This is not returned in the API.
@@ -17088,10 +18855,13 @@ export interface UpdateAzureOpenAICredentialDTO {
     | 'westus3';
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models?:
+    | 'gpt-4.1-2025-04-14'
+    | 'gpt-4.1-mini-2025-04-14'
+    | 'gpt-4.1-nano-2025-04-14'
     | 'gpt-4o-2024-11-20'
     | 'gpt-4o-2024-08-06'
-    | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4o-2024-05-13'
+    | 'gpt-4o-mini-2024-07-18'
     | 'gpt-4-turbo-2024-04-09'
     | 'gpt-4-0125-preview'
     | 'gpt-4-1106-preview'
@@ -17660,6 +19430,17 @@ export interface UpdateSlackOAuth2AuthorizationCredentialDTO {
   name?: string;
 }
 
+export interface UpdateGoHighLevelMCPCredentialDTO {
+  /** This is the authentication session for the credential. */
+  authenticationSession?: Oauth2AuthenticationSession;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CredentialSessionResponse {
   sessionToken: string;
 }
@@ -17758,6 +19539,38 @@ export interface GoogleSheetsRowAppendToolProviderDetails {
   type: 'google.sheets.row.append';
 }
 
+export interface GoHighLevelCalendarAvailabilityToolProviderDetails {
+  /** This is the Template URL or the Snapshot URL corresponding to the Template. */
+  templateUrl?: string;
+  setupInstructions?: ToolTemplateSetup[];
+  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar availability check tool. */
+  type: 'gohighlevel.calendar.availability.check';
+}
+
+export interface GoHighLevelCalendarEventCreateToolProviderDetails {
+  /** This is the Template URL or the Snapshot URL corresponding to the Template. */
+  templateUrl?: string;
+  setupInstructions?: ToolTemplateSetup[];
+  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar event create tool. */
+  type: 'gohighlevel.calendar.event.create';
+}
+
+export interface GoHighLevelContactCreateToolProviderDetails {
+  /** This is the Template URL or the Snapshot URL corresponding to the Template. */
+  templateUrl?: string;
+  setupInstructions?: ToolTemplateSetup[];
+  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel contact create tool. */
+  type: 'gohighlevel.contact.create';
+}
+
+export interface GoHighLevelContactGetToolProviderDetails {
+  /** This is the Template URL or the Snapshot URL corresponding to the Template. */
+  templateUrl?: string;
+  setupInstructions?: ToolTemplateSetup[];
+  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel contact get tool. */
+  type: 'gohighlevel.contact.get';
+}
+
 export interface ToolTemplateMetadata {
   collectionType?: string;
   collectionId?: string;
@@ -17766,21 +19579,35 @@ export interface ToolTemplateMetadata {
 
 export interface CreateToolTemplateDTO {
   details?:
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
-    | CreateGoogleSheetsRowAppendToolDTO;
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO;
   providerDetails?:
     | MakeToolProviderDetails
     | GhlToolProviderDetails
     | FunctionToolProviderDetails
     | GoogleCalendarCreateEventToolProviderDetails
-    | GoogleSheetsRowAppendToolProviderDetails;
+    | GoogleSheetsRowAppendToolProviderDetails
+    | GoHighLevelCalendarAvailabilityToolProviderDetails
+    | GoHighLevelCalendarEventCreateToolProviderDetails
+    | GoHighLevelContactCreateToolProviderDetails
+    | GoHighLevelContactGetToolProviderDetails;
   metadata?: ToolTemplateMetadata;
   /** @default "private" */
   visibility?: 'public' | 'private';
@@ -17796,21 +19623,35 @@ export interface CreateToolTemplateDTO {
 
 export interface Template {
   details?:
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
-    | CreateGoogleSheetsRowAppendToolDTO;
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO;
   providerDetails?:
     | MakeToolProviderDetails
     | GhlToolProviderDetails
     | FunctionToolProviderDetails
     | GoogleCalendarCreateEventToolProviderDetails
-    | GoogleSheetsRowAppendToolProviderDetails;
+    | GoogleSheetsRowAppendToolProviderDetails
+    | GoHighLevelCalendarAvailabilityToolProviderDetails
+    | GoHighLevelCalendarEventCreateToolProviderDetails
+    | GoHighLevelContactCreateToolProviderDetails
+    | GoHighLevelContactGetToolProviderDetails;
   metadata?: ToolTemplateMetadata;
   /** @default "private" */
   visibility?: 'public' | 'private';
@@ -17840,21 +19681,35 @@ export interface Template {
 
 export interface UpdateToolTemplateDTO {
   details?:
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
-    | CreateVoicemailToolDTO
     | CreateFunctionToolDTO
-    | CreateGhlToolDTO
-    | CreateMakeToolDTO
-    | CreateTransferCallToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
     | CreateGoogleCalendarCreateEventToolDTO
-    | CreateGoogleSheetsRowAppendToolDTO;
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO;
   providerDetails?:
     | MakeToolProviderDetails
     | GhlToolProviderDetails
     | FunctionToolProviderDetails
     | GoogleCalendarCreateEventToolProviderDetails
-    | GoogleSheetsRowAppendToolProviderDetails;
+    | GoogleSheetsRowAppendToolProviderDetails
+    | GoHighLevelCalendarAvailabilityToolProviderDetails
+    | GoHighLevelCalendarEventCreateToolProviderDetails
+    | GoHighLevelContactCreateToolProviderDetails
+    | GoHighLevelContactGetToolProviderDetails;
   metadata?: ToolTemplateMetadata;
   /** @default "private" */
   visibility?: 'public' | 'private';
@@ -17988,22 +19843,59 @@ export interface CloneVoiceDTO {
 }
 
 export interface ClientMessageWorkflowNodeStarted {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "workflow.node.started" is sent when the active node changes. */
   type: 'workflow.node.started';
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
   /** This is the active node. */
   node: object;
 }
 
 export interface ClientMessageConversationUpdate {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "conversation-update" is sent when an update is committed to the conversation history. */
   type: 'conversation-update';
   /** This is the most up-to-date conversation history at the time the message is sent. */
   messages?: (UserMessage | SystemMessage | BotMessage | ToolCallMessage | ToolCallResultMessage)[];
   /** This is the most up-to-date conversation history at the time the message is sent, formatted for OpenAI. */
   messagesOpenAIFormatted: OpenAIMessage[];
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
 }
 
 export interface ClientMessageHang {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /**
    * This is the type of the message. "hang" is sent when the assistant is hanging due to a delay. The delay can be caused by many factors, such as:
    * - the model is too slow to respond
@@ -18012,23 +19904,68 @@ export interface ClientMessageHang {
    * - etc.
    */
   type: 'hang';
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
 }
 
 export interface ClientMessageMetadata {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "metadata" is sent to forward metadata to the client. */
   type: 'metadata';
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
   /** This is the metadata content */
   metadata: string;
 }
 
 export interface ClientMessageModelOutput {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "model-output" is sent as the model outputs tokens. */
   type: 'model-output';
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
   /** This is the output of the model. It can be a token or tool call. */
   output: object;
 }
 
 export interface ClientMessageSpeechUpdate {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "speech-update" is sent whenever assistant or user start or stop speaking. */
   type: 'speech-update';
   /** This is the status of the speech update. */
@@ -18037,11 +19974,34 @@ export interface ClientMessageSpeechUpdate {
   role: 'assistant' | 'user';
   /** This is the turn number of the speech update (0-indexed). */
   turn?: number;
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
 }
 
 export interface ClientMessageTranscript {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript. */
   type: 'transcript' | "transcript[transcriptType='final']";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
   /** This is the role for which the transcript is for. */
   role: 'assistant' | 'user';
   /** This is the type of the transcript. */
@@ -18050,23 +20010,14 @@ export interface ClientMessageTranscript {
   transcript: string;
 }
 
-export interface ToolCallFunction {
-  /** This is the name of the function the model called. */
-  name: string;
-  /** These are the arguments that the function was called with. */
-  arguments: object;
-}
-
-export interface ToolCall {
-  /** This is the type of tool the model called. */
-  type: 'function';
-  /** This is the function the model called. */
-  function: ToolCallFunction;
-  /** This is the unique identifier for the tool call. */
-  id: string;
-}
-
 export interface ClientMessageToolCalls {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "tool-calls" is sent to call a tool. */
   type?: 'tool-calls';
   /** This is the list of tools calls that the model is requesting along with the original tool configuration. */
@@ -18079,26 +20030,60 @@ export interface ClientMessageToolCalls {
     | TextEditorToolWithToolCall
     | GoogleCalendarCreateEventToolWithToolCall
   )[];
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
   /** This is the list of tool calls that the model is requesting. */
   toolCallList: ToolCall[];
 }
 
 export interface ClientMessageToolCallsResult {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "tool-calls-result" is sent to forward the result of a tool call to the client. */
   type: 'tool-calls-result';
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
   /** This is the result of the tool call. */
   toolCallResult: object;
 }
 
 export interface ClientMessageTransferUpdate {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "transfer-update" is sent whenever a transfer happens. */
   type: 'transfer-update';
   /** This is the destination of the transfer. */
-  destination?:
-    | TransferDestinationAssistant
-    | TransferDestinationStep
-    | TransferDestinationNumber
-    | TransferDestinationSip;
+  destination?: TransferDestinationAssistant | TransferDestinationNumber | TransferDestinationSip;
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
   /** This is the assistant that the call is being transferred to. This is only sent if `destination.type` is "assistant". */
   toAssistant?: CreateAssistantDTO;
   /** This is the assistant that the call is being transferred from. This is only sent if `destination.type` is "assistant". */
@@ -18110,20 +20095,65 @@ export interface ClientMessageTransferUpdate {
 }
 
 export interface ClientMessageUserInterrupted {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "user-interrupted" is sent when the user interrupts the assistant. */
   type: 'user-interrupted';
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
 }
 
 export interface ClientMessageLanguageChangeDetected {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "language-change-detected" is sent when the transcriber is automatically switched based on the detected language. */
   type: 'language-change-detected';
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
   /** This is the language the transcriber is switched to. */
   language: string;
 }
 
 export interface ClientMessageVoiceInput {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "voice-input" is sent when a generation is requested from voice provider. */
   type: 'voice-input';
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
   /** This is the voice input content */
   input: string;
 }
@@ -18147,21 +20177,16 @@ export interface ClientMessage {
 }
 
 export interface ServerMessageAssistantRequest {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "assistant-request" is sent to fetch assistant configuration for an incoming call. */
   type: 'assistant-request';
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -18169,56 +20194,29 @@ export interface ServerMessageAssistantRequest {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
 }
 
 export interface ServerMessageConversationUpdate {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "conversation-update" is sent when an update is committed to the conversation history. */
   type: 'conversation-update';
   /** This is the most up-to-date conversation history at the time the message is sent. */
   messages?: (UserMessage | SystemMessage | BotMessage | ToolCallMessage | ToolCallResultMessage)[];
   /** This is the most up-to-date conversation history at the time the message is sent, formatted for OpenAI. */
   messagesOpenAIFormatted: OpenAIMessage[];
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -18226,49 +20224,22 @@ export interface ServerMessageConversationUpdate {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
 }
 
 export interface ServerMessageEndOfCallReport {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "end-of-call-report" is sent when the call ends and post-processing is complete. */
   type: 'end-of-call-report';
   /** This is the reason the call ended. This can also be found at `call.endedReason` on GET /call/:id. */
@@ -18771,38 +20742,17 @@ export interface ServerMessageEndOfCallReport {
     | VapiCost
     | VoicemailDetectionCost
     | AnalysisCost
+    | KnowledgeBaseCost
   )[];
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /** These are the artifacts from the call. This can also be found at `call.artifact` on GET /call/:id. */
   artifact: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
   /** This is the analysis of the call. This can also be found at `call.analysis` on GET /call/:id. */
   analysis: Analysis;
@@ -18819,18 +20769,13 @@ export interface ServerMessageEndOfCallReport {
 }
 
 export interface ServerMessageHang {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /**
    * This is the type of the message. "hang" is sent when the assistant is hanging due to a delay. The delay can be caused by many factors, such as:
    * - the model is too slow to respond
@@ -18839,7 +20784,7 @@ export interface ServerMessageHang {
    * - etc.
    */
   type: 'hang';
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -18847,56 +20792,29 @@ export interface ServerMessageHang {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
 }
 
 export interface ServerMessageKnowledgeBaseRequest {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "knowledge-base-request" is sent to request knowledge base documents. To enable, use `assistant.knowledgeBase.provider=custom-knowledge-base`. */
   type: 'knowledge-base-request';
   /** These are the messages that are going to be sent to the `model` right after the `knowledge-base-request` webhook completes. */
   messages?: (UserMessage | SystemMessage | BotMessage | ToolCallMessage | ToolCallResultMessage)[];
   /** This is just `messages` formatted for OpenAI. */
   messagesOpenAIFormatted: OpenAIMessage[];
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -18904,52 +20822,25 @@ export interface ServerMessageKnowledgeBaseRequest {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
 }
 
 export interface ServerMessageModelOutput {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "model-output" is sent as the model outputs tokens. */
   type: 'model-output';
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -18957,51 +20848,24 @@ export interface ServerMessageModelOutput {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
   /** This is the output of the model. It can be a token or tool call. */
   output: object;
 }
 
 export interface ServerMessagePhoneCallControl {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /**
    * This is the type of the message. "phone-call-control" is an advanced type of message.
    *
@@ -19012,7 +20876,7 @@ export interface ServerMessagePhoneCallControl {
   request: 'forward' | 'hang-up';
   /** This is the destination to forward the call to if the request is "forward". */
   destination?: TransferDestinationNumber | TransferDestinationSip;
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -19020,49 +20884,22 @@ export interface ServerMessagePhoneCallControl {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
 }
 
 export interface ServerMessageSpeechUpdate {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "speech-update" is sent whenever assistant or user start or stop speaking. */
   type: 'speech-update';
   /** This is the status of the speech update. */
@@ -19071,7 +20908,7 @@ export interface ServerMessageSpeechUpdate {
   role: 'assistant' | 'user';
   /** This is the turn number of the speech update (0-indexed). */
   turn?: number;
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -19079,49 +20916,22 @@ export interface ServerMessageSpeechUpdate {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
 }
 
 export interface ServerMessageStatusUpdate {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "status-update" is sent whenever the `call.status` changes. */
   type: 'status-update';
   /** This is the status of the call. */
@@ -19621,7 +21431,7 @@ export interface ServerMessageStatusUpdate {
   messagesOpenAIFormatted?: OpenAIMessage[];
   /** This is the destination the call is being transferred to. This is only sent if the status is "forwarding". */
   destination?: TransferDestinationNumber | TransferDestinationSip;
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -19629,33 +21439,11 @@ export interface ServerMessageStatusUpdate {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
   /** This is the transcript of the call. This is only sent if the status is "forwarding". */
   transcript?: string;
@@ -19670,18 +21458,13 @@ export interface ServerMessageStatusUpdate {
 }
 
 export interface ServerMessageToolCalls {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "tool-calls" is sent to call a tool. */
   type?: 'tool-calls';
   /** This is the list of tools calls that the model is requesting along with the original tool configuration. */
@@ -19694,7 +21477,7 @@ export interface ServerMessageToolCalls {
     | TextEditorToolWithToolCall
     | GoogleCalendarCreateEventToolWithToolCall
   )[];
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -19702,54 +21485,27 @@ export interface ServerMessageToolCalls {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
   /** This is the list of tool calls that the model is requesting. */
   toolCallList: ToolCall[];
 }
 
 export interface ServerMessageTransferDestinationRequest {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "transfer-destination-request" is sent when the model is requesting transfer but destination is unknown. */
   type: 'transfer-destination-request';
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -19757,58 +21513,27 @@ export interface ServerMessageTransferDestinationRequest {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
 }
 
 export interface ServerMessageTransferUpdate {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "transfer-update" is sent whenever a transfer happens. */
   type: 'transfer-update';
   /** This is the destination of the transfer. */
-  destination?:
-    | TransferDestinationAssistant
-    | TransferDestinationStep
-    | TransferDestinationNumber
-    | TransferDestinationSip;
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  destination?: TransferDestinationAssistant | TransferDestinationNumber | TransferDestinationSip;
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -19816,33 +21541,11 @@ export interface ServerMessageTransferUpdate {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
   /** This is the assistant that the call is being transferred to. This is only sent if `destination.type` is "assistant". */
   toAssistant?: CreateAssistantDTO;
@@ -19855,21 +21558,16 @@ export interface ServerMessageTransferUpdate {
 }
 
 export interface ServerMessageTranscript {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript. */
   type: 'transcript' | "transcript[transcriptType='final']";
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -19877,33 +21575,11 @@ export interface ServerMessageTranscript {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
   /** This is the role for which the transcript is for. */
   role: 'assistant' | 'user';
@@ -19914,21 +21590,16 @@ export interface ServerMessageTranscript {
 }
 
 export interface ServerMessageUserInterrupted {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "user-interrupted" is sent when the user interrupts the assistant. */
   type: 'user-interrupted';
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -19936,52 +21607,25 @@ export interface ServerMessageUserInterrupted {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
 }
 
 export interface ServerMessageLanguageChangeDetected {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "language-change-detected" is sent when the transcriber is automatically switched based on the detected language. */
   type: 'language-change-detected';
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -19989,54 +21633,27 @@ export interface ServerMessageLanguageChangeDetected {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
   /** This is the language the transcriber is switched to. */
   language: string;
 }
 
 export interface ServerMessageVoiceInput {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /** This is the type of the message. "voice-input" is sent when a generation is requested from voice provider. */
   type: 'voice-input';
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -20044,51 +21661,24 @@ export interface ServerMessageVoiceInput {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
   /** This is the voice input content */
   input: string;
 }
 
 export interface ServerMessageVoiceRequest {
-  /**
-   * This is the phone number associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.phoneNumber`,
-   * - `call.phoneNumberId`.
-   */
+  /** This is the phone number that the message is associated with. */
   phoneNumber?:
     | CreateByoPhoneNumberDTO
     | CreateTwilioPhoneNumberDTO
     | CreateVonagePhoneNumberDTO
-    | CreateVapiPhoneNumberDTO;
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
   /**
    * This is the type of the message. "voice-request" is sent when using `assistant.voice={ "type": "custom-voice" }`.
    *
@@ -20114,7 +21704,7 @@ export interface ServerMessageVoiceRequest {
    * ```
    */
   type: 'voice-request';
-  /** This is the timestamp of when the message was sent in milliseconds since Unix Epoch. */
+  /** This is the timestamp of the message. */
   timestamp?: number;
   /**
    * This is a live version of the `call.artifact`.
@@ -20122,33 +21712,11 @@ export interface ServerMessageVoiceRequest {
    * This matches what is stored on `call.artifact` after the call.
    */
   artifact?: Artifact;
-  /**
-   * This is the assistant that is currently active. This is provided for convenience.
-   *
-   * This matches one of the following:
-   * - `call.assistant`,
-   * - `call.assistantId`,
-   * - `call.squad[n].assistant`,
-   * - `call.squad[n].assistantId`,
-   * - `call.squadId->[n].assistant`,
-   * - `call.squadId->[n].assistantId`.
-   */
+  /** This is the assistant that the message is associated with. */
   assistant?: CreateAssistantDTO;
-  /**
-   * This is the customer associated with the call.
-   *
-   * This matches one of the following:
-   * - `call.customer`,
-   * - `call.customerId`.
-   */
+  /** This is the customer that the message is associated with. */
   customer?: CreateCustomerDTO;
-  /**
-   * This is the call object.
-   *
-   * This matches what was returned in POST /call.
-   *
-   * Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
-   */
+  /** This is the call that the message is associated with. */
   call?: Call;
   /** This is the text to be synthesized. */
   text: string;
@@ -20194,20 +21762,66 @@ export interface ServerMessageResponseAssistantRequest {
    * If this is sent, `assistantId`, `assistant`, `squadId`, and `squad` are ignored.
    */
   destination?: TransferDestinationNumber | TransferDestinationSip;
-  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
-  assistantId?: string | null;
+  /**
+   * This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
+   *
+   * To start a call with:
+   * - Assistant, use `assistantId` or `assistant`
+   * - Squad, use `squadId` or `squad`
+   * - Workflow, use `workflowId` or `workflow`
+   */
+  assistantId?: string;
   /**
    * This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
    *
-   * If you're unsure why you're getting an invalid assistant, try logging your response and send the JSON blob to POST /assistant which will return the validation errors.
+   * To start a call with:
+   * - Assistant, use `assistant`
+   * - Squad, use `squad`
+   * - Workflow, use `workflow`
    */
   assistant?: CreateAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
-  /** This is the squad that will be used for the call. To use a transient squad, use `squad` instead. */
+  /**
+   * This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
+   */
   squadId?: string;
-  /** This is a squad that will be used for the call. To use an existing squad, use `squadId` instead. */
+  /**
+   * This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
+   */
   squad?: CreateSquadDTO;
+  /**
+   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+   *
+   * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
+   */
+  workflowId?: string;
+  /**
+   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+   *
+   * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+   *
+   * To start a call with:
+   * - Assistant, use `assistant` or `assistantId`
+   * - Squad, use `squad` or `squadId`
+   * - Workflow, use `workflow` or `workflowId`
+   */
+  workflow?: CreateWorkflowDTO;
   /**
    * This is the error if the call shouldn't be accepted. This is spoken to the customer.
    *
@@ -20240,7 +21854,7 @@ export interface ToolCallResult {
    * 1. a `request-complete` or `request-failed` message from `tool.messages`, if it exists
    * 2. a response generated by the model, if not
    */
-  message?: (ToolMessageComplete | ToolMessageFailed)[];
+  message?: ToolMessageComplete | ToolMessageFailed;
   /** This is the name of the function the model called. */
   name: string;
   /** This is the unique identifier for the tool call. */
@@ -20276,11 +21890,7 @@ export interface ServerMessageResponseToolCalls {
 
 export interface ServerMessageResponseTransferDestinationRequest {
   /** This is the destination you'd like the call to be transferred to. */
-  destination?:
-    | TransferDestinationAssistant
-    | TransferDestinationStep
-    | TransferDestinationNumber
-    | TransferDestinationSip;
+  destination?: TransferDestinationAssistant | TransferDestinationNumber | TransferDestinationSip;
   /** This is the error message if the transfer should not be made. */
   error?: string;
 }
@@ -20390,32 +22000,6 @@ export interface ClientInboundMessage {
     | ClientInboundMessageSay
     | ClientInboundMessageEndCall
     | ClientInboundMessageTransfer;
-}
-
-export interface UserMessage {
-  /** The role of the user in the conversation. */
-  role: string;
-  /** The message content from the user. */
-  message: string;
-  /** The timestamp when the message was sent. */
-  time: number;
-  /** The timestamp when the message ended. */
-  endTime: number;
-  /** The number of seconds from the start of the conversation. */
-  secondsFromStart: number;
-  /** The duration of the message in seconds. */
-  duration?: number;
-}
-
-export interface SystemMessage {
-  /** The role of the system in the conversation. */
-  role: string;
-  /** The message content from the system. */
-  message: string;
-  /** The timestamp when the message was sent. */
-  time: number;
-  /** The number of seconds from the start of the conversation. */
-  secondsFromStart: number;
 }
 
 export interface BotMessage {
@@ -20939,6 +22523,162 @@ export interface GoogleSheetsRowAppendToolWithToolCall {
   server?: Server;
 }
 
+export interface GoHighLevelCalendarAvailabilityToolWithToolCall {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar availability check tool. */
+  type: 'gohighlevel.calendar.availability.check';
+  toolCall: ToolCall;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoHighLevelCalendarEventCreateToolWithToolCall {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar event create tool. */
+  type: 'gohighlevel.calendar.event.create';
+  toolCall: ToolCall;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoHighLevelContactCreateToolWithToolCall {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel contact create tool. */
+  type: 'gohighlevel.contact.create';
+  toolCall: ToolCall;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
+export interface GoHighLevelContactGetToolWithToolCall {
+  /**
+   * This determines if the tool is async.
+   *
+   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   * Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel contact get tool. */
+  type: 'gohighlevel.contact.get';
+  toolCall: ToolCall;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   *
+   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the server that will be hit when this tool is requested by the model.
+   *
+   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+   *
+   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+   */
+  server?: Server;
+}
+
 export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, 'body' | 'bodyUsed'>;
 
@@ -21372,6 +23112,131 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags Calls
+     * @name CallControllerExportCalls
+     * @summary Export Calls to CSV
+     * @request GET:/v2/call/export
+     * @secure
+     */
+    callControllerExportCalls: (
+      query?: {
+        /**
+         * Columns to include in the CSV export
+         * @default ["id","assistantId","squadId","customerId","customerName","customerNumber","customerSipUri","customerExtension","phoneNumberId","endedReason","type","duration","startedAt","endedAt","transcript","summary","successEvaluation","recordingUrl","cost","phoneCallProvider","phoneCallProviderId","createdAt","updatedAt"]
+         */
+        columns?:
+          | 'id'
+          | 'assistantId'
+          | 'squadId'
+          | 'customerId'
+          | 'customerName'
+          | 'customerNumber'
+          | 'customerSipUri'
+          | 'customerExtension'
+          | 'phoneNumberId'
+          | 'endedReason'
+          | 'type'
+          | 'duration'
+          | 'startedAt'
+          | 'endedAt'
+          | 'transcript'
+          | 'summary'
+          | 'successEvaluation'
+          | 'recordingUrl'
+          | 'cost'
+          | 'phoneCallProvider'
+          | 'phoneCallProviderId'
+          | 'createdAt'
+          | 'updatedAt';
+        /** This will return calls with the specified assistantId. */
+        assistantId?: string;
+        /** This will return calls with the specified callId. */
+        id?: string;
+        /** This will return calls with the specified callIds. */
+        idAny?: string[];
+        /** This will return calls where the cost is less than or equal to the specified value. */
+        costLe?: number;
+        /** This will return calls where the cost is greater than or equal to the specified value. */
+        costGe?: number;
+        /** This will return calls with the exact specified cost. */
+        cost?: number;
+        /**
+         * This will return calls with the specified successEvaluation.
+         * @maxLength 1000
+         */
+        successEvaluation?: string;
+        /**
+         * This will return calls with the specified endedReason.
+         * @maxLength 1000
+         */
+        endedReason?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: 'ASC' | 'DESC';
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<void, any>({
+        path: `/v2/call/export`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
      * @name CallControllerFindAllPaginated
      * @summary List Calls
      * @request GET:/v2/call
@@ -21383,6 +23248,8 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         assistantId?: string;
         /** This will return calls with the specified callId. */
         id?: string;
+        /** This will return calls with the specified callIds. */
+        idAny?: string[];
         /** This will return calls where the cost is less than or equal to the specified value. */
         costLe?: number;
         /** This will return calls where the cost is greater than or equal to the specified value. */
@@ -21479,6 +23346,8 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         assistantId?: string;
         /** This will return calls with the specified callId. */
         id?: string;
+        /** This will return calls with the specified callIds. */
+        idAny?: string[];
         /** This will return calls where the cost is less than or equal to the specified value. */
         costLe?: number;
         /** This will return calls where the cost is greater than or equal to the specified value. */
@@ -21717,16 +23586,117 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags Chat
-     * @name ChatController
-     * @summary Chat with Assistant
-     * @request POST:/chat
-     * @deprecated
+     * @name ChatControllerListChats
+     * @summary List chats
+     * @request GET:/chat
      * @secure
      */
-    chatController: (params: RequestParams = {}) =>
-      this.request<ChatServiceResponse, any>({
+    chatControllerListChats: (
+      query?: {
+        /** This is the unique identifier for the assistant that will be used for the chat. */
+        assistantId?: string;
+        /** This is the unique identifier for the workflow that will be used for the chat. */
+        workflowId?: string;
+        /** This is the unique identifier for the session that will be used for the chat. */
+        sessionId?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: 'ASC' | 'DESC';
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<ChatPaginatedResponse, any>({
+        path: `/chat`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * @description Creates a new chat. Requires at least one of: assistantId/assistant, sessionId, or previousChatId. Note: sessionId and previousChatId are mutually exclusive.
+     *
+     * @tags Chat
+     * @name ChatControllerCreateChat
+     * @summary Create chat
+     * @request POST:/chat
+     * @secure
+     */
+    chatControllerCreateChat: (data: CreateChatDTO, params: RequestParams = {}) =>
+      this.request<Chat | CreateChatStreamResponse, any>({
         path: `/chat`,
         method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Chat
+     * @name ChatControllerGetChat
+     * @summary Get a specific chat by ID
+     * @request GET:/chat/{id}
+     * @secure
+     */
+    chatControllerGetChat: (id: string, params: RequestParams = {}) =>
+      this.request<Chat, any>({
+        path: `/chat/${id}`,
+        method: 'GET',
         secure: true,
         format: 'json',
         ...params,
@@ -21736,18 +23706,195 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags Chat
-     * @name ChatControllerChatCompletions
-     * @summary Chat with a Workflow
-     * @request POST:/chat/completions
+     * @name ChatControllerDeleteChat
+     * @summary Delete chat
+     * @request DELETE:/chat/{id}
      * @secure
      */
-    chatControllerChatCompletions: (data: ChatCompletionsDTO, params: RequestParams = {}) =>
-      this.request<ChatServiceResponse, any>({
-        path: `/chat/completions`,
+    chatControllerDeleteChat: (id: string, params: RequestParams = {}) =>
+      this.request<Chat, any>({
+        path: `/chat/${id}`,
+        method: 'DELETE',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Chat
+     * @name ChatControllerCreateOpenAiChat
+     * @summary Create chat using OpenAI Responses API format
+     * @request POST:/chat/responses
+     * @secure
+     */
+    chatControllerCreateOpenAiChat: (data: OpenAIResponsesRequest, params: RequestParams = {}) =>
+      this.request<any, any>({
+        path: `/chat/responses`,
         method: 'POST',
         body: data,
         secure: true,
         type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+  };
+  session = {
+    /**
+     * No description
+     *
+     * @tags Sessions
+     * @name SessionControllerCreate
+     * @summary Create Session
+     * @request POST:/session
+     * @secure
+     */
+    sessionControllerCreate: (data: CreateSessionDTO, params: RequestParams = {}) =>
+      this.request<Session, any>({
+        path: `/session`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Sessions
+     * @name SessionControllerFindAllPaginated
+     * @summary List Sessions
+     * @request GET:/session
+     * @secure
+     */
+    sessionControllerFindAllPaginated: (
+      query?: {
+        /** This is the name of the session to filter by. */
+        name?: string;
+        /** This is the ID of the assistant to filter sessions by. */
+        assistantId?: string;
+        /** This is the ID of the workflow to filter sessions by. */
+        workflowId?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: 'ASC' | 'DESC';
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<SessionPaginatedResponse, any>({
+        path: `/session`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Sessions
+     * @name SessionControllerFindOne
+     * @summary Get Session
+     * @request GET:/session/{id}
+     * @secure
+     */
+    sessionControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Session, any>({
+        path: `/session/${id}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Sessions
+     * @name SessionControllerUpdate
+     * @summary Update Session
+     * @request PATCH:/session/{id}
+     * @secure
+     */
+    sessionControllerUpdate: (id: string, data: UpdateSessionDTO, params: RequestParams = {}) =>
+      this.request<Session, any>({
+        path: `/session/${id}`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Sessions
+     * @name SessionControllerRemove
+     * @summary Delete Session
+     * @request DELETE:/session/{id}
+     * @secure
+     */
+    sessionControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Session, any>({
+        path: `/session/${id}`,
+        method: 'DELETE',
+        secure: true,
         format: 'json',
         ...params,
       }),
@@ -22360,10 +24507,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & CreateSlackSendMessageToolDTO)
         | ({
             type: 'sms';
-          } & CreateSmsSendToolDTO)
+          } & CreateSmsToolDTO)
         | ({
             type: 'mcp';
-          } & CreateMcpToolDTO),
+          } & CreateMcpToolDTO)
+        | ({
+            type: 'gohighlevel.calendar.availability.check';
+          } & CreateGoHighLevelCalendarAvailabilityToolDTO)
+        | ({
+            type: 'gohighlevel.calendar.event.create';
+          } & CreateGoHighLevelCalendarEventCreateToolDTO)
+        | ({
+            type: 'gohighlevel.contact.create';
+          } & CreateGoHighLevelContactCreateToolDTO)
+        | ({
+            type: 'gohighlevel.contact.get';
+          } & CreateGoHighLevelContactGetToolDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -22414,10 +24573,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & SlackSendMessageTool)
         | ({
             type: 'sms';
-          } & SmsSendTool)
+          } & SmsTool)
         | ({
             type: 'mcp';
-          } & McpTool),
+          } & McpTool)
+        | ({
+            type: 'gohighlevel.calendar.availability.check';
+          } & GoHighLevelCalendarAvailabilityTool)
+        | ({
+            type: 'gohighlevel.calendar.event.create';
+          } & GoHighLevelCalendarEventCreateTool)
+        | ({
+            type: 'gohighlevel.contact.create';
+          } & GoHighLevelContactCreateTool)
+        | ({
+            type: 'gohighlevel.contact.get';
+          } & GoHighLevelContactGetTool),
         any
       >({
         path: `/tool`,
@@ -22538,10 +24709,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
             } & SlackSendMessageTool)
           | ({
               type: 'sms';
-            } & SmsSendTool)
+            } & SmsTool)
           | ({
               type: 'mcp';
             } & McpTool)
+          | ({
+              type: 'gohighlevel.calendar.availability.check';
+            } & GoHighLevelCalendarAvailabilityTool)
+          | ({
+              type: 'gohighlevel.calendar.event.create';
+            } & GoHighLevelCalendarEventCreateTool)
+          | ({
+              type: 'gohighlevel.contact.create';
+            } & GoHighLevelContactCreateTool)
+          | ({
+              type: 'gohighlevel.contact.get';
+            } & GoHighLevelContactGetTool)
         )[],
         any
       >({
@@ -22611,10 +24794,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & SlackSendMessageTool)
         | ({
             type: 'sms';
-          } & SmsSendTool)
+          } & SmsTool)
         | ({
             type: 'mcp';
-          } & McpTool),
+          } & McpTool)
+        | ({
+            type: 'gohighlevel.calendar.availability.check';
+          } & GoHighLevelCalendarAvailabilityTool)
+        | ({
+            type: 'gohighlevel.calendar.event.create';
+          } & GoHighLevelCalendarEventCreateTool)
+        | ({
+            type: 'gohighlevel.contact.create';
+          } & GoHighLevelContactCreateTool)
+        | ({
+            type: 'gohighlevel.contact.get';
+          } & GoHighLevelContactGetTool),
         any
       >({
         path: `/tool/${id}`,
@@ -22683,10 +24878,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & UpdateSlackSendMessageToolDTO)
         | ({
             type: 'sms';
-          } & UpdateSmsSendToolDTO)
+          } & UpdateSmsToolDTO)
         | ({
             type: 'mcp';
-          } & UpdateMcpToolDTO),
+          } & UpdateMcpToolDTO)
+        | ({
+            type: 'gohighlevel.calendar.availability.check';
+          } & UpdateGoHighLevelCalendarAvailabilityToolDTO)
+        | ({
+            type: 'gohighlevel.calendar.event.create';
+          } & UpdateGoHighLevelCalendarEventCreateToolDTO)
+        | ({
+            type: 'gohighlevel.contact.create';
+          } & UpdateGoHighLevelContactCreateToolDTO)
+        | ({
+            type: 'gohighlevel.contact.get';
+          } & UpdateGoHighLevelContactGetToolDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -22737,10 +24944,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & SlackSendMessageTool)
         | ({
             type: 'sms';
-          } & SmsSendTool)
+          } & SmsTool)
         | ({
             type: 'mcp';
-          } & McpTool),
+          } & McpTool)
+        | ({
+            type: 'gohighlevel.calendar.availability.check';
+          } & GoHighLevelCalendarAvailabilityTool)
+        | ({
+            type: 'gohighlevel.calendar.event.create';
+          } & GoHighLevelCalendarEventCreateTool)
+        | ({
+            type: 'gohighlevel.contact.create';
+          } & GoHighLevelContactCreateTool)
+        | ({
+            type: 'gohighlevel.contact.get';
+          } & GoHighLevelContactGetTool),
         any
       >({
         path: `/tool/${id}`,
@@ -22810,10 +25029,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & SlackSendMessageTool)
         | ({
             type: 'sms';
-          } & SmsSendTool)
+          } & SmsTool)
         | ({
             type: 'mcp';
-          } & McpTool),
+          } & McpTool)
+        | ({
+            type: 'gohighlevel.calendar.availability.check';
+          } & GoHighLevelCalendarAvailabilityTool)
+        | ({
+            type: 'gohighlevel.calendar.event.create';
+          } & GoHighLevelCalendarEventCreateTool)
+        | ({
+            type: 'gohighlevel.contact.create';
+          } & GoHighLevelContactCreateTool)
+        | ({
+            type: 'gohighlevel.contact.get';
+          } & GoHighLevelContactGetTool),
         any
       >({
         path: `/tool/${id}`,
@@ -23152,7 +25383,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags Workflow
      * @name WorkflowControllerFindAll
-     * @summary Get Workflows
+     * @summary [BETA] Get Workflows
      * @request GET:/workflow
      * @secure
      */
@@ -23170,7 +25401,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags Workflow
      * @name WorkflowControllerCreate
-     * @summary Create Workflow
+     * @summary [BETA] Create Workflow
      * @request POST:/workflow
      * @secure
      */
@@ -23190,7 +25421,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags Workflow
      * @name WorkflowControllerFindOne
-     * @summary Get Workflow
+     * @summary [BETA] Get Workflow
      * @request GET:/workflow/{id}
      * @secure
      */
@@ -23208,7 +25439,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags Workflow
      * @name WorkflowControllerDelete
-     * @summary Delete Workflow
+     * @summary [BETA] Delete Workflow
      * @request DELETE:/workflow/{id}
      * @secure
      */
@@ -23226,7 +25457,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags Workflow
      * @name WorkflowControllerUpdate
-     * @summary Update Workflow
+     * @summary [BETA] Update Workflow
      * @request PATCH:/workflow/{id}
      * @secure
      */
@@ -24700,7 +26931,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
         | ({
             provider: 'slack.oauth2-authorization';
-          } & CreateSlackOAuth2AuthorizationCredentialDTO),
+          } & CreateSlackOAuth2AuthorizationCredentialDTO)
+        | ({
+            provider: 'ghl.oauth2-authorization';
+          } & CreateGoHighLevelMCPCredentialDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -24850,7 +27084,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & SlackOAuth2AuthorizationCredential)
         | ({
             provider: 'aws';
-          } & any),
+          } & any)
+        | ({
+            provider: 'ghl.oauth2-authorization';
+          } & GoHighLevelMCPCredential),
         any
       >({
         path: `/credential`,
@@ -25071,6 +27308,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           | ({
               provider: 'aws';
             } & any)
+          | ({
+              provider: 'ghl.oauth2-authorization';
+            } & GoHighLevelMCPCredential)
         )[],
         any
       >({
@@ -25239,7 +27479,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & SlackOAuth2AuthorizationCredential)
         | ({
             provider: 'aws';
-          } & any),
+          } & any)
+        | ({
+            provider: 'ghl.oauth2-authorization';
+          } & GoHighLevelMCPCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -25527,7 +27770,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & SlackOAuth2AuthorizationCredential)
         | ({
             provider: 'aws';
-          } & any),
+          } & any)
+        | ({
+            provider: 'ghl.oauth2-authorization';
+          } & GoHighLevelMCPCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -25696,7 +27942,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
           } & SlackOAuth2AuthorizationCredential)
         | ({
             provider: 'aws';
-          } & any),
+          } & any)
+        | ({
+            provider: 'ghl.oauth2-authorization';
+          } & GoHighLevelMCPCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -26154,7 +28403,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetWorkflows: (
-      provider: 'make' | 'ghl' | 'google.calendar' | 'slack' | 'mcp',
+      provider: 'make' | 'ghl',
       query?: {
         locationId?: string;
       },
@@ -26178,7 +28427,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetWorkflowTriggerHook: (
-      provider: 'make' | 'ghl' | 'google.calendar' | 'slack' | 'mcp',
+      provider: 'make' | 'ghl',
       workflowId: string,
       params: RequestParams = {},
     ) =>
@@ -26198,10 +28447,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request GET:/{provider}/locations
      * @secure
      */
-    providerControllerGetLocations: (
-      provider: 'make' | 'ghl' | 'google.calendar' | 'slack' | 'mcp',
-      params: RequestParams = {},
-    ) =>
+    providerControllerGetLocations: (provider: 'make' | 'ghl', params: RequestParams = {}) =>
       this.request<SbcConfiguration, any>({
         path: `/${provider}/locations`,
         method: 'GET',
