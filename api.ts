@@ -204,6 +204,15 @@ export interface Recording {
   mono?: Mono;
 }
 
+export interface NodeArtifact {
+  /** This is the node id. */
+  nodeName?: string;
+  /** This is the messages that were spoken during the node. */
+  messages?: object[];
+  /** This is the object containing the variables extracted from the node. */
+  variables?: object;
+}
+
 export interface Artifact {
   /** These are the messages that were spoken during the call. */
   messages?: (UserMessage | SystemMessage | BotMessage | ToolCallMessage | ToolCallResultMessage)[];
@@ -235,6 +244,10 @@ export interface Artifact {
   transcript?: string;
   /** This is the packet capture url for the call. This is only available for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`. */
   pcapUrl?: string;
+  /** This is the history of workflow nodes that were executed during the call. */
+  nodes?: NodeArtifact[];
+  /** This is the state of variables at the end of the workflow execution. */
+  variables?: object;
 }
 
 export interface FallbackTranscriberPlan {
@@ -266,6 +279,13 @@ export interface AssemblyAITranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
+  /**
+   * Uses Assembly AI's new Universal Streaming API. See: https://www.assemblyai.com/docs/speech-to-text/universal-streaming
+   *
+   * @default false
+   * @example false
+   */
+  enableUniversalStreamingApi?: boolean;
   /** The WebSocket URL that the transcriber connects to. */
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
@@ -937,11 +957,112 @@ export interface GladiaTranscriber {
   /** This is the transcription provider that will be used. */
   provider: 'gladia';
   /** This is the Gladia model that will be used. Default is 'fast' */
-  model?: 'fast' | 'accurate';
+  model?: 'fast' | 'accurate' | 'solaria-1';
   /** Defines how the transcription model detects the audio language. Default value is 'automatic single language'. */
   languageBehaviour?: 'manual' | 'automatic single language' | 'automatic multiple languages';
   /** Defines the language to use for the transcription. Required when languageBehaviour is 'manual'. */
   language?:
+    | 'af'
+    | 'sq'
+    | 'am'
+    | 'ar'
+    | 'hy'
+    | 'as'
+    | 'az'
+    | 'ba'
+    | 'eu'
+    | 'be'
+    | 'bn'
+    | 'bs'
+    | 'br'
+    | 'bg'
+    | 'ca'
+    | 'zh'
+    | 'hr'
+    | 'cs'
+    | 'da'
+    | 'nl'
+    | 'en'
+    | 'et'
+    | 'fo'
+    | 'fi'
+    | 'fr'
+    | 'gl'
+    | 'ka'
+    | 'de'
+    | 'el'
+    | 'gu'
+    | 'ht'
+    | 'ha'
+    | 'haw'
+    | 'he'
+    | 'hi'
+    | 'hu'
+    | 'is'
+    | 'id'
+    | 'it'
+    | 'ja'
+    | 'jv'
+    | 'kn'
+    | 'kk'
+    | 'km'
+    | 'ko'
+    | 'lo'
+    | 'la'
+    | 'lv'
+    | 'ln'
+    | 'lt'
+    | 'lb'
+    | 'mk'
+    | 'mg'
+    | 'ms'
+    | 'ml'
+    | 'mt'
+    | 'mi'
+    | 'mr'
+    | 'mn'
+    | 'my'
+    | 'ne'
+    | 'no'
+    | 'nn'
+    | 'oc'
+    | 'ps'
+    | 'fa'
+    | 'pl'
+    | 'pt'
+    | 'pa'
+    | 'ro'
+    | 'ru'
+    | 'sa'
+    | 'sr'
+    | 'sn'
+    | 'sd'
+    | 'si'
+    | 'sk'
+    | 'sl'
+    | 'so'
+    | 'es'
+    | 'su'
+    | 'sw'
+    | 'sv'
+    | 'tl'
+    | 'tg'
+    | 'ta'
+    | 'tt'
+    | 'te'
+    | 'th'
+    | 'bo'
+    | 'tr'
+    | 'tk'
+    | 'uk'
+    | 'ur'
+    | 'uz'
+    | 'vi'
+    | 'cy'
+    | 'yi'
+    | 'yo';
+  /** Defines the languages to use for the transcription. Required when languageBehaviour is 'manual'. */
+  languages?:
     | 'af'
     | 'sq'
     | 'am'
@@ -1254,6 +1375,7 @@ export interface GoogleTranscriber {
   /** This is the model that will be used for the transcription. */
   model?:
     | 'gemini-2.5-pro-preview-05-06'
+    | 'gemini-2.5-flash-preview-05-20'
     | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
@@ -1394,6 +1516,13 @@ export interface FallbackAssemblyAITranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
+  /**
+   * Uses Assembly AI's new Universal Streaming API. See: https://www.assemblyai.com/docs/speech-to-text/universal-streaming
+   *
+   * @default false
+   * @example false
+   */
+  enableUniversalStreamingApi?: boolean;
   /** The WebSocket URL that the transcriber connects to. */
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
@@ -2003,11 +2132,112 @@ export interface FallbackGladiaTranscriber {
   /** This is the transcription provider that will be used. */
   provider: 'gladia';
   /** This is the Gladia model that will be used. Default is 'fast' */
-  model?: 'fast' | 'accurate';
+  model?: 'fast' | 'accurate' | 'solaria-1';
   /** Defines how the transcription model detects the audio language. Default value is 'automatic single language'. */
   languageBehaviour?: 'manual' | 'automatic single language' | 'automatic multiple languages';
   /** Defines the language to use for the transcription. Required when languageBehaviour is 'manual'. */
   language?:
+    | 'af'
+    | 'sq'
+    | 'am'
+    | 'ar'
+    | 'hy'
+    | 'as'
+    | 'az'
+    | 'ba'
+    | 'eu'
+    | 'be'
+    | 'bn'
+    | 'bs'
+    | 'br'
+    | 'bg'
+    | 'ca'
+    | 'zh'
+    | 'hr'
+    | 'cs'
+    | 'da'
+    | 'nl'
+    | 'en'
+    | 'et'
+    | 'fo'
+    | 'fi'
+    | 'fr'
+    | 'gl'
+    | 'ka'
+    | 'de'
+    | 'el'
+    | 'gu'
+    | 'ht'
+    | 'ha'
+    | 'haw'
+    | 'he'
+    | 'hi'
+    | 'hu'
+    | 'is'
+    | 'id'
+    | 'it'
+    | 'ja'
+    | 'jv'
+    | 'kn'
+    | 'kk'
+    | 'km'
+    | 'ko'
+    | 'lo'
+    | 'la'
+    | 'lv'
+    | 'ln'
+    | 'lt'
+    | 'lb'
+    | 'mk'
+    | 'mg'
+    | 'ms'
+    | 'ml'
+    | 'mt'
+    | 'mi'
+    | 'mr'
+    | 'mn'
+    | 'my'
+    | 'ne'
+    | 'no'
+    | 'nn'
+    | 'oc'
+    | 'ps'
+    | 'fa'
+    | 'pl'
+    | 'pt'
+    | 'pa'
+    | 'ro'
+    | 'ru'
+    | 'sa'
+    | 'sr'
+    | 'sn'
+    | 'sd'
+    | 'si'
+    | 'sk'
+    | 'sl'
+    | 'so'
+    | 'es'
+    | 'su'
+    | 'sw'
+    | 'sv'
+    | 'tl'
+    | 'tg'
+    | 'ta'
+    | 'tt'
+    | 'te'
+    | 'th'
+    | 'bo'
+    | 'tr'
+    | 'tk'
+    | 'uk'
+    | 'ur'
+    | 'uz'
+    | 'vi'
+    | 'cy'
+    | 'yi'
+    | 'yo';
+  /** Defines the languages to use for the transcription. Required when languageBehaviour is 'manual'. */
+  languages?:
     | 'af'
     | 'sq'
     | 'am'
@@ -2314,6 +2544,7 @@ export interface FallbackGoogleTranscriber {
   /** This is the model that will be used for the transcription. */
   model?:
     | 'gemini-2.5-pro-preview-05-06'
+    | 'gemini-2.5-flash-preview-05-20'
     | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
@@ -2855,8 +3086,6 @@ export interface JsonSchema {
    * This only makes sense if the type is "object".
    */
   required?: string[];
-  /** This is a regex that will be used to validate data in question. */
-  regex?: string;
   /** This the value that will be used in filling the property. */
   value?: string;
   /** This the target variable that will be filled with the value of this property. */
@@ -2911,17 +3140,6 @@ export interface OpenAIFunction {
 
 export interface CreateDtmfToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -2937,28 +3155,9 @@ export interface CreateDtmfToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateEndCallToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -2975,28 +3174,9 @@ export interface CreateEndCallToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateVoicemailToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3016,28 +3196,9 @@ export interface CreateVoicemailToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateFunctionToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3047,6 +3208,29 @@ export interface CreateFunctionToolDTO {
   /** The type of tool. "function" for Function tool. */
   type: 'function';
   /**
+   * This determines if the tool is async.
+   *
+   *   If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   *   If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   *   Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
+  /**
    * This is the function definition of the tool.
    *
    * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
@@ -3054,14 +3238,6 @@ export interface CreateFunctionToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GhlToolMetadata {
@@ -3070,17 +3246,6 @@ export interface GhlToolMetadata {
 }
 
 export interface CreateGhlToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3098,14 +3263,6 @@ export interface CreateGhlToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface MakeToolMetadata {
@@ -3114,17 +3271,6 @@ export interface MakeToolMetadata {
 }
 
 export interface CreateMakeToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3142,14 +3288,6 @@ export interface CreateMakeToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CustomMessage {
@@ -3376,6 +3514,15 @@ export interface TransferPlan {
    */
   message?: string | CustomMessage;
   /**
+   * This is the timeout in seconds for the warm-transfer-wait-for-operator-to-speak-first-and-then-say-message/summary
+   *
+   * @default 60
+   * @min 1
+   * @max 600
+   * @default 60
+   */
+  timeout?: number;
+  /**
    * This specifies the SIP verb to use while transferring the call.
    * - 'refer': Uses SIP REFER to transfer the call (default)
    * - 'bye': Ends current call with SIP BYE
@@ -3394,6 +3541,17 @@ export interface TransferPlan {
    * - If not provided, the default hold audio will be used.
    */
   holdAudioUrl?: string;
+  /**
+   * This is the URL to an audio file played after the warm transfer message or summary is delivered to the destination party.
+   * It can be used to play a custom sound like 'beep' to notify that the transfer is complete.
+   *
+   * Usage:
+   * - Used only when `mode` is `warm-transfer-experimental`.
+   * - Used when transferring calls to play hold audio for the destination party.
+   * - Must be a publicly accessible URL to an audio file.
+   * - Supported formats: MP3 and WAV.
+   */
+  transferCompleteAudioUrl?: string;
   /**
    * This is the TwiML instructions to execute on the destination call leg before connecting the customer.
    *
@@ -3523,17 +3681,6 @@ export interface TransferDestinationSip {
 
 export interface CreateTransferCallToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -3554,14 +3701,6 @@ export interface CreateTransferCallToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateCustomKnowledgeBaseDTO {
@@ -3625,6 +3764,7 @@ export interface KnowledgeBase {
   /** The model to use for the knowledge base */
   model?:
     | 'gemini-2.5-pro-preview-05-06'
+    | 'gemini-2.5-flash-preview-05-20'
     | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
@@ -3646,17 +3786,6 @@ export interface KnowledgeBase {
 
 export interface CreateQueryToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -3674,28 +3803,9 @@ export interface CreateQueryToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateGoogleCalendarCreateEventToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3712,28 +3822,9 @@ export interface CreateGoogleCalendarCreateEventToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateGoogleSheetsRowAppendToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3750,28 +3841,9 @@ export interface CreateGoogleSheetsRowAppendToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateGoogleCalendarCheckAvailabilityToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3788,28 +3860,9 @@ export interface CreateGoogleCalendarCheckAvailabilityToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateSlackSendMessageToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3826,28 +3879,9 @@ export interface CreateSlackSendMessageToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateMcpToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3857,6 +3891,18 @@ export interface CreateMcpToolDTO {
   /** The type of tool. "mcp" for MCP tool. */
   type: 'mcp';
   /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
+  /**
    * This is the function definition of the tool.
    *
    * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
@@ -3864,28 +3910,9 @@ export interface CreateMcpToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateGoHighLevelCalendarAvailabilityToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3902,28 +3929,9 @@ export interface CreateGoHighLevelCalendarAvailabilityToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateGoHighLevelCalendarEventCreateToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3940,28 +3948,9 @@ export interface CreateGoHighLevelCalendarEventCreateToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateGoHighLevelContactCreateToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -3978,28 +3967,9 @@ export interface CreateGoHighLevelContactCreateToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateGoHighLevelContactGetToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -4016,14 +3986,6 @@ export interface CreateGoHighLevelContactGetToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface AnyscaleModel {
@@ -4594,6 +4556,7 @@ export interface GoogleModel {
   /** This is the Google model that will be used. */
   model:
     | 'gemini-2.5-pro-preview-05-06'
+    | 'gemini-2.5-flash-preview-05-20'
     | 'gemini-2.5-flash-preview-04-17'
     | 'gemini-2.0-flash-thinking-exp'
     | 'gemini-2.0-pro-exp-02-05'
@@ -4843,8 +4806,18 @@ export interface OpenAIModel {
   knowledgeBaseId?: string;
   /** This is the provider that will be used for the model. */
   provider: 'openai';
-  /** This is the OpenAI model that will be used. */
+  /**
+   * This is the OpenAI model that will be used.
+   *
+   * When using Vapi OpenAI or your own Azure Credentials, you have the option to specify the region for the selected model. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest region that make sense.
+   * This is helpful when you are required to comply with Data Residency rules. Learn more about Azure regions here https://azure.microsoft.com/en-us/explore/global-infrastructure/data-residency/.
+   *
+   * @default undefined
+   */
   model:
+    | 'gpt-4.1-2025-04-14'
+    | 'gpt-4.1-mini-2025-04-14'
+    | 'gpt-4.1-nano-2025-04-14'
     | 'gpt-4.1'
     | 'gpt-4.1-mini'
     | 'gpt-4.1-nano'
@@ -4877,12 +4850,75 @@ export interface OpenAIModel {
     | 'gpt-3.5-turbo-0125'
     | 'gpt-3.5-turbo-1106'
     | 'gpt-3.5-turbo-16k'
-    | 'gpt-3.5-turbo-0613';
+    | 'gpt-3.5-turbo-0613'
+    | 'gpt-4.1-2025-04-14:westus'
+    | 'gpt-4.1-2025-04-14:eastus2'
+    | 'gpt-4.1-2025-04-14:eastus'
+    | 'gpt-4.1-2025-04-14:westus3'
+    | 'gpt-4.1-2025-04-14:northcentralus'
+    | 'gpt-4.1-2025-04-14:southcentralus'
+    | 'gpt-4.1-mini-2025-04-14:westus'
+    | 'gpt-4.1-mini-2025-04-14:eastus2'
+    | 'gpt-4.1-mini-2025-04-14:eastus'
+    | 'gpt-4.1-mini-2025-04-14:westus3'
+    | 'gpt-4.1-mini-2025-04-14:northcentralus'
+    | 'gpt-4.1-mini-2025-04-14:southcentralus'
+    | 'gpt-4.1-nano-2025-04-14:westus'
+    | 'gpt-4.1-nano-2025-04-14:eastus2'
+    | 'gpt-4.1-nano-2025-04-14:westus3'
+    | 'gpt-4.1-nano-2025-04-14:northcentralus'
+    | 'gpt-4.1-nano-2025-04-14:southcentralus'
+    | 'gpt-4o-2024-11-20:swedencentral'
+    | 'gpt-4o-2024-11-20:westus'
+    | 'gpt-4o-2024-11-20:eastus2'
+    | 'gpt-4o-2024-11-20:eastus'
+    | 'gpt-4o-2024-11-20:westus3'
+    | 'gpt-4o-2024-11-20:southcentralus'
+    | 'gpt-4o-2024-08-06:westus'
+    | 'gpt-4o-2024-08-06:westus3'
+    | 'gpt-4o-2024-08-06:eastus'
+    | 'gpt-4o-2024-08-06:eastus2'
+    | 'gpt-4o-2024-08-06:northcentralus'
+    | 'gpt-4o-2024-08-06:southcentralus'
+    | 'gpt-4o-mini-2024-07-18:westus'
+    | 'gpt-4o-mini-2024-07-18:westus3'
+    | 'gpt-4o-mini-2024-07-18:eastus'
+    | 'gpt-4o-mini-2024-07-18:eastus2'
+    | 'gpt-4o-mini-2024-07-18:northcentralus'
+    | 'gpt-4o-mini-2024-07-18:southcentralus'
+    | 'gpt-4o-2024-05-13:eastus2'
+    | 'gpt-4o-2024-05-13:eastus'
+    | 'gpt-4o-2024-05-13:northcentralus'
+    | 'gpt-4o-2024-05-13:southcentralus'
+    | 'gpt-4o-2024-05-13:westus3'
+    | 'gpt-4o-2024-05-13:westus'
+    | 'gpt-4-turbo-2024-04-09:eastus2'
+    | 'gpt-4-0125-preview:eastus'
+    | 'gpt-4-0125-preview:northcentralus'
+    | 'gpt-4-0125-preview:southcentralus'
+    | 'gpt-4-1106-preview:australia'
+    | 'gpt-4-1106-preview:canadaeast'
+    | 'gpt-4-1106-preview:france'
+    | 'gpt-4-1106-preview:india'
+    | 'gpt-4-1106-preview:norway'
+    | 'gpt-4-1106-preview:swedencentral'
+    | 'gpt-4-1106-preview:uk'
+    | 'gpt-4-1106-preview:westus'
+    | 'gpt-4-1106-preview:westus3'
+    | 'gpt-4-0613:canadaeast'
+    | 'gpt-3.5-turbo-0125:canadaeast'
+    | 'gpt-3.5-turbo-0125:northcentralus'
+    | 'gpt-3.5-turbo-0125:southcentralus'
+    | 'gpt-3.5-turbo-1106:canadaeast'
+    | 'gpt-3.5-turbo-1106:westus';
   /**
    * These are the fallback models that will be used if the primary model fails. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest fallbacks that make sense.
    * @example ["gpt-4-0125-preview","gpt-4-0613"]
    */
   fallbackModels?:
+    | 'gpt-4.1-2025-04-14'
+    | 'gpt-4.1-mini-2025-04-14'
+    | 'gpt-4.1-nano-2025-04-14'
     | 'gpt-4.1'
     | 'gpt-4.1-mini'
     | 'gpt-4.1-nano'
@@ -4915,7 +4951,78 @@ export interface OpenAIModel {
     | 'gpt-3.5-turbo-0125'
     | 'gpt-3.5-turbo-1106'
     | 'gpt-3.5-turbo-16k'
-    | 'gpt-3.5-turbo-0613';
+    | 'gpt-3.5-turbo-0613'
+    | 'gpt-4.1-2025-04-14:westus'
+    | 'gpt-4.1-2025-04-14:eastus2'
+    | 'gpt-4.1-2025-04-14:eastus'
+    | 'gpt-4.1-2025-04-14:westus3'
+    | 'gpt-4.1-2025-04-14:northcentralus'
+    | 'gpt-4.1-2025-04-14:southcentralus'
+    | 'gpt-4.1-mini-2025-04-14:westus'
+    | 'gpt-4.1-mini-2025-04-14:eastus2'
+    | 'gpt-4.1-mini-2025-04-14:eastus'
+    | 'gpt-4.1-mini-2025-04-14:westus3'
+    | 'gpt-4.1-mini-2025-04-14:northcentralus'
+    | 'gpt-4.1-mini-2025-04-14:southcentralus'
+    | 'gpt-4.1-nano-2025-04-14:westus'
+    | 'gpt-4.1-nano-2025-04-14:eastus2'
+    | 'gpt-4.1-nano-2025-04-14:westus3'
+    | 'gpt-4.1-nano-2025-04-14:northcentralus'
+    | 'gpt-4.1-nano-2025-04-14:southcentralus'
+    | 'gpt-4o-2024-11-20:swedencentral'
+    | 'gpt-4o-2024-11-20:westus'
+    | 'gpt-4o-2024-11-20:eastus2'
+    | 'gpt-4o-2024-11-20:eastus'
+    | 'gpt-4o-2024-11-20:westus3'
+    | 'gpt-4o-2024-11-20:southcentralus'
+    | 'gpt-4o-2024-08-06:westus'
+    | 'gpt-4o-2024-08-06:westus3'
+    | 'gpt-4o-2024-08-06:eastus'
+    | 'gpt-4o-2024-08-06:eastus2'
+    | 'gpt-4o-2024-08-06:northcentralus'
+    | 'gpt-4o-2024-08-06:southcentralus'
+    | 'gpt-4o-mini-2024-07-18:westus'
+    | 'gpt-4o-mini-2024-07-18:westus3'
+    | 'gpt-4o-mini-2024-07-18:eastus'
+    | 'gpt-4o-mini-2024-07-18:eastus2'
+    | 'gpt-4o-mini-2024-07-18:northcentralus'
+    | 'gpt-4o-mini-2024-07-18:southcentralus'
+    | 'gpt-4o-2024-05-13:eastus2'
+    | 'gpt-4o-2024-05-13:eastus'
+    | 'gpt-4o-2024-05-13:northcentralus'
+    | 'gpt-4o-2024-05-13:southcentralus'
+    | 'gpt-4o-2024-05-13:westus3'
+    | 'gpt-4o-2024-05-13:westus'
+    | 'gpt-4-turbo-2024-04-09:eastus2'
+    | 'gpt-4-0125-preview:eastus'
+    | 'gpt-4-0125-preview:northcentralus'
+    | 'gpt-4-0125-preview:southcentralus'
+    | 'gpt-4-1106-preview:australia'
+    | 'gpt-4-1106-preview:canadaeast'
+    | 'gpt-4-1106-preview:france'
+    | 'gpt-4-1106-preview:india'
+    | 'gpt-4-1106-preview:norway'
+    | 'gpt-4-1106-preview:swedencentral'
+    | 'gpt-4-1106-preview:uk'
+    | 'gpt-4-1106-preview:westus'
+    | 'gpt-4-1106-preview:westus3'
+    | 'gpt-4-0613:canadaeast'
+    | 'gpt-3.5-turbo-0125:canadaeast'
+    | 'gpt-3.5-turbo-0125:northcentralus'
+    | 'gpt-3.5-turbo-0125:southcentralus'
+    | 'gpt-3.5-turbo-1106:canadaeast'
+    | 'gpt-3.5-turbo-1106:westus';
+  /**
+   * Azure OpenAI doesn't support `maxLength` right now https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/structured-outputs?tabs=python-secure%2Cdotnet-entra-id&pivots=programming-language-csharp#unsupported-type-specific-keywords. Need to strip.
+   *
+   * - `strip-parameters-with-unsupported-validation` will strip parameters with unsupported validation.
+   * - `strip-unsupported-validation` will keep the parameters but strip unsupported validation.
+   *
+   * @default `strip-unsupported-validation`
+   */
+  toolStrictCompatibilityMode?:
+    | 'strip-parameters-with-unsupported-validation'
+    | 'strip-unsupported-validation';
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
    * @min 0
@@ -5180,10 +5287,16 @@ export interface WorkflowOpenAIModel {
   /** This is the provider of the model (`openai`). */
   provider: 'openai';
   /**
-   * This is the specific OpenAI model that will be used.
+   * This is the OpenAI model that will be used.
+   *
+   * When using Vapi OpenAI or your own Azure Credentials, you have the option to specify the region for the selected model. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest region that make sense.
+   * This is helpful when you are required to comply with Data Residency rules. Learn more about Azure regions here https://azure.microsoft.com/en-us/explore/global-infrastructure/data-residency/.
    * @maxLength 100
    */
   model:
+    | 'gpt-4.1-2025-04-14'
+    | 'gpt-4.1-mini-2025-04-14'
+    | 'gpt-4.1-nano-2025-04-14'
     | 'gpt-4.1'
     | 'gpt-4.1-mini'
     | 'gpt-4.1-nano'
@@ -5216,7 +5329,67 @@ export interface WorkflowOpenAIModel {
     | 'gpt-3.5-turbo-0125'
     | 'gpt-3.5-turbo-1106'
     | 'gpt-3.5-turbo-16k'
-    | 'gpt-3.5-turbo-0613';
+    | 'gpt-3.5-turbo-0613'
+    | 'gpt-4.1-2025-04-14:westus'
+    | 'gpt-4.1-2025-04-14:eastus2'
+    | 'gpt-4.1-2025-04-14:eastus'
+    | 'gpt-4.1-2025-04-14:westus3'
+    | 'gpt-4.1-2025-04-14:northcentralus'
+    | 'gpt-4.1-2025-04-14:southcentralus'
+    | 'gpt-4.1-mini-2025-04-14:westus'
+    | 'gpt-4.1-mini-2025-04-14:eastus2'
+    | 'gpt-4.1-mini-2025-04-14:eastus'
+    | 'gpt-4.1-mini-2025-04-14:westus3'
+    | 'gpt-4.1-mini-2025-04-14:northcentralus'
+    | 'gpt-4.1-mini-2025-04-14:southcentralus'
+    | 'gpt-4.1-nano-2025-04-14:westus'
+    | 'gpt-4.1-nano-2025-04-14:eastus2'
+    | 'gpt-4.1-nano-2025-04-14:westus3'
+    | 'gpt-4.1-nano-2025-04-14:northcentralus'
+    | 'gpt-4.1-nano-2025-04-14:southcentralus'
+    | 'gpt-4o-2024-11-20:swedencentral'
+    | 'gpt-4o-2024-11-20:westus'
+    | 'gpt-4o-2024-11-20:eastus2'
+    | 'gpt-4o-2024-11-20:eastus'
+    | 'gpt-4o-2024-11-20:westus3'
+    | 'gpt-4o-2024-11-20:southcentralus'
+    | 'gpt-4o-2024-08-06:westus'
+    | 'gpt-4o-2024-08-06:westus3'
+    | 'gpt-4o-2024-08-06:eastus'
+    | 'gpt-4o-2024-08-06:eastus2'
+    | 'gpt-4o-2024-08-06:northcentralus'
+    | 'gpt-4o-2024-08-06:southcentralus'
+    | 'gpt-4o-mini-2024-07-18:westus'
+    | 'gpt-4o-mini-2024-07-18:westus3'
+    | 'gpt-4o-mini-2024-07-18:eastus'
+    | 'gpt-4o-mini-2024-07-18:eastus2'
+    | 'gpt-4o-mini-2024-07-18:northcentralus'
+    | 'gpt-4o-mini-2024-07-18:southcentralus'
+    | 'gpt-4o-2024-05-13:eastus2'
+    | 'gpt-4o-2024-05-13:eastus'
+    | 'gpt-4o-2024-05-13:northcentralus'
+    | 'gpt-4o-2024-05-13:southcentralus'
+    | 'gpt-4o-2024-05-13:westus3'
+    | 'gpt-4o-2024-05-13:westus'
+    | 'gpt-4-turbo-2024-04-09:eastus2'
+    | 'gpt-4-0125-preview:eastus'
+    | 'gpt-4-0125-preview:northcentralus'
+    | 'gpt-4-0125-preview:southcentralus'
+    | 'gpt-4-1106-preview:australia'
+    | 'gpt-4-1106-preview:canadaeast'
+    | 'gpt-4-1106-preview:france'
+    | 'gpt-4-1106-preview:india'
+    | 'gpt-4-1106-preview:norway'
+    | 'gpt-4-1106-preview:swedencentral'
+    | 'gpt-4-1106-preview:uk'
+    | 'gpt-4-1106-preview:westus'
+    | 'gpt-4-1106-preview:westus3'
+    | 'gpt-4-0613:canadaeast'
+    | 'gpt-3.5-turbo-0125:canadaeast'
+    | 'gpt-3.5-turbo-0125:northcentralus'
+    | 'gpt-3.5-turbo-0125:southcentralus'
+    | 'gpt-3.5-turbo-1106:canadaeast'
+    | 'gpt-3.5-turbo-1106:westus';
   /**
    * This is the temperature of the model.
    * @min 0
@@ -5287,29 +5460,7 @@ export interface GlobalNodePlan {
   enterCondition?: string;
 }
 
-export interface VariableExtractionSchema {
-  /**
-   * This is the type of output you'd like.
-   *
-   * `string`, `number`, `boolean` are primitive types.
-   */
-  type: 'string' | 'number' | 'integer' | 'boolean';
-  /**
-   * This is the title of the variable.
-   *
-   * It can only contain letters, numbers, and underscores.
-   * @pattern /^[a-zA-Z0-9_]+$/
-   */
-  title: string;
-  /** This is the description to help the model understand what it needs to output. */
-  description: string;
-  /** This is the enum values to choose from. Only used if the type is `string`. */
-  enum?: string[];
-}
-
-export interface VariableExtractionPlan {
-  output: VariableExtractionSchema[];
-}
+export type VariableExtractionPlan = object;
 
 export interface ConversationNode {
   /**
@@ -5442,11 +5593,12 @@ export interface Edge {
 
 export interface WorkflowUserEditable {
   nodes: (ConversationNode | ToolNode)[];
-  /** These are the options for the workflow's LLM. */
   model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
+  /** @maxLength 5000 */
+  globalPrompt?: string;
 }
 
 export interface VapiModel {
@@ -6684,52 +6836,6 @@ export interface VapiVoice {
    * @default 1
    */
   speed?: number;
-  /**
-   * This is the language code (ISO 639-1) that will be used.
-   *
-   * @default 'en-US'
-   * @default "en-US"
-   */
-  language?:
-    | 'en-US'
-    | 'en-GB'
-    | 'en-AU'
-    | 'en-CA'
-    | 'ja'
-    | 'zh'
-    | 'de'
-    | 'hi'
-    | 'fr-FR'
-    | 'fr-CA'
-    | 'ko'
-    | 'pt-BR'
-    | 'pt-PT'
-    | 'it'
-    | 'es-ES'
-    | 'es-MX'
-    | 'id'
-    | 'nl'
-    | 'tr'
-    | 'fil'
-    | 'pl'
-    | 'sv'
-    | 'bg'
-    | 'ro'
-    | 'ar-SA'
-    | 'ar-AE'
-    | 'cs'
-    | 'el'
-    | 'fi'
-    | 'hr'
-    | 'ms'
-    | 'sk'
-    | 'da'
-    | 'ta'
-    | 'uk'
-    | 'ru'
-    | 'hu'
-    | 'no'
-    | 'vi';
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -7505,52 +7611,6 @@ export interface FallbackVapiVoice {
    * @default 1
    */
   speed?: number;
-  /**
-   * This is the language code (ISO 639-1) that will be used.
-   *
-   * @default 'en-US'
-   * @default "en-US"
-   */
-  language?:
-    | 'en-US'
-    | 'en-GB'
-    | 'en-AU'
-    | 'en-CA'
-    | 'ja'
-    | 'zh'
-    | 'de'
-    | 'hi'
-    | 'fr-FR'
-    | 'fr-CA'
-    | 'ko'
-    | 'pt-BR'
-    | 'pt-PT'
-    | 'it'
-    | 'es-ES'
-    | 'es-MX'
-    | 'id'
-    | 'nl'
-    | 'tr'
-    | 'fil'
-    | 'pl'
-    | 'sv'
-    | 'bg'
-    | 'ro'
-    | 'ar-SA'
-    | 'ar-AE'
-    | 'cs'
-    | 'el'
-    | 'fi'
-    | 'hr'
-    | 'ms'
-    | 'sk'
-    | 'da'
-    | 'ta'
-    | 'uk'
-    | 'ru'
-    | 'hu'
-    | 'no'
-    | 'vi';
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -8462,17 +8522,6 @@ export interface TransferAssistantHookAction {
 
 export interface FunctionCallAssistantHookAction {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -8481,6 +8530,29 @@ export interface FunctionCallAssistantHookAction {
   /** The type of tool. "function" for Function tool. */
   type: 'function';
   /**
+   * This determines if the tool is async.
+   *
+   *   If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   *   If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   *   Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
+  /**
    * This is the function definition of the tool.
    *
    * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
@@ -8488,14 +8560,6 @@ export interface FunctionCallAssistantHookAction {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface SayAssistantHookAction {
@@ -8868,6 +8932,13 @@ export interface SuccessEvaluationPlan {
 }
 
 export interface AnalysisPlan {
+  /**
+   * The minimum number of messages required to run the analysis plan.
+   * If the number of messages is less than this, analysis will be skipped.
+   * @default 2
+   * @min 0
+   */
+  minMessagesThreshold?: number;
   /** This is the plan for generating the summary of the call. This outputs to `call.analysis.summary`. */
   summaryPlan?: SummaryPlan;
   /** This is the plan for generating the structured data from the call. This outputs to `call.analysis.structuredData`. */
@@ -10170,11 +10241,25 @@ export interface CreateSquadDTO {
 
 export interface CreateWorkflowDTO {
   nodes: (ConversationNode | ToolNode)[];
-  /** These are the options for the workflow's LLM. */
   model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
+  /** @maxLength 5000 */
+  globalPrompt?: string;
+}
+
+export interface WorkflowOverrides {
+  /**
+   * These are values that will be used to replace the template variables in the workflow messages and other text-based fields.
+   * This uses LiquidJS syntax. https://liquidjs.com/tutorials/intro-to-liquid.html
+   *
+   * So for example, `{{ name }}` will be replaced with the value of `name` in `variableValues`.
+   * `{{"now" | date: "%b %d, %Y, %I:%M %p", "America/New_York"}}` will be replaced with the current date and time in New York.
+   *  Some VAPI reserved defaults:
+   *  - *customer* - the customer object
+   */
+  variableValues?: object;
 }
 
 export interface TransferPhoneNumberHookAction {
@@ -10454,6 +10539,7 @@ export interface Call {
     | 'call.in-progress.error-vapifault-transport-never-connected'
     | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
     | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
+    | 'call.in-progress.error-vapifault-worker-died'
     | 'call.in-progress.error-vapifault-openai-llm-failed'
     | 'call.in-progress.error-vapifault-azure-openai-llm-failed'
     | 'call.in-progress.error-vapifault-groq-llm-failed'
@@ -10841,7 +10927,12 @@ export interface Call {
     | 'phone-call-provider-closed-websocket'
     | 'call.forwarding.operator-busy'
     | 'silence-timed-out'
-    | 'call.in-progress.error-sip-telephony-provider-failed-to-connect-call'
+    | 'call.in-progress.error-sip-inbound-call-failed-to-connect'
+    | 'call.in-progress.error-providerfault-outbound-sip-403-forbidden'
+    | 'call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required'
+    | 'call.in-progress.error-providerfault-outbound-sip-503-service-unavailable'
+    | 'call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable'
+    | 'call.in-progress.error-sip-outbound-call-failed-to-connect'
     | 'call.ringing.hook-executed-say'
     | 'call.ringing.hook-executed-transfer'
     | 'twilio-failed-to-connect-call'
@@ -10932,8 +11023,6 @@ export interface Call {
    */
   squad?: CreateSquadDTO;
   /**
-   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-   *
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
    *
    * To start a call with:
@@ -10943,8 +11032,6 @@ export interface Call {
    */
   workflowId?: string;
   /**
-   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-   *
    * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
    *
    * To start a call with:
@@ -10953,6 +11040,8 @@ export interface Call {
    * - Workflow, use `workflow` or `workflowId`
    */
   workflow?: CreateWorkflowDTO;
+  /** These are the overrides for the `workflow` or `workflowId`'s settings and template variables. */
+  workflowOverrides?: WorkflowOverrides;
   /**
    * This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
    *
@@ -11055,8 +11144,6 @@ export interface CreateCallDTO {
    */
   squad?: CreateSquadDTO;
   /**
-   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-   *
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
    *
    * To start a call with:
@@ -11066,8 +11153,6 @@ export interface CreateCallDTO {
    */
   workflowId?: string;
   /**
-   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-   *
    * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
    *
    * To start a call with:
@@ -11076,6 +11161,8 @@ export interface CreateCallDTO {
    * - Workflow, use `workflow` or `workflowId`
    */
   workflow?: CreateWorkflowDTO;
+  /** These are the overrides for the `workflow` or `workflowId`'s settings and template variables. */
+  workflowOverrides?: WorkflowOverrides;
   /**
    * This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
    *
@@ -11168,8 +11255,6 @@ export interface CreateOutboundCallDTO {
    */
   squad?: CreateSquadDTO;
   /**
-   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-   *
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
    *
    * To start a call with:
@@ -11179,8 +11264,6 @@ export interface CreateOutboundCallDTO {
    */
   workflowId?: string;
   /**
-   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-   *
    * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
    *
    * To start a call with:
@@ -11189,6 +11272,8 @@ export interface CreateOutboundCallDTO {
    * - Workflow, use `workflow` or `workflowId`
    */
   workflow?: CreateWorkflowDTO;
+  /** These are the overrides for the `workflow` or `workflowId`'s settings and template variables. */
+  workflowOverrides?: WorkflowOverrides;
   /**
    * This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
    *
@@ -11255,8 +11340,6 @@ export interface CreateWebCallDTO {
    */
   squad?: CreateSquadDTO;
   /**
-   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-   *
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
    *
    * To start a call with:
@@ -11266,8 +11349,6 @@ export interface CreateWebCallDTO {
    */
   workflowId?: string;
   /**
-   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-   *
    * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
    *
    * To start a call with:
@@ -11276,6 +11357,8 @@ export interface CreateWebCallDTO {
    * - Workflow, use `workflow` or `workflowId`
    */
   workflow?: CreateWorkflowDTO;
+  /** These are the overrides for the `workflow` or `workflowId`'s settings and template variables. */
+  workflowOverrides?: WorkflowOverrides;
 }
 
 export interface UpdateCallDTO {
@@ -11287,7 +11370,10 @@ export interface UpdateCallDTO {
 }
 
 export interface DeveloperMessage {
-  /** This is the role of the message author */
+  /**
+   * This is the role of the message author
+   * @default "developer"
+   */
   role: 'developer';
   /**
    * This is the content of the developer message
@@ -11347,7 +11433,10 @@ export interface ToolCall {
 }
 
 export interface AssistantMessage {
-  /** This is the role of the message author */
+  /**
+   * This is the role of the message author
+   * @default "assistant"
+   */
   role: 'assistant';
   /**
    * This is the content of the assistant message
@@ -11369,7 +11458,10 @@ export interface AssistantMessage {
 }
 
 export interface ToolMessage {
-  /** This is the role of the message author */
+  /**
+   * This is the role of the message author
+   * @default "tool"
+   */
   role: 'tool';
   /**
    * This is the content of the tool message
@@ -11385,17 +11477,14 @@ export interface ToolMessage {
   name?: string;
 }
 
-export interface CreateChatStreamResponse {
-  /** This is the unique identifier for the streaming response. */
-  id: string;
+export interface FunctionCall {
+  /** This is the arguments to call the function with */
+  arguments: string;
   /**
-   * This is the path to the content being updated.
-   * Format: `chat.output[{contentIndex}].content` where contentIndex identifies the specific content item.
-   * @example "chat.output[0].content"
+   * This is the name of the function to call
+   * @maxLength 40
    */
-  path: string;
-  /** This is the incremental content chunk being streamed. */
-  delta: string;
+  name: string;
 }
 
 export interface Chat {
@@ -11413,7 +11502,10 @@ export interface Chat {
    * Mutually exclusive with previousChatId.
    */
   sessionId?: string;
-  /** Chat input as a string or an array of messages. When using message array, each message requires a role and content. */
+  /**
+   * This is the input text for the chat.
+   * Can be a string or an array of chat messages.
+   */
   input?:
     | string
     | (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
@@ -11433,9 +11525,12 @@ export interface Chat {
   id: string;
   /** This is the unique identifier for the org that this chat belongs to. */
   orgId: string;
-  /** Array of messages used as context for the chat */
+  /**
+   * This is an array of messages used as context for the chat.
+   * Used to provide message history for multi-turn conversations.
+   */
   messages?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
-  /** Output messages generated by the system in response to the input */
+  /** This is the output messages generated by the system in response to the input. */
   output?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
   /**
    * This is the ISO 8601 date-time string of when the chat was created.
@@ -11447,11 +11542,6 @@ export interface Chat {
    * @format date-time
    */
   updatedAt: string;
-}
-
-export interface ChatPaginatedResponse {
-  results: Chat[];
-  metadata: PaginationMeta;
 }
 
 export interface CreateChatDTO {
@@ -11469,7 +11559,11 @@ export interface CreateChatDTO {
    * Mutually exclusive with previousChatId.
    */
   sessionId?: string;
-  /** Chat input as a string or an array of messages. When using message array, each message requires a role and content. */
+  /**
+   * This is the input text for the chat.
+   * Can be a string or an array of chat messages.
+   * This field is REQUIRED for chat creation.
+   */
   input:
     | string
     | (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
@@ -11487,6 +11581,86 @@ export interface CreateChatDTO {
   previousChatId?: string;
 }
 
+export interface GetChatPaginatedDTO {
+  /** This is the unique identifier for the assistant that will be used for the chat. */
+  assistantId?: string;
+  /** This is the unique identifier for the workflow that will be used for the chat. */
+  workflowId?: string;
+  /** This is the unique identifier for the session that will be used for the chat. */
+  sessionId?: string;
+  /**
+   * This is the page number to return. Defaults to 1.
+   * @min 1
+   */
+  page?: number;
+  /** This is the sort order for pagination. Defaults to 'DESC'. */
+  sortOrder?: 'ASC' | 'DESC';
+  /**
+   * This is the maximum number of items to return. Defaults to 100.
+   * @min 0
+   * @max 1000
+   */
+  limit?: number;
+  /**
+   * This will return items where the createdAt is greater than the specified value.
+   * @format date-time
+   */
+  createdAtGt?: string;
+  /**
+   * This will return items where the createdAt is less than the specified value.
+   * @format date-time
+   */
+  createdAtLt?: string;
+  /**
+   * This will return items where the createdAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtGe?: string;
+  /**
+   * This will return items where the createdAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtLe?: string;
+  /**
+   * This will return items where the updatedAt is greater than the specified value.
+   * @format date-time
+   */
+  updatedAtGt?: string;
+  /**
+   * This will return items where the updatedAt is less than the specified value.
+   * @format date-time
+   */
+  updatedAtLt?: string;
+  /**
+   * This will return items where the updatedAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtGe?: string;
+  /**
+   * This will return items where the updatedAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtLe?: string;
+}
+
+export interface ChatPaginatedResponse {
+  results: Chat[];
+  metadata: PaginationMeta;
+}
+
+export interface CreateChatStreamResponse {
+  /** This is the unique identifier for the streaming response. */
+  id: string;
+  /**
+   * This is the path to the content being updated.
+   * Format: `chat.output[{contentIndex}].content` where contentIndex identifies the specific content item.
+   * @example "chat.output[0].content"
+   */
+  path: string;
+  /** This is the incremental content chunk being streamed. */
+  delta: string;
+}
+
 export interface OpenAIResponsesRequest {
   /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
   assistantId?: string;
@@ -11502,7 +11676,11 @@ export interface OpenAIResponsesRequest {
    * Mutually exclusive with previousChatId.
    */
   sessionId?: string;
-  /** Chat input as a string or an array of messages. When using message array, each message requires a role and content. */
+  /**
+   * This is the input text for the chat.
+   * Can be a string or an array of chat messages.
+   * This field is REQUIRED for chat creation.
+   */
   input:
     | string
     | (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
@@ -11519,29 +11697,126 @@ export interface OpenAIResponsesRequest {
   previousChatId?: string;
 }
 
-export interface CreateSessionDTO {
+export interface ResponseOutputText {
   /**
-   * This is a user-defined name for the session. Maximum length is 40 characters.
-   * @maxLength 40
+   * Annotations in the text output
+   * @default []
    */
-  name?: string;
-  /** This is the current status of the session. Can be either 'active' or 'completed'. */
-  status?: 'active' | 'completed';
-  /** This is the ID of the assistant associated with this session. Use this when referencing an existing assistant. */
-  assistantId?: string;
+  annotations: object[];
+  /** The text output from the model */
+  text: string;
   /**
-   * This is the assistant configuration for this session. Use this when creating a new assistant configuration.
-   * If assistantId is provided, this will be ignored.
+   * The type of the output text
+   * @default "output_text"
    */
-  assistant?: CreateAssistantDTO;
-  /** Array of chat messages in the session */
-  messages?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
-  /** This is the customer information associated with this session. */
-  customer?: CreateCustomerDTO;
-  /** This is the ID of the phone number associated with this session. */
-  phoneNumberId?: string;
-  /** This is the phone number configuration for this session. */
-  phoneNumber?: ImportTwilioPhoneNumberDTO;
+  type: 'output_text';
+}
+
+export interface ResponseOutputMessage {
+  /** The unique ID of the output message */
+  id: string;
+  /** Content of the output message */
+  content: ResponseOutputText[];
+  /**
+   * The role of the output message
+   * @default "assistant"
+   */
+  role: 'assistant';
+  /** The status of the message */
+  status: 'in_progress' | 'completed' | 'incomplete';
+  /**
+   * The type of the output message
+   * @default "message"
+   */
+  type: 'message';
+}
+
+export interface ResponseObject {
+  /** Unique identifier for this Response */
+  id: string;
+  /**
+   * The object type
+   * @default "response"
+   */
+  object: 'response';
+  /** Unix timestamp (in seconds) of when this Response was created */
+  created_at: number;
+  /** Status of the response */
+  status: 'completed' | 'failed' | 'in_progress' | 'incomplete';
+  /**
+   * Error message if the response failed
+   * @default null
+   */
+  error?: string | null;
+  /** Output messages from the model */
+  output: ResponseOutputMessage[];
+}
+
+export interface ResponseTextDeltaEvent {
+  /** Index of the content part */
+  content_index: number;
+  /** Text delta being added */
+  delta: string;
+  /** ID of the output item */
+  item_id: string;
+  /** Index of the output item */
+  output_index: number;
+  /**
+   * Event type
+   * @default "response.output_text.delta"
+   */
+  type: 'response.output_text.delta';
+}
+
+export interface ResponseTextDoneEvent {
+  /** Index of the content part */
+  content_index: number;
+  /** ID of the output item */
+  item_id: string;
+  /** Index of the output item */
+  output_index: number;
+  /** Complete text content */
+  text: string;
+  /**
+   * Event type
+   * @default "response.output_text.done"
+   */
+  type: 'response.output_text.done';
+}
+
+export interface ResponseCompletedEvent {
+  /** The completed response */
+  response: ResponseObject;
+  /**
+   * Event type
+   * @default "response.completed"
+   */
+  type: 'response.completed';
+}
+
+export interface ResponseErrorEvent {
+  /**
+   * Event type
+   * @default "error"
+   */
+  type: 'error';
+  /**
+   * Error code
+   * @example "ERR_SOMETHING"
+   */
+  code: string;
+  /**
+   * Error message
+   * @example "Something went wrong"
+   */
+  message: string;
+  /** Parameter that caused the error */
+  param?: string | null;
+  /**
+   * Sequence number of the event
+   * @example 1
+   */
+  sequence_number: number;
 }
 
 export interface Session {
@@ -11566,6 +11841,13 @@ export interface Session {
   name?: string;
   /** This is the current status of the session. Can be either 'active' or 'completed'. */
   status?: 'active' | 'completed';
+  /**
+   * Session expiration time in seconds. Defaults to 24 hours (86400 seconds) if not set.
+   * @min 60
+   * @max 2592000
+   * @example 86400
+   */
+  expirationSeconds?: number;
   /** This is the ID of the assistant associated with this session. Use this when referencing an existing assistant. */
   assistantId?: string;
   /**
@@ -11573,7 +11855,7 @@ export interface Session {
    * If assistantId is provided, this will be ignored.
    */
   assistant?: CreateAssistantDTO;
-  /** Array of chat messages in the session */
+  /** This is an array of chat messages in the session. */
   messages?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
   /** This is the customer information associated with this session. */
   customer?: CreateCustomerDTO;
@@ -11583,9 +11865,36 @@ export interface Session {
   phoneNumber?: ImportTwilioPhoneNumberDTO;
 }
 
-export interface SessionPaginatedResponse {
-  results: Session[];
-  metadata: PaginationMeta;
+export interface CreateSessionDTO {
+  /**
+   * This is a user-defined name for the session. Maximum length is 40 characters.
+   * @maxLength 40
+   */
+  name?: string;
+  /** This is the current status of the session. Can be either 'active' or 'completed'. */
+  status?: 'active' | 'completed';
+  /**
+   * Session expiration time in seconds. Defaults to 24 hours (86400 seconds) if not set.
+   * @min 60
+   * @max 2592000
+   * @example 86400
+   */
+  expirationSeconds?: number;
+  /** This is the ID of the assistant associated with this session. Use this when referencing an existing assistant. */
+  assistantId?: string;
+  /**
+   * This is the assistant configuration for this session. Use this when creating a new assistant configuration.
+   * If assistantId is provided, this will be ignored.
+   */
+  assistant?: CreateAssistantDTO;
+  /** This is an array of chat messages in the session. */
+  messages?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
+  /** This is the customer information associated with this session. */
+  customer?: CreateCustomerDTO;
+  /** This is the ID of the phone number associated with this session. */
+  phoneNumberId?: string;
+  /** This is the phone number configuration for this session. */
+  phoneNumber?: ImportTwilioPhoneNumberDTO;
 }
 
 export interface UpdateSessionDTO {
@@ -11596,8 +11905,82 @@ export interface UpdateSessionDTO {
   name?: string;
   /** This is the new status for the session. */
   status?: 'active' | 'completed';
-  /** Array of updated chat messages */
+  /**
+   * Session expiration time in seconds. Defaults to 24 hours (86400 seconds) if not set.
+   * @min 60
+   * @max 2592000
+   * @example 86400
+   */
+  expirationSeconds?: number;
+  /** This is the updated array of chat messages. */
   messages?: (SystemMessage | UserMessage | AssistantMessage | ToolMessage | DeveloperMessage)[];
+}
+
+export interface GetSessionPaginatedDTO {
+  /** This is the name of the session to filter by. */
+  name?: string;
+  /** This is the ID of the assistant to filter sessions by. */
+  assistantId?: string;
+  /** This is the ID of the workflow to filter sessions by. */
+  workflowId?: string;
+  /**
+   * This is the page number to return. Defaults to 1.
+   * @min 1
+   */
+  page?: number;
+  /** This is the sort order for pagination. Defaults to 'DESC'. */
+  sortOrder?: 'ASC' | 'DESC';
+  /**
+   * This is the maximum number of items to return. Defaults to 100.
+   * @min 0
+   * @max 1000
+   */
+  limit?: number;
+  /**
+   * This will return items where the createdAt is greater than the specified value.
+   * @format date-time
+   */
+  createdAtGt?: string;
+  /**
+   * This will return items where the createdAt is less than the specified value.
+   * @format date-time
+   */
+  createdAtLt?: string;
+  /**
+   * This will return items where the createdAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtGe?: string;
+  /**
+   * This will return items where the createdAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtLe?: string;
+  /**
+   * This will return items where the updatedAt is greater than the specified value.
+   * @format date-time
+   */
+  updatedAtGt?: string;
+  /**
+   * This will return items where the updatedAt is less than the specified value.
+   * @format date-time
+   */
+  updatedAtLt?: string;
+  /**
+   * This will return items where the updatedAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtGe?: string;
+  /**
+   * This will return items where the updatedAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtLe?: string;
+}
+
+export interface SessionPaginatedResponse {
+  results: Session[];
+  metadata: PaginationMeta;
 }
 
 export interface Assistant {
@@ -13545,17 +13928,6 @@ export interface PhoneNumberPaginatedResponse {
 
 export interface DtmfTool {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -13585,28 +13957,9 @@ export interface DtmfTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface EndCallTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -13637,28 +13990,9 @@ export interface EndCallTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface FunctionTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -13667,6 +14001,29 @@ export interface FunctionTool {
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
   /** The type of tool. "function" for Function tool. */
   type: 'function';
+  /**
+   * This determines if the tool is async.
+   *
+   *   If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   *   If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   *   Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -13689,28 +14046,9 @@ export interface FunctionTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GhlTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -13741,29 +14079,10 @@ export interface GhlTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
   metadata: GhlToolMetadata;
 }
 
 export interface MakeTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -13794,29 +14113,10 @@ export interface MakeTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
   metadata: MakeToolMetadata;
 }
 
 export interface TransferCallTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -13852,28 +14152,9 @@ export interface TransferCallTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface OutputTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -13904,28 +14185,9 @@ export interface OutputTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface BashTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -13936,6 +14198,18 @@ export interface BashTool {
   type: 'bash';
   /** The sub type of tool. */
   subType: 'bash_20241022';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -13959,14 +14233,6 @@ export interface BashTool {
    */
   function?: OpenAIFunction;
   /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
-  /**
    * The name of the tool, fixed to 'bash'
    * @default "bash"
    */
@@ -13974,17 +14240,6 @@ export interface BashTool {
 }
 
 export interface ComputerTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -13995,6 +14250,18 @@ export interface ComputerTool {
   type: 'computer';
   /** The sub type of tool. */
   subType: 'computer_20241022';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -14017,14 +14284,6 @@ export interface ComputerTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
   /**
    * The name of the tool, fixed to 'computer'
    * @default "computer"
@@ -14040,17 +14299,6 @@ export interface ComputerTool {
 
 export interface TextEditorTool {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -14060,6 +14308,18 @@ export interface TextEditorTool {
   type: 'textEditor';
   /** The sub type of tool. */
   subType: 'text_editor_20241022';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -14083,14 +14343,6 @@ export interface TextEditorTool {
    */
   function?: OpenAIFunction;
   /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
-  /**
    * The name of the tool, fixed to 'str_replace_editor'
    * @default "str_replace_editor"
    */
@@ -14098,17 +14350,6 @@ export interface TextEditorTool {
 }
 
 export interface QueryTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14141,28 +14382,9 @@ export interface QueryTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoogleCalendarCreateEventTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14193,28 +14415,9 @@ export interface GoogleCalendarCreateEventTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoogleSheetsRowAppendTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14245,28 +14448,9 @@ export interface GoogleSheetsRowAppendTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoogleCalendarCheckAvailabilityTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14297,28 +14481,9 @@ export interface GoogleCalendarCheckAvailabilityTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface SlackSendMessageTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14349,28 +14514,9 @@ export interface SlackSendMessageTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface SmsTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14401,28 +14547,9 @@ export interface SmsTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface McpTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14431,6 +14558,18 @@ export interface McpTool {
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
   /** The type of tool. "mcp" for MCP tool. */
   type: 'mcp';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -14453,28 +14592,9 @@ export interface McpTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoHighLevelCalendarAvailabilityTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14505,28 +14625,9 @@ export interface GoHighLevelCalendarAvailabilityTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoHighLevelCalendarEventCreateTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14557,28 +14658,9 @@ export interface GoHighLevelCalendarEventCreateTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoHighLevelContactCreateTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14609,28 +14691,9 @@ export interface GoHighLevelContactCreateTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoHighLevelContactGetTool {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14661,28 +14724,9 @@ export interface GoHighLevelContactGetTool {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateApiRequestToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14714,7 +14758,7 @@ export interface CreateApiRequestToolDTO {
   /** This is where the request will be sent. */
   url: string;
   /** This is the body of the request. */
-  body: JsonSchema;
+  body?: JsonSchema;
   /** These are the headers to send in the request. */
   headers?: JsonSchema;
   /**
@@ -14731,28 +14775,9 @@ export interface CreateApiRequestToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateOutputToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14769,28 +14794,9 @@ export interface CreateOutputToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateBashToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14801,6 +14807,18 @@ export interface CreateBashToolDTO {
   type: 'bash';
   /** The sub type of tool. */
   subType: 'bash_20241022';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /**
    * The name of the tool, fixed to 'bash'
    * @default "bash"
@@ -14814,28 +14832,9 @@ export interface CreateBashToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateComputerToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14846,6 +14845,18 @@ export interface CreateComputerToolDTO {
   type: 'computer';
   /** The sub type of tool. */
   subType: 'computer_20241022';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /**
    * The name of the tool, fixed to 'computer'
    * @default "computer"
@@ -14865,28 +14876,9 @@ export interface CreateComputerToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateTextEditorToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14897,6 +14889,18 @@ export interface CreateTextEditorToolDTO {
   type: 'textEditor';
   /** The sub type of tool. */
   subType: 'text_editor_20241022';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /**
    * The name of the tool, fixed to 'str_replace_editor'
    * @default "str_replace_editor"
@@ -14910,28 +14914,9 @@ export interface CreateTextEditorToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateSmsToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -14948,29 +14933,10 @@ export interface CreateSmsToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateDtmfToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -14984,29 +14950,10 @@ export interface UpdateDtmfToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateEndCallToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15020,34 +14967,38 @@ export interface UpdateEndCallToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateFunctionToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   * This determines if the tool is async.
+   *
+   *   If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   *   If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   *   Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /**
    * This is the function definition of the tool.
    *
@@ -15056,29 +15007,10 @@ export interface UpdateFunctionToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateGhlToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15092,30 +15024,11 @@ export interface UpdateGhlToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
   metadata?: GhlToolMetadata;
 }
 
 export interface UpdateMakeToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15129,29 +15042,10 @@ export interface UpdateMakeToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
   metadata?: MakeToolMetadata;
 }
 
 export interface UpdateTransferCallToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -15172,28 +15066,9 @@ export interface UpdateTransferCallToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateOutputToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -15208,28 +15083,9 @@ export interface UpdateOutputToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateBashToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -15239,6 +15095,18 @@ export interface UpdateBashToolDTO {
   /** The sub type of tool. */
   subType?: 'bash_20241022';
   /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
+  /**
    * This is the function definition of the tool.
    *
    * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
@@ -15246,14 +15114,6 @@ export interface UpdateBashToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
   /**
    * The name of the tool, fixed to 'bash'
    * @default "bash"
@@ -15263,17 +15123,6 @@ export interface UpdateBashToolDTO {
 
 export interface UpdateComputerToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15282,6 +15131,18 @@ export interface UpdateComputerToolDTO {
   /** The sub type of tool. */
   subType?: 'computer_20241022';
   /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
+  /**
    * This is the function definition of the tool.
    *
    * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
@@ -15289,14 +15150,6 @@ export interface UpdateComputerToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
   /**
    * The name of the tool, fixed to 'computer'
    * @default "computer"
@@ -15312,17 +15165,6 @@ export interface UpdateComputerToolDTO {
 
 export interface UpdateTextEditorToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15330,6 +15172,18 @@ export interface UpdateTextEditorToolDTO {
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
   /** The sub type of tool. */
   subType?: 'text_editor_20241022';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /**
    * This is the function definition of the tool.
    *
@@ -15339,14 +15193,6 @@ export interface UpdateTextEditorToolDTO {
    */
   function?: OpenAIFunction;
   /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
-  /**
    * The name of the tool, fixed to 'str_replace_editor'
    * @default "str_replace_editor"
    */
@@ -15354,17 +15200,6 @@ export interface UpdateTextEditorToolDTO {
 }
 
 export interface UpdateQueryToolDTO {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -15381,29 +15216,10 @@ export interface UpdateQueryToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateGoogleCalendarCreateEventToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15417,29 +15233,10 @@ export interface UpdateGoogleCalendarCreateEventToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateGoogleSheetsRowAppendToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15453,29 +15250,10 @@ export interface UpdateGoogleSheetsRowAppendToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateGoogleCalendarCheckAvailabilityToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15489,29 +15267,10 @@ export interface UpdateGoogleCalendarCheckAvailabilityToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateSlackSendMessageToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15525,29 +15284,10 @@ export interface UpdateSlackSendMessageToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateSmsToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15561,34 +15301,27 @@ export interface UpdateSmsToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateMcpToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
    */
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   /**
    * This is the function definition of the tool.
    *
@@ -15597,29 +15330,10 @@ export interface UpdateMcpToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateGoHighLevelCalendarAvailabilityToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15633,29 +15347,10 @@ export interface UpdateGoHighLevelCalendarAvailabilityToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateGoHighLevelCalendarEventCreateToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15669,29 +15364,10 @@ export interface UpdateGoHighLevelCalendarEventCreateToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateGoHighLevelContactCreateToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15705,29 +15381,10 @@ export interface UpdateGoHighLevelContactCreateToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface UpdateGoHighLevelContactGetToolDTO {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -15741,14 +15398,6 @@ export interface UpdateGoHighLevelContactGetToolDTO {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface CreateFileDTO {
@@ -16000,7 +15649,6 @@ export interface TrieveKnowledgeBaseImport {
 
 export interface Workflow {
   nodes: (ConversationNode | ToolNode)[];
-  /** These are the options for the workflow's LLM. */
   model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   id: string;
   orgId: string;
@@ -16011,15 +15659,18 @@ export interface Workflow {
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
+  /** @maxLength 5000 */
+  globalPrompt?: string;
 }
 
 export interface UpdateWorkflowDTO {
   nodes?: (ConversationNode | ToolNode)[];
-  /** These are the options for the workflow's LLM. */
   model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   /** @maxLength 80 */
   name?: string;
   edges?: Edge[];
+  /** @maxLength 5000 */
+  globalPrompt?: string;
 }
 
 export interface Squad {
@@ -16515,23 +16166,6 @@ export interface UpdateTestSuiteRunDto {
   name?: string;
 }
 
-export interface Metrics {
-  orgId: string;
-  rangeStart: string;
-  rangeEnd: string;
-  bill: number;
-  billWithinBillingLimit: boolean;
-  billDailyBreakdown: object;
-  callActive: number;
-  callActiveWithinConcurrencyLimit: boolean;
-  callMinutes: number;
-  callMinutesDailyBreakdown: object;
-  callMinutesAverage: number;
-  callMinutesAverageDailyBreakdown: object;
-  callCount: number;
-  callCountDailyBreakdown: object;
-}
-
 export interface TimeRange {
   /**
    * This is the time step for aggregations.
@@ -16817,7 +16451,7 @@ export interface Subscription {
    */
   updatedAt: string;
   /** This is the type / tier of the subscription. */
-  type: 'trial' | 'pay-as-you-go' | 'enterprise';
+  type: 'trial' | 'pay-as-you-go' | 'enterprise' | 'agency' | 'startup' | 'growth' | 'scale';
   /**
    * This is the status of the subscription. Past due subscriptions are subscriptions
    * with past due payments.
@@ -16982,6 +16616,8 @@ export interface Org {
   plan?: OrgPlan;
   /** This is the secret key used for signing JWT tokens for the org. */
   jwtSecret?: string;
+  /** This is the total number of call minutes used by this org across all time. */
+  minutesUsed?: number;
   /**
    * This is the name of the org. This is just for your own reference.
    * @maxLength 40
@@ -20337,6 +19973,7 @@ export interface ServerMessageEndOfCallReport {
     | 'call.in-progress.error-vapifault-transport-never-connected'
     | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
     | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
+    | 'call.in-progress.error-vapifault-worker-died'
     | 'call.in-progress.error-vapifault-openai-llm-failed'
     | 'call.in-progress.error-vapifault-azure-openai-llm-failed'
     | 'call.in-progress.error-vapifault-groq-llm-failed'
@@ -20724,7 +20361,12 @@ export interface ServerMessageEndOfCallReport {
     | 'phone-call-provider-closed-websocket'
     | 'call.forwarding.operator-busy'
     | 'silence-timed-out'
-    | 'call.in-progress.error-sip-telephony-provider-failed-to-connect-call'
+    | 'call.in-progress.error-sip-inbound-call-failed-to-connect'
+    | 'call.in-progress.error-providerfault-outbound-sip-403-forbidden'
+    | 'call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required'
+    | 'call.in-progress.error-providerfault-outbound-sip-503-service-unavailable'
+    | 'call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable'
+    | 'call.in-progress.error-sip-outbound-call-failed-to-connect'
     | 'call.ringing.hook-executed-say'
     | 'call.ringing.hook-executed-transfer'
     | 'twilio-failed-to-connect-call'
@@ -21031,6 +20673,7 @@ export interface ServerMessageStatusUpdate {
     | 'call.in-progress.error-vapifault-transport-never-connected'
     | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
     | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
+    | 'call.in-progress.error-vapifault-worker-died'
     | 'call.in-progress.error-vapifault-openai-llm-failed'
     | 'call.in-progress.error-vapifault-azure-openai-llm-failed'
     | 'call.in-progress.error-vapifault-groq-llm-failed'
@@ -21418,7 +21061,12 @@ export interface ServerMessageStatusUpdate {
     | 'phone-call-provider-closed-websocket'
     | 'call.forwarding.operator-busy'
     | 'silence-timed-out'
-    | 'call.in-progress.error-sip-telephony-provider-failed-to-connect-call'
+    | 'call.in-progress.error-sip-inbound-call-failed-to-connect'
+    | 'call.in-progress.error-providerfault-outbound-sip-403-forbidden'
+    | 'call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required'
+    | 'call.in-progress.error-providerfault-outbound-sip-503-service-unavailable'
+    | 'call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable'
+    | 'call.in-progress.error-sip-outbound-call-failed-to-connect'
     | 'call.ringing.hook-executed-say'
     | 'call.ringing.hook-executed-transfer'
     | 'twilio-failed-to-connect-call'
@@ -21801,8 +21449,6 @@ export interface ServerMessageResponseAssistantRequest {
    */
   squad?: CreateSquadDTO;
   /**
-   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-   *
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
    *
    * To start a call with:
@@ -21812,8 +21458,6 @@ export interface ServerMessageResponseAssistantRequest {
    */
   workflowId?: string;
   /**
-   * [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-   *
    * This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
    *
    * To start a call with:
@@ -21822,6 +21466,8 @@ export interface ServerMessageResponseAssistantRequest {
    * - Workflow, use `workflow` or `workflowId`
    */
   workflow?: CreateWorkflowDTO;
+  /** These are the overrides for the `workflow` or `workflowId`'s settings and template variables. */
+  workflowOverrides?: WorkflowOverrides;
   /**
    * This is the error if the call shouldn't be accepted. This is spoken to the customer.
    *
@@ -22184,17 +21830,6 @@ export interface KnowledgeBaseCost {
 
 export interface FunctionToolWithToolCall {
   /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
    * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -22202,6 +21837,29 @@ export interface FunctionToolWithToolCall {
   messages?: (ToolMessageStart | ToolMessageComplete | ToolMessageFailed | ToolMessageDelayed)[];
   /** The type of tool. "function" for Function tool. */
   type: 'function';
+  /**
+   * This determines if the tool is async.
+   *
+   *   If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   *   If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   *   Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   toolCall: ToolCall;
   /**
    * This is the function definition of the tool.
@@ -22211,28 +21869,9 @@ export interface FunctionToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GhlToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22251,28 +21890,9 @@ export interface GhlToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface MakeToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22291,28 +21911,9 @@ export interface MakeToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface BashToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22323,6 +21924,18 @@ export interface BashToolWithToolCall {
   type: 'bash';
   /** The sub type of tool. */
   subType: 'bash_20241022';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   toolCall: ToolCall;
   /**
    * The name of the tool, fixed to 'bash'
@@ -22337,28 +21950,9 @@ export interface BashToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface ComputerToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22369,6 +21963,18 @@ export interface ComputerToolWithToolCall {
   type: 'computer';
   /** The sub type of tool. */
   subType: 'computer_20241022';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   toolCall: ToolCall;
   /**
    * The name of the tool, fixed to 'computer'
@@ -22389,28 +21995,9 @@ export interface ComputerToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface TextEditorToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22421,6 +22008,18 @@ export interface TextEditorToolWithToolCall {
   type: 'textEditor';
   /** The sub type of tool. */
   subType: 'text_editor_20241022';
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
   toolCall: ToolCall;
   /**
    * The name of the tool, fixed to 'str_replace_editor'
@@ -22435,28 +22034,9 @@ export interface TextEditorToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoogleCalendarCreateEventToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22474,28 +22054,9 @@ export interface GoogleCalendarCreateEventToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoogleSheetsRowAppendToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22513,28 +22074,9 @@ export interface GoogleSheetsRowAppendToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoHighLevelCalendarAvailabilityToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22552,28 +22094,9 @@ export interface GoHighLevelCalendarAvailabilityToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoHighLevelCalendarEventCreateToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22591,28 +22114,9 @@ export interface GoHighLevelCalendarEventCreateToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoHighLevelContactCreateToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22630,28 +22134,9 @@ export interface GoHighLevelContactCreateToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export interface GoHighLevelContactGetToolWithToolCall {
-  /**
-   * This determines if the tool is async.
-   *
-   * If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   * If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   * Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -22669,14 +22154,6 @@ export interface GoHighLevelContactGetToolWithToolCall {
    * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
    */
   function?: OpenAIFunction;
-  /**
-   * This is the server that will be hit when this tool is requested by the model.
-   *
-   * All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-   *
-   * This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-   */
-  server?: Server;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -23585,9 +23062,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
-     * @tags Chat
+     * @tags Chats
      * @name ChatControllerListChats
-     * @summary List chats
+     * @summary List Chats
      * @request GET:/chat
      * @secure
      */
@@ -23667,9 +23144,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * @description Creates a new chat. Requires at least one of: assistantId/assistant, sessionId, or previousChatId. Note: sessionId and previousChatId are mutually exclusive.
      *
-     * @tags Chat
+     * @tags Chats
      * @name ChatControllerCreateChat
-     * @summary Create chat
+     * @summary Create Chat
      * @request POST:/chat
      * @secure
      */
@@ -23687,9 +23164,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
-     * @tags Chat
+     * @tags Chats
      * @name ChatControllerGetChat
-     * @summary Get a specific chat by ID
+     * @summary Get Chat
      * @request GET:/chat/{id}
      * @secure
      */
@@ -23705,9 +23182,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
-     * @tags Chat
+     * @tags Chats
      * @name ChatControllerDeleteChat
-     * @summary Delete chat
+     * @summary Delete Chat
      * @request DELETE:/chat/{id}
      * @secure
      */
@@ -23723,14 +23200,21 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     /**
      * No description
      *
-     * @tags Chat
+     * @tags Chats
      * @name ChatControllerCreateOpenAiChat
-     * @summary Create chat using OpenAI Responses API format
+     * @summary Create Chat (OpenAI Compatible)
      * @request POST:/chat/responses
      * @secure
      */
     chatControllerCreateOpenAiChat: (data: OpenAIResponsesRequest, params: RequestParams = {}) =>
-      this.request<any, any>({
+      this.request<
+        | ResponseObject
+        | ResponseTextDeltaEvent
+        | ResponseTextDoneEvent
+        | ResponseCompletedEvent
+        | ResponseErrorEvent,
+        any
+      >({
         path: `/chat/responses`,
         method: 'POST',
         body: data,
@@ -25383,7 +24867,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags Workflow
      * @name WorkflowControllerFindAll
-     * @summary [BETA] Get Workflows
+     * @summary Get Workflows
      * @request GET:/workflow
      * @secure
      */
@@ -25401,7 +24885,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags Workflow
      * @name WorkflowControllerCreate
-     * @summary [BETA] Create Workflow
+     * @summary Create Workflow
      * @request POST:/workflow
      * @secure
      */
@@ -25421,7 +24905,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags Workflow
      * @name WorkflowControllerFindOne
-     * @summary [BETA] Get Workflow
+     * @summary Get Workflow
      * @request GET:/workflow/{id}
      * @secure
      */
@@ -25439,7 +24923,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags Workflow
      * @name WorkflowControllerDelete
-     * @summary [BETA] Delete Workflow
+     * @summary Delete Workflow
      * @request DELETE:/workflow/{id}
      * @secure
      */
@@ -25457,7 +24941,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags Workflow
      * @name WorkflowControllerUpdate
-     * @summary [BETA] Update Workflow
+     * @summary Update Workflow
      * @request PATCH:/workflow/{id}
      * @secure
      */
@@ -26134,50 +25618,6 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       this.request<TestSuiteRun, any>({
         path: `/test-suite/${testSuiteId}/run/${id}`,
         method: 'DELETE',
-        secure: true,
-        format: 'json',
-        ...params,
-      }),
-  };
-  metrics = {
-    /**
-     * @description Use GET /metric instead
-     *
-     * @tags Analytics
-     * @name AnalyticsControllerFindAllDeprecated
-     * @summary List Billing Metrics
-     * @request GET:/metrics
-     * @deprecated
-     * @secure
-     */
-    analyticsControllerFindAllDeprecated: (
-      query?: {
-        /**
-         * Convert date & and time to provided timezone. https://popsql.com/learn-sql/postgresql/how-to-convert-utc-to-local-time-zone-in-postgresql
-         * @example "PST"
-         */
-        timezone?: string;
-        /**
-         * This will include calls with a createdAt timestamp greater than or equal to the specified value.
-         *
-         * If not provided, defaults to the org's current period start.
-         * @format date-time
-         */
-        rangeStart?: string;
-        /**
-         * This will include calls with a createdAt timestamp less than the specified value.
-         *
-         * If not provided, the default value will be the current timestamp.
-         * @format date-time
-         */
-        rangeEnd?: string;
-      },
-      params: RequestParams = {},
-    ) =>
-      this.request<Metrics[], any>({
-        path: `/metrics`,
-        method: 'GET',
-        query: query,
         secure: true,
         format: 'json',
         ...params,
@@ -28409,7 +27849,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       },
       params: RequestParams = {},
     ) =>
-      this.request<SbcConfiguration, any>({
+      this.request<VariableExtractionPlan, any>({
         path: `/${provider}/workflows`,
         method: 'GET',
         query: query,
@@ -28431,7 +27871,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       workflowId: string,
       params: RequestParams = {},
     ) =>
-      this.request<SbcConfiguration, any>({
+      this.request<VariableExtractionPlan, any>({
         path: `/${provider}/workflows/${workflowId}/hooks`,
         method: 'GET',
         secure: true,
@@ -28448,7 +27888,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetLocations: (provider: 'make' | 'ghl', params: RequestParams = {}) =>
-      this.request<SbcConfiguration, any>({
+      this.request<VariableExtractionPlan, any>({
         path: `/${provider}/locations`,
         method: 'GET',
         secure: true,
