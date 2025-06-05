@@ -18,6 +18,7 @@ import {
   CreateAssistantDTO,
   AssistantOverrides,
   CreateWorkflowDTO,
+  WorkflowOverrides,
 } from './api';
 import { client } from './client';
 
@@ -199,6 +200,7 @@ export default class Vapi extends VapiEventEmitter {
     assistantOverrides?: AssistantOverrides,
     squad?: CreateSquadDTO | string,
     workflow?: CreateWorkflowDTO | string,
+    workflowOverrides?: WorkflowOverrides,
   ): Promise<Call | null> {
     if (!assistant && !squad && !workflow) {
       throw new Error('Assistant or Squad or Workflow must be provided.');
@@ -219,6 +221,7 @@ export default class Vapi extends VapiEventEmitter {
           squadId: typeof squad === 'string' ? squad : undefined,
           workflow: typeof workflow === 'string' ? undefined : workflow,
           workflowId: typeof workflow === 'string' ? workflow : undefined,
+          workflowOverrides,
         })
       ).data;
 
