@@ -38,6 +38,7 @@ export interface SayMessage {
   message: string;
   endCallAfterSpoken?: boolean;
   interruptionsEnabled?: boolean;
+  interruptAssistantEnabled?: boolean;
 }
 
 type VapiClientToServerMessage =
@@ -463,12 +464,14 @@ export default class Vapi extends VapiEventEmitter {
     return this.call.localAudio() === false;
   }
 
-  public say(message: string, endCallAfterSpoken?: boolean, interruptionsEnabled?: boolean) {
+  public say(message: string, endCallAfterSpoken?: boolean, 
+    interruptionsEnabled?: boolean, interruptAssistantEnabled?: boolean) {
     this.send({
       type: 'say',
       message,
       endCallAfterSpoken,
       interruptionsEnabled: interruptionsEnabled ?? false,
+      interruptAssistantEnabled: interruptAssistantEnabled ?? false,
     });
   }
 
