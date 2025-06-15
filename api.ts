@@ -41,6 +41,8 @@ export interface CostBreakdown {
   tts?: number;
   /** This is the cost of Vapi. */
   vapi?: number;
+  /** This is the cost of chat interactions. */
+  chat?: number;
   /** This is the total cost of the call. */
   total?: number;
   /** This is the LLM prompt tokens used for the call. */
@@ -262,6 +264,7 @@ export interface FallbackTranscriberPlan {
     | FallbackTalkscriberTranscriber
     | FallbackSpeechmaticsTranscriber
     | FallbackOpenAITranscriber
+    | FallbackCartesiaTranscriber
   )[];
 }
 
@@ -286,6 +289,36 @@ export interface AssemblyAITranscriber {
    * @example false
    */
   enableUniversalStreamingApi?: boolean;
+  /**
+   * @min 0
+   * @max 1
+   * @example 0.7
+   */
+  endOfTurnConfidenceThreshold?: number;
+  /**
+   * The minimum amount of silence in milliseconds required to detect end of turn when confident. Only used when `enableUniversalStreamingApi` is true.
+   *
+   * @default 160
+   * @min 0
+   * @example 160
+   */
+  minEndOfTurnSilenceWhenConfident?: number;
+  /**
+   * The maximum wait time for word finalization. Only used when `enableUniversalStreamingApi` is true.
+   *
+   * @default 160
+   * @min 0
+   * @example 160
+   */
+  wordFinalizationMaxWaitTime?: number;
+  /**
+   * The maximum amount of silence in milliseconds allowed in a turn before end of turn is triggered. Only used when `enableUniversalStreamingApi` is true.
+   *
+   * @default 400
+   * @min 0
+   * @example 400
+   */
+  maxTurnSilence?: number;
   /** The WebSocket URL that the transcriber connects to. */
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
@@ -449,6 +482,199 @@ export interface AzureSpeechTranscriber {
     | 'zh-HK'
     | 'zh-TW'
     | 'zu-ZA';
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
+}
+
+export interface CartesiaTranscriber {
+  provider: 'cartesia';
+  model?: 'ink-whisper';
+  language?:
+    | 'aa'
+    | 'ab'
+    | 'ae'
+    | 'af'
+    | 'ak'
+    | 'am'
+    | 'an'
+    | 'ar'
+    | 'as'
+    | 'av'
+    | 'ay'
+    | 'az'
+    | 'ba'
+    | 'be'
+    | 'bg'
+    | 'bh'
+    | 'bi'
+    | 'bm'
+    | 'bn'
+    | 'bo'
+    | 'br'
+    | 'bs'
+    | 'ca'
+    | 'ce'
+    | 'ch'
+    | 'co'
+    | 'cr'
+    | 'cs'
+    | 'cu'
+    | 'cv'
+    | 'cy'
+    | 'da'
+    | 'de'
+    | 'dv'
+    | 'dz'
+    | 'ee'
+    | 'el'
+    | 'en'
+    | 'eo'
+    | 'es'
+    | 'et'
+    | 'eu'
+    | 'fa'
+    | 'ff'
+    | 'fi'
+    | 'fj'
+    | 'fo'
+    | 'fr'
+    | 'fy'
+    | 'ga'
+    | 'gd'
+    | 'gl'
+    | 'gn'
+    | 'gu'
+    | 'gv'
+    | 'ha'
+    | 'he'
+    | 'hi'
+    | 'ho'
+    | 'hr'
+    | 'ht'
+    | 'hu'
+    | 'hy'
+    | 'hz'
+    | 'ia'
+    | 'id'
+    | 'ie'
+    | 'ig'
+    | 'ii'
+    | 'ik'
+    | 'io'
+    | 'is'
+    | 'it'
+    | 'iu'
+    | 'ja'
+    | 'jv'
+    | 'ka'
+    | 'kg'
+    | 'ki'
+    | 'kj'
+    | 'kk'
+    | 'kl'
+    | 'km'
+    | 'kn'
+    | 'ko'
+    | 'kr'
+    | 'ks'
+    | 'ku'
+    | 'kv'
+    | 'kw'
+    | 'ky'
+    | 'la'
+    | 'lb'
+    | 'lg'
+    | 'li'
+    | 'ln'
+    | 'lo'
+    | 'lt'
+    | 'lu'
+    | 'lv'
+    | 'mg'
+    | 'mh'
+    | 'mi'
+    | 'mk'
+    | 'ml'
+    | 'mn'
+    | 'mr'
+    | 'ms'
+    | 'mt'
+    | 'my'
+    | 'na'
+    | 'nb'
+    | 'nd'
+    | 'ne'
+    | 'ng'
+    | 'nl'
+    | 'nn'
+    | 'no'
+    | 'nr'
+    | 'nv'
+    | 'ny'
+    | 'oc'
+    | 'oj'
+    | 'om'
+    | 'or'
+    | 'os'
+    | 'pa'
+    | 'pi'
+    | 'pl'
+    | 'ps'
+    | 'pt'
+    | 'qu'
+    | 'rm'
+    | 'rn'
+    | 'ro'
+    | 'ru'
+    | 'rw'
+    | 'sa'
+    | 'sc'
+    | 'sd'
+    | 'se'
+    | 'sg'
+    | 'si'
+    | 'sk'
+    | 'sl'
+    | 'sm'
+    | 'sn'
+    | 'so'
+    | 'sq'
+    | 'sr'
+    | 'ss'
+    | 'st'
+    | 'su'
+    | 'sv'
+    | 'sw'
+    | 'ta'
+    | 'te'
+    | 'tg'
+    | 'th'
+    | 'ti'
+    | 'tk'
+    | 'tl'
+    | 'tn'
+    | 'to'
+    | 'tr'
+    | 'ts'
+    | 'tt'
+    | 'tw'
+    | 'ty'
+    | 'ug'
+    | 'uk'
+    | 'ur'
+    | 'uz'
+    | 've'
+    | 'vi'
+    | 'vo'
+    | 'wa'
+    | 'wo'
+    | 'xh'
+    | 'yi'
+    | 'yue'
+    | 'yo'
+    | 'za'
+    | 'zh'
+    | 'zu';
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
@@ -1523,6 +1749,36 @@ export interface FallbackAssemblyAITranscriber {
    * @example false
    */
   enableUniversalStreamingApi?: boolean;
+  /**
+   * @min 0
+   * @max 1
+   * @example 0.7
+   */
+  endOfTurnConfidenceThreshold?: number;
+  /**
+   * The minimum amount of silence in milliseconds required to detect end of turn when confident. Only used when `enableUniversalStreamingApi` is true.
+   *
+   * @default 160
+   * @min 0
+   * @example 160
+   */
+  minEndOfTurnSilenceWhenConfident?: number;
+  /**
+   * The maximum wait time for word finalization. Only used when `enableUniversalStreamingApi` is true.
+   *
+   * @default 160
+   * @min 0
+   * @example 160
+   */
+  wordFinalizationMaxWaitTime?: number;
+  /**
+   * The maximum amount of silence in milliseconds allowed in a turn before end of turn is triggered. Only used when `enableUniversalStreamingApi` is true.
+   *
+   * @default 400
+   * @min 0
+   * @example 400
+   */
+  maxTurnSilence?: number;
   /** The WebSocket URL that the transcriber connects to. */
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
@@ -1684,6 +1940,197 @@ export interface FallbackAzureSpeechTranscriber {
     | 'zh-HK'
     | 'zh-TW'
     | 'zu-ZA';
+}
+
+export interface FallbackCartesiaTranscriber {
+  provider: 'cartesia';
+  model?: 'ink-whisper';
+  language?:
+    | 'aa'
+    | 'ab'
+    | 'ae'
+    | 'af'
+    | 'ak'
+    | 'am'
+    | 'an'
+    | 'ar'
+    | 'as'
+    | 'av'
+    | 'ay'
+    | 'az'
+    | 'ba'
+    | 'be'
+    | 'bg'
+    | 'bh'
+    | 'bi'
+    | 'bm'
+    | 'bn'
+    | 'bo'
+    | 'br'
+    | 'bs'
+    | 'ca'
+    | 'ce'
+    | 'ch'
+    | 'co'
+    | 'cr'
+    | 'cs'
+    | 'cu'
+    | 'cv'
+    | 'cy'
+    | 'da'
+    | 'de'
+    | 'dv'
+    | 'dz'
+    | 'ee'
+    | 'el'
+    | 'en'
+    | 'eo'
+    | 'es'
+    | 'et'
+    | 'eu'
+    | 'fa'
+    | 'ff'
+    | 'fi'
+    | 'fj'
+    | 'fo'
+    | 'fr'
+    | 'fy'
+    | 'ga'
+    | 'gd'
+    | 'gl'
+    | 'gn'
+    | 'gu'
+    | 'gv'
+    | 'ha'
+    | 'he'
+    | 'hi'
+    | 'ho'
+    | 'hr'
+    | 'ht'
+    | 'hu'
+    | 'hy'
+    | 'hz'
+    | 'ia'
+    | 'id'
+    | 'ie'
+    | 'ig'
+    | 'ii'
+    | 'ik'
+    | 'io'
+    | 'is'
+    | 'it'
+    | 'iu'
+    | 'ja'
+    | 'jv'
+    | 'ka'
+    | 'kg'
+    | 'ki'
+    | 'kj'
+    | 'kk'
+    | 'kl'
+    | 'km'
+    | 'kn'
+    | 'ko'
+    | 'kr'
+    | 'ks'
+    | 'ku'
+    | 'kv'
+    | 'kw'
+    | 'ky'
+    | 'la'
+    | 'lb'
+    | 'lg'
+    | 'li'
+    | 'ln'
+    | 'lo'
+    | 'lt'
+    | 'lu'
+    | 'lv'
+    | 'mg'
+    | 'mh'
+    | 'mi'
+    | 'mk'
+    | 'ml'
+    | 'mn'
+    | 'mr'
+    | 'ms'
+    | 'mt'
+    | 'my'
+    | 'na'
+    | 'nb'
+    | 'nd'
+    | 'ne'
+    | 'ng'
+    | 'nl'
+    | 'nn'
+    | 'no'
+    | 'nr'
+    | 'nv'
+    | 'ny'
+    | 'oc'
+    | 'oj'
+    | 'om'
+    | 'or'
+    | 'os'
+    | 'pa'
+    | 'pi'
+    | 'pl'
+    | 'ps'
+    | 'pt'
+    | 'qu'
+    | 'rm'
+    | 'rn'
+    | 'ro'
+    | 'ru'
+    | 'rw'
+    | 'sa'
+    | 'sc'
+    | 'sd'
+    | 'se'
+    | 'sg'
+    | 'si'
+    | 'sk'
+    | 'sl'
+    | 'sm'
+    | 'sn'
+    | 'so'
+    | 'sq'
+    | 'sr'
+    | 'ss'
+    | 'st'
+    | 'su'
+    | 'sv'
+    | 'sw'
+    | 'ta'
+    | 'te'
+    | 'tg'
+    | 'th'
+    | 'ti'
+    | 'tk'
+    | 'tl'
+    | 'tn'
+    | 'to'
+    | 'tr'
+    | 'ts'
+    | 'tt'
+    | 'tw'
+    | 'ty'
+    | 'ug'
+    | 'uk'
+    | 'ur'
+    | 'uz'
+    | 've'
+    | 'vi'
+    | 'vo'
+    | 'wa'
+    | 'wo'
+    | 'xh'
+    | 'yi'
+    | 'yue'
+    | 'yo'
+    | 'za'
+    | 'zh'
+    | 'zu';
 }
 
 export interface FallbackCustomTranscriber {
@@ -5460,7 +5907,10 @@ export interface GlobalNodePlan {
   enterCondition?: string;
 }
 
-export type VariableExtractionPlan = object;
+export interface VariableExtractionPlan {
+  /** This is the schema of parameters we want to extract from the response */
+  schema?: JsonSchema;
+}
 
 export interface ConversationNode {
   /**
@@ -5487,7 +5937,8 @@ export interface ConversationNode {
     | GoogleTranscriber
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
-    | OpenAITranscriber;
+    | OpenAITranscriber
+    | CartesiaTranscriber;
   /** These are the options for the assistant's voice. */
   voice?:
     | AzureVoice
@@ -5571,18 +6022,8 @@ export interface AIEdgeCondition {
   prompt: string;
 }
 
-export interface LogicEdgeCondition {
-  type: 'logic';
-  /** @maxLength 1000 */
-  liquid: string;
-}
-
-export interface FailedEdgeCondition {
-  type: 'failed';
-}
-
 export interface Edge {
-  condition?: AIEdgeCondition | LogicEdgeCondition | FailedEdgeCondition;
+  condition?: AIEdgeCondition;
   /** @maxLength 80 */
   from: string;
   /** @maxLength 80 */
@@ -5593,12 +6034,22 @@ export interface Edge {
 
 export interface WorkflowUserEditable {
   nodes: (ConversationNode | ToolNode)[];
-  model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
   /** @maxLength 5000 */
   globalPrompt?: string;
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. tool.server
+   * 2. workflow.server / assistant.server
+   * 3. phoneNumber.server
+   * 4. org.server
+   */
+  server?: Server;
 }
 
 export interface VapiModel {
@@ -7653,6 +8104,76 @@ export interface TransportConfigurationTwilio {
   recordingChannels?: 'mono' | 'dual';
 }
 
+export interface SmartDenoisingPlan {
+  /**
+   * Whether smart denoising using Krisp is enabled.
+   * @default false
+   */
+  enabled?: boolean;
+}
+
+export interface FourierDenoisingPlan {
+  /**
+   * Whether Fourier denoising is enabled. Note that this is experimental and may not work as expected.
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * Whether automatic media detection is enabled. When enabled, the filter will automatically
+   * detect consistent background TV/music/radio and switch to more aggressive filtering settings.
+   * Only applies when enabled is true.
+   * @default true
+   * @example true
+   */
+  mediaDetectionEnabled?: boolean;
+  /**
+   * Static threshold in dB used as fallback when no baseline is established.
+   * @min -80
+   * @max 0
+   * @default -35
+   * @example -35
+   */
+  staticThreshold?: number;
+  /**
+   * How far below the rolling baseline to filter audio, in dB.
+   * Lower values (e.g., -10) are more aggressive, higher values (e.g., -20) are more conservative.
+   * @min -30
+   * @max -5
+   * @default -15
+   * @example -15
+   */
+  baselineOffsetDb?: number;
+  /**
+   * Rolling window size in milliseconds for calculating the audio baseline.
+   * Larger windows adapt more slowly but are more stable.
+   * @min 1000
+   * @max 30000
+   * @default 3000
+   * @example 3000
+   */
+  windowSizeMs?: number;
+  /**
+   * Percentile to use for baseline calculation (1-99).
+   * Higher percentiles (e.g., 85) focus on louder speech, lower percentiles (e.g., 50) include quieter speech.
+   * @min 1
+   * @max 99
+   * @default 85
+   * @example 85
+   */
+  baselinePercentile?: number;
+}
+
+export interface BackgroundSpeechDenoisingPlan {
+  /** Whether smart denoising using Krisp is enabled. */
+  smartDenoisingPlan?: SmartDenoisingPlan;
+  /**
+   * Whether Fourier denoising is enabled. Note that this is experimental and may not work as expected.
+   *
+   * This can be combined with smart denoising, and will be run afterwards.
+   */
+  fourierDenoisingPlan?: FourierDenoisingPlan;
+}
+
 export interface CreateAnthropicCredentialDTO {
   provider: 'anthropic';
   /**
@@ -7744,6 +8265,11 @@ export interface CreateAzureCredentialDTO {
    * @maxLength 10000
    */
   apiKey?: string;
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   /** This is the bucket plan that can be provided to store call artifacts in Azure Blob Storage. */
   bucketPlan?: AzureBlobStorageBucketPlan;
   /**
@@ -7950,6 +8476,11 @@ export interface CreateCloudflareCredentialDTO {
   apiKey?: string;
   /** Cloudflare Account Email. */
   accountEmail?: string;
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   /** This is the bucket plan that can be provided to store call artifacts in R2 */
   bucketPlan?: CloudflareR2BucketPlan;
   /**
@@ -8117,6 +8648,11 @@ export interface BucketPlan {
 
 export interface CreateGcpCredentialDTO {
   provider: 'gcp';
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   /**
    * This is the GCP key. This is the JSON that can be generated in the Google Cloud Console at https://console.cloud.google.com/iam-admin/serviceaccounts/details/<service-account-id>/keys.
    *
@@ -8300,6 +8836,11 @@ export interface CreateS3CredentialDTO {
   /** The path prefix for the uploaded recording. Ex. "recordings/" */
   s3PathPrefix: string;
   /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
+  /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
    * @maxLength 40
@@ -8364,6 +8905,11 @@ export interface SupabaseBucketPlan {
 export interface CreateSupabaseCredentialDTO {
   /** This is for supabase storage. */
   provider: 'supabase';
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   bucketPlan?: SupabaseBucketPlan;
   /**
    * This is the name of credential. This is just for your reference.
@@ -9389,7 +9935,8 @@ export interface CreateAssistantDTO {
     | GoogleTranscriber
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
-    | OpenAITranscriber;
+    | OpenAITranscriber
+    | CartesiaTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnthropicModel
@@ -9524,14 +10071,7 @@ export interface CreateAssistantDTO {
    * You can also provide a custom sound by providing a URL to an audio file.
    */
   backgroundSound?: 'off' | 'office' | string;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @example false
-   */
+  /** @example false */
   backgroundDenoisingEnabled?: boolean;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
@@ -9728,6 +10268,20 @@ export interface CreateAssistantDTO {
   compliancePlan?: CompliancePlan;
   /** This is for metadata you want to store on the assistant. */
   metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
   /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
   analysisPlan?: AnalysisPlan;
   /**
@@ -9799,7 +10353,8 @@ export interface AssistantOverrides {
     | GoogleTranscriber
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
-    | OpenAITranscriber;
+    | OpenAITranscriber
+    | CartesiaTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnthropicModel
@@ -9934,14 +10489,7 @@ export interface AssistantOverrides {
    * You can also provide a custom sound by providing a URL to an audio file.
    */
   backgroundSound?: 'off' | 'office' | string;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @example false
-   */
+  /** @example false */
   backgroundDenoisingEnabled?: boolean;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
@@ -10148,6 +10696,20 @@ export interface AssistantOverrides {
   compliancePlan?: CompliancePlan;
   /** This is for metadata you want to store on the assistant. */
   metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
   /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
   analysisPlan?: AnalysisPlan;
   /**
@@ -10241,12 +10803,22 @@ export interface CreateSquadDTO {
 
 export interface CreateWorkflowDTO {
   nodes: (ConversationNode | ToolNode)[];
-  model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
   /** @maxLength 5000 */
   globalPrompt?: string;
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. tool.server
+   * 2. workflow.server / assistant.server
+   * 3. phoneNumber.server
+   * 4. org.server
+   */
+  server?: Server;
 }
 
 export interface WorkflowOverrides {
@@ -10453,8 +11025,9 @@ export interface Call {
     | 'assistant-request-returned-invalid-assistant'
     | 'assistant-request-returned-no-assistant'
     | 'assistant-request-returned-forwarding-phone-number'
-    | 'call.start.error-get-org'
-    | 'call.start.error-get-subscription'
+    | 'scheduled-call-deleted'
+    | 'call.start.error-vapifault-get-org'
+    | 'call.start.error-vapifault-get-subscription'
     | 'call.start.error-get-assistant'
     | 'call.start.error-get-phone-number'
     | 'call.start.error-get-customer'
@@ -10462,6 +11035,11 @@ export interface Call {
     | 'call.start.error-vapi-number-international'
     | 'call.start.error-vapi-number-outbound-daily-limit'
     | 'call.start.error-get-transport'
+    | 'call.start.error-subscription-wallet-does-not-exist'
+    | 'call.start.error-subscription-frozen'
+    | 'call.start.error-subscription-insufficient-credits'
+    | 'call.start.error-subscription-upgrade-failed'
+    | 'call.start.error-subscription-concurrency-limit-reached'
     | 'assistant-not-valid'
     | 'database-error'
     | 'assistant-not-found'
@@ -10529,7 +11107,6 @@ export interface Call {
     | 'call.in-progress.error-vapifault-azure-speech-transcriber-failed'
     | 'call.in-progress.error-pipeline-no-available-llm-model'
     | 'worker-shutdown'
-    | 'unknown-error'
     | 'vonage-disconnected'
     | 'vonage-failed-to-connect-call'
     | 'vonage-completed'
@@ -10540,6 +11117,8 @@ export interface Call {
     | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
     | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
     | 'call.in-progress.error-vapifault-worker-died'
+    | 'call.in-progress.twilio-completed-call'
+    | 'call.in-progress.sip-completed-call'
     | 'call.in-progress.error-vapifault-openai-llm-failed'
     | 'call.in-progress.error-vapifault-azure-openai-llm-failed'
     | 'call.in-progress.error-vapifault-groq-llm-failed'
@@ -10549,6 +11128,7 @@ export interface Call {
     | 'call.in-progress.error-vapifault-inflection-ai-llm-failed'
     | 'call.in-progress.error-vapifault-cerebras-llm-failed'
     | 'call.in-progress.error-vapifault-deep-seek-llm-failed'
+    | 'call.in-progress.error-vapifault-chat-pipeline-failed-to-start'
     | 'pipeline-error-openai-400-bad-request-validation-failed'
     | 'pipeline-error-openai-401-unauthorized'
     | 'pipeline-error-openai-401-incorrect-api-key'
@@ -10816,6 +11396,7 @@ export interface Call {
     | 'pipeline-error-cartesia-socket-hang-up'
     | 'pipeline-error-cartesia-requested-payment'
     | 'pipeline-error-cartesia-500-server-error'
+    | 'pipeline-error-cartesia-502-server-error'
     | 'pipeline-error-cartesia-503-server-error'
     | 'pipeline-error-cartesia-522-server-error'
     | 'call.in-progress.error-vapifault-cartesia-socket-hang-up'
@@ -10836,6 +11417,7 @@ export interface Call {
     | 'pipeline-error-eleven-labs-invalid-api-key'
     | 'pipeline-error-eleven-labs-invalid-voice-samples'
     | 'pipeline-error-eleven-labs-voice-disabled-by-owner'
+    | 'pipeline-error-eleven-labs-vapi-voice-disabled-by-owner'
     | 'pipeline-error-eleven-labs-blocked-account-in-probation'
     | 'pipeline-error-eleven-labs-blocked-content-against-their-policy'
     | 'pipeline-error-eleven-labs-missing-samples-for-voice-clone'
@@ -10844,6 +11426,7 @@ export interface Call {
     | 'pipeline-error-eleven-labs-max-character-limit-exceeded'
     | 'pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
     | 'pipeline-error-eleven-labs-500-server-error'
+    | 'pipeline-error-eleven-labs-503-server-error'
     | 'call.in-progress.error-vapifault-eleven-labs-voice-not-found'
     | 'call.in-progress.error-vapifault-eleven-labs-quota-exceeded'
     | 'call.in-progress.error-vapifault-eleven-labs-unauthorized-access'
@@ -10865,6 +11448,7 @@ export interface Call {
     | 'call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded'
     | 'call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
     | 'call.in-progress.error-providerfault-eleven-labs-500-server-error'
+    | 'call.in-progress.error-providerfault-eleven-labs-503-server-error'
     | 'pipeline-error-playht-request-timed-out'
     | 'pipeline-error-playht-invalid-voice'
     | 'pipeline-error-playht-unexpected-error'
@@ -10918,6 +11502,7 @@ export interface Call {
     | 'assistant-forwarded-call'
     | 'assistant-join-timed-out'
     | 'call.in-progress.error-assistant-did-not-receive-customer-audio'
+    | 'call.in-progress.error-transfer-failed'
     | 'customer-busy'
     | 'customer-ended-call'
     | 'customer-did-not-answer'
@@ -10935,6 +11520,8 @@ export interface Call {
     | 'call.in-progress.error-sip-outbound-call-failed-to-connect'
     | 'call.ringing.hook-executed-say'
     | 'call.ringing.hook-executed-transfer'
+    | 'call.ringing.sip-inbound-caller-hungup-before-call-connect'
+    | 'call.ringing.error-sip-inbound-call-failed-to-connect'
     | 'twilio-failed-to-connect-call'
     | 'twilio-reported-customer-misdialed'
     | 'vonage-rejected'
@@ -11542,6 +12129,10 @@ export interface Chat {
    * @format date-time
    */
   updatedAt: string;
+  /** These are the costs of individual components of the chat in USD. */
+  costs?: (ModelCost | ChatCost)[];
+  /** This is the cost of the chat in USD. */
+  cost?: number;
 }
 
 export interface CreateChatDTO {
@@ -11995,7 +12586,8 @@ export interface Assistant {
     | GoogleTranscriber
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
-    | OpenAITranscriber;
+    | OpenAITranscriber
+    | CartesiaTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnthropicModel
@@ -12130,14 +12722,7 @@ export interface Assistant {
    * You can also provide a custom sound by providing a URL to an audio file.
    */
   backgroundSound?: 'off' | 'office' | string;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @example false
-   */
+  /** @example false */
   backgroundDenoisingEnabled?: boolean;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
@@ -12334,6 +12919,20 @@ export interface Assistant {
   compliancePlan?: CompliancePlan;
   /** This is for metadata you want to store on the assistant. */
   metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
   /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
   analysisPlan?: AnalysisPlan;
   /**
@@ -12430,7 +13029,8 @@ export interface UpdateAssistantDTO {
     | GoogleTranscriber
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
-    | OpenAITranscriber;
+    | OpenAITranscriber
+    | CartesiaTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnthropicModel
@@ -12565,14 +13165,7 @@ export interface UpdateAssistantDTO {
    * You can also provide a custom sound by providing a URL to an audio file.
    */
   backgroundSound?: 'off' | 'office' | string;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @example false
-   */
+  /** @example false */
   backgroundDenoisingEnabled?: boolean;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
@@ -12769,6 +13362,20 @@ export interface UpdateAssistantDTO {
   compliancePlan?: CompliancePlan;
   /** This is for metadata you want to store on the assistant. */
   metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
   /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
   analysisPlan?: AnalysisPlan;
   /**
@@ -14747,7 +15354,10 @@ export interface CreateApiRequestToolDTO {
   timeoutSeconds?: number;
   /**
    * This is the name of the tool. This will be passed to the model.
+   *
+   * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 40.
    * @maxLength 40
+   * @pattern /^[a-zA-Z0-9_-]{1,40}$/
    */
   name?: string;
   /**
@@ -14767,6 +15377,8 @@ export interface CreateApiRequestToolDTO {
    * @default undefined (the request will not be retried)
    */
   backoffPlan?: BackoffPlan;
+  /** This is the plan that controls the variable extraction from the tool's response. */
+  variableExtractionPlan?: VariableExtractionPlan;
   /**
    * This is the function definition of the tool.
    *
@@ -15649,7 +16261,6 @@ export interface TrieveKnowledgeBaseImport {
 
 export interface Workflow {
   nodes: (ConversationNode | ToolNode)[];
-  model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   id: string;
   orgId: string;
   /** @format date-time */
@@ -15661,16 +16272,37 @@ export interface Workflow {
   edges: Edge[];
   /** @maxLength 5000 */
   globalPrompt?: string;
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. tool.server
+   * 2. workflow.server / assistant.server
+   * 3. phoneNumber.server
+   * 4. org.server
+   */
+  server?: Server;
 }
 
 export interface UpdateWorkflowDTO {
   nodes?: (ConversationNode | ToolNode)[];
-  model?: WorkflowOpenAIModel | WorkflowAnthropicModel;
   /** @maxLength 80 */
   name?: string;
   edges?: Edge[];
   /** @maxLength 5000 */
   globalPrompt?: string;
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. tool.server
+   * 2. workflow.server / assistant.server
+   * 3. phoneNumber.server
+   * 4. org.server
+   */
+  server?: Server;
 }
 
 export interface Squad {
@@ -16937,6 +17569,11 @@ export interface AzureCredential {
    * @maxLength 10000
    */
   apiKey?: string;
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -17142,6 +17779,11 @@ export interface CloudflareCredential {
   apiKey?: string;
   /** Cloudflare Account Email. */
   accountEmail?: string;
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -17322,6 +17964,11 @@ export interface ElevenLabsCredential {
 
 export interface GcpCredential {
   provider: 'gcp';
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -17830,6 +18477,11 @@ export interface S3Credential {
   s3BucketName: string;
   /** The path prefix for the uploaded recording. Ex. "recordings/" */
   s3PathPrefix: string;
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -17907,6 +18559,11 @@ export interface SpeechmaticsCredential {
 export interface SupabaseCredential {
   /** This is for supabase storage. */
   provider: 'supabase';
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -18460,6 +19117,11 @@ export interface UpdateAzureCredentialDTO {
    */
   apiKey?: string;
   /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
+  /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
    * @maxLength 40
@@ -18588,6 +19250,11 @@ export interface UpdateCloudflareCredentialDTO {
   /** Cloudflare Account Email. */
   accountEmail?: string;
   /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
+  /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
    * @maxLength 40
@@ -18663,6 +19330,11 @@ export interface UpdateElevenLabsCredentialDTO {
 }
 
 export interface UpdateGcpCredentialDTO {
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -18899,6 +19571,11 @@ export interface UpdateS3CredentialDTO {
   /** The path prefix for the uploaded recording. Ex. "recordings/" */
   s3PathPrefix?: string;
   /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
+  /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
    * @maxLength 40
@@ -18929,6 +19606,11 @@ export interface UpdateSpeechmaticsCredentialDTO {
 }
 
 export interface UpdateSupabaseCredentialDTO {
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -19836,6 +20518,8 @@ export interface ServerMessageAssistantRequest {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
 }
 
 export interface ServerMessageConversationUpdate {
@@ -19866,6 +20550,8 @@ export interface ServerMessageConversationUpdate {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
 }
 
 export interface ServerMessageEndOfCallReport {
@@ -19887,8 +20573,9 @@ export interface ServerMessageEndOfCallReport {
     | 'assistant-request-returned-invalid-assistant'
     | 'assistant-request-returned-no-assistant'
     | 'assistant-request-returned-forwarding-phone-number'
-    | 'call.start.error-get-org'
-    | 'call.start.error-get-subscription'
+    | 'scheduled-call-deleted'
+    | 'call.start.error-vapifault-get-org'
+    | 'call.start.error-vapifault-get-subscription'
     | 'call.start.error-get-assistant'
     | 'call.start.error-get-phone-number'
     | 'call.start.error-get-customer'
@@ -19896,6 +20583,11 @@ export interface ServerMessageEndOfCallReport {
     | 'call.start.error-vapi-number-international'
     | 'call.start.error-vapi-number-outbound-daily-limit'
     | 'call.start.error-get-transport'
+    | 'call.start.error-subscription-wallet-does-not-exist'
+    | 'call.start.error-subscription-frozen'
+    | 'call.start.error-subscription-insufficient-credits'
+    | 'call.start.error-subscription-upgrade-failed'
+    | 'call.start.error-subscription-concurrency-limit-reached'
     | 'assistant-not-valid'
     | 'database-error'
     | 'assistant-not-found'
@@ -19963,7 +20655,6 @@ export interface ServerMessageEndOfCallReport {
     | 'call.in-progress.error-vapifault-azure-speech-transcriber-failed'
     | 'call.in-progress.error-pipeline-no-available-llm-model'
     | 'worker-shutdown'
-    | 'unknown-error'
     | 'vonage-disconnected'
     | 'vonage-failed-to-connect-call'
     | 'vonage-completed'
@@ -19974,6 +20665,8 @@ export interface ServerMessageEndOfCallReport {
     | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
     | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
     | 'call.in-progress.error-vapifault-worker-died'
+    | 'call.in-progress.twilio-completed-call'
+    | 'call.in-progress.sip-completed-call'
     | 'call.in-progress.error-vapifault-openai-llm-failed'
     | 'call.in-progress.error-vapifault-azure-openai-llm-failed'
     | 'call.in-progress.error-vapifault-groq-llm-failed'
@@ -19983,6 +20676,7 @@ export interface ServerMessageEndOfCallReport {
     | 'call.in-progress.error-vapifault-inflection-ai-llm-failed'
     | 'call.in-progress.error-vapifault-cerebras-llm-failed'
     | 'call.in-progress.error-vapifault-deep-seek-llm-failed'
+    | 'call.in-progress.error-vapifault-chat-pipeline-failed-to-start'
     | 'pipeline-error-openai-400-bad-request-validation-failed'
     | 'pipeline-error-openai-401-unauthorized'
     | 'pipeline-error-openai-401-incorrect-api-key'
@@ -20250,6 +20944,7 @@ export interface ServerMessageEndOfCallReport {
     | 'pipeline-error-cartesia-socket-hang-up'
     | 'pipeline-error-cartesia-requested-payment'
     | 'pipeline-error-cartesia-500-server-error'
+    | 'pipeline-error-cartesia-502-server-error'
     | 'pipeline-error-cartesia-503-server-error'
     | 'pipeline-error-cartesia-522-server-error'
     | 'call.in-progress.error-vapifault-cartesia-socket-hang-up'
@@ -20270,6 +20965,7 @@ export interface ServerMessageEndOfCallReport {
     | 'pipeline-error-eleven-labs-invalid-api-key'
     | 'pipeline-error-eleven-labs-invalid-voice-samples'
     | 'pipeline-error-eleven-labs-voice-disabled-by-owner'
+    | 'pipeline-error-eleven-labs-vapi-voice-disabled-by-owner'
     | 'pipeline-error-eleven-labs-blocked-account-in-probation'
     | 'pipeline-error-eleven-labs-blocked-content-against-their-policy'
     | 'pipeline-error-eleven-labs-missing-samples-for-voice-clone'
@@ -20278,6 +20974,7 @@ export interface ServerMessageEndOfCallReport {
     | 'pipeline-error-eleven-labs-max-character-limit-exceeded'
     | 'pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
     | 'pipeline-error-eleven-labs-500-server-error'
+    | 'pipeline-error-eleven-labs-503-server-error'
     | 'call.in-progress.error-vapifault-eleven-labs-voice-not-found'
     | 'call.in-progress.error-vapifault-eleven-labs-quota-exceeded'
     | 'call.in-progress.error-vapifault-eleven-labs-unauthorized-access'
@@ -20299,6 +20996,7 @@ export interface ServerMessageEndOfCallReport {
     | 'call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded'
     | 'call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
     | 'call.in-progress.error-providerfault-eleven-labs-500-server-error'
+    | 'call.in-progress.error-providerfault-eleven-labs-503-server-error'
     | 'pipeline-error-playht-request-timed-out'
     | 'pipeline-error-playht-invalid-voice'
     | 'pipeline-error-playht-unexpected-error'
@@ -20352,6 +21050,7 @@ export interface ServerMessageEndOfCallReport {
     | 'assistant-forwarded-call'
     | 'assistant-join-timed-out'
     | 'call.in-progress.error-assistant-did-not-receive-customer-audio'
+    | 'call.in-progress.error-transfer-failed'
     | 'customer-busy'
     | 'customer-ended-call'
     | 'customer-did-not-answer'
@@ -20369,6 +21068,8 @@ export interface ServerMessageEndOfCallReport {
     | 'call.in-progress.error-sip-outbound-call-failed-to-connect'
     | 'call.ringing.hook-executed-say'
     | 'call.ringing.hook-executed-transfer'
+    | 'call.ringing.sip-inbound-caller-hungup-before-call-connect'
+    | 'call.ringing.error-sip-inbound-call-failed-to-connect'
     | 'twilio-failed-to-connect-call'
     | 'twilio-reported-customer-misdialed'
     | 'vonage-rejected'
@@ -20396,6 +21097,8 @@ export interface ServerMessageEndOfCallReport {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
   /** This is the analysis of the call. This can also be found at `call.analysis` on GET /call/:id. */
   analysis: Analysis;
   /**
@@ -20440,6 +21143,8 @@ export interface ServerMessageHang {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
 }
 
 export interface ServerMessageKnowledgeBaseRequest {
@@ -20470,6 +21175,8 @@ export interface ServerMessageKnowledgeBaseRequest {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
 }
 
 export interface ServerMessageModelOutput {
@@ -20496,6 +21203,8 @@ export interface ServerMessageModelOutput {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
   /** This is the output of the model. It can be a token or tool call. */
   output: object;
 }
@@ -20532,6 +21241,8 @@ export interface ServerMessagePhoneCallControl {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
 }
 
 export interface ServerMessageSpeechUpdate {
@@ -20564,6 +21275,8 @@ export interface ServerMessageSpeechUpdate {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
 }
 
 export interface ServerMessageStatusUpdate {
@@ -20587,8 +21300,9 @@ export interface ServerMessageStatusUpdate {
     | 'assistant-request-returned-invalid-assistant'
     | 'assistant-request-returned-no-assistant'
     | 'assistant-request-returned-forwarding-phone-number'
-    | 'call.start.error-get-org'
-    | 'call.start.error-get-subscription'
+    | 'scheduled-call-deleted'
+    | 'call.start.error-vapifault-get-org'
+    | 'call.start.error-vapifault-get-subscription'
     | 'call.start.error-get-assistant'
     | 'call.start.error-get-phone-number'
     | 'call.start.error-get-customer'
@@ -20596,6 +21310,11 @@ export interface ServerMessageStatusUpdate {
     | 'call.start.error-vapi-number-international'
     | 'call.start.error-vapi-number-outbound-daily-limit'
     | 'call.start.error-get-transport'
+    | 'call.start.error-subscription-wallet-does-not-exist'
+    | 'call.start.error-subscription-frozen'
+    | 'call.start.error-subscription-insufficient-credits'
+    | 'call.start.error-subscription-upgrade-failed'
+    | 'call.start.error-subscription-concurrency-limit-reached'
     | 'assistant-not-valid'
     | 'database-error'
     | 'assistant-not-found'
@@ -20663,7 +21382,6 @@ export interface ServerMessageStatusUpdate {
     | 'call.in-progress.error-vapifault-azure-speech-transcriber-failed'
     | 'call.in-progress.error-pipeline-no-available-llm-model'
     | 'worker-shutdown'
-    | 'unknown-error'
     | 'vonage-disconnected'
     | 'vonage-failed-to-connect-call'
     | 'vonage-completed'
@@ -20674,6 +21392,8 @@ export interface ServerMessageStatusUpdate {
     | 'call.in-progress.error-vapifault-transport-connected-but-call-not-active'
     | 'call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing'
     | 'call.in-progress.error-vapifault-worker-died'
+    | 'call.in-progress.twilio-completed-call'
+    | 'call.in-progress.sip-completed-call'
     | 'call.in-progress.error-vapifault-openai-llm-failed'
     | 'call.in-progress.error-vapifault-azure-openai-llm-failed'
     | 'call.in-progress.error-vapifault-groq-llm-failed'
@@ -20683,6 +21403,7 @@ export interface ServerMessageStatusUpdate {
     | 'call.in-progress.error-vapifault-inflection-ai-llm-failed'
     | 'call.in-progress.error-vapifault-cerebras-llm-failed'
     | 'call.in-progress.error-vapifault-deep-seek-llm-failed'
+    | 'call.in-progress.error-vapifault-chat-pipeline-failed-to-start'
     | 'pipeline-error-openai-400-bad-request-validation-failed'
     | 'pipeline-error-openai-401-unauthorized'
     | 'pipeline-error-openai-401-incorrect-api-key'
@@ -20950,6 +21671,7 @@ export interface ServerMessageStatusUpdate {
     | 'pipeline-error-cartesia-socket-hang-up'
     | 'pipeline-error-cartesia-requested-payment'
     | 'pipeline-error-cartesia-500-server-error'
+    | 'pipeline-error-cartesia-502-server-error'
     | 'pipeline-error-cartesia-503-server-error'
     | 'pipeline-error-cartesia-522-server-error'
     | 'call.in-progress.error-vapifault-cartesia-socket-hang-up'
@@ -20970,6 +21692,7 @@ export interface ServerMessageStatusUpdate {
     | 'pipeline-error-eleven-labs-invalid-api-key'
     | 'pipeline-error-eleven-labs-invalid-voice-samples'
     | 'pipeline-error-eleven-labs-voice-disabled-by-owner'
+    | 'pipeline-error-eleven-labs-vapi-voice-disabled-by-owner'
     | 'pipeline-error-eleven-labs-blocked-account-in-probation'
     | 'pipeline-error-eleven-labs-blocked-content-against-their-policy'
     | 'pipeline-error-eleven-labs-missing-samples-for-voice-clone'
@@ -20978,6 +21701,7 @@ export interface ServerMessageStatusUpdate {
     | 'pipeline-error-eleven-labs-max-character-limit-exceeded'
     | 'pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
     | 'pipeline-error-eleven-labs-500-server-error'
+    | 'pipeline-error-eleven-labs-503-server-error'
     | 'call.in-progress.error-vapifault-eleven-labs-voice-not-found'
     | 'call.in-progress.error-vapifault-eleven-labs-quota-exceeded'
     | 'call.in-progress.error-vapifault-eleven-labs-unauthorized-access'
@@ -20999,6 +21723,7 @@ export interface ServerMessageStatusUpdate {
     | 'call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded'
     | 'call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification'
     | 'call.in-progress.error-providerfault-eleven-labs-500-server-error'
+    | 'call.in-progress.error-providerfault-eleven-labs-503-server-error'
     | 'pipeline-error-playht-request-timed-out'
     | 'pipeline-error-playht-invalid-voice'
     | 'pipeline-error-playht-unexpected-error'
@@ -21052,6 +21777,7 @@ export interface ServerMessageStatusUpdate {
     | 'assistant-forwarded-call'
     | 'assistant-join-timed-out'
     | 'call.in-progress.error-assistant-did-not-receive-customer-audio'
+    | 'call.in-progress.error-transfer-failed'
     | 'customer-busy'
     | 'customer-ended-call'
     | 'customer-did-not-answer'
@@ -21069,6 +21795,8 @@ export interface ServerMessageStatusUpdate {
     | 'call.in-progress.error-sip-outbound-call-failed-to-connect'
     | 'call.ringing.hook-executed-say'
     | 'call.ringing.hook-executed-transfer'
+    | 'call.ringing.sip-inbound-caller-hungup-before-call-connect'
+    | 'call.ringing.error-sip-inbound-call-failed-to-connect'
     | 'twilio-failed-to-connect-call'
     | 'twilio-reported-customer-misdialed'
     | 'vonage-rejected'
@@ -21093,6 +21821,8 @@ export interface ServerMessageStatusUpdate {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
   /** This is the transcript of the call. This is only sent if the status is "forwarding". */
   transcript?: string;
   /** This is the summary of the call. This is only sent if the status is "forwarding". */
@@ -21139,6 +21869,8 @@ export interface ServerMessageToolCalls {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
   /** This is the list of tool calls that the model is requesting. */
   toolCallList: ToolCall[];
 }
@@ -21167,6 +21899,8 @@ export interface ServerMessageTransferDestinationRequest {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
 }
 
 export interface ServerMessageTransferUpdate {
@@ -21195,6 +21929,8 @@ export interface ServerMessageTransferUpdate {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
   /** This is the assistant that the call is being transferred to. This is only sent if `destination.type` is "assistant". */
   toAssistant?: CreateAssistantDTO;
   /** This is the assistant that the call is being transferred from. This is only sent if `destination.type` is "assistant". */
@@ -21229,6 +21965,8 @@ export interface ServerMessageTranscript {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
   /** This is the role for which the transcript is for. */
   role: 'assistant' | 'user';
   /** This is the type of the transcript. */
@@ -21261,6 +21999,8 @@ export interface ServerMessageUserInterrupted {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
 }
 
 export interface ServerMessageLanguageChangeDetected {
@@ -21287,6 +22027,8 @@ export interface ServerMessageLanguageChangeDetected {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
   /** This is the language the transcriber is switched to. */
   language: string;
 }
@@ -21315,6 +22057,8 @@ export interface ServerMessageVoiceInput {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
   /** This is the voice input content */
   input: string;
 }
@@ -21366,6 +22110,8 @@ export interface ServerMessageVoiceRequest {
   customer?: CreateCustomerDTO;
   /** This is the call that the message is associated with. */
   call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
   /** This is the text to be synthesized. */
   text: string;
   /** This is the sample rate to be synthesized. */
@@ -21616,11 +22362,18 @@ export interface ClientInboundMessageControl {
 export interface ClientInboundMessageSay {
   /** This is the type of the message. Send "say" message to make the assistant say something. */
   type?: 'say';
+  /**
+   * This is the flag for whether the message should replace existing assistant speech.
+   *
+   * @default false
+   * @default false
+   */
+  interruptAssistantEnabled?: boolean;
   /** This is the content to say. */
   content?: string;
   /** This is the flag to end call after content is spoken. */
   endCallAfterSpoken?: boolean;
-  /** This is the flag for whether the message is interruptible. */
+  /** This is the flag for whether the message is interruptible by the user. */
   interruptionsEnabled?: boolean;
 }
 
@@ -21824,6 +22577,13 @@ export interface KnowledgeBaseCost {
   promptTokens: number;
   /** This is the number of completion tokens generated in the knowledge base query. */
   completionTokens: number;
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface ChatCost {
+  /** This is the type of cost, always 'chat' for this class. */
+  type: 'chat';
   /** This is the cost of the component in USD. */
   cost: number;
 }
@@ -27436,12 +28196,12 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags Credentials
-     * @name CredentialControllerTriggerCredentialAction
+     * @name CredentialControllerCredentialActionTrigger
      * @summary Trigger a credential action
      * @request POST:/credential/trigger
      * @secure
      */
-    credentialControllerTriggerCredentialAction: (
+    credentialControllerCredentialActionTrigger: (
       data: CredentialActionRequest,
       params: RequestParams = {},
     ) =>
@@ -27849,7 +28609,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       },
       params: RequestParams = {},
     ) =>
-      this.request<VariableExtractionPlan, any>({
+      this.request<SbcConfiguration, any>({
         path: `/${provider}/workflows`,
         method: 'GET',
         query: query,
@@ -27871,7 +28631,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       workflowId: string,
       params: RequestParams = {},
     ) =>
-      this.request<VariableExtractionPlan, any>({
+      this.request<SbcConfiguration, any>({
         path: `/${provider}/workflows/${workflowId}/hooks`,
         method: 'GET',
         secure: true,
@@ -27888,7 +28648,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     providerControllerGetLocations: (provider: 'make' | 'ghl', params: RequestParams = {}) =>
-      this.request<VariableExtractionPlan, any>({
+      this.request<SbcConfiguration, any>({
         path: `/${provider}/locations`,
         method: 'GET',
         secure: true,
