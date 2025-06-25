@@ -55,6 +55,9 @@ type VapiEventNames =
   | 'message'
   | 'video'
   | 'error'
+  | 'camera-error'
+  | 'network-quality-change'
+  | 'network-connection'
   | 'daily-participant-updated';
 
 type VapiEventListeners = {
@@ -66,6 +69,9 @@ type VapiEventListeners = {
   video: (track: MediaStreamTrack) => void;
   message: (message: any) => void;
   error: (error: any) => void;
+  'camera-error': (error: any) => void;
+  'network-quality-change': (event: any) => void;
+  'network-connection': (event: any) => void;
   'daily-participant-updated': (participant: DailyParticipant) => void;
 };
 
@@ -266,7 +272,15 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       this.call.on('camera-error', (error: any) => {
-        this.emit('error', error);
+        this.emit('camera-error', error);
+      });
+
+      this.call.on('network-quality-change', (event: any) => {
+        this.emit('network-quality-change', event);
+      });
+
+      this.call.on('network-connection', (event: any) => {
+        this.emit('network-connection', event);
       });
 
       this.call.on('track-started', async (e) => {
