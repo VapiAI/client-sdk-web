@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'package.json'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Verify version matches package.json
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=${{ steps.extract_version.outputs.VERSION }}
+          
+          echo "Package.json version: $PACKAGE_VERSION"
+          echo "Tag version: $TAG_VERSION"
+          
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Version mismatch! Package.json version ($PACKAGE_VERSION) does not match tag version ($TAG_VERSION)"
+            echo "Please ensure the package.json version matches the release tag before publishing."
+            exit 1
+          fi
+          
+          echo "✅ Version verification passed: $PACKAGE_VERSION = $TAG_VERSION"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Publish to npm
+        run: |
+          if [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
+            if [[ "${{ steps.extract_version.outputs.VERSION }}" == *"alpha"* ]]; then
+              npm publish --access public --tag alpha
+            elif [[ "${{ steps.extract_version.outputs.VERSION }}" == *"beta"* ]]; then
+              npm publish --access public --tag beta
+            else
+              npm publish --access public --tag next
+            fi
+          else
+            npm publish --access public
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
