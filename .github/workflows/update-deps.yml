@@ -26,6 +26,10 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -95,6 +99,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.changes.outputs.HAS_CHANGES == 'true'
+        id: create_pr
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -135,11 +140,19 @@ jobs:
       - name: Summary
         run: |
           if [ "${{ steps.changes.outputs.HAS_CHANGES }}" == "true" ]; then
-            echo "✅ Pull request created successfully!"
-            echo "📋 Summary:"
-            echo "  - Version: ${{ steps.version.outputs.NEW_VERSION }}"
-            echo "  - Dependencies updated: ${{ inputs.update_dependencies }}"
-            echo "  - API generated: ${{ inputs.generate_api }}"
+            if [ "${{ steps.create_pr.outputs.pull-request-number }}" != "" ]; then
+              echo "✅ Pull request created successfully!"
+              echo "🔗 PR URL: ${{ steps.create_pr.outputs.pull-request-url }}"
+              echo "📋 Summary:"
+              echo "  - PR Number: #${{ steps.create_pr.outputs.pull-request-number }}"
+              echo "  - Version: ${{ steps.version.outputs.NEW_VERSION }}"
+              echo "  - Dependencies updated: ${{ inputs.update_dependencies }}"
+              echo "  - API generated: ${{ inputs.generate_api }}"
+            else
+              echo "❌ Failed to create pull request!"
+              echo "Please check the workflow logs for more details."
+              exit 1
+            fi
           else
             echo "ℹ️  No changes were made, so no PR was created."
           fi
