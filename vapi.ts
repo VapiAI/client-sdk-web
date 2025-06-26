@@ -58,7 +58,33 @@ type VapiEventNames =
   | 'camera-error'
   | 'network-quality-change'
   | 'network-connection'
-  | 'daily-participant-updated';
+  | 'daily-participant-updated'
+  | 'call-start-progress'
+  | 'call-start-success'
+  | 'call-start-failed';
+
+interface CallStartProgressEvent {
+  stage: string;
+  status: 'started' | 'completed' | 'failed';
+  duration?: number;
+  timestamp: string;
+  metadata?: Record<string, any>;
+}
+
+interface CallStartSuccessEvent {
+  totalDuration: number;
+  callId?: string;
+  timestamp: string;
+}
+
+interface CallStartFailedEvent {
+  stage: string;
+  totalDuration: number;
+  error: string;
+  errorStack?: string;
+  timestamp: string;
+  context: Record<string, any>;
+}
 
 type VapiEventListeners = {
   'call-end': () => void;
@@ -73,6 +99,9 @@ type VapiEventListeners = {
   'network-quality-change': (event: any) => void;
   'network-connection': (event: any) => void;
   'daily-participant-updated': (participant: DailyParticipant) => void;
+  'call-start-progress': (event: CallStartProgressEvent) => void;
+  'call-start-success': (event: CallStartSuccessEvent) => void;
+  'call-start-failed': (event: CallStartFailedEvent) => void;
 };
 
 async function startAudioPlayer(
@@ -209,16 +238,53 @@ export default class Vapi extends VapiEventEmitter {
     workflow?: CreateWorkflowDTO | string,
     workflowOverrides?: WorkflowOverrides,
   ): Promise<Call | null> {
+    const startTime = Date.now();
+    
+    // Input validation with detailed error messages
     if (!assistant && !squad && !workflow) {
-      throw new Error('Assistant or Squad or Workflow must be provided.');
+      const error = new Error('Assistant or Squad or Workflow must be provided.');
+      this.emit('error', { 
+        type: 'validation-error', 
+        stage: 'input-validation',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
     }
 
     if (this.started) {
+      this.emit('call-start-progress', {
+        stage: 'validation',
+        status: 'failed',
+        timestamp: new Date().toISOString(),
+        metadata: { reason: 'already-started' }
+      });
       return null;
     }
+    
+    this.emit('call-start-progress', {
+      stage: 'initialization',
+      status: 'started',
+      timestamp: new Date().toISOString(),
+      metadata: {
+        hasAssistant: !!assistant,
+        hasSquad: !!squad,
+        hasWorkflow: !!workflow
+      }
+    });
+    
     this.started = true;
 
     try {
+            // Stage 1: Create web call
+      this.emit('call-start-progress', {
+        stage: 'web-call-creation',
+        status: 'started',
+        timestamp: new Date().toISOString()
+      });
+      
+      const webCallStartTime = Date.now();
+      
       const webCall = (
         await client.call.callControllerCreateWebCall({
           assistant: typeof assistant === 'string' ? undefined : assistant,
@@ -231,8 +297,27 @@ export default class Vapi extends VapiEventEmitter {
           workflowOverrides,
         })
       ).data;
+      
+      const webCallDuration = Date.now() - webCallStartTime;
+      this.emit('call-start-progress', {
+        stage: 'web-call-creation',
+        status: 'completed',
+        duration: webCallDuration,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          callId: webCall?.id || 'unknown',
+          videoRecordingEnabled: webCall?.artifactPlan?.videoRecordingEnabled ?? false,
+          voiceProvider: webCall?.assistant?.voice?.provider || 'unknown'
+        }
+      });
 
       if (this.call) {
+        this.emit('call-start-progress', {
+          stage: 'daily-call-object-creation',
+          status: 'started',
+          timestamp: new Date().toISOString(),
+          metadata: { action: 'cleanup-existing' }
+        });
         this.cleanup();
       }
 
@@ -241,11 +326,53 @@ export default class Vapi extends VapiEventEmitter {
 
       const isVideoEnabled = webCall?.assistant?.voice?.provider === 'tavus';
 
-      this.call = DailyIframe.createCallObject({
-        audioSource: this.dailyCallObject.audioSource ?? true,
-        videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
-        dailyConfig: this.dailyCallConfig,
+      // Stage 2: Create Daily call object
+      this.emit('call-start-progress', {
+        stage: 'daily-call-object-creation',
+        status: 'started',
+        timestamp: new Date().toISOString(),
+        metadata: {
+          audioSource: this.dailyCallObject.audioSource ?? true,
+          videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
+          isVideoRecordingEnabled,
+          isVideoEnabled
+        }
       });
+      
+      const dailyCallStartTime = Date.now();
+      
+      try {
+        this.call = DailyIframe.createCallObject({
+          audioSource: this.dailyCallObject.audioSource ?? true,
+          videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
+          dailyConfig: this.dailyCallConfig,
+        });
+        
+        const dailyCallDuration = Date.now() - dailyCallStartTime;
+        this.emit('call-start-progress', {
+          stage: 'daily-call-object-creation',
+          status: 'completed',
+          duration: dailyCallDuration,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        const dailyCallDuration = Date.now() - dailyCallStartTime;
+        this.emit('call-start-progress', {
+          stage: 'daily-call-object-creation',
+          status: 'failed',
+          duration: dailyCallDuration,
+          timestamp: new Date().toISOString(),
+          metadata: { error: error?.toString() }
+        });
+        this.emit('error', {
+          type: 'daily-call-object-creation-error',
+          stage: 'daily-call-object-creation',
+          error,
+          timestamp: new Date().toISOString()
+        });
+        throw error;
+      }
+      
       this.call.iframe()?.style.setProperty('display', 'none');
 
       this.call.on('left-meeting', () => {
@@ -326,41 +453,182 @@ export default class Vapi extends VapiEventEmitter {
         destroyAudioPlayer(e.participant.session_id);
       });
 
-      // Allow mobile devices to finish processing the microphone permissions
-      // request before joining the call and playing the assistant's audio
-      if (this.isMobileDevice()) {
-        await this.sleep(1000);
-      }
-
-      await this.call.join({
-        // @ts-expect-error This exists
-        url: webCall.webCallUrl,
-        subscribeToTracksAutomatically: false,
+      // Stage 3: Mobile device handling and permissions
+      const isMobile = this.isMobileDevice();
+      this.emit('call-start-progress', {
+        stage: 'mobile-permissions',
+        status: 'started',
+        timestamp: new Date().toISOString(),
+        metadata: { isMobile }
       });
-
-      if (isVideoRecordingEnabled) {
-        const recordingRequestedTime = new Date().getTime();
-
-        this.call.startRecording({
-          width: 1280,
-          height: 720,
-          backgroundColor: '#FF1F2D3D',
-          layout: {
-            preset: 'default',
-          },
+      
+      if (isMobile) {
+        const mobileWaitStartTime = Date.now();
+        await this.sleep(1000);
+        const mobileWaitDuration = Date.now() - mobileWaitStartTime;
+        this.emit('call-start-progress', {
+          stage: 'mobile-permissions',
+          status: 'completed',
+          duration: mobileWaitDuration,
+          timestamp: new Date().toISOString(),
+          metadata: { action: 'permissions-wait' }
         });
-
-        this.call.on('recording-started', () => {
-          this.send({
-            type: 'control',
-            control: 'say-first-message',
-            videoRecordingStartDelaySeconds:
-              (new Date().getTime() - recordingRequestedTime) / 1000,
-          });
+      } else {
+        this.emit('call-start-progress', {
+          stage: 'mobile-permissions',
+          status: 'completed',
+          timestamp: new Date().toISOString(),
+          metadata: { action: 'skipped-not-mobile' }
         });
       }
 
-      this.call.startRemoteParticipantsAudioLevelObserver(100);
+      // Stage 4: Join the call
+      this.emit('call-start-progress', {
+        stage: 'daily-call-join',
+        status: 'started',
+        timestamp: new Date().toISOString()
+      });
+      
+      const joinStartTime = Date.now();
+      
+      try {
+        await this.call.join({
+          // @ts-expect-error This exists
+          url: webCall.webCallUrl,
+          subscribeToTracksAutomatically: false,
+        });
+        
+        const joinDuration = Date.now() - joinStartTime;
+        this.emit('call-start-progress', {
+          stage: 'daily-call-join',
+          status: 'completed',
+          duration: joinDuration,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        const joinDuration = Date.now() - joinStartTime;
+        this.emit('call-start-progress', {
+          stage: 'daily-call-join',
+          status: 'failed',
+          duration: joinDuration,
+          timestamp: new Date().toISOString(),
+          metadata: { error: error?.toString() }
+        });
+        this.emit('error', {
+          type: 'daily-call-join-error',
+          stage: 'daily-call-join',
+          error,
+          duration: joinDuration,
+          timestamp: new Date().toISOString()
+        });
+        throw error;
+      }
+
+      // Stage 5: Video recording setup (if enabled)
+      if (isVideoRecordingEnabled) {
+        this.emit('call-start-progress', {
+          stage: 'video-recording-setup',
+          status: 'started',
+          timestamp: new Date().toISOString()
+        });
+        
+        const recordingRequestedTime = new Date().getTime();
+        const recordingStartTime = Date.now();
+
+        try {
+          this.call.startRecording({
+            width: 1280,
+            height: 720,
+            backgroundColor: '#FF1F2D3D',
+            layout: {
+              preset: 'default',
+            },
+          });
+
+          const recordingSetupDuration = Date.now() - recordingStartTime;
+          this.emit('call-start-progress', {
+            stage: 'video-recording-setup',
+            status: 'completed',
+            duration: recordingSetupDuration,
+            timestamp: new Date().toISOString()
+          });
+
+          this.call.on('recording-started', () => {
+            const totalRecordingDelay = (new Date().getTime() - recordingRequestedTime) / 1000;
+            this.emit('call-start-progress', {
+              stage: 'video-recording-started',
+              status: 'completed',
+              timestamp: new Date().toISOString(),
+              metadata: { delaySeconds: totalRecordingDelay }
+            });
+            
+            this.send({
+              type: 'control',
+              control: 'say-first-message',
+              videoRecordingStartDelaySeconds: totalRecordingDelay,
+            });
+          });
+        } catch (error) {
+          const recordingSetupDuration = Date.now() - recordingStartTime;
+          this.emit('call-start-progress', {
+            stage: 'video-recording-setup',
+            status: 'failed',
+            duration: recordingSetupDuration,
+            timestamp: new Date().toISOString(),
+            metadata: { error: error?.toString() }
+          });
+          this.emit('error', {
+            type: 'video-recording-setup-error',
+            stage: 'video-recording-setup',
+            error,
+            timestamp: new Date().toISOString()
+          });
+          // Don't throw here, video recording is optional
+        }
+      } else {
+        this.emit('call-start-progress', {
+          stage: 'video-recording-setup',
+          status: 'completed',
+          timestamp: new Date().toISOString(),
+          metadata: { action: 'skipped-not-enabled' }
+        });
+      }
+
+      // Stage 6: Audio level observer setup
+      this.emit('call-start-progress', {
+        stage: 'audio-observer-setup',
+        status: 'started',
+        timestamp: new Date().toISOString()
+      });
+      
+      const audioObserverStartTime = Date.now();
+      
+      try {
+        this.call.startRemoteParticipantsAudioLevelObserver(100);
+        const audioObserverDuration = Date.now() - audioObserverStartTime;
+        this.emit('call-start-progress', {
+          stage: 'audio-observer-setup',
+          status: 'completed',
+          duration: audioObserverDuration,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        const audioObserverDuration = Date.now() - audioObserverStartTime;
+        this.emit('call-start-progress', {
+          stage: 'audio-observer-setup',
+          status: 'failed',
+          duration: audioObserverDuration,
+          timestamp: new Date().toISOString(),
+          metadata: { error: error?.toString() }
+        });
+        this.emit('error', {
+          type: 'audio-observer-setup-error',
+          stage: 'audio-observer-setup',
+          error,
+          timestamp: new Date().toISOString()
+        });
+        // Don't throw here, this is non-critical
+      }
 
       this.call.on('remote-participants-audio-level', (e) => {
         if (e) this.handleRemoteParticipantsAudioLevel(e);
@@ -385,18 +653,89 @@ export default class Vapi extends VapiEventEmitter {
         }
       });
 
-      this.call.updateInputSettings({
-        audio: {
-          processor: {
-            type: 'noise-cancellation',
+      // Stage 7: Audio processing setup
+      this.emit('call-start-progress', {
+        stage: 'audio-processing-setup',
+        status: 'started',
+        timestamp: new Date().toISOString()
+      });
+      
+      const audioProcessingStartTime = Date.now();
+      
+      try {
+        this.call.updateInputSettings({
+          audio: {
+            processor: {
+              type: 'noise-cancellation',
+            },
           },
-        },
+        });
+        
+        const audioProcessingDuration = Date.now() - audioProcessingStartTime;
+        this.emit('call-start-progress', {
+          stage: 'audio-processing-setup',
+          status: 'completed',
+          duration: audioProcessingDuration,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        const audioProcessingDuration = Date.now() - audioProcessingStartTime;
+        this.emit('call-start-progress', {
+          stage: 'audio-processing-setup',
+          status: 'failed',
+          duration: audioProcessingDuration,
+          timestamp: new Date().toISOString(),
+          metadata: { error: error?.toString() }
+        });
+        this.emit('error', {
+          type: 'audio-processing-setup-error',
+          stage: 'audio-processing-setup',
+          error,
+          timestamp: new Date().toISOString()
+        });
+        // Don't throw here, this is non-critical
+      }
+
+      const totalDuration = Date.now() - startTime;
+      this.emit('call-start-success', {
+        totalDuration,
+        callId: webCall?.id || 'unknown',
+        timestamp: new Date().toISOString()
       });
 
       return webCall;
     } catch (e) {
-      console.error(e);
-      this.emit('error', e);
+      const totalDuration = Date.now() - startTime;
+      
+      this.emit('call-start-failed', {
+        stage: 'unknown',
+        totalDuration,
+        error: e?.toString() || 'Unknown error occurred',
+        errorStack: e instanceof Error ? e.stack : 'No stack trace available',
+        timestamp: new Date().toISOString(),
+        context: {
+          hasAssistant: !!assistant,
+          hasSquad: !!squad,
+          hasWorkflow: !!workflow,
+          isMobile: this.isMobileDevice()
+        }
+      });
+      
+      // Also emit the generic error event for backward compatibility
+      this.emit('error', {
+        type: 'start-method-error',
+        stage: 'unknown',
+        error: e,
+        totalDuration,
+        timestamp: new Date().toISOString(),
+        context: {
+          hasAssistant: !!assistant,
+          hasSquad: !!squad,
+          hasWorkflow: !!workflow,
+          isMobile: this.isMobileDevice()
+        }
+      });
+      
       this.cleanup();
       return null;
     }
