@@ -24,3 +24,6 @@ build/
 
 # dist
 dist/
+
+# ignore package-lock.json to avoid build integrity error on ci
+package-lock.json
