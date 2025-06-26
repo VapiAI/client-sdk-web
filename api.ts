@@ -8546,15 +8546,93 @@ export interface InworldVoice {
   provider: "inworld";
   /**
    * Inworld Voice ID
-   * This is the provider-specific ID that will be used.
+   * Available voices by language:
+   * • en: Alex, Ashley, Craig, Deborah, Dennis, Edward, Elizabeth, Hades, Julia, Pixie, Mark, Olivia, Priya, Ronald, Sarah, Shaun, Theodore, Timothy, Wendy, Dominus
+   * • zh: Yichen, Xiaoyin, Xinyi, Jing
+   * • nl: Erik, Katrien, Lennart, Lore
+   * • fr: Alain, Hélène, Mathieu, Étienne
+   * • de: Johanna, Josef
+   * • it: Gianni, Orietta
+   * • ja: Asuka, Satoshi
+   * • ko: Hyunwoo, Minji, Seojun, Yoona
+   * • pl: Szymon, Wojciech
+   * • pt: Heitor, Maitê
+   * • es: Diego, Lupita, Miguel, Rafael
    * @maxLength 120
+   * @example "Alex"
    */
-  voiceId: string;
+  voiceId:
+    | "Alex"
+    | "Ashley"
+    | "Craig"
+    | "Deborah"
+    | "Dennis"
+    | "Edward"
+    | "Elizabeth"
+    | "Hades"
+    | "Julia"
+    | "Pixie"
+    | "Mark"
+    | "Olivia"
+    | "Priya"
+    | "Ronald"
+    | "Sarah"
+    | "Shaun"
+    | "Theodore"
+    | "Timothy"
+    | "Wendy"
+    | "Dominus"
+    | "Yichen"
+    | "Xiaoyin"
+    | "Xinyi"
+    | "Jing"
+    | "Erik"
+    | "Katrien"
+    | "Lennart"
+    | "Lore"
+    | "Alain"
+    | "Hélène"
+    | "Mathieu"
+    | "Étienne"
+    | "Johanna"
+    | "Josef"
+    | "Gianni"
+    | "Orietta"
+    | "Asuka"
+    | "Satoshi"
+    | "Hyunwoo"
+    | "Minji"
+    | "Seojun"
+    | "Yoona"
+    | "Szymon"
+    | "Wojciech"
+    | "Heitor"
+    | "Maitê"
+    | "Diego"
+    | "Lupita"
+    | "Miguel"
+    | "Rafael";
   /**
    * This is the model that will be used.
    * @default "inworld-tts-1"
    */
   model?: "inworld-tts-1";
+  /**
+   * Language code for Inworld TTS synthesis
+   * @default "en"
+   */
+  languageCode?:
+    | "en"
+    | "zh"
+    | "ko"
+    | "nl"
+    | "fr"
+    | "es"
+    | "ja"
+    | "de"
+    | "it"
+    | "pl"
+    | "pt";
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -9584,15 +9662,93 @@ export interface FallbackInworldVoice {
   provider: "inworld";
   /**
    * Inworld Voice ID
-   * This is the provider-specific ID that will be used.
+   * Available voices by language:
+   * • en: Alex, Ashley, Craig, Deborah, Dennis, Edward, Elizabeth, Hades, Julia, Pixie, Mark, Olivia, Priya, Ronald, Sarah, Shaun, Theodore, Timothy, Wendy, Dominus
+   * • zh: Yichen, Xiaoyin, Xinyi, Jing
+   * • nl: Erik, Katrien, Lennart, Lore
+   * • fr: Alain, Hélène, Mathieu, Étienne
+   * • de: Johanna, Josef
+   * • it: Gianni, Orietta
+   * • ja: Asuka, Satoshi
+   * • ko: Hyunwoo, Minji, Seojun, Yoona
+   * • pl: Szymon, Wojciech
+   * • pt: Heitor, Maitê
+   * • es: Diego, Lupita, Miguel, Rafael
    * @maxLength 120
+   * @example "Alex"
    */
-  voiceId: string;
+  voiceId:
+    | "Alex"
+    | "Ashley"
+    | "Craig"
+    | "Deborah"
+    | "Dennis"
+    | "Edward"
+    | "Elizabeth"
+    | "Hades"
+    | "Julia"
+    | "Pixie"
+    | "Mark"
+    | "Olivia"
+    | "Priya"
+    | "Ronald"
+    | "Sarah"
+    | "Shaun"
+    | "Theodore"
+    | "Timothy"
+    | "Wendy"
+    | "Dominus"
+    | "Yichen"
+    | "Xiaoyin"
+    | "Xinyi"
+    | "Jing"
+    | "Erik"
+    | "Katrien"
+    | "Lennart"
+    | "Lore"
+    | "Alain"
+    | "Hélène"
+    | "Mathieu"
+    | "Étienne"
+    | "Johanna"
+    | "Josef"
+    | "Gianni"
+    | "Orietta"
+    | "Asuka"
+    | "Satoshi"
+    | "Hyunwoo"
+    | "Minji"
+    | "Seojun"
+    | "Yoona"
+    | "Szymon"
+    | "Wojciech"
+    | "Heitor"
+    | "Maitê"
+    | "Diego"
+    | "Lupita"
+    | "Miguel"
+    | "Rafael";
   /**
    * This is the model that will be used.
    * @default "inworld-tts-1"
    */
   model?: "inworld-tts-1";
+  /**
+   * Language code for Inworld TTS synthesis
+   * @default "en"
+   */
+  languageCode?:
+    | "en"
+    | "zh"
+    | "ko"
+    | "nl"
+    | "fr"
+    | "es"
+    | "ja"
+    | "de"
+    | "it"
+    | "pl"
+    | "pt";
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -13873,7 +14029,7 @@ export interface CreateCampaignDTO {
   /** This is the phone number ID that will be used for the campaign calls. */
   phoneNumberId: string;
   /** This is the schedule plan for the campaign. */
-  schedulePlan: SchedulePlan;
+  schedulePlan?: SchedulePlan;
   /** These are the customers that will be called in the campaign. */
   customers: CreateCustomerDTO[];
 }
@@ -13898,7 +14054,7 @@ export interface Campaign {
   /** This is the phone number ID that will be used for the campaign calls. */
   phoneNumberId: string;
   /** This is the schedule plan for the campaign. */
-  schedulePlan: SchedulePlan;
+  schedulePlan?: SchedulePlan;
   /** These are the customers that will be called in the campaign. */
   customers: CreateCustomerDTO[];
   /** This is the unique identifier for the campaign. */
