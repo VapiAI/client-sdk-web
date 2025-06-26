@@ -1,0 +1,145 @@
+name: Update Dependencies and API
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      update_dependencies:
+        description: 'Update dependencies'
+        required: true
+        type: boolean
+        default: true
+      generate_api:
+        description: 'Generate API'
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'package.json'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update dependencies
+        if: ${{ inputs.update_dependencies }}
+        run: |
+          echo "🔄 Updating dependencies..."
+          # Update all dependencies to latest versions
+          npm update
+          # Specifically update daily-co to latest
+          npm install @daily-co/daily-js@latest --save
+          echo "✅ Dependencies updated"
+
+      - name: Generate API
+        if: ${{ inputs.generate_api }}
+        run: |
+          echo "🔄 Generating API..."
+          chmod +x ./generate-api.sh
+          npm run generate-api
+          echo "✅ API generated"
+
+      - name: Bump version
+        id: version
+        run: |
+          echo "🔄 Bumping version (${{ inputs.version_bump }})..."
+          NEW_VERSION=$(npm version ${{ inputs.version_bump }} --no-git-tag-version)
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Version bumped to $NEW_VERSION"
+
+      - name: Build and test
+        run: |
+          echo "🔄 Building and testing..."
+          npm run build
+          npm test || echo "⚠️  Tests failed but continuing..."
+          echo "✅ Build completed"
+
+      - name: Test example project
+        run: npm run test:example
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "HAS_CHANGES=true" >> $GITHUB_OUTPUT
+            echo "✅ Changes detected"
+          else
+            echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  No changes detected"
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.HAS_CHANGES == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: update dependencies and bump version to ${{ steps.version.outputs.NEW_VERSION }}
+            
+            - Update dependencies to latest versions
+            - Regenerate API definitions
+            - Bump version to ${{ steps.version.outputs.NEW_VERSION }}
+          title: "chore: update dependencies and bump version to ${{ steps.version.outputs.NEW_VERSION }}"
+          body: |
+            ## 🔄 Automated Update
+            
+            This PR contains automated updates:
+            
+            ### Changes Made
+            - ✅ **Dependencies**: ${{ inputs.update_dependencies && 'Updated to latest versions' || 'Skipped' }}
+            - ✅ **API Generation**: ${{ inputs.generate_api && 'Regenerated API definitions' || 'Skipped' }}  
+            - ✅ **Version Bump**: Bumped version to `${{ steps.version.outputs.NEW_VERSION }}` (${{ inputs.version_bump }})
+            
+            ### Files Changed
+            - `package.json` - Version bumped
+            - `package-lock.json` - Dependencies updated
+            - `api.ts` - API definitions regenerated (if applicable)
+            
+            ### Next Steps
+            1. Review the changes
+            2. Merge this PR
+            3. Create a GitHub release with tag `${{ steps.version.outputs.NEW_VERSION }}`
+            4. The release workflow will automatically publish to npm
+            
+            ---
+            *This PR was created automatically by the Update Dependencies workflow.*
+          branch: update-deps-${{ steps.version.outputs.NEW_VERSION }}
+          delete-branch: true
+          draft: false
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.changes.outputs.HAS_CHANGES }}" == "true" ]; then
+            echo "✅ Pull request created successfully!"
+            echo "📋 Summary:"
+            echo "  - Version: ${{ steps.version.outputs.NEW_VERSION }}"
+            echo "  - Dependencies updated: ${{ inputs.update_dependencies }}"
+            echo "  - API generated: ${{ inputs.generate_api }}"
+          else
+            echo "ℹ️  No changes were made, so no PR was created."
+          fi

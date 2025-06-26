@@ -10,7 +10,11 @@
     "start": "npm run generate-api && npm run build && node dist/vapi.js",
     "generate-api": "./generate-api.sh",
     "update": "./update.sh",
-    "generate-local-build": "npm install && npm run build && npm pack"
+    "generate-local-build": "npm install && npm run build && npm pack",
+    "test:example": "npm run pack:local && cd example && npm install && npm run build",
+    "pack:local": "./scripts/build-latest.sh",
+    "clean-builds": "rm -f vapi-ai-web-*.tgz && echo '🧹 Cleaned up all build tarballs'",
+    "dev:example": "npm run pack:local && cd example && npm install && npm run dev"
   },
   "repository": {
     "type": "git",
@@ -22,6 +26,9 @@
     "url": "https://github.com/VapiAI/web/issues"
   },
   "homepage": "https://github.com/VapiAI/web#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@daily-co/daily-js": "^0.80.0",
     "events": "^3.3.0"
