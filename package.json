@@ -23,16 +23,16 @@
   },
   "homepage": "https://github.com/VapiAI/web#readme",
   "dependencies": {
-    "@daily-co/daily-js": "^0.79.0",
+    "@daily-co/daily-js": "^0.80.0",
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "@types/node": "^20.6.0",
-    "jest": "^29.7.0",
-    "openai": "^4.24.1",
-    "swagger-typescript-api": "^13.0.3",
-    "ts-jest": "^29.1.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.4",
+    "jest": "^30.0.3",
+    "openai": "^5.7.0",
+    "swagger-typescript-api": "^13.2.7",
+    "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2"
   }
 }

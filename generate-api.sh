@@ -5,7 +5,7 @@ curl -o ./api-extended-json.json https://api.vapi.ai/api-extended-json
 sed -i '' 's/transcript\[transcriptType=\\"final\\"\]/transcript[transcriptType='\''final'\'']/g' ./api-extended-json.json
 
 # Step 3: Generate TypeScript API using the edited JSON file
-npx swagger-typescript-api -p ./api-extended-json.json -o . -n api.ts
+npx swagger-typescript-api generate -p ./api-extended-json.json -o . -n api.ts
 
 # Step 4: Remove the edited JSON file
 rm ./api-extended-json.json
