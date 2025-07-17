@@ -11118,12 +11118,14 @@ export interface CreateAssistantDTO {
    * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
    * This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
    * You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+   * Set to 'off' to completely disable voicemail detection.
    */
   voicemailDetection?:
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
-    | VapiVoicemailDetectionPlan;
+    | VapiVoicemailDetectionPlan
+    | 'off';
   /**
    * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
    * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
@@ -11543,12 +11545,14 @@ export interface AssistantOverrides {
    * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
    * This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
    * You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+   * Set to 'off' to completely disable voicemail detection.
    */
   voicemailDetection?:
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
-    | VapiVoicemailDetectionPlan;
+    | VapiVoicemailDetectionPlan
+    | 'off';
   /**
    * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
    * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
@@ -14419,12 +14423,14 @@ export interface Assistant {
    * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
    * This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
    * You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+   * Set to 'off' to completely disable voicemail detection.
    */
   voicemailDetection?:
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
-    | VapiVoicemailDetectionPlan;
+    | VapiVoicemailDetectionPlan
+    | 'off';
   /**
    * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
    * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
@@ -14869,12 +14875,14 @@ export interface UpdateAssistantDTO {
    * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
    * This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
    * You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+   * Set to 'off' to completely disable voicemail detection.
    */
   voicemailDetection?:
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
-    | VapiVoicemailDetectionPlan;
+    | VapiVoicemailDetectionPlan
+    | 'off';
   /**
    * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
    * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
