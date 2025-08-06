@@ -4802,7 +4802,7 @@ export interface CustomLLMModel {
   /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
   url: string;
   /**
-   * Custom headers to send with requests to the custom LLM endpoint. These headers can override default OpenAI headers except Authorization.
+   * Custom headers to send with requests to the custom LLM endpoint.
    */
   headers?: Record<string, string>;
   /**
