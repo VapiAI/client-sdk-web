@@ -208,12 +208,18 @@ export interface Recording {
 }
 
 export interface NodeArtifact {
-  /** This is the node id. */
+  /** These are the messages that were spoken during the node. */
+  messages?: (
+    | UserMessage
+    | SystemMessage
+    | BotMessage
+    | ToolCallMessage
+    | ToolCallResultMessage
+  )[];
+  /** This is the node name. */
   nodeName?: string;
-  /** This is the messages that were spoken during the node. */
-  messages?: object[];
-  /** This is the object containing the variables extracted from the node. */
-  variables?: object;
+  /** These are the variable values that were extracted from the node. */
+  variableValues?: object;
 }
 
 export interface Artifact {
@@ -253,10 +259,12 @@ export interface Artifact {
   transcript?: string;
   /** This is the packet capture url for the call. This is only available for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`. */
   pcapUrl?: string;
+  /** This is the url for the call logs. This includes all logging output during the call for debugging purposes. */
+  logUrl?: string;
   /** This is the history of workflow nodes that were executed during the call. */
   nodes?: NodeArtifact[];
-  /** This is the state of variables at the end of the workflow execution. */
-  variables?: object;
+  /** These are the variable values at the end of the workflow execution. */
+  variableValues?: object;
 }
 
 export interface FallbackTranscriberPlan {
@@ -290,22 +298,17 @@ export interface AssemblyAITranscriber {
    */
   confidenceThreshold?: number;
   /**
-   * Uses Assembly AI's new Universal Streaming API. See: https://www.assemblyai.com/docs/speech-to-text/universal-streaming
+   * This enables formatting of transcripts.
    *
-   * @default false
-   * @example false
-   */
-  enableUniversalStreamingApi?: boolean;
-  /**
-   * This enables formatting of transcripts. Only used when `enableUniversalStreamingApi` is true.
-   *
-   * @default false
-   * @example false
+   * @default true
+   * @example true
    */
   formatTurns?: boolean;
   /**
-   * The confidence threshold to use when determining if the end of a turn has been reached. Only used when `enableUniversalStreamingApi` is true.
+   * This is the end of turn confidence threshold. The minimum confidence that the end of turn is detected.
    *
+   * @min 0
+   * @max 1
    * @default 0.7
    * @min 0
    * @max 1
@@ -313,7 +316,7 @@ export interface AssemblyAITranscriber {
    */
   endOfTurnConfidenceThreshold?: number;
   /**
-   * The minimum amount of silence in milliseconds required to detect end of turn when confident. Only used when `enableUniversalStreamingApi` is true.
+   * This is the minimum end of turn silence when confident in milliseconds.
    *
    * @default 160
    * @min 0
@@ -321,7 +324,7 @@ export interface AssemblyAITranscriber {
    */
   minEndOfTurnSilenceWhenConfident?: number;
   /**
-   * The maximum wait time for word finalization. Only used when `enableUniversalStreamingApi` is true.
+   * This is the maximum wait time for word finalization in milliseconds.
    *
    * @default 160
    * @min 0
@@ -329,7 +332,7 @@ export interface AssemblyAITranscriber {
    */
   wordFinalizationMaxWaitTime?: number;
   /**
-   * The maximum amount of silence in milliseconds allowed in a turn before end of turn is triggered. Only used when `enableUniversalStreamingApi` is true.
+   * This is the maximum turn silence time in milliseconds.
    *
    * @default 400
    * @min 0
@@ -499,6 +502,20 @@ export interface AzureSpeechTranscriber {
     | "zh-HK"
     | "zh-TW"
     | "zu-ZA";
+  /** Controls how phrase boundaries are detected, enabling either simple time/silence heuristics or more advanced semantic segmentation. */
+  segmentationStrategy?: "Default" | "Time" | "Semantic";
+  /**
+   * Duration of detected silence after which the service finalizes a phrase. Configure to adjust sensitivity to pauses in speech.
+   * @min 100
+   * @max 5000
+   */
+  segmentationSilenceTimeoutMs?: number;
+  /**
+   * Maximum duration a segment can reach before being cut off when using time-based segmentation.
+   * @min 20000
+   * @max 70000
+   */
+  segmentationMaximumTimeMs?: number;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
@@ -1161,6 +1178,18 @@ export interface ElevenLabsTranscriber {
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
+export interface GladiaCustomVocabularyConfigDTO {
+  /** Array of vocabulary items (strings or objects with value, pronunciations, intensity, language) */
+  vocabulary: (string | GladiaVocabularyItemDTO)[];
+  /**
+   * Default intensity for vocabulary items (0.0 to 1.0)
+   * @min 0
+   * @max 1
+   * @default 0.5
+   */
+  defaultIntensity?: number;
+}
+
 export interface GladiaTranscriber {
   /** This is the transcription provider that will be used. */
   provider: "gladia";
@@ -1399,6 +1428,27 @@ export interface GladiaTranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
+  /**
+   * Endpointing time in seconds - time to wait before considering speech ended
+   * @min 0.01
+   * @max 10
+   * @example 0.05
+   */
+  endpointing?: number;
+  /**
+   * Speech threshold - sensitivity configuration for speech detection (0.0 to 1.0)
+   * @min 0
+   * @max 1
+   * @example 0.6
+   */
+  speechThreshold?: number;
+  /**
+   * Enable custom vocabulary for improved accuracy
+   * @example false
+   */
+  customVocabularyEnabled?: boolean;
+  /** Custom vocabulary configuration */
+  customVocabularyConfig?: GladiaCustomVocabularyConfigDTO;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
@@ -1588,14 +1638,10 @@ export interface GoogleTranscriber {
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
-    | "gemini-2.5-pro-preview-05-06"
-    | "gemini-2.5-flash-preview-05-20"
-    | "gemini-2.5-flash-preview-04-17"
     | "gemini-2.0-flash-thinking-exp"
     | "gemini-2.0-pro-exp-02-05"
     | "gemini-2.0-flash"
     | "gemini-2.0-flash-lite"
-    | "gemini-2.0-flash-lite-preview-02-05"
     | "gemini-2.0-flash-exp"
     | "gemini-2.0-flash-realtime-exp"
     | "gemini-1.5-flash"
@@ -1731,22 +1777,17 @@ export interface FallbackAssemblyAITranscriber {
    */
   confidenceThreshold?: number;
   /**
-   * Uses Assembly AI's new Universal Streaming API. See: https://www.assemblyai.com/docs/speech-to-text/universal-streaming
+   * This enables formatting of transcripts.
    *
-   * @default false
-   * @example false
-   */
-  enableUniversalStreamingApi?: boolean;
-  /**
-   * This enables formatting of transcripts. Only used when `enableUniversalStreamingApi` is true.
-   *
-   * @default false
-   * @example false
+   * @default true
+   * @example true
    */
   formatTurns?: boolean;
   /**
-   * The confidence threshold to use when determining if the end of a turn has been reached. Only used when `enableUniversalStreamingApi` is true.
+   * This is the end of turn confidence threshold. The minimum confidence that the end of turn is detected.
    *
+   * @min 0
+   * @max 1
    * @default 0.7
    * @min 0
    * @max 1
@@ -1754,7 +1795,7 @@ export interface FallbackAssemblyAITranscriber {
    */
   endOfTurnConfidenceThreshold?: number;
   /**
-   * The minimum amount of silence in milliseconds required to detect end of turn when confident. Only used when `enableUniversalStreamingApi` is true.
+   * This is the minimum end of turn silence when confident in milliseconds.
    *
    * @default 160
    * @min 0
@@ -1762,7 +1803,7 @@ export interface FallbackAssemblyAITranscriber {
    */
   minEndOfTurnSilenceWhenConfident?: number;
   /**
-   * The maximum wait time for word finalization. Only used when `enableUniversalStreamingApi` is true.
+   * This is the maximum wait time for word finalization in milliseconds.
    *
    * @default 160
    * @min 0
@@ -1770,7 +1811,7 @@ export interface FallbackAssemblyAITranscriber {
    */
   wordFinalizationMaxWaitTime?: number;
   /**
-   * The maximum amount of silence in milliseconds allowed in a turn before end of turn is triggered. Only used when `enableUniversalStreamingApi` is true.
+   * This is the maximum turn silence time in milliseconds.
    *
    * @default 400
    * @min 0
@@ -1938,6 +1979,20 @@ export interface FallbackAzureSpeechTranscriber {
     | "zh-HK"
     | "zh-TW"
     | "zu-ZA";
+  /** Controls how phrase boundaries are detected, enabling either simple time/silence heuristics or more advanced semantic segmentation. */
+  segmentationStrategy?: "Default" | "Time" | "Semantic";
+  /**
+   * Duration of detected silence after which the service finalizes a phrase. Configure to adjust sensitivity to pauses in speech.
+   * @min 100
+   * @max 5000
+   */
+  segmentationSilenceTimeoutMs?: number;
+  /**
+   * Maximum duration a segment can reach before being cut off when using time-based segmentation.
+   * @min 20000
+   * @max 70000
+   */
+  segmentationMaximumTimeMs?: number;
 }
 
 export interface FallbackCartesiaTranscriber {
@@ -2538,6 +2593,21 @@ export interface FallbackElevenLabsTranscriber {
     | "zu";
 }
 
+export interface GladiaVocabularyItemDTO {
+  /** The vocabulary word or phrase */
+  value: string;
+  /** Alternative pronunciations for the vocabulary item */
+  pronunciations?: string[];
+  /**
+   * Intensity for this specific vocabulary item (0.0 to 1.0)
+   * @min 0
+   * @max 1
+   */
+  intensity?: number;
+  /** Language code for this vocabulary item (ISO 639-1) */
+  language?: string;
+}
+
 export interface FallbackGladiaTranscriber {
   /** This is the transcription provider that will be used. */
   provider: "gladia";
@@ -2776,6 +2846,27 @@ export interface FallbackGladiaTranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
+  /**
+   * Endpointing time in seconds - time to wait before considering speech ended
+   * @min 0.01
+   * @max 10
+   * @example 0.05
+   */
+  endpointing?: number;
+  /**
+   * Speech threshold - sensitivity configuration for speech detection (0.0 to 1.0)
+   * @min 0
+   * @max 1
+   * @example 0.6
+   */
+  speechThreshold?: number;
+  /**
+   * Enable custom vocabulary for improved accuracy
+   * @example false
+   */
+  customVocabularyEnabled?: boolean;
+  /** Custom vocabulary configuration */
+  customVocabularyConfig?: GladiaCustomVocabularyConfigDTO;
 }
 
 export interface FallbackSpeechmaticsTranscriber {
@@ -2959,14 +3050,10 @@ export interface FallbackGoogleTranscriber {
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
-    | "gemini-2.5-pro-preview-05-06"
-    | "gemini-2.5-flash-preview-05-20"
-    | "gemini-2.5-flash-preview-04-17"
     | "gemini-2.0-flash-thinking-exp"
     | "gemini-2.0-pro-exp-02-05"
     | "gemini-2.0-flash"
     | "gemini-2.0-flash-lite"
-    | "gemini-2.0-flash-lite-preview-02-05"
     | "gemini-2.0-flash-exp"
     | "gemini-2.0-flash-realtime-exp"
     | "gemini-1.5-flash"
@@ -3469,6 +3556,408 @@ export interface ToolMessageDelayed {
   conditions?: Condition[];
 }
 
+export interface MessageTarget {
+  /**
+   * This is the role of the message to target.
+   *
+   * If not specified, will find the position in the message history ignoring role (effectively `any`).
+   * @example "user"
+   */
+  role?: "user" | "assistant";
+  /**
+   * This is the position of the message to target.
+   * - Negative numbers: Count from end (-1 = most recent, -2 = second most recent)
+   * - 0: First/oldest message in history
+   * - Positive numbers: Specific position (0-indexed from start)
+   *
+   * @default -1 (most recent message)
+   * @example -1
+   */
+  position?: number;
+}
+
+export interface RegexCondition {
+  /**
+   * This is the type discriminator for regex condition
+   * @example "regex"
+   */
+  type: "regex";
+  /**
+   * This is the regular expression pattern to match against message content.
+   *
+   * Note:
+   * - This works by using the RegExp.test method in Node.JS. Eg. /hello/.test("hello there") will return true.
+   *
+   * Hot tips:
+   * - In JavaScript, escape \ when sending the regex pattern. Eg. "hello\sthere" will be sent over the wire as "hellosthere". Send "hello\\sthere" instead.
+   * - RegExp.test does substring matching, so /cat/.test("I love cats") will return true. To do full string matching, use anchors: /^cat$/ will only match exactly "cat".
+   * - Word boundaries \b are useful for matching whole words: /\bcat\b/ matches "cat" but not "cats" or "category".
+   * - Use inline flags for portability: (?i) for case insensitive, (?m) for multiline
+   */
+  regex: string;
+  /**
+   * This is the target for messages to check against.
+   * If not specified, the condition will run on the last message (position: -1).
+   * If role is not specified, it will look at the last message regardless of role.
+   * @default { position: -1 }
+   */
+  target?: MessageTarget;
+  /**
+   * This is the flag that when true, the condition matches if the pattern does NOT match.
+   * Useful for ensuring certain words/phrases are absent.
+   *
+   * @default false
+   * @example "true - Reject if user hasn"t said goodbye: { regex: "\\b(bye|goodbye)\\b", negate: true }"
+   */
+  negate?: boolean;
+}
+
+export interface LiquidCondition {
+  /**
+   * This is the type discriminator for liquid condition
+   * @example "liquid"
+   */
+  type: "liquid";
+  /**
+   * This is the Liquid template that must return exactly "true" or "false" as a string.
+   * The template is evaluated and the entire output must be either "true" or "false" - nothing else.
+   *
+   * Available variables:
+   * - `messages`: Array of recent messages in OpenAI chat completions format (ChatCompletionMessageParam[])
+   *   Each message has properties like: role ('user', 'assistant', 'system'), content (string), etc.
+   * - `now`: Current timestamp in milliseconds (built-in Liquid variable)
+   * - Any assistant variable values (e.g., `userName`, `accountStatus`)
+   *
+   * Useful Liquid filters for messages:
+   * - `messages | last: 5` - Get the 5 most recent messages
+   * - `messages | where: 'role', 'user'` - Filter to only user messages
+   * - `messages | reverse` - Reverse the order of messages
+   */
+  liquid: string;
+}
+
+export interface GroupCondition {
+  /**
+   * This is the type discriminator for group condition
+   * @example "group"
+   */
+  type: "group";
+  /** This is the logical operator for combining conditions in this group */
+  operator: "AND" | "OR";
+  /**
+   * This is the list of nested conditions to evaluate.
+   * Supports recursive nesting of groups for complex logic.
+   */
+  conditions: (RegexCondition | LiquidCondition | GroupCondition)[];
+}
+
+export interface ToolRejectionPlan {
+  /**
+   * This is the list of conditions that must be evaluated.
+   *
+   * Usage:
+   * - If all conditions match (AND logic), the tool call is rejected.
+   * - For OR logic at the top level, use a single 'group' condition with operator: 'OR'.
+   *
+   * @default [] - Empty array means tool always executes
+   */
+  conditions?: (RegexCondition | LiquidCondition | GroupCondition)[];
+}
+
+export interface CreateDtmfToolDTO {
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "dtmf" for DTMF tool. */
+  type: "dtmf";
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface CreateEndCallToolDTO {
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "endCall" for End Call tool. */
+  type: "endCall";
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface CreateVoicemailToolDTO {
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /**
+   * The type of tool. "voicemail" for Voicemail tool.
+   * @deprecated
+   */
+  type: "voicemail";
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
 export interface JsonSchema {
   /**
    * This is the type of output you'd like.
@@ -3497,17 +3986,36 @@ export interface JsonSchema {
   /** This is the description to help the model understand what it needs to output. */
   description?: string;
   /**
+   * This is the pattern of the string. This is a regex that will be used to validate the data in question. To use a common format, use the `format` property instead.
+   *
+   * OpenAI documentation: https://platform.openai.com/docs/guides/structured-outputs#supported-properties
+   */
+  pattern?: string;
+  /**
+   * This is the format of the string. To pass a regex, use the `pattern` property instead.
+   *
+   * OpenAI documentation: https://platform.openai.com/docs/guides/structured-outputs?api-mode=chat&type-restrictions=string-restrictions
+   */
+  format?:
+    | "date-time"
+    | "time"
+    | "date"
+    | "duration"
+    | "email"
+    | "hostname"
+    | "ipv4"
+    | "ipv6"
+    | "uuid";
+  /**
    * This is a list of properties that are required.
    *
    * This only makes sense if the type is "object".
    */
   required?: string[];
-  /** This the value that will be used in filling the property. */
-  value?: string;
-  /** This the target variable that will be filled with the value of this property. */
-  target?: string;
   /** This array specifies the allowed values that can be used to restrict the output of the model. */
   enum?: string[];
+  /** This is the title of the schema. */
+  title?: string;
 }
 
 export interface OpenAIFunctionParameters {
@@ -3554,81 +4062,6 @@ export interface OpenAIFunction {
   parameters?: OpenAIFunctionParameters;
 }
 
-export interface CreateDtmfToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
-  messages?: (
-    | ToolMessageStart
-    | ToolMessageComplete
-    | ToolMessageFailed
-    | ToolMessageDelayed
-  )[];
-  /** The type of tool. "dtmf" for DTMF tool. */
-  type: "dtmf";
-  /**
-   * This is the function definition of the tool.
-   *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-   *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-   */
-  function?: OpenAIFunction;
-}
-
-export interface CreateEndCallToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
-  messages?: (
-    | ToolMessageStart
-    | ToolMessageComplete
-    | ToolMessageFailed
-    | ToolMessageDelayed
-  )[];
-  /** The type of tool. "endCall" for End Call tool. */
-  type: "endCall";
-  /**
-   * This is the function definition of the tool.
-   *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-   *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-   */
-  function?: OpenAIFunction;
-}
-
-export interface CreateVoicemailToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
-  messages?: (
-    | ToolMessageStart
-    | ToolMessageComplete
-    | ToolMessageFailed
-    | ToolMessageDelayed
-  )[];
-  /**
-   * The type of tool. "voicemail". This uses the model itself to determine if a voicemil was reached. Can be used alternatively/alongside with TwilioVoicemailDetection
-   * @deprecated
-   */
-  type: "voicemail";
-  /**
-   * This is the function definition of the tool.
-   *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-   *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-   */
-  function?: OpenAIFunction;
-}
-
 export interface CreateFunctionToolDTO {
   /**
    * These are the messages that will be spoken to the user as the tool is running.
@@ -3666,14 +4099,89 @@ export interface CreateFunctionToolDTO {
    *   - Webhook expects a response with tool call result.
    */
   server?: Server;
-  /**
-   * This is the function definition of the tool.
-   *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-   *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-   */
+  /** This is the function definition of the tool. */
   function?: OpenAIFunction;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GhlToolMetadata {
@@ -3697,13 +4205,86 @@ export interface CreateGhlToolDTO {
   type: "ghl";
   metadata: GhlToolMetadata;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface MakeToolMetadata {
@@ -3727,13 +4308,86 @@ export interface CreateMakeToolDTO {
   type: "make";
   metadata: MakeToolMetadata;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CustomMessage {
@@ -3904,6 +4558,7 @@ export interface SummaryPlan {
    * Here are the template variables available:
    * - {{transcript}}: The transcript of the call from `call.artifact.transcript`
    * - {{systemPrompt}}: The system prompt of the call from `assistant.model.messages[type=system].content`
+   * - {{messages}}: The messages of the call from `assistant.model.messages`
    * - {{endedReason}}: The ended reason of the call from `call.endedReason`
    */
   messages?: object[];
@@ -4147,13 +4802,86 @@ export interface CreateTransferCallToolDTO {
     | TransferDestinationSip
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateCustomKnowledgeBaseDTO {
@@ -4219,14 +4947,10 @@ export interface KnowledgeBase {
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
-    | "gemini-2.5-pro-preview-05-06"
-    | "gemini-2.5-flash-preview-05-20"
-    | "gemini-2.5-flash-preview-04-17"
     | "gemini-2.0-flash-thinking-exp"
     | "gemini-2.0-pro-exp-02-05"
     | "gemini-2.0-flash"
     | "gemini-2.0-flash-lite"
-    | "gemini-2.0-flash-lite-preview-02-05"
     | "gemini-2.0-flash-exp"
     | "gemini-2.0-flash-realtime-exp"
     | "gemini-1.5-flash"
@@ -4257,13 +4981,86 @@ export interface CreateQueryToolDTO {
   /** The knowledge bases to query */
   knowledgeBases?: KnowledgeBase[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateGoogleCalendarCreateEventToolDTO {
@@ -4278,16 +5075,89 @@ export interface CreateGoogleCalendarCreateEventToolDTO {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  /** The type of tool. "google.calendar.event.create" for Google Calendar Create Event tool. */
   type: "google.calendar.event.create";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateGoogleSheetsRowAppendToolDTO {
@@ -4302,16 +5172,89 @@ export interface CreateGoogleSheetsRowAppendToolDTO {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "google.sheets.row.append" for Google Sheets tool. */
+  /** The type of tool. "google.sheets.row.append" for Google Sheets Row Append tool. */
   type: "google.sheets.row.append";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateGoogleCalendarCheckAvailabilityToolDTO {
@@ -4326,16 +5269,89 @@ export interface CreateGoogleCalendarCheckAvailabilityToolDTO {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "google.calendar.availability.check" for Google Calendar availability check tool. */
+  /** The type of tool. "google.calendar.availability.check" for Google Calendar Check Availability tool. */
   type: "google.calendar.availability.check";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateSlackSendMessageToolDTO {
@@ -4350,16 +5366,89 @@ export interface CreateSlackSendMessageToolDTO {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "slack.message.send" for Slack send message tool. */
+  /** The type of tool. "slack.message.send" for Slack Send Message tool. */
   type: "slack.message.send";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface McpToolMetadata {
@@ -4395,13 +5484,86 @@ export interface CreateMcpToolDTO {
   server?: Server;
   metadata?: McpToolMetadata;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateGoHighLevelCalendarAvailabilityToolDTO {
@@ -4416,16 +5578,89 @@ export interface CreateGoHighLevelCalendarAvailabilityToolDTO {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar availability check tool. */
+  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar Availability Check tool. */
   type: "gohighlevel.calendar.availability.check";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateGoHighLevelCalendarEventCreateToolDTO {
@@ -4440,16 +5675,89 @@ export interface CreateGoHighLevelCalendarEventCreateToolDTO {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar event create tool. */
+  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar Event Create tool. */
   type: "gohighlevel.calendar.event.create";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateGoHighLevelContactCreateToolDTO {
@@ -4464,16 +5772,89 @@ export interface CreateGoHighLevelContactCreateToolDTO {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel contact create tool. */
+  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel Contact Create tool. */
   type: "gohighlevel.contact.create";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateGoHighLevelContactGetToolDTO {
@@ -4488,16 +5869,89 @@ export interface CreateGoHighLevelContactGetToolDTO {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel contact get tool. */
+  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel Contact Get tool. */
   type: "gohighlevel.contact.get";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface AnyscaleModel {
@@ -4799,12 +6253,17 @@ export interface CustomLLMModel {
    * Default is `variable`.
    */
   metadataSendMode?: "off" | "variable" | "destructured";
+  /**
+   * Custom headers to send with requests. These headers can override default OpenAI headers except for Authorization (which should be specified using a custom-llm credential).
+   * @example {"X-Custom-Header":"value"}
+   */
+  headers?: Record<string, string>;
   /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
   url: string;
   /**
    * This sets the timeout for the connection to the custom provider without needing to stream any tokens back. Default is 20 seconds.
-   * @min 20
-   * @max 600
+   * @min 0
+   * @max 300
    */
   timeoutSeconds?: number;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
@@ -5070,14 +6529,10 @@ export interface GoogleModel {
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
-    | "gemini-2.5-pro-preview-05-06"
-    | "gemini-2.5-flash-preview-05-20"
-    | "gemini-2.5-flash-preview-04-17"
     | "gemini-2.0-flash-thinking-exp"
     | "gemini-2.0-pro-exp-02-05"
     | "gemini-2.0-flash"
     | "gemini-2.0-flash-lite"
-    | "gemini-2.0-flash-lite-preview-02-05"
     | "gemini-2.0-flash-exp"
     | "gemini-2.0-flash-realtime-exp"
     | "gemini-1.5-flash"
@@ -5336,13 +6791,10 @@ export interface OpenAIModel {
     | "gpt-4.1"
     | "gpt-4.1-mini"
     | "gpt-4.1-nano"
-    | "gpt-4.5-preview"
     | "chatgpt-4o-latest"
     | "o3"
     | "o3-mini"
     | "o4-mini"
-    | "o1-preview"
-    | "o1-preview-2024-09-12"
     | "o1-mini"
     | "o1-mini-2024-09-12"
     | "gpt-4o-realtime-preview-2024-10-01"
@@ -5437,13 +6889,10 @@ export interface OpenAIModel {
     | "gpt-4.1"
     | "gpt-4.1-mini"
     | "gpt-4.1-nano"
-    | "gpt-4.5-preview"
     | "chatgpt-4o-latest"
     | "o3"
     | "o3-mini"
     | "o4-mini"
-    | "o1-preview"
-    | "o1-preview-2024-09-12"
     | "o1-mini"
     | "o1-mini-2024-09-12"
     | "gpt-4o-realtime-preview-2024-10-01"
@@ -5815,13 +7264,10 @@ export interface WorkflowOpenAIModel {
     | "gpt-4.1"
     | "gpt-4.1-mini"
     | "gpt-4.1-nano"
-    | "gpt-4.5-preview"
     | "chatgpt-4o-latest"
     | "o3"
     | "o3-mini"
     | "o4-mini"
-    | "o1-preview"
-    | "o1-preview-2024-09-12"
     | "o1-mini"
     | "o1-mini-2024-09-12"
     | "gpt-4o-mini-2024-07-18"
@@ -5965,14 +7411,10 @@ export interface WorkflowGoogleModel {
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
-    | "gemini-2.5-pro-preview-05-06"
-    | "gemini-2.5-flash-preview-05-20"
-    | "gemini-2.5-flash-preview-04-17"
     | "gemini-2.0-flash-thinking-exp"
     | "gemini-2.0-pro-exp-02-05"
     | "gemini-2.0-flash"
     | "gemini-2.0-flash-lite"
-    | "gemini-2.0-flash-lite-preview-02-05"
     | "gemini-2.0-flash-exp"
     | "gemini-2.0-flash-realtime-exp"
     | "gemini-1.5-flash"
@@ -6011,6 +7453,8 @@ export interface WorkflowCustomModel {
   metadataSendMode?: "off" | "variable" | "destructured";
   /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
   url: string;
+  /** These are the headers we'll use for the OpenAI client's `headers`. */
+  headers?: object;
   /**
    * This sets the timeout for the connection to the custom provider without needing to stream any tokens back. Default is 20 seconds.
    * @min 20
@@ -6054,9 +7498,154 @@ export interface GlobalNodePlan {
   enterCondition?: string;
 }
 
+export interface VariableExtractionAlias {
+  /**
+   * This is the key of the variable.
+   *
+   * This variable will be accessible during the call as `{{key}}` and stored in `call.artifact.variableValues` after the call.
+   *
+   * Rules:
+   * - Must start with a letter (a-z, A-Z).
+   * - Subsequent characters can be letters, numbers, or underscores.
+   * - Minimum length of 1 and maximum length of 40.
+   * @minLength 1
+   * @maxLength 40
+   * @pattern /^[a-zA-Z][a-zA-Z0-9_]*$/
+   */
+  key: string;
+  /**
+   * This is the value of the variable.
+   *
+   * This can reference existing variables, use filters, and perform transformations.
+   *
+   * Examples: "{{name}}", "{{customer.email}}", "Hello {{name | upcase}}"
+   * @maxLength 10000
+   */
+  value: string;
+}
+
 export interface VariableExtractionPlan {
-  /** This is the schema of parameters we want to extract from the response */
+  /**
+   * This is the schema to extract.
+   *
+   * Examples:
+   * 1. To extract object properties, you can use the following schema:
+   * ```json
+   * {
+   *   "type": "object",
+   *   "properties": {
+   *     "name": {
+   *       "type": "string"
+   *     },
+   *     "age": {
+   *       "type": "number"
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * These will be extracted as `{{ name }}` and `{{ age }}` respectively. To emphasize, object properties are extracted as direct global variables.
+   *
+   * 2. To extract nested properties, you can use the following schema:
+   * ```json
+   * {
+   *   "type": "object",
+   *   "properties": {
+   *     "name": {
+   *       "type": "object",
+   *       "properties": {
+   *         "first": {
+   *           "type": "string"
+   *         },
+   *         "last": {
+   *           "type": "string"
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * These will be extracted as `{{ name }}`. And, `{{ name.first }}` and `{{ name.last }}` will be accessible.
+   *
+   * 3. To extract array items, you can use the following schema:
+   * ```json
+   * {
+   *   "type": "array",
+   *   "title": "zipCodes",
+   *   "items": {
+   *     "type": "string"
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ zipCodes }}`. To access the array items, you can use `{{ zipCodes[0] }}` and `{{ zipCodes[1] }}`.
+   *
+   * 4. To extract array of objects, you can use the following schema:
+   *
+   * ```json
+   * {
+   *   "type": "array",
+   *   "name": "people",
+   *   "items": {
+   *     "type": "object",
+   *     "properties": {
+   *       "name": {
+   *         "type": "string"
+   *       },
+   *       "age": {
+   *         "type": "number"
+   *       },
+   *       "zipCodes": {
+   *         "type": "array",
+   *         "items": {
+   *           "type": "string"
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ people }}`. To access the array items, you can use `{{ people[n].name }}`, `{{ people[n].age }}`, `{{ people[n].zipCodes }}`, `{{ people[n].zipCodes[0] }}` and `{{ people[n].zipCodes[1] }}`.
+   */
   schema?: JsonSchema;
+  /**
+   * These are additional variables to create.
+   *
+   * These will be accessible during the call as `{{key}}` and stored in `call.artifact.variableValues` after the call.
+   *
+   * Example:
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{name}}"
+   *     },
+   *     {
+   *       "key": "fullName",
+   *       "value": "{{firstName}} {{lastName}}"
+   *     },
+   *     {
+   *       "key": "greeting",
+   *       "value": "Hello {{name}}, welcome to {{company}}!"
+   *     },
+   *     {
+   *       "key": "customerCity",
+   *       "value": "{{addresses[0].city}}"
+   *     },
+   *     {
+   *       "key": "something",
+   *       "value": "{{any liquid}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * This will create variables `customerName`, `fullName`, `greeting`, `customerCity`, and `something`. To access these variables, you can reference them as `{{customerName}}`, `{{fullName}}`, `{{greeting}}`, `{{customerCity}}`, and `{{something}}`.
+   */
+  aliases?: VariableExtractionAlias[];
 }
 
 export interface ConversationNode {
@@ -6119,12 +7708,93 @@ export interface ConversationNode {
     | TavusVoice
     | VapiVoice
     | SesameVoice
-    | InworldVoice;
+    | InworldVoice
+    | MinimaxVoice;
+  /**
+   * These are the tools that the conversation node can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
+    | CreateDtmfToolDTO
+    | CreateEndCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
+  )[];
+  /**
+   * These are the tools that the conversation node can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
   /** @maxLength 5000 */
   prompt?: string;
   /** This is the plan for the global node. */
   globalNodePlan?: GlobalNodePlan;
-  /** This is the plan that controls the variable extraction from the user's response. */
+  /**
+   * This is the plan that controls the variable extraction from the user's responses.
+   *
+   * Usage:
+   * Use `schema` to specify what you want to extract from the user's responses.
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "object",
+   *     "properties": {
+   *       "user": {
+   *         "type": "object",
+   *         "properties": {
+   *           "name": {
+   *             "type": "string"
+   *           },
+   *           "age": {
+   *             "type": "number"
+   *           }
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ user.name }}` and `{{ user.age }}` respectively.
+   *
+   * (Optional) Use `aliases` to create new variables.
+   *
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "userAge",
+   *       "value": "{{user.age}}"
+   *     },
+   *     {
+   *       "key": "userName",
+   *       "value": "{{user.name}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ userAge }}` and `{{ userName }}` respectively.
+   *
+   * Note: The `schema` field is required for Conversation nodes if you want to extract variables from the user's responses. `aliases` is just a convenience.
+   */
   variableExtractionPlan?: VariableExtractionPlan;
   /** @maxLength 80 */
   name: string;
@@ -6196,6 +7866,38 @@ export interface Edge {
   metadata?: object;
 }
 
+export type SecurityFilterBase = object;
+
+export interface SecurityFilterPlan {
+  /**
+   * Whether the security filter is enabled.
+   * @default false
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * Array of security filter types to apply.
+   * If array is not empty, only those security filters are run.
+   * @example "[{ type: "sql-injection" }, { type: "xss" }]"
+   */
+  filters?: SecurityFilterBase[];
+  /**
+   * Mode of operation when a security threat is detected.
+   * - 'sanitize': Remove or replace the threatening content
+   * - 'reject': Replace the entire transcript with replacement text
+   * - 'replace': Replace threatening patterns with replacement text
+   * @default 'sanitize'
+   * @default "sanitize"
+   */
+  mode?: "sanitize" | "reject" | "replace";
+  /**
+   * Text to use when replacing filtered content.
+   * @default '[FILTERED]'
+   * @default "[FILTERED]"
+   */
+  replacementText?: string;
+}
+
 export interface CompliancePlan {
   /**
    * When this is enabled, no logs, recordings, or transcriptions will be stored.
@@ -6209,6 +7911,8 @@ export interface CompliancePlan {
    * @example {"pciEnabled":false}
    */
   pciEnabled?: boolean;
+  /** This is the security filter plan for the assistant. It allows filtering of transcripts for security threats before sending to LLM. */
+  securityFilterPlan?: SecurityFilterPlan;
 }
 
 export interface StructuredDataPlan {
@@ -6230,7 +7934,7 @@ export interface StructuredDataPlan {
    * You can customize by providing any messages you want.
    *
    * Here are the template variables available:
-   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{schema}}: the schema of the structured data from `structuredDataPlan.schema`- {{endedReason}}: the ended reason of the call from `call.endedReason`
+   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{messages}}: the messages of the call from `assistant.model.messages`- {{schema}}: the schema of the structured data from `structuredDataPlan.schema`- {{endedReason}}: the ended reason of the call from `call.endedReason`
    */
   messages?: object[];
   /**
@@ -6315,7 +8019,7 @@ export interface SuccessEvaluationPlan {
    * You can customize by providing any messages you want.
    *
    * Here are the template variables available:
-   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{rubric}}: the rubric of the success evaluation from `successEvaluationPlan.rubric`- {{endedReason}}: the ended reason of the call from `call.endedReason`
+   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{messages}}: the messages of the call from `assistant.model.messages`- {{rubric}}: the rubric of the success evaluation from `successEvaluationPlan.rubric`- {{endedReason}}: the ended reason of the call from `call.endedReason`
    */
   messages?: object[];
   /**
@@ -6356,6 +8060,11 @@ export interface AnalysisPlan {
   structuredDataMultiPlan?: StructuredDataMultiPlan[];
   /** This is the plan for generating the success evaluation of the call. This outputs to `call.analysis.successEvaluation`. */
   successEvaluationPlan?: SuccessEvaluationPlan;
+  /**
+   * This is an array of outcome UUIDs to be calculated during analysis.
+   * The outcomes will be calculated and stored in `call.analysis.outcomes`.
+   */
+  outcomeIds?: string[];
 }
 
 export interface RegexOption {
@@ -6507,7 +8216,7 @@ export interface VapiSmartEndpointingPlan {
    * This is the provider for the smart endpointing plan.
    * @example "vapi"
    */
-  provider: "vapi" | "livekit";
+  provider: "vapi" | "livekit" | "custom-endpointing-model";
 }
 
 export interface LivekitSmartEndpointingPlan {
@@ -6515,7 +8224,7 @@ export interface LivekitSmartEndpointingPlan {
    * This is the provider for the smart endpointing plan.
    * @example "livekit"
    */
-  provider: "vapi" | "livekit";
+  provider: "vapi" | "livekit" | "custom-endpointing-model";
   /**
    * This expression describes how long the bot will wait to start speaking based on the likelihood that the user has reached an endpoint.
    *
@@ -6528,6 +8237,45 @@ export interface LivekitSmartEndpointingPlan {
    * @default "20 + 500 * sqrt(x) + 2500 * x^3"
    */
   waitFunction?: string;
+}
+
+export interface CustomEndpointingModelSmartEndpointingPlan {
+  /**
+   * This is the provider for the smart endpointing plan. Use `custom-endpointing-model` for custom endpointing providers that are not natively supported.
+   * @example "custom-endpointing-model"
+   */
+  provider: "vapi" | "livekit" | "custom-endpointing-model";
+  /**
+   * This is where the endpointing request will be sent. If not provided, will be sent to `assistant.server`. If that does not exist either, will be sent to `org.server`.
+   *
+   * Request Example:
+   *
+   * POST https://{server.url}
+   * Content-Type: application/json
+   *
+   * {
+   *   "message": {
+   *     "type": "call.endpointing.request",
+   *     "messages": [
+   *       {
+   *         "role": "user",
+   *         "message": "Hello, how are you?",
+   *         "time": 1234567890,
+   *         "secondsFromStart": 0
+   *       }
+   *     ],
+   *     ...other metadata about the call...
+   *   }
+   * }
+   *
+   * Response Expected:
+   * {
+   *   "timeoutSeconds": 0.5
+   * }
+   *
+   * The timeout is the number of seconds to wait before considering the user's speech as finished. The endpointing timeout is automatically reset each time a new transcript is received (and another `call.endpointing.request` is sent).
+   */
+  server?: Server;
 }
 
 export interface TranscriptionEndpointingPlan {
@@ -6596,7 +8344,10 @@ export interface StartSpeakingPlan {
    * If this is set, it will override and take precedence over `transcriptionEndpointingPlan`.
    * This plan will still be overridden by any matching `customEndpointingRules`.
    */
-  smartEndpointingPlan?: VapiSmartEndpointingPlan | LivekitSmartEndpointingPlan;
+  smartEndpointingPlan?:
+    | VapiSmartEndpointingPlan
+    | LivekitSmartEndpointingPlan
+    | CustomEndpointingModelSmartEndpointingPlan;
   /**
    * These are the custom endpointing rules to set an endpointing timeout based on a regex on the customer's speech or the assistant's last message.
    *
@@ -6805,8 +8556,43 @@ export interface BackgroundSpeechDenoisingPlan {
   fourierDenoisingPlan?: FourierDenoisingPlan;
 }
 
+export interface KeypadInputPlan {
+  /**
+   * This keeps track of whether the user has enabled keypad input.
+   * By default, it is off.
+   *
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * This is the time in seconds to wait before processing the input.
+   * If the input is not received within this time, the input will be ignored.
+   * If set to "off", the input will be processed when the user enters a delimiter or immediately if no delimiter is used.
+   *
+   * @default 2
+   * @min 0
+   * @max 10
+   */
+  timeoutSeconds?: number;
+  /**
+   * This is the delimiter(s) that will be used to process the input.
+   * Can be '#', '*', or an empty array.
+   */
+  delimiters?: "#" | "*" | "";
+}
+
 export interface WorkflowUserEditable {
   nodes: (ConversationNode | ToolNode)[];
+  /**
+   * This is the model for the workflow.
+   *
+   * This can be overridden at node level using `nodes[n].model`.
+   */
+  model?:
+    | WorkflowOpenAIModel
+    | WorkflowAnthropicModel
+    | WorkflowGoogleModel
+    | WorkflowCustomModel;
   /**
    * This is the transcriber for the workflow.
    *
@@ -6845,13 +8631,26 @@ export interface WorkflowUserEditable {
     | TavusVoice
     | VapiVoice
     | SesameVoice
-    | InworldVoice;
+    | InworldVoice
+    | MinimaxVoice;
   /**
    * This is the plan for observability of workflow's calls.
    *
    * Currently, only Langfuse is supported.
    */
   observabilityPlan?: LangfuseObservabilityPlan;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+  )[];
   /** These are dynamic credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
     | ({
@@ -7000,7 +8799,10 @@ export interface WorkflowUserEditable {
       } & CreateGoHighLevelMCPCredentialDTO)
     | ({
         provider: "inworld";
-      } & any)
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
   )[];
   /** @maxLength 80 */
   name: string;
@@ -7066,6 +8868,8 @@ export interface WorkflowUserEditable {
   backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
   /** These are the credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
   credentialIds?: string[];
+  /** This is the plan for keypad input handling during workflow calls. */
+  keypadInputPlan?: KeypadInputPlan;
 }
 
 export interface VapiModel {
@@ -7644,6 +9448,19 @@ export interface DeepgramVoice {
   fallbackPlan?: FallbackPlan;
 }
 
+export interface ElevenLabsPronunciationDictionaryLocator {
+  /**
+   * This is the ElevenLabs Pronunciation Dictionary ID
+   * This is the ID of the pronunciation dictionary to use.
+   */
+  pronunciationDictionaryId: string;
+  /**
+   * This is the ElevenLabs Pronunciation Dictionary Version ID
+   * This is the version ID of the pronunciation dictionary to use.
+   */
+  versionId: string;
+}
+
 export interface ElevenLabsVoice {
   /**
    * This is the flag to toggle voice caching for the assistant.
@@ -7734,10 +9551,12 @@ export interface ElevenLabsVoice {
     | "eleven_flash_v2"
     | "eleven_flash_v2_5"
     | "eleven_monolingual_v1";
-  /** This is the plan for chunking the model output before it is sent to the voice provider. */
-  chunkPlan?: ChunkPlan;
   /** This is the language (ISO 639-1) that is enforced for the model. Currently only Turbo v2.5 supports language enforcement. For other models, an error will be returned if language code is provided. */
   language?: string;
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
+  /** This is the pronunciation dictionary locators to use. */
+  pronunciationDictionaryLocators?: ElevenLabsPronunciationDictionaryLocator[];
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
   fallbackPlan?: FallbackPlan;
 }
@@ -8318,12 +10137,20 @@ export interface RimeAIVoice {
     | "boulder"
     | "gypsum"
     | "zest"
+    | "luna"
+    | "celeste"
+    | "orion"
+    | "ursa"
+    | "astra"
+    | "esther"
+    | "estelle"
+    | "andromeda"
     | string;
   /**
-   * This is the model that will be used. Defaults to 'v1' when not specified.
-   * @example "mistv2"
+   * This is the model that will be used. Defaults to 'arcana' when not specified.
+   * @example "arcana"
    */
-  model?: "v1" | "mist" | "mistv2";
+  model?: "arcana" | "mistv2" | "mist";
   /**
    * This is the speed multiplier that will be used.
    * @min 0.1
@@ -8639,6 +10466,74 @@ export interface InworldVoice {
   fallbackPlan?: FallbackPlan;
 }
 
+export interface MinimaxVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: "minimax";
+  /**
+   * This is the Minimax Voice ID
+   * This is the provider-specific ID that will be used. Use a voice from MINIMAX_PREDEFINED_VOICES or a custom cloned voice ID.
+   */
+  voiceId: string;
+  /**
+   * This is the model that will be used. Options are 'speech-02-hd' and 'speech-02-turbo'.
+   * speech-02-hd is optimized for high-fidelity applications like voiceovers and audiobooks.
+   * speech-02-turbo is designed for real-time applications with low latency.
+   *
+   * @default "speech-02-turbo"
+   * @default "speech-02-turbo"
+   * @example "speech-02-turbo"
+   */
+  model?: "speech-02-hd" | "speech-02-turbo";
+  /**
+   * The emotion to use for the voice. If not provided, will use auto-detect mode.
+   * Options include: 'happy', 'sad', 'angry', 'fearful', 'surprised', 'disgusted', 'neutral'
+   * @example "happy"
+   */
+  emotion?: string;
+  /**
+   * Voice pitch adjustment. Range from -12 to 12 semitones.
+   * @default 0
+   * @min -12
+   * @max 12
+   * @default 0
+   * @example 0
+   */
+  pitch?: number;
+  /**
+   * Voice speed adjustment. Range from 0.5 to 2.0.
+   * @default 1.0
+   * @min 0.5
+   * @max 2
+   * @default 1
+   * @example 1
+   */
+  speed?: number;
+  /**
+   * Voice volume adjustment. Range from 0.5 to 2.0.
+   * @default 1.0
+   * @min 0.5
+   * @max 2
+   * @default 1
+   * @example 1
+   */
+  volume?: number;
+  /**
+   * The region for Minimax API. Defaults to "worldwide".
+   * @default "worldwide"
+   */
+  region?: "worldwide" | "china";
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackPlan;
+}
+
 export interface FallbackAzureVoice {
   /**
    * This is the flag to toggle voice caching for the assistant.
@@ -8915,6 +10810,8 @@ export interface FallbackElevenLabsVoice {
     | "eleven_monolingual_v1";
   /** This is the language (ISO 639-1) that is enforced for the model. Currently only Turbo v2.5 supports language enforcement. For other models, an error will be returned if language code is provided. */
   language?: string;
+  /** This is the pronunciation dictionary locators to use. */
+  pronunciationDictionaryLocators?: ElevenLabsPronunciationDictionaryLocator[];
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -9485,12 +11382,20 @@ export interface FallbackRimeAIVoice {
     | "boulder"
     | "gypsum"
     | "zest"
+    | "luna"
+    | "celeste"
+    | "orion"
+    | "ursa"
+    | "astra"
+    | "esther"
+    | "estelle"
+    | "andromeda"
     | string;
   /**
-   * This is the model that will be used. Defaults to 'v1' when not specified.
-   * @example "mistv2"
+   * This is the model that will be used. Defaults to 'arcana' when not specified.
+   * @example "arcana"
    */
-  model?: "v1" | "mist" | "mistv2";
+  model?: "arcana" | "mistv2" | "mist";
   /**
    * This is the speed multiplier that will be used.
    * @min 0.1
@@ -9749,6 +11654,72 @@ export interface FallbackInworldVoice {
     | "it"
     | "pl"
     | "pt";
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
+}
+
+export interface FallbackMinimaxVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: "minimax";
+  /**
+   * This is the Minimax Voice ID
+   * This is the provider-specific ID that will be used. Use a voice from MINIMAX_PREDEFINED_VOICES or a custom cloned voice ID.
+   */
+  voiceId: string;
+  /**
+   * This is the model that will be used. Options are 'speech-02-hd' and 'speech-02-turbo'.
+   * speech-02-hd is optimized for high-fidelity applications like voiceovers and audiobooks.
+   * speech-02-turbo is designed for real-time applications with low latency.
+   *
+   * @default "speech-02-turbo"
+   * @default "speech-02-turbo"
+   * @example "speech-02-turbo"
+   */
+  model?: "speech-02-hd" | "speech-02-turbo";
+  /**
+   * The emotion to use for the voice. If not provided, will use auto-detect mode.
+   * Options include: 'happy', 'sad', 'angry', 'fearful', 'surprised', 'disgusted', 'neutral'
+   * @example "happy"
+   */
+  emotion?: string;
+  /**
+   * Voice pitch adjustment. Range from -12 to 12 semitones.
+   * @default 0
+   * @min -12
+   * @max 12
+   * @default 0
+   * @example 0
+   */
+  pitch?: number;
+  /**
+   * Voice speed adjustment. Range from 0.5 to 2.0.
+   * @default 1.0
+   * @min 0.5
+   * @max 2
+   * @default 1
+   * @example 1
+   */
+  speed?: number;
+  /**
+   * Voice volume adjustment. Range from 0.5 to 2.0.
+   * @default 1.0
+   * @min 0.5
+   * @max 2
+   * @default 1
+   * @example 1
+   */
+  volume?: number;
+  /**
+   * The region for Minimax API. Defaults to "worldwide".
+   * @default "worldwide"
+   */
+  region?: "worldwide" | "china";
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -10688,14 +12659,28 @@ export interface CreateSlackOAuth2AuthorizationCredentialDTO {
   name?: string;
 }
 
-export interface TransferAssistantHookAction {
+export interface CreateMinimaxCredentialDTO {
+  provider: "minimax";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** This is the Minimax Group ID. */
+  groupId: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface TransferHookAction {
   /** This is the type of action - must be "transfer" */
   type: "transfer";
   /** This is the destination details for the transfer - can be a phone number or SIP URI */
   destination?: TransferDestinationNumber | TransferDestinationSip;
 }
 
-export interface FunctionCallAssistantHookAction {
+export interface FunctionCallHookAction {
   /**
    * These are the messages that will be spoken to the user as the tool is running.
    *
@@ -10733,23 +12718,111 @@ export interface FunctionCallAssistantHookAction {
    */
   server?: Server;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
+  rejectionPlan?: ToolRejectionPlan;
+  /** This is the function definition of the tool. */
   function?: OpenAIFunction;
 }
 
-export interface SayAssistantHookAction {
+export interface SayHookAction {
   /** This is the type of action - must be "say" */
   type: "say";
+  /**
+   * This is the prompt for the assistant to generate a response based on existing conversation.
+   * Can be a string or an array of chat messages.
+   */
+  prompt?:
+    | string
+    | (
+        | SystemMessage
+        | UserMessage
+        | AssistantMessage
+        | ToolMessage
+        | DeveloperMessage
+      )[];
   /** This is the message to say */
-  exact: object;
+  exact?: object;
 }
 
-export interface AssistantHookFilter {
+export interface CallHookFilter {
   /**
    * This is the type of filter - currently only "oneOf" is supported
    * @maxLength 1000
@@ -10764,44 +12837,110 @@ export interface AssistantHookFilter {
   oneOf: string[];
 }
 
-export interface AssistantHookCallEnding {
+export interface CallHookCallEnding {
   /**
    * This is the event that triggers this hook
    * @maxLength 1000
    */
   on: "call.ending";
   /** This is the set of actions to perform when the hook triggers */
-  do: (TransferAssistantHookAction | FunctionCallAssistantHookAction)[];
+  do: ToolCallHookAction[];
   /** This is the set of filters that must match for the hook to trigger */
-  filters?: AssistantHookFilter[];
+  filters?: CallHookFilter[];
 }
 
-export interface AssistantHookAssistantSpeechInterrupted {
+export interface CallHookAssistantSpeechInterrupted {
   /**
    * This is the event that triggers this hook
    * @maxLength 1000
    */
   on: "assistant.speech.interrupted";
   /** This is the set of actions to perform when the hook triggers */
-  do: (
-    | TransferAssistantHookAction
-    | FunctionCallAssistantHookAction
-    | SayAssistantHookAction
-  )[];
+  do: (SayHookAction | ToolCallHookAction)[];
 }
 
-export interface AssistantHookCustomerSpeechInterrupted {
+export interface CallHookCustomerSpeechInterrupted {
   /**
    * This is the event that triggers this hook
    * @maxLength 1000
    */
   on: "customer.speech.interrupted";
   /** This is the set of actions to perform when the hook triggers */
-  do: (
-    | TransferAssistantHookAction
-    | FunctionCallAssistantHookAction
-    | SayAssistantHookAction
-  )[];
+  do: (SayHookAction | ToolCallHookAction)[];
+}
+
+export interface ToolCallHookAction {
+  /** This is the type of action - must be "tool" */
+  type: "tool";
+  /** This is the tool to call. To use an existing tool, send `toolId` instead. */
+  tool?:
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
+    | CreateDtmfToolDTO
+    | CreateEndCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO;
+  /** This is the tool to call. To use a transient tool, send `tool` instead. */
+  toolId?: string;
+}
+
+export interface CustomerSpeechTimeoutOptions {
+  /**
+   * This is the timeout in seconds before action is triggered.
+   * The clock starts when the assistant finishes speaking and remains active until the user speaks.
+   *
+   * @default 7.5
+   * @min 1
+   * @max 1000
+   */
+  timeoutSeconds: number;
+  /**
+   * This is the maximum number of times the hook will trigger in a call.
+   *
+   * @default 3
+   * @min 1
+   * @max 10
+   */
+  triggerMaxCount?: number;
+  /**
+   * This is whether the counter for hook trigger resets the user speaks.
+   *
+   * @default never
+   */
+  triggerResetMode?: object;
+}
+
+export interface CallHookCustomerSpeechTimeout {
+  /**
+   * Must be either "customer.speech.timeout" or match the pattern "customer.speech.timeout[property=value]"
+   * @maxLength 1000
+   */
+  on: string;
+  /** This is the set of actions to perform when the hook triggers */
+  do: (SayHookAction | ToolCallHookAction)[];
+  /** This is the set of filters that must match for the hook to trigger */
+  options?: CustomerSpeechTimeoutOptions;
+  /**
+   * This is the name of the hook, it can be set by the user to identify the hook.
+   * If no name is provided, the hook will be auto generated as UUID.
+   *
+   * @default UUID
+   * @maxLength 1000
+   */
+  name?: string;
 }
 
 export interface VoicemailDetectionBackoffPlan {
@@ -10975,71 +13114,39 @@ export interface VapiVoicemailDetectionPlan {
   backoffPlan?: VoicemailDetectionBackoffPlan;
 }
 
-export interface MessagePlan {
-  /**
-   * This are the messages that the assistant will speak when the user hasn't responded for `idleTimeoutSeconds`. Each time the timeout is triggered, a random message will be chosen from this array.
-   *
-   * Usage:
-   * - If user gets distracted and doesn't respond for a while, this can be used to grab their attention.
-   * - If the transcriber doesn't pick up what the user said, this can be used to ask the user to repeat themselves. (From the perspective of the assistant, the conversation is idle since it didn't "hear" any user messages.)
-   *
-   * @default null (no idle message is spoken)
-   */
-  idleMessages?: string[];
-  /**
-   * This determines the maximum number of times `idleMessages` can be spoken during the call.
-   *
-   * @default 3
-   * @min 1
-   * @max 10
-   */
-  idleMessageMaxSpokenCount?: number;
-  /**
-   * This determines whether the idle message count is reset whenever the user speaks.
-   *
-   * @default false
-   */
-  idleMessageResetCountOnUserSpeechEnabled?: boolean;
-  /**
-   * This is the timeout in seconds before a message from `idleMessages` is spoken. The clock starts when the assistant finishes speaking and remains active until the user speaks.
-   *
-   * @default 10
-   * @min 5
-   * @max 60
-   */
-  idleTimeoutSeconds?: number;
-  /**
-   * This is the message that the assistant will say if the call ends due to silence.
-   *
-   * If unspecified, it will hang up without saying anything.
-   * @maxLength 1000
-   */
-  silenceTimeoutMessage?: string;
+export interface SQLInjectionSecurityFilter {
+  /** The type of security threat to filter. */
+  type: "sql-injection";
 }
 
-export interface KeypadInputPlan {
+export interface XSSSecurityFilter {
+  /** The type of security threat to filter. */
+  type: "xss";
+}
+
+export interface SSRFSecurityFilter {
+  /** The type of security threat to filter. */
+  type: "ssrf";
+}
+
+export interface RCESecurityFilter {
+  /** The type of security threat to filter. */
+  type: "rce";
+}
+
+export interface PromptInjectionSecurityFilter {
+  /** The type of security threat to filter. */
+  type: "prompt-injection";
+}
+
+export interface RegexSecurityFilter {
+  /** The type of security threat to filter. */
+  type: "regex";
   /**
-   * This keeps track of whether the user has enabled keypad input.
-   * By default, it is off.
-   *
-   * @default false
+   * The regex pattern to filter.
+   * @example "badword1|badword2"
    */
-  enabled?: boolean;
-  /**
-   * This is the time in seconds to wait before processing the input.
-   * If the input is not received within this time, the input will be ignored.
-   * If set to "off", the input will be processed when the user enters a delimiter or immediately if no delimiter is used.
-   *
-   * @default 2
-   * @min 0
-   * @max 10
-   */
-  timeoutSeconds?: number;
-  /**
-   * This is the delimiter(s) that will be used to process the input.
-   * Can be '#', '*', or an empty array.
-   */
-  delimiters?: "#" | "*" | "";
+  regex: string;
 }
 
 export interface CreateAssistantDTO {
@@ -11089,7 +13196,8 @@ export interface CreateAssistantDTO {
     | TavusVoice
     | VapiVoice
     | SesameVoice
-    | InworldVoice;
+    | InworldVoice
+    | MinimaxVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -11167,16 +13275,12 @@ export interface CreateAssistantDTO {
     | "transfer-destination-request"
     | "transfer-update"
     | "user-interrupted"
-    | "voice-input";
-  /**
-   * How many seconds of silence to wait before ending the call. Defaults to 30.
-   *
-   * @default 30
-   * @min 10
-   * @max 3600
-   * @example 30
-   */
-  silenceTimeoutSeconds?: number;
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -11191,16 +13295,6 @@ export interface CreateAssistantDTO {
    * You can also provide a custom sound by providing a URL to an audio file.
    */
   backgroundSound?: "off" | "office" | string;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @deprecated
-   * @example false
-   */
-  backgroundDenoisingEnabled?: boolean;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
    *
@@ -11366,13 +13460,17 @@ export interface CreateAssistantDTO {
       } & CreateGoHighLevelMCPCredentialDTO)
     | ({
         provider: "inworld";
-      } & any)
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
   hooks?: (
-    | AssistantHookCallEnding
-    | AssistantHookAssistantSpeechInterrupted
-    | AssistantHookCustomerSpeechInterrupted
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
   )[];
   /**
    * This is the name of the assistant.
@@ -11418,12 +13516,6 @@ export interface CreateAssistantDTO {
   analysisPlan?: AnalysisPlan;
   /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
   artifactPlan?: ArtifactPlan;
-  /**
-   * This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
-   *
-   * Note: `firstMessage`, `voicemailMessage`, and `endCallMessage` are currently at the root level. They will be moved to `messagePlan` in the future, but will remain backwards compatible.
-   */
-  messagePlan?: MessagePlan;
   /**
    * This is the plan for when the assistant should start talking.
    *
@@ -11514,7 +13606,8 @@ export interface AssistantOverrides {
     | TavusVoice
     | VapiVoice
     | SesameVoice
-    | InworldVoice;
+    | InworldVoice
+    | MinimaxVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -11592,16 +13685,12 @@ export interface AssistantOverrides {
     | "transfer-destination-request"
     | "transfer-update"
     | "user-interrupted"
-    | "voice-input";
-  /**
-   * How many seconds of silence to wait before ending the call. Defaults to 30.
-   *
-   * @default 30
-   * @min 10
-   * @max 3600
-   * @example 30
-   */
-  silenceTimeoutSeconds?: number;
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -11616,16 +13705,6 @@ export interface AssistantOverrides {
    * You can also provide a custom sound by providing a URL to an audio file.
    */
   backgroundSound?: "off" | "office" | string;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @deprecated
-   * @example false
-   */
-  backgroundDenoisingEnabled?: boolean;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
    *
@@ -11791,13 +13870,17 @@ export interface AssistantOverrides {
       } & CreateGoHighLevelMCPCredentialDTO)
     | ({
         provider: "inworld";
-      } & any)
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
   hooks?: (
-    | AssistantHookCallEnding
-    | AssistantHookAssistantSpeechInterrupted
-    | AssistantHookCustomerSpeechInterrupted
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
   )[];
   /**
    * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
@@ -11853,12 +13936,6 @@ export interface AssistantOverrides {
   analysisPlan?: AnalysisPlan;
   /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
   artifactPlan?: ArtifactPlan;
-  /**
-   * This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
-   *
-   * Note: `firstMessage`, `voicemailMessage`, and `endCallMessage` are currently at the root level. They will be moved to `messagePlan` in the future, but will remain backwards compatible.
-   */
-  messagePlan?: MessagePlan;
   /**
    * This is the plan for when the assistant should start talking.
    *
@@ -11937,6 +14014,16 @@ export interface CreateSquadDTO {
 export interface CreateWorkflowDTO {
   nodes: (ConversationNode | ToolNode)[];
   /**
+   * This is the model for the workflow.
+   *
+   * This can be overridden at node level using `nodes[n].model`.
+   */
+  model?:
+    | WorkflowOpenAIModel
+    | WorkflowAnthropicModel
+    | WorkflowGoogleModel
+    | WorkflowCustomModel;
+  /**
    * This is the transcriber for the workflow.
    *
    * This can be overridden at node level using `nodes[n].transcriber`.
@@ -11974,13 +14061,26 @@ export interface CreateWorkflowDTO {
     | TavusVoice
     | VapiVoice
     | SesameVoice
-    | InworldVoice;
+    | InworldVoice
+    | MinimaxVoice;
   /**
    * This is the plan for observability of workflow's calls.
    *
    * Currently, only Langfuse is supported.
    */
   observabilityPlan?: LangfuseObservabilityPlan;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+  )[];
   /** These are dynamic credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
     | ({
@@ -12129,7 +14229,10 @@ export interface CreateWorkflowDTO {
       } & CreateGoHighLevelMCPCredentialDTO)
     | ({
         provider: "inworld";
-      } & any)
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
   )[];
   /** @maxLength 80 */
   name: string;
@@ -12195,6 +14298,8 @@ export interface CreateWorkflowDTO {
   backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
   /** These are the credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
   credentialIds?: string[];
+  /** This is the plan for keypad input handling during workflow calls. */
+  keypadInputPlan?: KeypadInputPlan;
 }
 
 export interface WorkflowOverrides {
@@ -12458,6 +14563,7 @@ export interface Call {
     | "pipeline-error-hume-voice-failed"
     | "pipeline-error-sesame-voice-failed"
     | "pipeline-error-inworld-voice-failed"
+    | "pipeline-error-minimax-voice-failed"
     | "pipeline-error-tavus-video-failed"
     | "call.in-progress.error-vapifault-openai-voice-failed"
     | "call.in-progress.error-vapifault-cartesia-voice-failed"
@@ -12472,6 +14578,7 @@ export interface Call {
     | "call.in-progress.error-vapifault-hume-voice-failed"
     | "call.in-progress.error-vapifault-sesame-voice-failed"
     | "call.in-progress.error-vapifault-inworld-voice-failed"
+    | "call.in-progress.error-vapifault-minimax-voice-failed"
     | "call.in-progress.error-vapifault-tavus-video-failed"
     | "pipeline-error-vapi-llm-failed"
     | "pipeline-error-vapi-400-bad-request-validation-failed"
@@ -13405,6 +15512,12 @@ export interface UserMessage {
   secondsFromStart: number;
   /** The duration of the message in seconds. */
   duration?: number;
+  /** Indicates if the message was filtered for security reasons. */
+  isFiltered?: boolean;
+  /** List of detected security threats if the message was filtered. */
+  detectedThreats?: string[];
+  /** The original message before filtering (only included if content was filtered). */
+  originalMessage?: string;
 }
 
 export interface ToolCallFunction {
@@ -13683,6 +15796,11 @@ export interface ChatPaginatedResponse {
 export interface CreateChatStreamResponse {
   /** This is the unique identifier for the streaming response. */
   id: string;
+  /**
+   * This is the ID of the session that will be used for the chat.
+   * Helps track conversation context across multiple messages.
+   */
+  sessionId?: string;
   /**
    * This is the path to the content being updated.
    * Format: `chat.output[{contentIndex}].content` where contentIndex identifies the specific content item.
@@ -14085,6 +16203,11 @@ export interface Campaign {
   callsCounterEnded: number;
 }
 
+export interface CampaignPaginatedResponse {
+  results: Campaign[];
+  metadata: PaginationMeta;
+}
+
 export interface UpdateCampaignDTO {
   /** This is the name of the campaign. This is just for your own reference. */
   name?: string;
@@ -14298,51 +16421,6 @@ export interface SessionPaginatedResponse {
   metadata: PaginationMeta;
 }
 
-export interface CreateSupportTicketDTO {
-  /** The category of the support request */
-  category:
-    | "bug-report"
-    | "feature-request"
-    | "doc-update"
-    | "pricing"
-    | "sales"
-    | "others";
-  /** The subcategory for bug reports */
-  bugSubcategory?:
-    | "call-forwarding"
-    | "tools-calling"
-    | "prompting"
-    | "workflows"
-    | "assistant"
-    | "latency"
-    | "assistant-speaks-slow"
-    | "assistant-doesnt-respond"
-    | "endpointing"
-    | "others";
-  /**
-   * The subject/title of the support request
-   * @minLength 1
-   * @maxLength 200
-   */
-  subject: string;
-  /**
-   * Detailed description of the issue or request
-   * @minLength 10
-   * @maxLength 5000
-   */
-  message: string;
-  /**
-   * Call IDs and recording URLs if applicable
-   * @maxLength 1000
-   */
-  callDetails?: string;
-}
-
-export interface SupportTicketResponse {
-  /** The unique identifier for the support ticket */
-  id: string;
-}
-
 export interface Assistant {
   /** These are the options for the assistant's transcriber. */
   transcriber?:
@@ -14390,7 +16468,8 @@ export interface Assistant {
     | TavusVoice
     | VapiVoice
     | SesameVoice
-    | InworldVoice;
+    | InworldVoice
+    | MinimaxVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -14468,16 +16547,12 @@ export interface Assistant {
     | "transfer-destination-request"
     | "transfer-update"
     | "user-interrupted"
-    | "voice-input";
-  /**
-   * How many seconds of silence to wait before ending the call. Defaults to 30.
-   *
-   * @default 30
-   * @min 10
-   * @max 3600
-   * @example 30
-   */
-  silenceTimeoutSeconds?: number;
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -14492,16 +16567,6 @@ export interface Assistant {
    * You can also provide a custom sound by providing a URL to an audio file.
    */
   backgroundSound?: "off" | "office" | string;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @deprecated
-   * @example false
-   */
-  backgroundDenoisingEnabled?: boolean;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
    *
@@ -14667,13 +16732,17 @@ export interface Assistant {
       } & CreateGoHighLevelMCPCredentialDTO)
     | ({
         provider: "inworld";
-      } & any)
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
   hooks?: (
-    | AssistantHookCallEnding
-    | AssistantHookAssistantSpeechInterrupted
-    | AssistantHookCustomerSpeechInterrupted
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
   )[];
   /**
    * This is the name of the assistant.
@@ -14719,12 +16788,6 @@ export interface Assistant {
   analysisPlan?: AnalysisPlan;
   /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
   artifactPlan?: ArtifactPlan;
-  /**
-   * This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
-   *
-   * Note: `firstMessage`, `voicemailMessage`, and `endCallMessage` are currently at the root level. They will be moved to `messagePlan` in the future, but will remain backwards compatible.
-   */
-  messagePlan?: MessagePlan;
   /**
    * This is the plan for when the assistant should start talking.
    *
@@ -14840,7 +16903,8 @@ export interface UpdateAssistantDTO {
     | TavusVoice
     | VapiVoice
     | SesameVoice
-    | InworldVoice;
+    | InworldVoice
+    | MinimaxVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -14918,16 +16982,12 @@ export interface UpdateAssistantDTO {
     | "transfer-destination-request"
     | "transfer-update"
     | "user-interrupted"
-    | "voice-input";
-  /**
-   * How many seconds of silence to wait before ending the call. Defaults to 30.
-   *
-   * @default 30
-   * @min 10
-   * @max 3600
-   * @example 30
-   */
-  silenceTimeoutSeconds?: number;
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -14942,16 +17002,6 @@ export interface UpdateAssistantDTO {
    * You can also provide a custom sound by providing a URL to an audio file.
    */
   backgroundSound?: "off" | "office" | string;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @deprecated
-   * @example false
-   */
-  backgroundDenoisingEnabled?: boolean;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
    *
@@ -15117,13 +17167,17 @@ export interface UpdateAssistantDTO {
       } & CreateGoHighLevelMCPCredentialDTO)
     | ({
         provider: "inworld";
-      } & any)
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
   hooks?: (
-    | AssistantHookCallEnding
-    | AssistantHookAssistantSpeechInterrupted
-    | AssistantHookCustomerSpeechInterrupted
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
   )[];
   /**
    * This is the name of the assistant.
@@ -15169,12 +17223,6 @@ export interface UpdateAssistantDTO {
   analysisPlan?: AnalysisPlan;
   /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
   artifactPlan?: ArtifactPlan;
-  /**
-   * This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
-   *
-   * Note: `firstMessage`, `voicemailMessage`, and `endCallMessage` are currently at the root level. They will be moved to `messagePlan` in the future, but will remain backwards compatible.
-   */
-  messagePlan?: MessagePlan;
   /**
    * This is the plan for when the assistant should start talking.
    *
@@ -16330,7 +18378,7 @@ export interface ApiRequestTool {
   )[];
   /** The type of tool. "apiRequest" for API request tool. */
   type: "apiRequest";
-  method: "POST" | "GET";
+  method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE";
   /**
    * This is the timeout in seconds for the request. Defaults to 20 seconds.
    *
@@ -16355,13 +18403,86 @@ export interface ApiRequestTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   /**
    * This is the name of the tool. This will be passed to the model.
    *
@@ -16379,7 +18500,7 @@ export interface ApiRequestTool {
   url: string;
   /** This is the body of the request. */
   body?: JsonSchema;
-  /** These are the headers to send in the request. */
+  /** These are the headers to send with the request. */
   headers?: JsonSchema;
   /**
    * This is the backoff plan if the request fails. Defaults to undefined (the request will not be retried).
@@ -16387,7 +18508,161 @@ export interface ApiRequestTool {
    * @default undefined (the request will not be retried)
    */
   backoffPlan?: BackoffPlan;
-  /** This is the plan that controls the variable extraction from the tool's response. */
+  /**
+   * This is the plan to extract variables from the tool's response. These will be accessible during the call and stored in `call.artifact.variableValues` after the call.
+   *
+   * Usage:
+   * 1. Use `aliases` to extract variables from the tool's response body. (Most common case)
+   *
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{customer.name}}"
+   *     },
+   *     {
+   *       "key": "customerAge",
+   *       "value": "{{customer.age}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * The tool response body is made available to the liquid template.
+   *
+   * 2. Use `aliases` to extract variables from the tool's response body if the response is an array.
+   *
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{$[0].name}}"
+   *     },
+   *     {
+   *       "key": "customerAge",
+   *       "value": "{{$[0].age}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * $ is a shorthand for the tool's response body. `$[0]` is the first item in the array. `$[n]` is the nth item in the array. Note, $ is available regardless of the response body type (both object and array).
+   *
+   * 3. Use `aliases` to extract variables from the tool's response headers.
+   *
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{tool.response.headers.customer-name}}"
+   *     },
+   *     {
+   *       "key": "customerAge",
+   *       "value": "{{tool.response.headers.customer-age}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * `tool.response` is made available to the liquid template. Particularly, both `tool.response.headers` and `tool.response.body` are available. Note, `tool.response` is available regardless of the response body type (both object and array).
+   *
+   * 4. Use `schema` to extract a large portion of the tool's response body.
+   *
+   * 4.1. If you hit example.com and it returns `{"name": "John", "age": 30}`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "object",
+   *     "properties": {
+   *       "name": {
+   *         "type": "string"
+   *       },
+   *       "age": {
+   *         "type": "number"
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   * These will be extracted as `{{ name }}` and `{{ age }}` respectively. To emphasize, object properties are extracted as direct global variables.
+   *
+   * 4.2. If you hit example.com and it returns `{"name": {"first": "John", "last": "Doe"}}`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "object",
+   *     "properties": {
+   *       "name": {
+   *         "type": "object",
+   *         "properties": {
+   *           "first": {
+   *             "type": "string"
+   *           },
+   *           "last": {
+   *             "type": "string"
+   *           }
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * These will be extracted as `{{ name }}`. And, `{{ name.first }}` and `{{ name.last }}` will be accessible.
+   *
+   * 4.3. If you hit example.com and it returns `["94123", "94124"]`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "array",
+   *     "title": "zipCodes",
+   *     "items": {
+   *       "type": "string"
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ zipCodes }}`. To access the array items, you can use `{{ zipCodes[0] }}` and `{{ zipCodes[1] }}`.
+   *
+   * 4.4. If you hit example.com and it returns `[{"name": "John", "age": 30, "zipCodes": ["94123", "94124"]}, {"name": "Jane", "age": 25, "zipCodes": ["94125", "94126"]}]`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "array",
+   *     "title": "people",
+   *     "items": {
+   *       "type": "object",
+   *       "properties": {
+   *         "name": {
+   *           "type": "string"
+   *         },
+   *         "age": {
+   *           "type": "number"
+   *         },
+   *         "zipCodes": {
+   *           "type": "array",
+   *           "items": {
+   *             "type": "string"
+   *           }
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ people }}`. To access the array items, you can use `{{ people[n].name }}`, `{{ people[n].age }}`, `{{ people[n].zipCodes }}`, `{{ people[n].zipCodes[0] }}` and `{{ people[n].zipCodes[1] }}`.
+   *
+   * Note: Both `aliases` and `schema` can be used together.
+   */
   variableExtractionPlan?: VariableExtractionPlan;
 }
 
@@ -16420,13 +18695,86 @@ export interface DtmfTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface EndCallTool {
@@ -16458,13 +18806,86 @@ export interface EndCallTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface FunctionTool {
@@ -16519,12 +18940,87 @@ export interface FunctionTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
+  rejectionPlan?: ToolRejectionPlan;
+  /** This is the function definition of the tool. */
   function?: OpenAIFunction;
 }
 
@@ -16557,13 +19053,86 @@ export interface GhlTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   metadata: GhlToolMetadata;
 }
 
@@ -16596,13 +19165,86 @@ export interface MakeTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   metadata: MakeToolMetadata;
 }
 
@@ -16640,13 +19282,86 @@ export interface TransferCallTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface OutputTool {
@@ -16678,13 +19393,86 @@ export interface OutputTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface BashTool {
@@ -16730,13 +19518,86 @@ export interface BashTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   /**
    * The name of the tool, fixed to 'bash'
    * @default "bash"
@@ -16787,13 +19648,86 @@ export interface ComputerTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   /**
    * The name of the tool, fixed to 'computer'
    * @default "computer"
@@ -16850,13 +19784,86 @@ export interface TextEditorTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   /**
    * The name of the tool, fixed to 'str_replace_editor'
    * @default "str_replace_editor"
@@ -16895,13 +19902,86 @@ export interface QueryTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoogleCalendarCreateEventTool {
@@ -16916,7 +19996,7 @@ export interface GoogleCalendarCreateEventTool {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  /** The type of tool. "google.calendar.event.create" for Google Calendar Create Event tool. */
   type: "google.calendar.event.create";
   /** This is the unique identifier for the tool. */
   id: string;
@@ -16933,13 +20013,86 @@ export interface GoogleCalendarCreateEventTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoogleSheetsRowAppendTool {
@@ -16954,7 +20107,7 @@ export interface GoogleSheetsRowAppendTool {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "google.sheets.row.append" for Google Sheets tool. */
+  /** The type of tool. "google.sheets.row.append" for Google Sheets Row Append tool. */
   type: "google.sheets.row.append";
   /** This is the unique identifier for the tool. */
   id: string;
@@ -16971,13 +20124,86 @@ export interface GoogleSheetsRowAppendTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoogleCalendarCheckAvailabilityTool {
@@ -16992,7 +20218,7 @@ export interface GoogleCalendarCheckAvailabilityTool {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "google.calendar.availability.check" for Google Calendar availability check tool. */
+  /** The type of tool. "google.calendar.availability.check" for Google Calendar Check Availability tool. */
   type: "google.calendar.availability.check";
   /** This is the unique identifier for the tool. */
   id: string;
@@ -17009,13 +20235,86 @@ export interface GoogleCalendarCheckAvailabilityTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface SlackSendMessageTool {
@@ -17030,7 +20329,7 @@ export interface SlackSendMessageTool {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "slack.message.send" for Slack send message tool. */
+  /** The type of tool. "slack.message.send" for Slack Send Message tool. */
   type: "slack.message.send";
   /** This is the unique identifier for the tool. */
   id: string;
@@ -17047,13 +20346,86 @@ export interface SlackSendMessageTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface SmsTool {
@@ -17085,13 +20457,86 @@ export interface SmsTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface McpTool {
@@ -17135,13 +20580,86 @@ export interface McpTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   metadata?: McpToolMetadata;
 }
 
@@ -17157,7 +20675,7 @@ export interface GoHighLevelCalendarAvailabilityTool {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar availability check tool. */
+  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar Availability Check tool. */
   type: "gohighlevel.calendar.availability.check";
   /** This is the unique identifier for the tool. */
   id: string;
@@ -17174,13 +20692,86 @@ export interface GoHighLevelCalendarAvailabilityTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoHighLevelCalendarEventCreateTool {
@@ -17195,7 +20786,7 @@ export interface GoHighLevelCalendarEventCreateTool {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar event create tool. */
+  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar Event Create tool. */
   type: "gohighlevel.calendar.event.create";
   /** This is the unique identifier for the tool. */
   id: string;
@@ -17212,13 +20803,86 @@ export interface GoHighLevelCalendarEventCreateTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoHighLevelContactCreateTool {
@@ -17233,7 +20897,7 @@ export interface GoHighLevelContactCreateTool {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel contact create tool. */
+  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel Contact Create tool. */
   type: "gohighlevel.contact.create";
   /** This is the unique identifier for the tool. */
   id: string;
@@ -17250,13 +20914,86 @@ export interface GoHighLevelContactCreateTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoHighLevelContactGetTool {
@@ -17271,7 +21008,7 @@ export interface GoHighLevelContactGetTool {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel contact get tool. */
+  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel Contact Get tool. */
   type: "gohighlevel.contact.get";
   /** This is the unique identifier for the tool. */
   id: string;
@@ -17288,13 +21025,86 @@ export interface GoHighLevelContactGetTool {
    */
   updatedAt: string;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateApiRequestToolDTO {
@@ -17311,7 +21121,7 @@ export interface CreateApiRequestToolDTO {
   )[];
   /** The type of tool. "apiRequest" for API request tool. */
   type: "apiRequest";
-  method: "POST" | "GET";
+  method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE";
   /**
    * This is the timeout in seconds for the request. Defaults to 20 seconds.
    *
@@ -17338,7 +21148,7 @@ export interface CreateApiRequestToolDTO {
   url: string;
   /** This is the body of the request. */
   body?: JsonSchema;
-  /** These are the headers to send in the request. */
+  /** These are the headers to send with the request. */
   headers?: JsonSchema;
   /**
    * This is the backoff plan if the request fails. Defaults to undefined (the request will not be retried).
@@ -17346,16 +21156,243 @@ export interface CreateApiRequestToolDTO {
    * @default undefined (the request will not be retried)
    */
   backoffPlan?: BackoffPlan;
-  /** This is the plan that controls the variable extraction from the tool's response. */
+  /**
+   * This is the plan to extract variables from the tool's response. These will be accessible during the call and stored in `call.artifact.variableValues` after the call.
+   *
+   * Usage:
+   * 1. Use `aliases` to extract variables from the tool's response body. (Most common case)
+   *
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{customer.name}}"
+   *     },
+   *     {
+   *       "key": "customerAge",
+   *       "value": "{{customer.age}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * The tool response body is made available to the liquid template.
+   *
+   * 2. Use `aliases` to extract variables from the tool's response body if the response is an array.
+   *
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{$[0].name}}"
+   *     },
+   *     {
+   *       "key": "customerAge",
+   *       "value": "{{$[0].age}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * $ is a shorthand for the tool's response body. `$[0]` is the first item in the array. `$[n]` is the nth item in the array. Note, $ is available regardless of the response body type (both object and array).
+   *
+   * 3. Use `aliases` to extract variables from the tool's response headers.
+   *
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{tool.response.headers.customer-name}}"
+   *     },
+   *     {
+   *       "key": "customerAge",
+   *       "value": "{{tool.response.headers.customer-age}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * `tool.response` is made available to the liquid template. Particularly, both `tool.response.headers` and `tool.response.body` are available. Note, `tool.response` is available regardless of the response body type (both object and array).
+   *
+   * 4. Use `schema` to extract a large portion of the tool's response body.
+   *
+   * 4.1. If you hit example.com and it returns `{"name": "John", "age": 30}`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "object",
+   *     "properties": {
+   *       "name": {
+   *         "type": "string"
+   *       },
+   *       "age": {
+   *         "type": "number"
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   * These will be extracted as `{{ name }}` and `{{ age }}` respectively. To emphasize, object properties are extracted as direct global variables.
+   *
+   * 4.2. If you hit example.com and it returns `{"name": {"first": "John", "last": "Doe"}}`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "object",
+   *     "properties": {
+   *       "name": {
+   *         "type": "object",
+   *         "properties": {
+   *           "first": {
+   *             "type": "string"
+   *           },
+   *           "last": {
+   *             "type": "string"
+   *           }
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * These will be extracted as `{{ name }}`. And, `{{ name.first }}` and `{{ name.last }}` will be accessible.
+   *
+   * 4.3. If you hit example.com and it returns `["94123", "94124"]`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "array",
+   *     "title": "zipCodes",
+   *     "items": {
+   *       "type": "string"
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ zipCodes }}`. To access the array items, you can use `{{ zipCodes[0] }}` and `{{ zipCodes[1] }}`.
+   *
+   * 4.4. If you hit example.com and it returns `[{"name": "John", "age": 30, "zipCodes": ["94123", "94124"]}, {"name": "Jane", "age": 25, "zipCodes": ["94125", "94126"]}]`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "array",
+   *     "title": "people",
+   *     "items": {
+   *       "type": "object",
+   *       "properties": {
+   *         "name": {
+   *           "type": "string"
+   *         },
+   *         "age": {
+   *           "type": "number"
+   *         },
+   *         "zipCodes": {
+   *           "type": "array",
+   *           "items": {
+   *             "type": "string"
+   *           }
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ people }}`. To access the array items, you can use `{{ people[n].name }}`, `{{ people[n].age }}`, `{{ people[n].zipCodes }}`, `{{ people[n].zipCodes[0] }}` and `{{ people[n].zipCodes[1] }}`.
+   *
+   * Note: Both `aliases` and `schema` can be used together.
+   */
   variableExtractionPlan?: VariableExtractionPlan;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateOutputToolDTO {
@@ -17373,13 +21410,86 @@ export interface CreateOutputToolDTO {
   /** The type of tool. "output" for Output tool. */
   type: "output";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateBashToolDTO {
@@ -17416,13 +21526,86 @@ export interface CreateBashToolDTO {
    */
   name: "bash";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateComputerToolDTO {
@@ -17465,13 +21648,86 @@ export interface CreateComputerToolDTO {
   /** Optional display number */
   displayNumber?: number;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateTextEditorToolDTO {
@@ -17508,13 +21764,86 @@ export interface CreateTextEditorToolDTO {
    */
   name: "str_replace_editor";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateSmsToolDTO {
@@ -17532,13 +21861,86 @@ export interface CreateSmsToolDTO {
   /** The type of tool. "sms" for Twilio SMS sending tool. */
   type: "sms";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateApiRequestToolDTO {
@@ -17553,7 +21955,7 @@ export interface UpdateApiRequestToolDTO {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  method?: "POST" | "GET";
+  method?: "POST" | "GET" | "PUT" | "PATCH" | "DELETE";
   /**
    * This is the timeout in seconds for the request. Defaults to 20 seconds.
    *
@@ -17564,13 +21966,86 @@ export interface UpdateApiRequestToolDTO {
    */
   timeoutSeconds?: number;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   /**
    * This is the name of the tool. This will be passed to the model.
    *
@@ -17588,7 +22063,7 @@ export interface UpdateApiRequestToolDTO {
   url?: string;
   /** This is the body of the request. */
   body?: JsonSchema;
-  /** These are the headers to send in the request. */
+  /** These are the headers to send with the request. */
   headers?: JsonSchema;
   /**
    * This is the backoff plan if the request fails. Defaults to undefined (the request will not be retried).
@@ -17596,7 +22071,161 @@ export interface UpdateApiRequestToolDTO {
    * @default undefined (the request will not be retried)
    */
   backoffPlan?: BackoffPlan;
-  /** This is the plan that controls the variable extraction from the tool's response. */
+  /**
+   * This is the plan to extract variables from the tool's response. These will be accessible during the call and stored in `call.artifact.variableValues` after the call.
+   *
+   * Usage:
+   * 1. Use `aliases` to extract variables from the tool's response body. (Most common case)
+   *
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{customer.name}}"
+   *     },
+   *     {
+   *       "key": "customerAge",
+   *       "value": "{{customer.age}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * The tool response body is made available to the liquid template.
+   *
+   * 2. Use `aliases` to extract variables from the tool's response body if the response is an array.
+   *
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{$[0].name}}"
+   *     },
+   *     {
+   *       "key": "customerAge",
+   *       "value": "{{$[0].age}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * $ is a shorthand for the tool's response body. `$[0]` is the first item in the array. `$[n]` is the nth item in the array. Note, $ is available regardless of the response body type (both object and array).
+   *
+   * 3. Use `aliases` to extract variables from the tool's response headers.
+   *
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{tool.response.headers.customer-name}}"
+   *     },
+   *     {
+   *       "key": "customerAge",
+   *       "value": "{{tool.response.headers.customer-age}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * `tool.response` is made available to the liquid template. Particularly, both `tool.response.headers` and `tool.response.body` are available. Note, `tool.response` is available regardless of the response body type (both object and array).
+   *
+   * 4. Use `schema` to extract a large portion of the tool's response body.
+   *
+   * 4.1. If you hit example.com and it returns `{"name": "John", "age": 30}`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "object",
+   *     "properties": {
+   *       "name": {
+   *         "type": "string"
+   *       },
+   *       "age": {
+   *         "type": "number"
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   * These will be extracted as `{{ name }}` and `{{ age }}` respectively. To emphasize, object properties are extracted as direct global variables.
+   *
+   * 4.2. If you hit example.com and it returns `{"name": {"first": "John", "last": "Doe"}}`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "object",
+   *     "properties": {
+   *       "name": {
+   *         "type": "object",
+   *         "properties": {
+   *           "first": {
+   *             "type": "string"
+   *           },
+   *           "last": {
+   *             "type": "string"
+   *           }
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * These will be extracted as `{{ name }}`. And, `{{ name.first }}` and `{{ name.last }}` will be accessible.
+   *
+   * 4.3. If you hit example.com and it returns `["94123", "94124"]`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "array",
+   *     "title": "zipCodes",
+   *     "items": {
+   *       "type": "string"
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ zipCodes }}`. To access the array items, you can use `{{ zipCodes[0] }}` and `{{ zipCodes[1] }}`.
+   *
+   * 4.4. If you hit example.com and it returns `[{"name": "John", "age": 30, "zipCodes": ["94123", "94124"]}, {"name": "Jane", "age": 25, "zipCodes": ["94125", "94126"]}]`, then you can specify the schema as:
+   *
+   * ```json
+   * {
+   *   "schema": {
+   *     "type": "array",
+   *     "title": "people",
+   *     "items": {
+   *       "type": "object",
+   *       "properties": {
+   *         "name": {
+   *           "type": "string"
+   *         },
+   *         "age": {
+   *           "type": "number"
+   *         },
+   *         "zipCodes": {
+   *           "type": "array",
+   *           "items": {
+   *             "type": "string"
+   *           }
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ people }}`. To access the array items, you can use `{{ people[n].name }}`, `{{ people[n].age }}`, `{{ people[n].zipCodes }}`, `{{ people[n].zipCodes[0] }}` and `{{ people[n].zipCodes[1] }}`.
+   *
+   * Note: Both `aliases` and `schema` can be used together.
+   */
   variableExtractionPlan?: VariableExtractionPlan;
 }
 
@@ -17613,13 +22242,86 @@ export interface UpdateDtmfToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateEndCallToolDTO {
@@ -17635,13 +22337,86 @@ export interface UpdateEndCallToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateFunctionToolDTO {
@@ -17680,12 +22455,87 @@ export interface UpdateFunctionToolDTO {
    */
   server?: Server;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
+  rejectionPlan?: ToolRejectionPlan;
+  /** This is the function definition of the tool. */
   function?: OpenAIFunction;
 }
 
@@ -17702,13 +22552,86 @@ export interface UpdateGhlToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   metadata?: GhlToolMetadata;
 }
 
@@ -17725,13 +22648,86 @@ export interface UpdateMakeToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   metadata?: MakeToolMetadata;
 }
 
@@ -17754,13 +22750,86 @@ export interface UpdateTransferCallToolDTO {
     | TransferDestinationSip
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateOutputToolDTO {
@@ -17776,13 +22845,86 @@ export interface UpdateOutputToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateBashToolDTO {
@@ -17812,13 +22954,86 @@ export interface UpdateBashToolDTO {
    */
   server?: Server;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   /**
    * The name of the tool, fixed to 'bash'
    * @default "bash"
@@ -17853,13 +23068,86 @@ export interface UpdateComputerToolDTO {
    */
   server?: Server;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   /**
    * The name of the tool, fixed to 'computer'
    * @default "computer"
@@ -17900,13 +23188,86 @@ export interface UpdateTextEditorToolDTO {
    */
   server?: Server;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   /**
    * The name of the tool, fixed to 'str_replace_editor'
    * @default "str_replace_editor"
@@ -17929,13 +23290,86 @@ export interface UpdateQueryToolDTO {
   /** The knowledge bases to query */
   knowledgeBases?: KnowledgeBase[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateGoogleCalendarCreateEventToolDTO {
@@ -17951,13 +23385,86 @@ export interface UpdateGoogleCalendarCreateEventToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateGoogleSheetsRowAppendToolDTO {
@@ -17973,13 +23480,86 @@ export interface UpdateGoogleSheetsRowAppendToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateGoogleCalendarCheckAvailabilityToolDTO {
@@ -17995,13 +23575,86 @@ export interface UpdateGoogleCalendarCheckAvailabilityToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateSlackSendMessageToolDTO {
@@ -18017,13 +23670,86 @@ export interface UpdateSlackSendMessageToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateSmsToolDTO {
@@ -18039,13 +23765,86 @@ export interface UpdateSmsToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateMcpToolDTO {
@@ -18073,13 +23872,86 @@ export interface UpdateMcpToolDTO {
    */
   server?: Server;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
   metadata?: McpToolMetadata;
 }
 
@@ -18096,13 +23968,86 @@ export interface UpdateGoHighLevelCalendarAvailabilityToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateGoHighLevelCalendarEventCreateToolDTO {
@@ -18118,13 +24063,86 @@ export interface UpdateGoHighLevelCalendarEventCreateToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateGoHighLevelContactCreateToolDTO {
@@ -18140,13 +24158,86 @@ export interface UpdateGoHighLevelContactCreateToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface UpdateGoHighLevelContactGetToolDTO {
@@ -18162,13 +24253,86 @@ export interface UpdateGoHighLevelContactGetToolDTO {
     | ToolMessageDelayed
   )[];
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface CreateFileDTO {
@@ -18421,6 +24585,16 @@ export interface TrieveKnowledgeBaseImport {
 export interface Workflow {
   nodes: (ConversationNode | ToolNode)[];
   /**
+   * This is the model for the workflow.
+   *
+   * This can be overridden at node level using `nodes[n].model`.
+   */
+  model?:
+    | WorkflowOpenAIModel
+    | WorkflowAnthropicModel
+    | WorkflowGoogleModel
+    | WorkflowCustomModel;
+  /**
    * This is the transcriber for the workflow.
    *
    * This can be overridden at node level using `nodes[n].transcriber`.
@@ -18458,13 +24632,26 @@ export interface Workflow {
     | TavusVoice
     | VapiVoice
     | SesameVoice
-    | InworldVoice;
+    | InworldVoice
+    | MinimaxVoice;
   /**
    * This is the plan for observability of workflow's calls.
    *
    * Currently, only Langfuse is supported.
    */
   observabilityPlan?: LangfuseObservabilityPlan;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+  )[];
   /** These are dynamic credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
     | ({
@@ -18613,7 +24800,10 @@ export interface Workflow {
       } & CreateGoHighLevelMCPCredentialDTO)
     | ({
         provider: "inworld";
-      } & any)
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
   )[];
   id: string;
   orgId: string;
@@ -18685,10 +24875,22 @@ export interface Workflow {
   backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
   /** These are the credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
   credentialIds?: string[];
+  /** This is the plan for keypad input handling during workflow calls. */
+  keypadInputPlan?: KeypadInputPlan;
 }
 
 export interface UpdateWorkflowDTO {
   nodes?: (ConversationNode | ToolNode)[];
+  /**
+   * This is the model for the workflow.
+   *
+   * This can be overridden at node level using `nodes[n].model`.
+   */
+  model?:
+    | WorkflowOpenAIModel
+    | WorkflowAnthropicModel
+    | WorkflowGoogleModel
+    | WorkflowCustomModel;
   /**
    * This is the transcriber for the workflow.
    *
@@ -18727,13 +24929,26 @@ export interface UpdateWorkflowDTO {
     | TavusVoice
     | VapiVoice
     | SesameVoice
-    | InworldVoice;
+    | InworldVoice
+    | MinimaxVoice;
   /**
    * This is the plan for observability of workflow's calls.
    *
    * Currently, only Langfuse is supported.
    */
   observabilityPlan?: LangfuseObservabilityPlan;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+  )[];
   /** These are dynamic credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
     | ({
@@ -18882,7 +25097,10 @@ export interface UpdateWorkflowDTO {
       } & CreateGoHighLevelMCPCredentialDTO)
     | ({
         provider: "inworld";
-      } & any)
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
   )[];
   /** @maxLength 80 */
   name?: string;
@@ -18948,10 +25166,8 @@ export interface UpdateWorkflowDTO {
   backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
   /** These are the credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
   credentialIds?: string[];
-}
-
-export interface GenerateWorkflowDTO {
-  toolIds?: string[];
+  /** This is the plan for keypad input handling during workflow calls. */
+  keypadInputPlan?: KeypadInputPlan;
 }
 
 export interface Squad {
@@ -19739,7 +25955,6 @@ export interface Subscription {
   updatedAt: string;
   /** This is the type / tier of the subscription. */
   type:
-    | "trial"
     | "pay-as-you-go"
     | "enterprise"
     | "agency"
@@ -19862,12 +26077,14 @@ export interface Subscription {
   pciEnabled?: boolean;
   /** This is the ID for the Common Paper agreement outlining the PCI contract. */
   pciCommonPaperAgreementId?: string;
-}
-
-export interface OrgPlan {
-  includedProviders?: object[];
-  includedMinutes?: number;
-  costPerOverageMinute?: number;
+  /** This is the call retention days for the subscription. */
+  callRetentionDays?: number;
+  /** This is the chat retention days for the subscription. */
+  chatRetentionDays?: number;
+  /** This is the minutes_included reset frequency for the subscription. */
+  minutesIncludedResetFrequency?: "monthly" | "annually";
+  /** This is the Role Based Access Control (RBAC) enabled flag for the subscription. */
+  rbacEnabled?: boolean;
 }
 
 export interface Org {
@@ -19893,8 +26110,6 @@ export interface Org {
    * @format date-time
    */
   updatedAt: string;
-  /** This is the Stripe customer for the org. */
-  stripeCustomerId?: string;
   /** This is the subscription for the org. */
   stripeSubscriptionId?: string;
   /** This is the subscription's subscription item. */
@@ -19906,8 +26121,6 @@ export interface Org {
   stripeSubscriptionCurrentPeriodStart?: string;
   /** This is the subscription's status. */
   stripeSubscriptionStatus?: string;
-  /** This is the plan for the org. */
-  plan?: OrgPlan;
   /** This is the secret key used for signing JWT tokens for the org. */
   jwtSecret?: string;
   /** This is the total number of call minutes used by this org across all time. */
@@ -21595,6 +27808,35 @@ export interface GoHighLevelMCPCredential {
   name?: string;
 }
 
+export interface InworldCredential {
+  provider: "inworld";
+  /**
+   * This is the Inworld Basic (Base64) authentication token. This is not returned in the API.
+   * @example "your-base64-token-here"
+   */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CreateCerebrasCredentialDTO {
   provider: "cerebras";
   /**
@@ -21712,6 +27954,21 @@ export interface CreateGoHighLevelMCPCredentialDTO {
   provider: "ghl.oauth2-authorization";
   /** This is the authentication session for the credential. */
   authenticationSession: Oauth2AuthenticationSession;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateInworldCredentialDTO {
+  provider: "inworld";
+  /**
+   * This is the Inworld Basic (Base64) authentication token. This is not returned in the API.
+   * @example "your-base64-token-here"
+   */
+  apiKey: string;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -22443,6 +28700,20 @@ export interface UpdateGoHighLevelMCPCredentialDTO {
   name?: string;
 }
 
+export interface UpdateInworldCredentialDTO {
+  /**
+   * This is the Inworld Basic (Base64) authentication token. This is not returned in the API.
+   * @example "your-base64-token-here"
+   */
+  apiKey?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CredentialSessionResponse {
   sessionToken: string;
 }
@@ -22767,7 +29038,8 @@ export interface VoiceLibrary {
     | "smallest-ai"
     | "tavus"
     | "sesame"
-    | "inworld";
+    | "inworld"
+    | "minimax";
   /** The ID of the voice provided by the provider. */
   providerId?: string;
   /** The unique slug of the voice. */
@@ -22830,7 +29102,8 @@ export interface SyncVoiceLibraryDTO {
     | "smallest-ai"
     | "tavus"
     | "sesame"
-    | "inworld";
+    | "inworld"
+    | "minimax";
 }
 
 export interface CreateSesameVoiceDTO {
@@ -22838,6 +29111,76 @@ export interface CreateSesameVoiceDTO {
   voiceName?: string;
   /** The transcript of the utterance. */
   transcription?: string;
+}
+
+export interface ElevenLabsPronunciationDictionary {
+  /**
+   * The ID of the pronunciation dictionary
+   * @example "5xM3yVvZQKV0EfqQpLrJ"
+   */
+  pronunciationDictionaryId: string;
+  /**
+   * The name of the pronunciation dictionary
+   * @example "My Dictionary"
+   */
+  dictionaryName: string;
+  /**
+   * The user ID of the creator
+   * @example "ar6633Es2kUjFXBdR1iVc9ztsXl1"
+   */
+  createdBy: string;
+  /**
+   * The creation time in Unix timestamp
+   * @example 1714156800
+   */
+  creationTimeUnix: number;
+  /**
+   * The version ID of the pronunciation dictionary
+   * @example "5xM3yVvZQKV0EfqQpLrJ"
+   */
+  versionId: string;
+  /**
+   * The number of rules in this version
+   * @example 5
+   */
+  versionRulesNum: number;
+  /** The permission level on this resource */
+  permissionOnResource?: "admin" | "editor" | "viewer";
+  /**
+   * The description of the pronunciation dictionary
+   * @example "This is a test dictionary"
+   */
+  description?: string;
+}
+
+export interface ProviderResource {
+  /** This is the unique identifier for the provider resource. */
+  id: string;
+  /** This is the unique identifier for the org that this provider resource belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the provider resource was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the provider resource was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /** This is the provider that manages this resource. */
+  provider: "11labs";
+  /** This is the name/type of the resource. */
+  resourceName: "pronunciation-dictionary";
+  /** This is the provider-specific identifier for the resource. */
+  resourceId: string;
+  /** This is the full resource data from the provider's API. */
+  resource: ElevenLabsPronunciationDictionary;
+}
+
+export interface ProviderResourcePaginatedResponse {
+  results: ProviderResource[];
+  metadata: PaginationMeta;
 }
 
 export interface VoiceLibraryVoiceResponse {
@@ -23042,6 +29385,12 @@ export interface ClientMessageTranscript {
   transcriptType: "partial" | "final";
   /** This is the transcript content. */
   transcript: string;
+  /** Indicates if the transcript was filtered for security reasons. */
+  isFiltered?: boolean;
+  /** List of detected security threats if the transcript was filtered. */
+  detectedThreats?: string[];
+  /** The original transcript before filtering (only included if content was filtered). */
+  originalTranscript?: string;
 }
 
 export interface ClientMessageToolCalls {
@@ -23195,6 +29544,116 @@ export interface ClientMessageVoiceInput {
   input: string;
 }
 
+export interface ClientMessageChatCreated {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "chat.created" is sent when a new chat is created. */
+  type: "chat.created";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the chat that was created. */
+  chat: Chat;
+}
+
+export interface ClientMessageChatDeleted {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "chat.deleted" is sent when a chat is deleted. */
+  type: "chat.deleted";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the chat that was deleted. */
+  chat: Chat;
+}
+
+export interface ClientMessageSessionCreated {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "session.created" is sent when a new session is created. */
+  type: "session.created";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the session that was created. */
+  session: Session;
+}
+
+export interface ClientMessageSessionUpdated {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "session.updated" is sent when a session is updated. */
+  type: "session.updated";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the session that was updated. */
+  session: Session;
+}
+
+export interface ClientMessageSessionDeleted {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "session.deleted" is sent when a session is deleted. */
+  type: "session.deleted";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the session that was deleted. */
+  session: Session;
+}
+
 export interface ClientMessage {
   /** These are all the messages that can be sent to the client-side SDKs during the call. Configure the messages you'd like to receive in `assistant.clientMessages`. */
   message:
@@ -23210,7 +29669,12 @@ export interface ClientMessage {
     | ClientMessageTransferUpdate
     | ClientMessageUserInterrupted
     | ClientMessageLanguageChangeDetected
-    | ClientMessageVoiceInput;
+    | ClientMessageVoiceInput
+    | ClientMessageChatCreated
+    | ClientMessageChatDeleted
+    | ClientMessageSessionCreated
+    | ClientMessageSessionUpdated
+    | ClientMessageSessionDeleted;
 }
 
 export interface ServerMessageAssistantRequest {
@@ -23329,6 +29793,7 @@ export interface ServerMessageEndOfCallReport {
     | "pipeline-error-hume-voice-failed"
     | "pipeline-error-sesame-voice-failed"
     | "pipeline-error-inworld-voice-failed"
+    | "pipeline-error-minimax-voice-failed"
     | "pipeline-error-tavus-video-failed"
     | "call.in-progress.error-vapifault-openai-voice-failed"
     | "call.in-progress.error-vapifault-cartesia-voice-failed"
@@ -23343,6 +29808,7 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-vapifault-hume-voice-failed"
     | "call.in-progress.error-vapifault-sesame-voice-failed"
     | "call.in-progress.error-vapifault-inworld-voice-failed"
+    | "call.in-progress.error-vapifault-minimax-voice-failed"
     | "call.in-progress.error-vapifault-tavus-video-failed"
     | "pipeline-error-vapi-llm-failed"
     | "pipeline-error-vapi-400-bad-request-validation-failed"
@@ -24071,6 +30537,7 @@ export interface ServerMessageStatusUpdate {
     | "pipeline-error-hume-voice-failed"
     | "pipeline-error-sesame-voice-failed"
     | "pipeline-error-inworld-voice-failed"
+    | "pipeline-error-minimax-voice-failed"
     | "pipeline-error-tavus-video-failed"
     | "call.in-progress.error-vapifault-openai-voice-failed"
     | "call.in-progress.error-vapifault-cartesia-voice-failed"
@@ -24085,6 +30552,7 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-vapifault-hume-voice-failed"
     | "call.in-progress.error-vapifault-sesame-voice-failed"
     | "call.in-progress.error-vapifault-inworld-voice-failed"
+    | "call.in-progress.error-vapifault-minimax-voice-failed"
     | "call.in-progress.error-vapifault-tavus-video-failed"
     | "pipeline-error-vapi-llm-failed"
     | "pipeline-error-vapi-400-bad-request-validation-failed"
@@ -24725,6 +31193,12 @@ export interface ServerMessageTranscript {
   transcriptType: "partial" | "final";
   /** This is the transcript content. */
   transcript: string;
+  /** Indicates if the transcript was filtered for security reasons. */
+  isFiltered?: boolean;
+  /** List of detected security threats if the transcript was filtered. */
+  detectedThreats?: string[];
+  /** The original transcript before filtering (only included if content was filtered). */
+  originalTranscript?: string;
 }
 
 export interface ServerMessageUserInterrupted {
@@ -24870,6 +31344,217 @@ export interface ServerMessageVoiceRequest {
   sampleRate: number;
 }
 
+export interface ServerMessageCallEndpointingRequest {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the type of the message. "call.endpointing.request" is sent when using `assistant.startSpeakingPlan.smartEndpointingPlan={ "provider": "custom-endpointing-model" }`.
+   *
+   * Here is what the request will look like:
+   *
+   * POST https://{assistant.startSpeakingPlan.smartEndpointingPlan.server.url}
+   * Content-Type: application/json
+   *
+   * {
+   *   "message": {
+   *     "type": "call.endpointing.request",
+   *     "messages": [
+   *       {
+   *         "role": "user",
+   *         "message": "Hello, how are you?",
+   *         "time": 1234567890,
+   *         "secondsFromStart": 0
+   *       }
+   *     ],
+   *     ...other metadata about the call...
+   *   }
+   * }
+   *
+   * The expected response:
+   * {
+   *   "timeoutSeconds": 0.5
+   * }
+   */
+  type: "call.endpointing.request";
+  /** This is the conversation history at the time of the endpointing request. */
+  messages?: (
+    | UserMessage
+    | SystemMessage
+    | BotMessage
+    | ToolCallMessage
+    | ToolCallResultMessage
+  )[];
+  /** This is just `messages` formatted for OpenAI. */
+  messagesOpenAIFormatted: OpenAIMessage[];
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
+}
+
+export interface ServerMessageChatCreated {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "chat.created" is sent when a new chat is created. */
+  type: "chat.created";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat that was created. */
+  chat: Chat;
+}
+
+export interface ServerMessageChatDeleted {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "chat.deleted" is sent when a chat is deleted. */
+  type: "chat.deleted";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat that was deleted. */
+  chat: Chat;
+}
+
+export interface ServerMessageSessionCreated {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "session.created" is sent when a new session is created. */
+  type: "session.created";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
+  /** This is the session that was created. */
+  session: Session;
+}
+
+export interface ServerMessageSessionUpdated {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "session.updated" is sent when a session is updated. */
+  type: "session.updated";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
+  /** This is the session that was updated. */
+  session: Session;
+}
+
+export interface ServerMessageSessionDeleted {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "session.deleted" is sent when a session is deleted. */
+  type: "session.deleted";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
+  /** This is the session that was deleted. */
+  session: Session;
+}
+
 export interface ServerMessage {
   /**
    * These are all the messages that can be sent to your server before, after and during the call. Configure the messages you'd like to receive in `assistant.serverMessages`.
@@ -24898,7 +31583,13 @@ export interface ServerMessage {
     | ServerMessageUserInterrupted
     | ServerMessageLanguageChangeDetected
     | ServerMessageVoiceInput
-    | ServerMessageVoiceRequest;
+    | ServerMessageVoiceRequest
+    | ServerMessageCallEndpointingRequest
+    | ServerMessageChatCreated
+    | ServerMessageChatDeleted
+    | ServerMessageSessionCreated
+    | ServerMessageSessionUpdated
+    | ServerMessageSessionDeleted;
 }
 
 export interface ServerMessageResponseAssistantRequest {
@@ -25076,6 +31767,15 @@ export interface ServerMessageResponseVoiceRequest {
   data: string;
 }
 
+export interface ServerMessageResponseCallEndpointingRequest {
+  /**
+   * This is the timeout in seconds to wait before considering the user's speech as finished.
+   * @min 0
+   * @max 15
+   */
+  timeoutSeconds: number;
+}
+
 export interface ServerMessageResponse {
   /**
    * This is the response that is expected from the server to the message.
@@ -25087,7 +31787,8 @@ export interface ServerMessageResponse {
     | ServerMessageResponseKnowledgeBaseRequest
     | ServerMessageResponseToolCalls
     | ServerMessageResponseTransferDestinationRequest
-    | ServerMessageResponseVoiceRequest;
+    | ServerMessageResponseVoiceRequest
+    | ServerMessageResponseCallEndpointingRequest;
 }
 
 export interface ClientInboundMessageAddMessage {
@@ -25387,14 +32088,89 @@ export interface FunctionToolWithToolCall {
    */
   server?: Server;
   toolCall: ToolCall;
-  /**
-   * This is the function definition of the tool.
-   *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-   *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-   */
+  /** This is the function definition of the tool. */
   function?: OpenAIFunction;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GhlToolWithToolCall {
@@ -25414,13 +32190,86 @@ export interface GhlToolWithToolCall {
   toolCall: ToolCall;
   metadata: GhlToolMetadata;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface MakeToolWithToolCall {
@@ -25440,13 +32289,86 @@ export interface MakeToolWithToolCall {
   toolCall: ToolCall;
   metadata: MakeToolMetadata;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface BashToolWithToolCall {
@@ -25484,13 +32406,86 @@ export interface BashToolWithToolCall {
    */
   name: "bash";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface ComputerToolWithToolCall {
@@ -25534,13 +32529,86 @@ export interface ComputerToolWithToolCall {
   /** Optional display number */
   displayNumber?: number;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface TextEditorToolWithToolCall {
@@ -25578,13 +32646,86 @@ export interface TextEditorToolWithToolCall {
    */
   name: "str_replace_editor";
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoogleCalendarCreateEventToolWithToolCall {
@@ -25599,17 +32740,90 @@ export interface GoogleCalendarCreateEventToolWithToolCall {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "google.calendar.event.create" for Google Calendar tool. */
+  /** The type of tool. "google.calendar.event.create" for Google Calendar Create Event tool. */
   type: "google.calendar.event.create";
   toolCall: ToolCall;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoogleSheetsRowAppendToolWithToolCall {
@@ -25624,17 +32838,90 @@ export interface GoogleSheetsRowAppendToolWithToolCall {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "google.sheets.row.append" for Google Sheets tool. */
+  /** The type of tool. "google.sheets.row.append" for Google Sheets Row Append tool. */
   type: "google.sheets.row.append";
   toolCall: ToolCall;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoHighLevelCalendarAvailabilityToolWithToolCall {
@@ -25649,17 +32936,90 @@ export interface GoHighLevelCalendarAvailabilityToolWithToolCall {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar availability check tool. */
+  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar Availability Check tool. */
   type: "gohighlevel.calendar.availability.check";
   toolCall: ToolCall;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoHighLevelCalendarEventCreateToolWithToolCall {
@@ -25674,17 +33034,90 @@ export interface GoHighLevelCalendarEventCreateToolWithToolCall {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar event create tool. */
+  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar Event Create tool. */
   type: "gohighlevel.calendar.event.create";
   toolCall: ToolCall;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoHighLevelContactCreateToolWithToolCall {
@@ -25699,17 +33132,90 @@ export interface GoHighLevelContactCreateToolWithToolCall {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel contact create tool. */
+  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel Contact Create tool. */
   type: "gohighlevel.contact.create";
   toolCall: ToolCall;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export interface GoHighLevelContactGetToolWithToolCall {
@@ -25724,17 +33230,90 @@ export interface GoHighLevelContactGetToolWithToolCall {
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel contact get tool. */
+  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel Contact Get tool. */
   type: "gohighlevel.contact.get";
   toolCall: ToolCall;
   /**
-   * This is the function definition of the tool.
+   * This is the plan to reject a tool call based on the conversation state.
    *
-   * For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
    *
-   * An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
    */
-  function?: OpenAIFunction;
+  rejectionPlan?: ToolRejectionPlan;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -26209,12 +33788,12 @@ export class Api<
      * No description
      *
      * @tags Calls
-     * @name CallControllerExportCalls
+     * @name CallControllerCallsExport
      * @summary Export Calls to CSV
      * @request GET:/v2/call/export
      * @secure
      */
-    callControllerExportCalls: (
+    callControllerCallsExport: (
       query?: {
         /**
          * Columns to include in the CSV export
@@ -26779,6 +34358,11 @@ export class Api<
     phoneNumberControllerFindAllPaginated: (
       query?: {
         /**
+         * This will search phone numbers by name, number, or SIP URI (partial match, case-insensitive).
+         * @maxLength 100
+         */
+        search?: string;
+        /**
          * This is the page number to return. Defaults to 1.
          * @min 1
          */
@@ -27103,75 +34687,6 @@ export class Api<
      */
     campaignControllerFindAll: (
       query?: {
-        /**
-         * This is the maximum number of items to return. Defaults to 100.
-         * @min 0
-         * @max 1000
-         */
-        limit?: number;
-        /**
-         * This will return items where the createdAt is greater than the specified value.
-         * @format date-time
-         */
-        createdAtGt?: string;
-        /**
-         * This will return items where the createdAt is less than the specified value.
-         * @format date-time
-         */
-        createdAtLt?: string;
-        /**
-         * This will return items where the createdAt is greater than or equal to the specified value.
-         * @format date-time
-         */
-        createdAtGe?: string;
-        /**
-         * This will return items where the createdAt is less than or equal to the specified value.
-         * @format date-time
-         */
-        createdAtLe?: string;
-        /**
-         * This will return items where the updatedAt is greater than the specified value.
-         * @format date-time
-         */
-        updatedAtGt?: string;
-        /**
-         * This will return items where the updatedAt is less than the specified value.
-         * @format date-time
-         */
-        updatedAtLt?: string;
-        /**
-         * This will return items where the updatedAt is greater than or equal to the specified value.
-         * @format date-time
-         */
-        updatedAtGe?: string;
-        /**
-         * This will return items where the updatedAt is less than or equal to the specified value.
-         * @format date-time
-         */
-        updatedAtLe?: string;
-      },
-      params: RequestParams = {},
-    ) =>
-      this.request<Campaign[], any>({
-        path: `/campaign`,
-        method: "GET",
-        query: query,
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Campaigns
-     * @name CampaignControllerFindAllPaginated
-     * @summary List Campaigns with pagination
-     * @request GET:/campaign/paginated
-     * @secure
-     */
-    campaignControllerFindAllPaginated: (
-      query?: {
         id?: string;
         status?: "scheduled" | "in-progress" | "ended";
         /**
@@ -27230,8 +34745,8 @@ export class Api<
       },
       params: RequestParams = {},
     ) =>
-      this.request<Campaign, any>({
-        path: `/campaign/paginated`,
+      this.request<CampaignPaginatedResponse, any>({
+        path: `/campaign`,
         method: "GET",
         query: query,
         secure: true,
@@ -27461,30 +34976,6 @@ export class Api<
         path: `/session/${id}`,
         method: "DELETE",
         secure: true,
-        format: "json",
-        ...params,
-      }),
-  };
-  support = {
-    /**
-     * No description
-     *
-     * @tags Support
-     * @name SupportControllerCreateTicket
-     * @summary Create Support Ticket
-     * @request POST:/support/ticket
-     * @secure
-     */
-    supportControllerCreateTicket: (
-      data: CreateSupportTicketDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<SupportTicketResponse, any>({
-        path: `/support/ticket`,
-        method: "POST",
-        body: data,
-        secure: true,
-        type: ContentType.Json,
         format: "json",
         ...params,
       }),
@@ -28070,17 +35561,8 @@ export class Api<
             type: "function";
           } & CreateFunctionToolDTO)
         | ({
-            type: "ghl";
-          } & CreateGhlToolDTO)
-        | ({
-            type: "make";
-          } & CreateMakeToolDTO)
-        | ({
             type: "transferCall";
           } & CreateTransferCallToolDTO)
-        | ({
-            type: "output";
-          } & CreateOutputToolDTO)
         | ({
             type: "bash";
           } & CreateBashToolDTO)
@@ -28139,17 +35621,8 @@ export class Api<
             type: "function";
           } & FunctionTool)
         | ({
-            type: "ghl";
-          } & GhlTool)
-        | ({
-            type: "make";
-          } & MakeTool)
-        | ({
             type: "transferCall";
           } & TransferCallTool)
-        | ({
-            type: "output";
-          } & OutputTool)
         | ({
             type: "bash";
           } & BashTool)
@@ -28278,17 +35751,8 @@ export class Api<
               type: "function";
             } & FunctionTool)
           | ({
-              type: "ghl";
-            } & GhlTool)
-          | ({
-              type: "make";
-            } & MakeTool)
-          | ({
               type: "transferCall";
             } & TransferCallTool)
-          | ({
-              type: "output";
-            } & OutputTool)
           | ({
               type: "bash";
             } & BashTool)
@@ -28366,17 +35830,8 @@ export class Api<
             type: "function";
           } & FunctionTool)
         | ({
-            type: "ghl";
-          } & GhlTool)
-        | ({
-            type: "make";
-          } & MakeTool)
-        | ({
             type: "transferCall";
           } & TransferCallTool)
-        | ({
-            type: "output";
-          } & OutputTool)
         | ({
             type: "bash";
           } & BashTool)
@@ -28453,17 +35908,8 @@ export class Api<
             type: "function";
           } & UpdateFunctionToolDTO)
         | ({
-            type: "ghl";
-          } & UpdateGhlToolDTO)
-        | ({
-            type: "make";
-          } & UpdateMakeToolDTO)
-        | ({
             type: "transferCall";
           } & UpdateTransferCallToolDTO)
-        | ({
-            type: "output";
-          } & UpdateOutputToolDTO)
         | ({
             type: "bash";
           } & UpdateBashToolDTO)
@@ -28522,17 +35968,8 @@ export class Api<
             type: "function";
           } & FunctionTool)
         | ({
-            type: "ghl";
-          } & GhlTool)
-        | ({
-            type: "make";
-          } & MakeTool)
-        | ({
             type: "transferCall";
           } & TransferCallTool)
-        | ({
-            type: "output";
-          } & OutputTool)
         | ({
             type: "bash";
           } & BashTool)
@@ -28610,17 +36047,8 @@ export class Api<
             type: "function";
           } & FunctionTool)
         | ({
-            type: "ghl";
-          } & GhlTool)
-        | ({
-            type: "make";
-          } & MakeTool)
-        | ({
             type: "transferCall";
           } & TransferCallTool)
-        | ({
-            type: "output";
-          } & OutputTool)
         | ({
             type: "bash";
           } & BashTool)
@@ -29097,29 +36525,6 @@ export class Api<
       this.request<Workflow, any>({
         path: `/workflow/${id}`,
         method: "PATCH",
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Workflow
-     * @name WorkflowControllerGenerateFromTranscripts
-     * @summary Generate Workflow JSON from Transcript Files
-     * @request POST:/workflow/generate
-     * @secure
-     */
-    workflowControllerGenerateFromTranscripts: (
-      data: GenerateWorkflowDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<WorkflowUserEditable, any>({
-        path: `/workflow/generate`,
-        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
@@ -30598,7 +38003,10 @@ export class Api<
           } & CreateGoHighLevelMCPCredentialDTO)
         | ({
             provider: "inworld";
-          } & any),
+          } & CreateInworldCredentialDTO)
+        | ({
+            provider: "minimax";
+          } & CreateMinimaxCredentialDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -30754,6 +38162,9 @@ export class Api<
           } & GoHighLevelMCPCredential)
         | ({
             provider: "inworld";
+          } & InworldCredential)
+        | ({
+            provider: "minimax";
           } & any),
         any
       >({
@@ -30980,6 +38391,9 @@ export class Api<
             } & GoHighLevelMCPCredential)
           | ({
               provider: "inworld";
+            } & InworldCredential)
+          | ({
+              provider: "minimax";
             } & any)
         )[],
         any
@@ -31155,6 +38569,9 @@ export class Api<
           } & GoHighLevelMCPCredential)
         | ({
             provider: "inworld";
+          } & InworldCredential)
+        | ({
+            provider: "minimax";
           } & any),
         any
       >({
@@ -31296,7 +38713,7 @@ export class Api<
           } & UpdateXAiCredentialDTO)
         | ({
             provider: "inworld";
-          } & any),
+          } & UpdateInworldCredentialDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -31452,6 +38869,9 @@ export class Api<
           } & GoHighLevelMCPCredential)
         | ({
             provider: "inworld";
+          } & InworldCredential)
+        | ({
+            provider: "minimax";
           } & any),
         any
       >({
@@ -31627,6 +39047,9 @@ export class Api<
           } & GoHighLevelMCPCredential)
         | ({
             provider: "inworld";
+          } & InworldCredential)
+        | ({
+            provider: "minimax";
           } & any),
         any
       >({
@@ -31684,12 +39107,12 @@ export class Api<
      * No description
      *
      * @tags Credentials
-     * @name CredentialControllerCredentialActionTrigger
+     * @name CredentialControllerTriggerCredentialAction
      * @summary Trigger a credential action
      * @request POST:/credential/trigger
      * @secure
      */
-    credentialControllerCredentialActionTrigger: (
+    credentialControllerTriggerCredentialAction: (
       data: CredentialActionRequest,
       params: RequestParams = {},
     ) =>
@@ -31903,7 +39326,8 @@ export class Api<
         | "smallest-ai"
         | "tavus"
         | "sesame"
-        | "inworld",
+        | "inworld"
+        | "minimax",
       query?: {
         page?: number;
         keyword?: string;
@@ -31994,7 +39418,8 @@ export class Api<
         | "smallest-ai"
         | "tavus"
         | "sesame"
-        | "inworld",
+        | "inworld"
+        | "minimax",
       params: RequestParams = {},
     ) =>
       this.request<VoiceLibrary[], any>({
@@ -32031,7 +39456,8 @@ export class Api<
         | "smallest-ai"
         | "tavus"
         | "sesame"
-        | "inworld",
+        | "inworld"
+        | "minimax",
       params: RequestParams = {},
     ) =>
       this.request<VoiceLibrary[], any>({
@@ -32091,6 +39517,177 @@ export class Api<
     /**
      * No description
      *
+     * @tags Provider Resources
+     * @name ProviderResourceControllerCreateProviderResource
+     * @summary Create Provider Resource
+     * @request POST:/provider/{provider}/{resourceName}
+     * @secure
+     */
+    providerResourceControllerCreateProviderResource: (
+      provider: "11labs",
+      resourceName: "pronunciation-dictionary",
+      params: RequestParams = {},
+    ) =>
+      this.request<ProviderResource, any>({
+        path: `/provider/${provider}/${resourceName}`,
+        method: "POST",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Provider Resources
+     * @name ProviderResourceControllerGetProviderResourcesPaginated
+     * @summary List Provider Resources
+     * @request GET:/provider/{provider}/{resourceName}
+     * @secure
+     */
+    providerResourceControllerGetProviderResourcesPaginated: (
+      provider: "11labs",
+      resourceName: "pronunciation-dictionary",
+      query?: {
+        id?: string;
+        resourceId?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<ProviderResourcePaginatedResponse, any>({
+        path: `/provider/${provider}/${resourceName}`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Provider Resources
+     * @name ProviderResourceControllerGetProviderResource
+     * @summary Get Provider Resource
+     * @request GET:/provider/{provider}/{resourceName}/{id}
+     * @secure
+     */
+    providerResourceControllerGetProviderResource: (
+      provider: "11labs",
+      resourceName: "pronunciation-dictionary",
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProviderResource, void>({
+        path: `/provider/${provider}/${resourceName}/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Provider Resources
+     * @name ProviderResourceControllerDeleteProviderResource
+     * @summary Delete Provider Resource
+     * @request DELETE:/provider/{provider}/{resourceName}/{id}
+     * @secure
+     */
+    providerResourceControllerDeleteProviderResource: (
+      provider: "11labs",
+      resourceName: "pronunciation-dictionary",
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProviderResource, void>({
+        path: `/provider/${provider}/${resourceName}/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Provider Resources
+     * @name ProviderResourceControllerUpdateProviderResource
+     * @summary Update Provider Resource
+     * @request PATCH:/provider/{provider}/{resourceName}/{id}
+     * @secure
+     */
+    providerResourceControllerUpdateProviderResource: (
+      provider: "11labs",
+      resourceName: "pronunciation-dictionary",
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProviderResource, void>({
+        path: `/provider/${provider}/${resourceName}/${id}`,
+        method: "PATCH",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
      * @tags Providers
      * @name ProviderControllerGetWorkflows
      * @request GET:/{provider}/workflows
@@ -32103,7 +39700,7 @@ export class Api<
       },
       params: RequestParams = {},
     ) =>
-      this.request<SbcConfiguration, any>({
+      this.request<SecurityFilterBase, any>({
         path: `/${provider}/workflows`,
         method: "GET",
         query: query,
@@ -32125,7 +39722,7 @@ export class Api<
       workflowId: string,
       params: RequestParams = {},
     ) =>
-      this.request<SbcConfiguration, any>({
+      this.request<SecurityFilterBase, any>({
         path: `/${provider}/workflows/${workflowId}/hooks`,
         method: "GET",
         secure: true,
@@ -32145,7 +39742,7 @@ export class Api<
       provider: "make" | "ghl",
       params: RequestParams = {},
     ) =>
-      this.request<SbcConfiguration, any>({
+      this.request<SecurityFilterBase, any>({
         path: `/${provider}/locations`,
         method: "GET",
         secure: true,
