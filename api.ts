@@ -4802,6 +4802,10 @@ export interface CustomLLMModel {
   /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
   url: string;
   /**
+   * Custom headers to send with requests to the custom LLM endpoint. These headers can override default OpenAI headers except Authorization.
+   */
+  headers?: Record<string, string>;
+  /**
    * This sets the timeout for the connection to the custom provider without needing to stream any tokens back. Default is 20 seconds.
    * @min 20
    * @max 600
