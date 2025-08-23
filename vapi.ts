@@ -25,6 +25,7 @@ import { client } from './client';
 export interface AddMessageMessage {
   type: 'add-message';
   message: ChatCompletionMessageParam;
+  triggerResponseEnabled?: boolean;
 }
 
 export interface ControlMessages {
