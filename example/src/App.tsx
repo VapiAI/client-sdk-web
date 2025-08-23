@@ -135,9 +135,6 @@ function App() {
         endCallMessage: "Thank you for the conversation. Goodbye!",
         endCallPhrases: ["goodbye", "bye", "end call", "hang up"],
         
-        // Silence timeout (in seconds)
-        silenceTimeoutSeconds: 30,
-        
         // Max call duration (in seconds) - 10 minutes
         maxDurationSeconds: 600
       });
