@@ -21,6 +21,12 @@ import {
   WorkflowOverrides,
 } from './api';
 import { client } from './client';
+import {
+  createSafeDailyConfig,
+  createSafeDailyFactoryOptions,
+  safeSetLocalAudio,
+  safeSetInputDevicesAsync,
+} from './daily-guards';
 
 export interface AddMessageMessage {
   type: 'add-message';
@@ -206,8 +212,8 @@ export default class Vapi extends VapiEventEmitter {
     super();
     client.baseUrl = apiBaseUrl ?? 'https://api.vapi.ai';
     client.setSecurityData(apiToken);
-    this.dailyCallConfig = dailyCallConfig ?? {};
-    this.dailyCallObject = dailyCallObject ?? {};
+    this.dailyCallConfig = createSafeDailyConfig(dailyCallConfig);
+    this.dailyCallObject = createSafeDailyFactoryOptions(dailyCallObject);
   }
 
   private cleanup() {
@@ -649,7 +655,7 @@ export default class Vapi extends VapiEventEmitter {
               },
             })
             .then(() => {
-              this.call?.setLocalAudio(true);
+              safeSetLocalAudio(this.call, true);
             });
         }
       });
@@ -805,10 +811,7 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   public setMuted(mute: boolean) {
-    if (!this.call) {
-      throw new Error('Call object is not available.');
-    }
-    this.call.setLocalAudio(!mute);
+    safeSetLocalAudio(this.call, !mute);
   }
 
   public isMuted() {
@@ -832,7 +835,7 @@ export default class Vapi extends VapiEventEmitter {
   public setInputDevicesAsync(
     options: Parameters<DailyCall['setInputDevicesAsync']>[0],
   ) {
-    this.call?.setInputDevicesAsync(options);
+    return safeSetInputDevicesAsync(this.call, options);
   }
 
   public async increaseMicLevel(gain: number) {
@@ -855,7 +858,7 @@ export default class Vapi extends VapiEventEmitter {
       gainNode.connect(destination);
   
       const [boostedTrack] = destination.stream.getAudioTracks();
-      await this.call.setInputDevicesAsync({ audioSource: boostedTrack });      
+      await safeSetInputDevicesAsync(this.call, { audioSource: boostedTrack });      
     } catch (error) {
       console.error("Error adjusting microphone level:", error);
     }
