@@ -216,11 +216,13 @@ export default class Vapi extends VapiEventEmitter {
     this.dailyCallObject = createSafeDailyFactoryOptions(dailyCallObject);
   }
 
-  private cleanup() {
+  private async cleanup() {
     this.started = false;
     this.hasEmittedCallEndedStatus = false;
-    this.call?.destroy();
-    this.call = null;
+    if (this.call) {
+      await this.call.destroy();
+      this.call = null;
+    }
     this.speakingTimeout = null;
   }
 
@@ -325,7 +327,7 @@ export default class Vapi extends VapiEventEmitter {
           timestamp: new Date().toISOString(),
           metadata: { action: 'cleanup-existing' }
         });
-        this.cleanup();
+        await this.cleanup();
       }
 
       const isVideoRecordingEnabled =
@@ -395,7 +397,7 @@ export default class Vapi extends VapiEventEmitter {
         if (isVideoRecordingEnabled) {
           this.call?.stopRecording();
         }
-        this.cleanup();
+        this.cleanup().catch(console.error);
       });
 
       this.call.on('error', (error: any) => {
@@ -743,7 +745,7 @@ export default class Vapi extends VapiEventEmitter {
         }
       });
       
-      this.cleanup();
+      await this.cleanup();
       return null;
     }
   }
@@ -800,10 +802,13 @@ export default class Vapi extends VapiEventEmitter {
     }, 1000);
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     this.started = false;
-    this.call?.destroy();
-    this.call = null;
+    if (this.call) {
+      await this.call.destroy();
+      this.call = null;
+    }
+    this.speakingTimeout = null;
   }
 
   send(message: VapiClientToServerMessage): void {
