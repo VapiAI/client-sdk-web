@@ -49,7 +49,7 @@ export interface AssemblyAITranscriber {
   formatTurns?: boolean;
   /**
    * This is the end of turn confidence threshold. The minimum confidence that the end of turn is detected.
-   *
+   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
    * @min 0
    * @max 1
    * @default 0.7
@@ -60,7 +60,7 @@ export interface AssemblyAITranscriber {
   endOfTurnConfidenceThreshold?: number;
   /**
    * This is the minimum end of turn silence when confident in milliseconds.
-   *
+   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
    * @default 160
    * @min 0
    * @example 160
@@ -68,7 +68,7 @@ export interface AssemblyAITranscriber {
   minEndOfTurnSilenceWhenConfident?: number;
   /**
    * This is the maximum wait time for word finalization in milliseconds.
-   *
+   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
    * @default 160
    * @min 0
    * @example 160
@@ -76,7 +76,7 @@ export interface AssemblyAITranscriber {
   wordFinalizationMaxWaitTime?: number;
   /**
    * This is the maximum turn silence time in milliseconds.
-   *
+   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
    * @default 400
    * @min 0
    * @example 400
@@ -661,6 +661,7 @@ export interface DeepgramTranscriber {
     | "pl"
     | "pt"
     | "pt-BR"
+    | "pt-PT"
     | "ro"
     | "ru"
     | "sk"
@@ -718,6 +719,12 @@ export interface DeepgramTranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
+  /** @example 0.3 */
+  preflightThreshold?: number;
+  /** @example 0.7 */
+  eotThreshold?: number;
+  /** @example 3000 */
+  eotTimeoutMs?: number;
   /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
   /** Keyterm Prompting allows you improve Keyword Recall Rate (KRR) for important keyterms or phrases up to 90%. */
@@ -1205,6 +1212,16 @@ export interface GladiaTranscriber {
   customVocabularyEnabled?: boolean;
   /** Custom vocabulary configuration */
   customVocabularyConfig?: GladiaCustomVocabularyConfigDTO;
+  /**
+   * Region for processing audio (us-west or eu-west)
+   * @example "us-west"
+   */
+  region?: "us-west" | "eu-west";
+  /**
+   * Enable partial transcripts for low-latency streaming transcription
+   * @example false
+   */
+  receivePartialTranscripts?: boolean;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
@@ -1541,7 +1558,7 @@ export interface FallbackAssemblyAITranscriber {
   formatTurns?: boolean;
   /**
    * This is the end of turn confidence threshold. The minimum confidence that the end of turn is detected.
-   *
+   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
    * @min 0
    * @max 1
    * @default 0.7
@@ -1552,7 +1569,7 @@ export interface FallbackAssemblyAITranscriber {
   endOfTurnConfidenceThreshold?: number;
   /**
    * This is the minimum end of turn silence when confident in milliseconds.
-   *
+   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
    * @default 160
    * @min 0
    * @example 160
@@ -1560,7 +1577,7 @@ export interface FallbackAssemblyAITranscriber {
   minEndOfTurnSilenceWhenConfident?: number;
   /**
    * This is the maximum wait time for word finalization in milliseconds.
-   *
+   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
    * @default 160
    * @min 0
    * @example 160
@@ -1568,7 +1585,7 @@ export interface FallbackAssemblyAITranscriber {
   wordFinalizationMaxWaitTime?: number;
   /**
    * This is the maximum turn silence time in milliseconds.
-   *
+   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
    * @default 400
    * @min 0
    * @example 400
@@ -2082,6 +2099,7 @@ export interface FallbackDeepgramTranscriber {
     | "pl"
     | "pt"
     | "pt-BR"
+    | "pt-PT"
     | "ro"
     | "ru"
     | "sk"
@@ -2139,6 +2157,12 @@ export interface FallbackDeepgramTranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
+  /** @example 0.3 */
+  preflightThreshold?: number;
+  /** @example 0.7 */
+  eotThreshold?: number;
+  /** @example 3000 */
+  eotTimeoutMs?: number;
   /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
   /** Keyterm Prompting allows you improve Keyword Recall Rate (KRR) for important keyterms or phrases up to 90%. */
@@ -2625,6 +2649,16 @@ export interface FallbackGladiaTranscriber {
   customVocabularyEnabled?: boolean;
   /** Custom vocabulary configuration */
   customVocabularyConfig?: GladiaCustomVocabularyConfigDTO;
+  /**
+   * Region for processing audio (us-west or eu-west)
+   * @example "us-west"
+   */
+  region?: "us-west" | "eu-west";
+  /**
+   * Enable partial transcripts for low-latency streaming transcription
+   * @example false
+   */
+  receivePartialTranscripts?: boolean;
 }
 
 export interface FallbackSpeechmaticsTranscriber {
@@ -3630,6 +3664,14 @@ export interface CreateVoicemailToolDTO {
   )[];
   /** The type of tool. "voicemail" for Voicemail tool. */
   type: "voicemail";
+  /**
+   * This is the flag that enables beep detection for voicemail detection and applies only for twilio based calls.
+   *
+   * @default false
+   * @default false
+   * @example false
+   */
+  beepDetectionEnabled?: boolean;
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -6788,6 +6830,11 @@ export interface CustomLLMModel {
   /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
   url: string;
   /**
+   * This determines whether the transcriber's word level confidence is sent in requests to the custom provider. Default is false.
+   * This only works for Deepgram transcribers.
+   */
+  wordLevelConfidenceEnabled?: boolean;
+  /**
    * This sets the timeout for the connection to the custom provider without needing to stream any tokens back. Default is 20 seconds.
    * @min 0
    * @max 300
@@ -7150,6 +7197,7 @@ export interface GroqModel {
     | "llama3-8b-8192"
     | "llama3-70b-8192"
     | "gemma2-9b-it"
+    | "moonshotai/kimi-k2-instruct-0905"
     | "meta-llama/llama-4-maverick-17b-128e-instruct"
     | "meta-llama/llama-4-scout-17b-16e-instruct"
     | "mistral-saba-24b"
@@ -8230,6 +8278,198 @@ export interface ToolNode {
   metadata?: object;
 }
 
+export interface VoicemailDetectionBackoffPlan {
+  /**
+   * This is the number of seconds to wait before starting the first retry attempt.
+   * @min 0
+   * @default 5
+   */
+  startAtSeconds?: number;
+  /**
+   * This is the interval in seconds between retry attempts.
+   * @min 2.5
+   * @default 5
+   */
+  frequencySeconds?: number;
+  /**
+   * This is the maximum number of retry attempts before giving up.
+   * @min 1
+   * @max 10
+   * @default 6
+   */
+  maxRetries?: number;
+}
+
+export interface GoogleVoicemailDetectionPlan {
+  /**
+   * This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
+   *
+   * - If we detect a voicemail beep before this, we will speak the message at that point.
+   *
+   * - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
+   *
+   * @default 30
+   * @min 0
+   * @max 60
+   * @min 0
+   * @max 30
+   * @default 30
+   */
+  beepMaxAwaitSeconds?: number;
+  /** This is the provider to use for voicemail detection. */
+  provider: "google";
+  /** This is the backoff plan for the voicemail detection. */
+  backoffPlan?: VoicemailDetectionBackoffPlan;
+  /**
+   * This is the detection type to use for voicemail detection.
+   * - 'audio': Uses native audio models (default)
+   * - 'transcript': Uses ASR/transcript-based detection
+   * @default 'audio' (audio detection)
+   */
+  type?: "audio" | "transcript";
+}
+
+export interface OpenAIVoicemailDetectionPlan {
+  /**
+   * This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
+   *
+   * - If we detect a voicemail beep before this, we will speak the message at that point.
+   *
+   * - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
+   *
+   * @default 30
+   * @min 0
+   * @max 60
+   * @min 0
+   * @max 30
+   * @default 30
+   */
+  beepMaxAwaitSeconds?: number;
+  /** This is the provider to use for voicemail detection. */
+  provider: "openai";
+  /** This is the backoff plan for the voicemail detection. */
+  backoffPlan?: VoicemailDetectionBackoffPlan;
+  /**
+   * This is the detection type to use for voicemail detection.
+   * - 'audio': Uses native audio models (default)
+   * - 'transcript': Uses ASR/transcript-based detection
+   * @default 'audio' (audio detection)
+   */
+  type?: "audio" | "transcript";
+}
+
+export interface TwilioVoicemailDetectionPlan {
+  /** This is the provider to use for voicemail detection. */
+  provider: "twilio";
+  /**
+   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence'].
+   *
+   * @default {Array} ['machine_end_beep', 'machine_end_silence']
+   * @example ["machine_end_beep","machine_end_silence"]
+   */
+  voicemailDetectionTypes?:
+    | "machine_start"
+    | "human"
+    | "fax"
+    | "unknown"
+    | "machine_end_beep"
+    | "machine_end_silence"
+    | "machine_end_other";
+  /**
+   * This sets whether the assistant should detect voicemail. Defaults to true.
+   *
+   * @default true
+   */
+  enabled?: boolean;
+  /**
+   * The number of seconds that Twilio should attempt to perform answering machine detection before timing out and returning AnsweredBy as unknown. Default is 30 seconds.
+   *
+   * Increasing this value will provide the engine more time to make a determination. This can be useful when DetectMessageEnd is provided in the MachineDetection parameter and there is an expectation of long answering machine greetings that can exceed 30 seconds.
+   *
+   * Decreasing this value will reduce the amount of time the engine has to make a determination. This can be particularly useful when the Enable option is provided in the MachineDetection parameter and you want to limit the time for initial detection.
+   *
+   * Check the [Twilio docs](https://www.twilio.com/docs/voice/answering-machine-detection#optional-api-tuning-parameters) for more info.
+   *
+   * @default 30
+   * @min 3
+   * @max 59
+   */
+  machineDetectionTimeout?: number;
+  /**
+   * The number of milliseconds that is used as the measuring stick for the length of the speech activity. Durations lower than this value will be interpreted as a human, longer as a machine. Default is 2400 milliseconds.
+   *
+   * Increasing this value will reduce the chance of a False Machine (detected machine, actually human) for a long human greeting (e.g., a business greeting) but increase the time it takes to detect a machine.
+   *
+   * Decreasing this value will reduce the chances of a False Human (detected human, actually machine) for short voicemail greetings. The value of this parameter may need to be reduced by more than 1000ms to detect very short voicemail greetings. A reduction of that significance can result in increased False Machine detections. Adjusting the MachineDetectionSpeechEndThreshold is likely the better approach for short voicemails. Decreasing MachineDetectionSpeechThreshold will also reduce the time it takes to detect a machine.
+   *
+   * Check the [Twilio docs](https://www.twilio.com/docs/voice/answering-machine-detection#optional-api-tuning-parameters) for more info.
+   *
+   * @default 2400
+   * @min 1000
+   * @max 6000
+   */
+  machineDetectionSpeechThreshold?: number;
+  /**
+   * The number of milliseconds of silence after speech activity at which point the speech activity is considered complete. Default is 1200 milliseconds.
+   *
+   * Increasing this value will typically be used to better address the short voicemail greeting scenarios. For short voicemails, there is typically 1000-2000ms of audio followed by 1200-2400ms of silence and then additional audio before the beep. Increasing the MachineDetectionSpeechEndThreshold to ~2500ms will treat the 1200-2400ms of silence as a gap in the greeting but not the end of the greeting and will result in a machine detection. The downsides of such a change include:
+   * - Increasing the delay for human detection by the amount you increase this parameter, e.g., a change of 1200ms to 2500ms increases human detection delay by 1300ms.
+   * - Cases where a human has two utterances separated by a period of silence (e.g. a "Hello", then 2000ms of silence, and another "Hello") may be interpreted as a machine.
+   *
+   * Decreasing this value will result in faster human detection. The consequence is that it can lead to increased False Human (detected human, actually machine) detections because a silence gap in a voicemail greeting (not necessarily just in short voicemail scenarios) can be incorrectly interpreted as the end of speech.
+   *
+   * Check the [Twilio docs](https://www.twilio.com/docs/voice/answering-machine-detection#optional-api-tuning-parameters) for more info.
+   *
+   * @default 1200
+   * @min 500
+   * @max 5000
+   */
+  machineDetectionSpeechEndThreshold?: number;
+  /**
+   * The number of milliseconds of initial silence after which an unknown AnsweredBy result will be returned. Default is 5000 milliseconds.
+   *
+   * Increasing this value will result in waiting for a longer period of initial silence before returning an 'unknown' AMD result.
+   *
+   * Decreasing this value will result in waiting for a shorter period of initial silence before returning an 'unknown' AMD result.
+   *
+   * Check the [Twilio docs](https://www.twilio.com/docs/voice/answering-machine-detection#optional-api-tuning-parameters) for more info.
+   *
+   * @default 5000
+   * @min 2000
+   * @max 10000
+   */
+  machineDetectionSilenceTimeout?: number;
+}
+
+export interface VapiVoicemailDetectionPlan {
+  /**
+   * This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
+   *
+   * - If we detect a voicemail beep before this, we will speak the message at that point.
+   *
+   * - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
+   *
+   * @default 30
+   * @min 0
+   * @max 60
+   * @min 0
+   * @max 30
+   * @default 30
+   */
+  beepMaxAwaitSeconds?: number;
+  /** This is the provider to use for voicemail detection. */
+  provider: "vapi";
+  /** This is the backoff plan for the voicemail detection. */
+  backoffPlan?: VoicemailDetectionBackoffPlan;
+  /**
+   * This is the detection type to use for voicemail detection.
+   * - 'audio': Uses native audio models (default)
+   * - 'transcript': Uses ASR/transcript-based detection
+   * @default 'audio' (audio detection)
+   */
+  type?: "audio" | "transcript";
+}
+
 export interface AIEdgeCondition {
   type: "ai";
   /**
@@ -8247,6 +8487,92 @@ export interface Edge {
   to: string;
   /** This is for metadata you want to store on the edge. */
   metadata?: object;
+}
+
+export interface RecordingConsentPlanStayOnLine {
+  /**
+   * This is the message asking for consent to record the call.
+   * If the type is `stay-on-line`, the message should ask the user to hang up if they do not consent.
+   * If the type is `verbal`, the message should ask the user to verbally consent or decline.
+   * @maxLength 1000
+   */
+  message: string;
+  /**
+   * This is the voice to use for the consent message. If not specified, inherits from the assistant's voice.
+   * Use a different voice for the consent message for a better user experience.
+   */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | TavusVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice;
+  /**
+   * This is the type of recording consent plan. This type assumes consent is granted if the user stays on the line.
+   * @example "stay-on-line"
+   */
+  type: "stay-on-line";
+  /**
+   * Number of seconds to wait before transferring to the assistant if user stays on the call
+   * @min 1
+   * @max 6
+   * @default 3
+   * @example 3
+   */
+  waitSeconds?: number;
+}
+
+export interface RecordingConsentPlanVerbal {
+  /**
+   * This is the message asking for consent to record the call.
+   * If the type is `stay-on-line`, the message should ask the user to hang up if they do not consent.
+   * If the type is `verbal`, the message should ask the user to verbally consent or decline.
+   * @maxLength 1000
+   */
+  message: string;
+  /**
+   * This is the voice to use for the consent message. If not specified, inherits from the assistant's voice.
+   * Use a different voice for the consent message for a better user experience.
+   */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | TavusVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice;
+  /**
+   * This is the type of recording consent plan. This type assumes consent is granted if the user verbally consents or declines.
+   * @example "verbal"
+   */
+  type: "verbal";
+  /** Tool to execute if user verbally declines recording consent */
+  declineTool?: object;
+  /** ID of existing tool to execute if user verbally declines recording consent */
+  declineToolId?: string;
 }
 
 export type SecurityFilterBase = object;
@@ -8296,6 +8622,13 @@ export interface CompliancePlan {
   pciEnabled?: boolean;
   /** This is the security filter plan for the assistant. It allows filtering of transcripts for security threats before sending to LLM. */
   securityFilterPlan?: SecurityFilterPlan;
+  recordingConsentPlan?:
+    | ({
+        type: "stay-on-line";
+      } & RecordingConsentPlanStayOnLine)
+    | ({
+        type: "verbal";
+      } & RecordingConsentPlanVerbal);
 }
 
 export interface StructuredDataPlan {
@@ -8532,6 +8865,11 @@ export interface ArtifactPlan {
    * @example false
    */
   videoRecordingEnabled?: boolean;
+  /**
+   * This determines whether the artifact contains the full message history, even after handoff context engineering. Defaults to false.
+   * @example false
+   */
+  fullMessageHistoryEnabled?: boolean;
   /**
    * This determines whether the SIP packet capture is enabled. Defaults to true. Only relevant for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`.
    *
@@ -8892,10 +9230,12 @@ export interface StartSpeakingPlan {
    */
   smartEndpointingEnabled?: boolean | "livekit";
   /**
-   * This is the plan for smart endpointing. Pick between Vapi smart endpointing or LiveKit smart endpointing (or nothing). We strongly recommend using livekit endpointing when working in English. LiveKit endpointing is not supported in other languages, yet.
+   * This is the plan for smart endpointing. Pick between Vapi smart endpointing, LiveKit, or custom endpointing model (or nothing). We strongly recommend using livekit endpointing when working in English. LiveKit endpointing is not supported in other languages, yet.
    *
    * If this is set, it will override and take precedence over `transcriptionEndpointingPlan`.
    * This plan will still be overridden by any matching `customEndpointingRules`.
+   *
+   * If this is not set, the system will automatically use the transcriber's built-in endpointing capabilities if available.
    */
   smartEndpointingPlan?:
     | VapiSmartEndpointingPlan
@@ -8930,7 +9270,7 @@ export interface StartSpeakingPlan {
    *
    * Once an endpoint is triggered, the request is sent to `assistant.model`.
    *
-   * Note: This plan is only used if `smartEndpointingPlan` is not set. If both are provided, `smartEndpointingPlan` takes precedence.
+   * Note: This plan is only used if `smartEndpointingPlan` is not set and transcriber does not have built-in endpointing capabilities. If both are provided, `smartEndpointingPlan` takes precedence.
    * This plan will also be overridden by any matching `customEndpointingRules`.
    */
   transcriptionEndpointingPlan?: TranscriptionEndpointingPlan;
@@ -9360,6 +9700,12 @@ export interface WorkflowUserEditable {
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
   )[];
+  /** This is the voicemail detection plan for the workflow. */
+  voicemailDetection?:
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
@@ -9426,6 +9772,13 @@ export interface WorkflowUserEditable {
   credentialIds?: string[];
   /** This is the plan for keypad input handling during workflow calls. */
   keypadInputPlan?: KeypadInputPlan;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
 }
 
 export interface VapiModel {
@@ -9980,7 +10333,17 @@ export interface DeepgramVoice {
     | "saturn"
     | "selene"
     | "theia"
-    | "vesta";
+    | "vesta"
+    | "celeste"
+    | "estrella"
+    | "nestor"
+    | "sirio"
+    | "carina"
+    | "alvaro"
+    | "diana"
+    | "aquila"
+    | "selena"
+    | "javier";
   /**
    * This is the model that will be used. Defaults to 'aura-2' when not specified.
    * @example "aura-2"
@@ -11052,7 +11415,7 @@ export interface MinimaxVoice {
    * @default "speech-02-turbo"
    * @example "speech-02-turbo"
    */
-  model?: "speech-02-hd" | "speech-02-turbo";
+  model?: "speech-02-hd" | "speech-02-turbo" | "speech-2.5-turbo-preview";
   /**
    * The emotion to use for the voice. If not provided, will use auto-detect mode.
    * Options include: 'happy', 'sad', 'angry', 'fearful', 'surprised', 'disgusted', 'neutral'
@@ -11091,6 +11454,54 @@ export interface MinimaxVoice {
    * @default "worldwide"
    */
   region?: "worldwide" | "china";
+  /** Language hint for MiniMax T2A. Example: yue (Cantonese), zh (Chinese), en (English). */
+  languageBoost?:
+    | "Chinese"
+    | "Chinese,Yue"
+    | "English"
+    | "Arabic"
+    | "Russian"
+    | "Spanish"
+    | "French"
+    | "Portuguese"
+    | "German"
+    | "Turkish"
+    | "Dutch"
+    | "Ukrainian"
+    | "Vietnamese"
+    | "Indonesian"
+    | "Japanese"
+    | "Italian"
+    | "Korean"
+    | "Thai"
+    | "Polish"
+    | "Romanian"
+    | "Greek"
+    | "Czech"
+    | "Finnish"
+    | "Hindi"
+    | "Bulgarian"
+    | "Danish"
+    | "Hebrew"
+    | "Malay"
+    | "Persian"
+    | "Slovak"
+    | "Swedish"
+    | "Croatian"
+    | "Filipino"
+    | "Hungarian"
+    | "Norwegian"
+    | "Slovenian"
+    | "Catalan"
+    | "Nynorsk"
+    | "Tamil"
+    | "Afrikaans"
+    | "auto";
+  /**
+   * Enable MiniMax text normalization to improve number reading and formatting.
+   * @default true
+   */
+  textNormalizationEnabled?: boolean;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -11261,7 +11672,17 @@ export interface FallbackDeepgramVoice {
     | "saturn"
     | "selene"
     | "theia"
-    | "vesta";
+    | "vesta"
+    | "celeste"
+    | "estrella"
+    | "nestor"
+    | "sirio"
+    | "carina"
+    | "alvaro"
+    | "diana"
+    | "aquila"
+    | "selena"
+    | "javier";
   /**
    * This is the model that will be used. Defaults to 'aura-2' when not specified.
    * @example "aura-2"
@@ -12253,7 +12674,7 @@ export interface FallbackMinimaxVoice {
    * @default "speech-02-turbo"
    * @example "speech-02-turbo"
    */
-  model?: "speech-02-hd" | "speech-02-turbo";
+  model?: "speech-02-hd" | "speech-02-turbo" | "speech-2.5-turbo-preview";
   /**
    * The emotion to use for the voice. If not provided, will use auto-detect mode.
    * Options include: 'happy', 'sad', 'angry', 'fearful', 'surprised', 'disgusted', 'neutral'
@@ -12292,6 +12713,54 @@ export interface FallbackMinimaxVoice {
    * @default "worldwide"
    */
   region?: "worldwide" | "china";
+  /** Language hint for MiniMax T2A. Example: yue (Cantonese), zh (Chinese), en (English). */
+  languageBoost?:
+    | "Chinese"
+    | "Chinese,Yue"
+    | "English"
+    | "Arabic"
+    | "Russian"
+    | "Spanish"
+    | "French"
+    | "Portuguese"
+    | "German"
+    | "Turkish"
+    | "Dutch"
+    | "Ukrainian"
+    | "Vietnamese"
+    | "Indonesian"
+    | "Japanese"
+    | "Italian"
+    | "Korean"
+    | "Thai"
+    | "Polish"
+    | "Romanian"
+    | "Greek"
+    | "Czech"
+    | "Finnish"
+    | "Hindi"
+    | "Bulgarian"
+    | "Danish"
+    | "Hebrew"
+    | "Malay"
+    | "Persian"
+    | "Slovak"
+    | "Swedish"
+    | "Croatian"
+    | "Filipino"
+    | "Hungarian"
+    | "Norwegian"
+    | "Slovenian"
+    | "Catalan"
+    | "Nynorsk"
+    | "Tamil"
+    | "Afrikaans"
+    | "auto";
+  /**
+   * Enable MiniMax text normalization to improve number reading and formatting.
+   * @default true
+   */
+  textNormalizationEnabled?: boolean;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -13522,198 +13991,6 @@ export interface CallHookCustomerSpeechTimeout {
   name?: string;
 }
 
-export interface VoicemailDetectionBackoffPlan {
-  /**
-   * This is the number of seconds to wait before starting the first retry attempt.
-   * @min 0
-   * @default 5
-   */
-  startAtSeconds?: number;
-  /**
-   * This is the interval in seconds between retry attempts.
-   * @min 2.5
-   * @default 5
-   */
-  frequencySeconds?: number;
-  /**
-   * This is the maximum number of retry attempts before giving up.
-   * @min 1
-   * @max 10
-   * @default 6
-   */
-  maxRetries?: number;
-}
-
-export interface GoogleVoicemailDetectionPlan {
-  /**
-   * This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
-   *
-   * - If we detect a voicemail beep before this, we will speak the message at that point.
-   *
-   * - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
-   *
-   * @default 30
-   * @min 0
-   * @max 60
-   * @min 0
-   * @max 30
-   * @default 30
-   */
-  beepMaxAwaitSeconds?: number;
-  /** This is the provider to use for voicemail detection. */
-  provider: "google";
-  /** This is the backoff plan for the voicemail detection. */
-  backoffPlan?: VoicemailDetectionBackoffPlan;
-  /**
-   * This is the detection type to use for voicemail detection.
-   * - 'audio': Uses native audio models (default)
-   * - 'transcript': Uses ASR/transcript-based detection
-   * @default 'audio' (audio detection)
-   */
-  type?: "audio" | "transcript";
-}
-
-export interface OpenAIVoicemailDetectionPlan {
-  /**
-   * This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
-   *
-   * - If we detect a voicemail beep before this, we will speak the message at that point.
-   *
-   * - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
-   *
-   * @default 30
-   * @min 0
-   * @max 60
-   * @min 0
-   * @max 30
-   * @default 30
-   */
-  beepMaxAwaitSeconds?: number;
-  /** This is the provider to use for voicemail detection. */
-  provider: "openai";
-  /** This is the backoff plan for the voicemail detection. */
-  backoffPlan?: VoicemailDetectionBackoffPlan;
-  /**
-   * This is the detection type to use for voicemail detection.
-   * - 'audio': Uses native audio models (default)
-   * - 'transcript': Uses ASR/transcript-based detection
-   * @default 'audio' (audio detection)
-   */
-  type?: "audio" | "transcript";
-}
-
-export interface TwilioVoicemailDetectionPlan {
-  /** This is the provider to use for voicemail detection. */
-  provider: "twilio";
-  /**
-   * These are the AMD messages from Twilio that are considered as voicemail. Default is ['machine_end_beep', 'machine_end_silence'].
-   *
-   * @default {Array} ['machine_end_beep', 'machine_end_silence']
-   * @example ["machine_end_beep","machine_end_silence"]
-   */
-  voicemailDetectionTypes?:
-    | "machine_start"
-    | "human"
-    | "fax"
-    | "unknown"
-    | "machine_end_beep"
-    | "machine_end_silence"
-    | "machine_end_other";
-  /**
-   * This sets whether the assistant should detect voicemail. Defaults to true.
-   *
-   * @default true
-   */
-  enabled?: boolean;
-  /**
-   * The number of seconds that Twilio should attempt to perform answering machine detection before timing out and returning AnsweredBy as unknown. Default is 30 seconds.
-   *
-   * Increasing this value will provide the engine more time to make a determination. This can be useful when DetectMessageEnd is provided in the MachineDetection parameter and there is an expectation of long answering machine greetings that can exceed 30 seconds.
-   *
-   * Decreasing this value will reduce the amount of time the engine has to make a determination. This can be particularly useful when the Enable option is provided in the MachineDetection parameter and you want to limit the time for initial detection.
-   *
-   * Check the [Twilio docs](https://www.twilio.com/docs/voice/answering-machine-detection#optional-api-tuning-parameters) for more info.
-   *
-   * @default 30
-   * @min 3
-   * @max 59
-   */
-  machineDetectionTimeout?: number;
-  /**
-   * The number of milliseconds that is used as the measuring stick for the length of the speech activity. Durations lower than this value will be interpreted as a human, longer as a machine. Default is 2400 milliseconds.
-   *
-   * Increasing this value will reduce the chance of a False Machine (detected machine, actually human) for a long human greeting (e.g., a business greeting) but increase the time it takes to detect a machine.
-   *
-   * Decreasing this value will reduce the chances of a False Human (detected human, actually machine) for short voicemail greetings. The value of this parameter may need to be reduced by more than 1000ms to detect very short voicemail greetings. A reduction of that significance can result in increased False Machine detections. Adjusting the MachineDetectionSpeechEndThreshold is likely the better approach for short voicemails. Decreasing MachineDetectionSpeechThreshold will also reduce the time it takes to detect a machine.
-   *
-   * Check the [Twilio docs](https://www.twilio.com/docs/voice/answering-machine-detection#optional-api-tuning-parameters) for more info.
-   *
-   * @default 2400
-   * @min 1000
-   * @max 6000
-   */
-  machineDetectionSpeechThreshold?: number;
-  /**
-   * The number of milliseconds of silence after speech activity at which point the speech activity is considered complete. Default is 1200 milliseconds.
-   *
-   * Increasing this value will typically be used to better address the short voicemail greeting scenarios. For short voicemails, there is typically 1000-2000ms of audio followed by 1200-2400ms of silence and then additional audio before the beep. Increasing the MachineDetectionSpeechEndThreshold to ~2500ms will treat the 1200-2400ms of silence as a gap in the greeting but not the end of the greeting and will result in a machine detection. The downsides of such a change include:
-   * - Increasing the delay for human detection by the amount you increase this parameter, e.g., a change of 1200ms to 2500ms increases human detection delay by 1300ms.
-   * - Cases where a human has two utterances separated by a period of silence (e.g. a "Hello", then 2000ms of silence, and another "Hello") may be interpreted as a machine.
-   *
-   * Decreasing this value will result in faster human detection. The consequence is that it can lead to increased False Human (detected human, actually machine) detections because a silence gap in a voicemail greeting (not necessarily just in short voicemail scenarios) can be incorrectly interpreted as the end of speech.
-   *
-   * Check the [Twilio docs](https://www.twilio.com/docs/voice/answering-machine-detection#optional-api-tuning-parameters) for more info.
-   *
-   * @default 1200
-   * @min 500
-   * @max 5000
-   */
-  machineDetectionSpeechEndThreshold?: number;
-  /**
-   * The number of milliseconds of initial silence after which an unknown AnsweredBy result will be returned. Default is 5000 milliseconds.
-   *
-   * Increasing this value will result in waiting for a longer period of initial silence before returning an 'unknown' AMD result.
-   *
-   * Decreasing this value will result in waiting for a shorter period of initial silence before returning an 'unknown' AMD result.
-   *
-   * Check the [Twilio docs](https://www.twilio.com/docs/voice/answering-machine-detection#optional-api-tuning-parameters) for more info.
-   *
-   * @default 5000
-   * @min 2000
-   * @max 10000
-   */
-  machineDetectionSilenceTimeout?: number;
-}
-
-export interface VapiVoicemailDetectionPlan {
-  /**
-   * This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
-   *
-   * - If we detect a voicemail beep before this, we will speak the message at that point.
-   *
-   * - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
-   *
-   * @default 30
-   * @min 0
-   * @max 60
-   * @min 0
-   * @max 30
-   * @default 30
-   */
-  beepMaxAwaitSeconds?: number;
-  /** This is the provider to use for voicemail detection. */
-  provider: "vapi";
-  /** This is the backoff plan for the voicemail detection. */
-  backoffPlan?: VoicemailDetectionBackoffPlan;
-  /**
-   * This is the detection type to use for voicemail detection.
-   * - 'audio': Uses native audio models (default)
-   * - 'transcript': Uses ASR/transcript-based detection
-   * @default 'audio' (audio detection)
-   */
-  type?: "audio" | "transcript";
-}
-
 export interface SQLInjectionSecurityFilter {
   /** The type of security threat to filter. */
   type: "sql-injection";
@@ -14596,6 +14873,10 @@ export interface PaginationMeta {
   totalItems: number;
   currentPage: number;
   itemsBeyondRetention?: boolean;
+  /** @format date-time */
+  createdAtLe?: string;
+  /** @format date-time */
+  createdAtGe?: string;
 }
 
 export interface AssistantPaginatedResponse {
@@ -15760,6 +16041,12 @@ export interface Workflow {
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
   )[];
+  /** This is the voicemail detection plan for the workflow. */
+  voicemailDetection?:
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
   id: string;
   orgId: string;
   /** @format date-time */
@@ -15832,6 +16119,13 @@ export interface Workflow {
   credentialIds?: string[];
   /** This is the plan for keypad input handling during workflow calls. */
   keypadInputPlan?: KeypadInputPlan;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
 }
 
 export interface CreateWorkflowDTO {
@@ -16060,6 +16354,12 @@ export interface CreateWorkflowDTO {
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
   )[];
+  /** This is the voicemail detection plan for the workflow. */
+  voicemailDetection?:
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
@@ -16126,6 +16426,13 @@ export interface CreateWorkflowDTO {
   credentialIds?: string[];
   /** This is the plan for keypad input handling during workflow calls. */
   keypadInputPlan?: KeypadInputPlan;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
 }
 
 export interface UpdateWorkflowDTO {
@@ -16354,6 +16661,12 @@ export interface UpdateWorkflowDTO {
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
   )[];
+  /** This is the voicemail detection plan for the workflow. */
+  voicemailDetection?:
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
   /** @maxLength 80 */
   name?: string;
   edges?: Edge[];
@@ -16420,6 +16733,13 @@ export interface UpdateWorkflowDTO {
   credentialIds?: string[];
   /** This is the plan for keypad input handling during workflow calls. */
   keypadInputPlan?: KeypadInputPlan;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
 }
 
 export interface AnalysisCostBreakdown {
@@ -16605,6 +16925,24 @@ export interface Artifact {
    * To enable, set `assistant.artifactPlan.structuredOutputIds` with the IDs of the structured outputs you want to extract.
    */
   structuredOutputs?: object;
+  /** These are the transfer records from warm transfers, including destinations, transcripts, and status. */
+  transfers?: string[];
+}
+
+export interface RecordingConsent {
+  /** This is the type of recording consent. */
+  type: object;
+  /**
+   * This is the date and time the recording consent was granted.
+   * If not specified, it means the recording consent was not granted.
+   * @format date-time
+   */
+  grantedAt?: string;
+}
+
+export interface Compliance {
+  /** This is the recording consent of the call. Configure in `assistant.compliancePlan.recordingConsentPlan`. */
+  recordingConsent?: RecordingConsent;
 }
 
 export interface WorkflowOverrides {
@@ -16881,6 +17219,7 @@ export interface Call {
     | "call.start.error-vapi-number-outbound-daily-limit"
     | "call.start.error-get-transport"
     | "call.start.error-subscription-wallet-does-not-exist"
+    | "call.start.error-fraud-check-failed"
     | "call.start.error-subscription-frozen"
     | "call.start.error-subscription-insufficient-credits"
     | "call.start.error-subscription-upgrade-failed"
@@ -16933,6 +17272,7 @@ export interface Call {
     | "call.in-progress.error-providerfault-vapi-500-server-error"
     | "call.in-progress.error-providerfault-vapi-503-server-overloaded-error"
     | "pipeline-error-deepgram-transcriber-failed"
+    | "pipeline-error-deepgram-transcriber-api-key-missing"
     | "call.in-progress.error-vapifault-deepgram-transcriber-failed"
     | "pipeline-error-gladia-transcriber-failed"
     | "call.in-progress.error-vapifault-gladia-transcriber-failed"
@@ -17423,6 +17763,8 @@ export interface Call {
   monitor?: Monitor;
   /** These are the artifacts created from the call. Configure in `assistant.artifactPlan`. */
   artifact?: Artifact;
+  /** This is the compliance of the call. Configure in `assistant.compliancePlan`. */
+  compliance?: Compliance;
   /**
    * The ID of the call as provided by the phone number service. callSid in Twilio. conversationUuid in Vonage. callControlId in Telnyx.
    *
@@ -17861,6 +18203,8 @@ export interface UserMessage {
   detectedThreats?: string[];
   /** The original message before filtering (only included if content was filtered). */
   originalMessage?: string;
+  /** The metadata associated with the message. Currently used to store the transcriber's word level confidence. */
+  metadata?: object;
 }
 
 export interface ToolCallFunction {
@@ -17868,7 +18212,7 @@ export interface ToolCallFunction {
   arguments: string;
   /**
    * This is the name of the function to call
-   * @maxLength 40
+   * @maxLength 80
    */
   name: string;
 }
@@ -17951,6 +18295,10 @@ export interface Chat {
    * Only variable substitution is supported in chat contexts - other assistant properties cannot be overridden.
    */
   assistantOverrides?: AssistantOverrides;
+  /** This is the squad that will be used for the chat. To use a transient squad, use `squad` instead. */
+  squadId?: string;
+  /** This is the squad that will be used for the chat. To use an existing squad, use `squadId` instead. */
+  squad?: CreateSquadDTO;
   /**
    * This is the name of the chat. This is just for your own reference.
    * @maxLength 40
@@ -18025,6 +18373,33 @@ export interface Chat {
   cost?: number;
 }
 
+export interface TwilioSMSChatTransport {
+  /**
+   * This is the phone number that will be used to send the SMS.
+   * If provided, will create a new session. If not provided, uses existing session's phoneNumberId.
+   * The phone number must have SMS enabled and belong to your organization.
+   */
+  phoneNumberId?: string;
+  /**
+   * This is the customer who will receive the SMS.
+   * If provided, will create a new session. If not provided, uses existing session's customer.
+   */
+  customer?: CreateCustomerDTO;
+  /**
+   * Whether to use LLM-generated messages for outbound SMS.
+   * When true (default), input is processed by the assistant for a response.
+   * When false, the input text is forwarded directly as the SMS message without LLM processing.
+   * Useful for sending pre-defined messages or notifications.
+   * @default true
+   */
+  useLLMGeneratedMessageForOutbound?: boolean;
+  /**
+   * The type of transport to use for sending the chat response.
+   * Currently supports 'twilio.sms' for SMS delivery via Twilio.
+   */
+  type: "twilio.sms";
+}
+
 export interface CreateChatDTO {
   /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
   assistantId?: string;
@@ -18035,6 +18410,10 @@ export interface CreateChatDTO {
    * Only variable substitution is supported in chat contexts - other assistant properties cannot be overridden.
    */
   assistantOverrides?: AssistantOverrides;
+  /** This is the squad that will be used for the chat. To use a transient squad, use `squad` instead. */
+  squadId?: string;
+  /** This is the squad that will be used for the chat. To use an existing squad, use `squadId` instead. */
+  squad?: CreateSquadDTO;
   /**
    * This is the name of the chat. This is just for your own reference.
    * @maxLength 40
@@ -18071,11 +18450,20 @@ export interface CreateChatDTO {
    * Mutually exclusive with sessionId.
    */
   previousChatId?: string;
+  /**
+   * This is used to send the chat through a transport like SMS.
+   * If transport.phoneNumberId and transport.customer are provided, creates a new session.
+   * If sessionId is provided without transport fields, uses existing session data.
+   * Cannot specify both sessionId and transport fields (phoneNumberId/customer) together.
+   */
+  transport?: TwilioSMSChatTransport;
 }
 
 export interface GetChatPaginatedDTO {
   /** This is the unique identifier for the assistant that will be used for the chat. */
   assistantId?: string;
+  /** This is the unique identifier for the squad that will be used for the chat. */
+  squadId?: string;
   /** This is the unique identifier for the workflow that will be used for the chat. */
   workflowId?: string;
   /** This is the unique identifier for the session that will be used for the chat. */
@@ -18168,6 +18556,10 @@ export interface OpenAIResponsesRequest {
    * Only variable substitution is supported in chat contexts - other assistant properties cannot be overridden.
    */
   assistantOverrides?: AssistantOverrides;
+  /** This is the squad that will be used for the chat. To use a transient squad, use `squad` instead. */
+  squadId?: string;
+  /** This is the squad that will be used for the chat. To use an existing squad, use `squadId` instead. */
+  squad?: CreateSquadDTO;
   /**
    * This is the name of the chat. This is just for your own reference.
    * @maxLength 40
@@ -18203,6 +18595,13 @@ export interface OpenAIResponsesRequest {
    * Mutually exclusive with sessionId.
    */
   previousChatId?: string;
+  /**
+   * This is used to send the chat through a transport like SMS.
+   * If transport.phoneNumberId and transport.customer are provided, creates a new session.
+   * If sessionId is provided without transport fields, uses existing session data.
+   * Cannot specify both sessionId and transport fields (phoneNumberId/customer) together.
+   */
+  transport?: TwilioSMSChatTransport;
 }
 
 export interface ChatAssistantOverrides {
@@ -18622,6 +19021,13 @@ export interface Session {
    * If assistantId is provided, this will be ignored.
    */
   assistant?: CreateAssistantDTO;
+  /** This is the squad ID associated with this session. Use this when referencing an existing squad. */
+  squadId?: string;
+  /**
+   * This is the squad configuration for this session. Use this when creating a new squad configuration.
+   * If squadId is provided, this will be ignored.
+   */
+  squad?: CreateSquadDTO;
   /** This is an array of chat messages in the session. */
   messages?: (
     | SystemMessage
@@ -18660,6 +19066,13 @@ export interface CreateSessionDTO {
    * If assistantId is provided, this will be ignored.
    */
   assistant?: CreateAssistantDTO;
+  /** This is the squad ID associated with this session. Use this when referencing an existing squad. */
+  squadId?: string;
+  /**
+   * This is the squad configuration for this session. Use this when creating a new squad configuration.
+   * If squadId is provided, this will be ignored.
+   */
+  squad?: CreateSquadDTO;
   /** This is an array of chat messages in the session. */
   messages?: (
     | SystemMessage
@@ -18706,6 +19119,8 @@ export interface GetSessionPaginatedDTO {
   name?: string;
   /** This is the ID of the assistant to filter sessions by. */
   assistantId?: string;
+  /** This is the ID of the squad to filter sessions by. */
+  squadId?: string;
   /** This is the ID of the workflow to filter sessions by. */
   workflowId?: string;
   /**
@@ -27298,6 +27713,939 @@ export interface UpdateTestSuiteRunDto {
   name?: string;
 }
 
+export interface CreateEvalDTO {
+  /**
+   * This is the mock conversation that will be used to evaluate the flow of the conversation.
+   *
+   * Mock Messages are used to simulate the flow of the conversation
+   *
+   * Evaluation Messages are used as checkpoints in the flow where the model's response to previous conversation needs to be evaluated to check the content and tool calls
+   * @example "[{ role: "user", content: "Hello, how are you?" }, { role: "assistant", judgePlan: { type: "exact", content: "I am good, thank you!" } }]"
+   */
+  messages: (
+    | ChatEvalAssistantMessageMock
+    | ChatEvalSystemMessageMock
+    | ChatEvalToolResponseMessageMock
+    | ChatEvalUserMessageMock
+    | ChatEvalAssistantMessageEvaluation
+  )[];
+  /**
+   * This is the name of the eval.
+   * It helps identify what the eval is checking for.
+   * @minLength 1
+   * @maxLength 80
+   * @example "Verified User Flow Eval"
+   */
+  name?: string;
+  /**
+   * This is the description of the eval.
+   * This helps describe the eval and its purpose in detail. It will not be used to evaluate the flow of the conversation.
+   * @minLength 1
+   * @maxLength 500
+   * @example "This eval checks if the user flow is verified."
+   */
+  description?: string;
+  /**
+   * This is the type of the eval.
+   * Currently it is fixed to `chat.mockConversation`.
+   * @example "chat.mockConversation"
+   */
+  type: "chat.mockConversation";
+}
+
+export interface Eval {
+  /**
+   * This is the mock conversation that will be used to evaluate the flow of the conversation.
+   *
+   * Mock Messages are used to simulate the flow of the conversation
+   *
+   * Evaluation Messages are used as checkpoints in the flow where the model's response to previous conversation needs to be evaluated to check the content and tool calls
+   * @example "[{ role: "user", content: "Hello, how are you?" }, { role: "assistant", judgePlan: { type: "exact", content: "I am good, thank you!" } }]"
+   */
+  messages: (
+    | ChatEvalAssistantMessageMock
+    | ChatEvalSystemMessageMock
+    | ChatEvalToolResponseMessageMock
+    | ChatEvalUserMessageMock
+    | ChatEvalAssistantMessageEvaluation
+  )[];
+  id: string;
+  orgId: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+  /**
+   * This is the name of the eval.
+   * It helps identify what the eval is checking for.
+   * @minLength 1
+   * @maxLength 80
+   * @example "Verified User Flow Eval"
+   */
+  name?: string;
+  /**
+   * This is the description of the eval.
+   * This helps describe the eval and its purpose in detail. It will not be used to evaluate the flow of the conversation.
+   * @minLength 1
+   * @maxLength 500
+   * @example "This eval checks if the user flow is verified."
+   */
+  description?: string;
+  /**
+   * This is the type of the eval.
+   * Currently it is fixed to `chat.mockConversation`.
+   * @example "chat.mockConversation"
+   */
+  type: "chat.mockConversation";
+}
+
+export interface EvalModelListOptions {
+  /** This is the provider of the model. */
+  provider: "openai" | "anthropic" | "google" | "groq" | "custom-llm";
+}
+
+export interface EvalUserEditable {
+  /**
+   * This is the mock conversation that will be used to evaluate the flow of the conversation.
+   *
+   * Mock Messages are used to simulate the flow of the conversation
+   *
+   * Evaluation Messages are used as checkpoints in the flow where the model's response to previous conversation needs to be evaluated to check the content and tool calls
+   * @example "[{ role: "user", content: "Hello, how are you?" }, { role: "assistant", judgePlan: { type: "exact", content: "I am good, thank you!" } }]"
+   */
+  messages: (
+    | ChatEvalAssistantMessageMock
+    | ChatEvalSystemMessageMock
+    | ChatEvalToolResponseMessageMock
+    | ChatEvalUserMessageMock
+    | ChatEvalAssistantMessageEvaluation
+  )[];
+  /**
+   * This is the name of the eval.
+   * It helps identify what the eval is checking for.
+   * @minLength 1
+   * @maxLength 80
+   * @example "Verified User Flow Eval"
+   */
+  name?: string;
+  /**
+   * This is the description of the eval.
+   * This helps describe the eval and its purpose in detail. It will not be used to evaluate the flow of the conversation.
+   * @minLength 1
+   * @maxLength 500
+   * @example "This eval checks if the user flow is verified."
+   */
+  description?: string;
+  /**
+   * This is the type of the eval.
+   * Currently it is fixed to `chat.mockConversation`.
+   * @example "chat.mockConversation"
+   */
+  type: "chat.mockConversation";
+}
+
+export interface ChatEvalAssistantMessageMockToolCall {
+  /**
+   * This is the name of the tool that will be called.
+   * It should be one of the tools created in the organization.
+   * @maxLength 100
+   * @example "get_weather"
+   */
+  name: string;
+  /**
+   * This is the arguments that will be passed to the tool call.
+   * @example ""{"city": "San Francisco"}""
+   */
+  arguments?: object;
+}
+
+export interface ChatEvalAssistantMessageMock {
+  /**
+   * This is the role of the message author.
+   * For a mock assistant message, the role is always 'assistant'
+   * @default 'assistant'
+   * @default "assistant"
+   */
+  role: "assistant";
+  /**
+   * This is the content of the assistant message.
+   * This is the message that the assistant would have sent.
+   * @maxLength 1000
+   * @example "The weather in San Francisco is sunny."
+   */
+  content?: string;
+  /**
+   * This is the tool calls that will be made by the assistant.
+   * @example "[{ name: "get_weather", arguments: { city: "San Francisco" } }]"
+   */
+  toolCalls?: ChatEvalAssistantMessageMockToolCall[];
+}
+
+export interface ChatEvalSystemMessageMock {
+  /**
+   * This is the role of the message author.
+   * For a mock system message, the role is always 'system'
+   * @default 'system'
+   * @default "system"
+   */
+  role: "system";
+  /**
+   * This is the content of the system message that would have been added in the middle of the conversation.
+   * Do not include the assistant prompt as a part of this message. It will automatically be fetched during runtime.
+   * @maxLength 100000000
+   * @example "You are a helpful assistant."
+   */
+  content: string;
+}
+
+export interface ChatEvalToolResponseMessageMock {
+  /**
+   * This is the role of the message author.
+   * For a mock tool response message, the role is always 'tool'
+   * @default 'tool'
+   * @default "tool"
+   */
+  role: "tool";
+  /**
+   * This is the content of the tool response message. JSON Objects should be stringified.
+   * @maxLength 1000
+   */
+  content: string;
+}
+
+export interface ChatEvalUserMessageMock {
+  /**
+   * This is the role of the message author.
+   * For a mock user message, the role is always 'user'
+   * @default 'user'
+   * @default "user"
+   */
+  role: "user";
+  /**
+   * This is the content of the user message.
+   * This is the message that the user would have sent.
+   * @maxLength 1000
+   * @example "Hello, how are you?"
+   */
+  content: string;
+}
+
+export interface AssistantMessageEvaluationContinuePlan {
+  /**
+   * This is whether the evaluation should exit if the assistant message evaluates to false.
+   * By default, it is false and the evaluation will continue.
+   * @default false
+   */
+  exitOnFailureEnabled?: boolean;
+  /**
+   * This is the content that will be used in the conversation for this assistant turn moving forward if provided.
+   * It will override the content received from the model.
+   * @maxLength 1000
+   * @example "The weather in San Francisco is sunny."
+   */
+  contentOverride?: string;
+  /**
+   * This is the tool calls that will be used in the conversation for this assistant turn moving forward if provided.
+   * It will override the tool calls received from the model.
+   * @example "[{ name: "get_weather", arguments: { city: "San Francisco" } }]"
+   */
+  toolCallsOverride?: ChatEvalAssistantMessageMockToolCall[];
+}
+
+export interface ChatEvalAssistantMessageEvaluation {
+  /**
+   * This is the role of the message author.
+   * For an assistant message evaluation, the role is always 'assistant'
+   * @default 'assistant'
+   * @default "assistant"
+   */
+  role: "assistant";
+  /**
+   * This is the judge plan that instructs how to evaluate the assistant message.
+   * The assistant message can be evaluated against fixed content (exact match or RegEx) or with an LLM-as-judge by defining the evaluation criteria in a prompt.
+   */
+  judgePlan:
+    | AssistantMessageJudgePlanExact
+    | AssistantMessageJudgePlanRegex
+    | AssistantMessageJudgePlanAI;
+  /**
+   * This is the plan for how the overall evaluation will proceed after the assistant message is evaluated.
+   * This lets you configure whether to stop the evaluation if this message fails, and whether to override any content for future turns
+   */
+  continuePlan?: AssistantMessageEvaluationContinuePlan;
+}
+
+export interface AssistantMessageJudgePlanExact {
+  /**
+   * This is the type of the judge plan.
+   * Use 'exact' for an exact match on the content and tool calls - without using LLM-as-a-judge.
+   * @default 'exact'
+   */
+  type: "exact";
+  /**
+   * This is what that will be used to evaluate the model's message content.
+   * If you provide a string, the assistant message content will be evaluated against it as an exact match, case-insensitive.
+   * @maxLength 1000
+   * @example "The weather in San Francisco is sunny."
+   */
+  content: string;
+  /**
+   * This is the tool calls that will be used to evaluate the model's message content.
+   * The tool name must be a valid tool that the assistant is allowed to call.
+   *
+   * For the Query tool, the arguments for the tool call are in the format - {knowledgeBaseNames: ['kb_name', 'kb_name_2']}
+   *
+   * For the DTMF tool, the arguments for the tool call are in the format - {dtmf: "1234*"}
+   *
+   * For the Handoff tool, the arguments for the tool call are in the format - {destination: "assistant_id"}
+   *
+   * For the Transfer Call tool, the arguments for the tool call are in the format - {destination: "phone_number_or_assistant_id"}
+   *
+   * For all other tools, they are called without arguments or with user-defined arguments
+   * @example "[{ name: "get_weather", arguments: { city: "San Francisco" } }]"
+   */
+  toolCalls?: ChatEvalAssistantMessageMockToolCall[];
+}
+
+export interface EvalOpenAIModel {
+  /** This is the provider of the model (`openai`). */
+  provider: "openai";
+  /**
+   * This is the OpenAI model that will be used.
+   *
+   * When using Vapi OpenAI or your own Azure Credentials, you have the option to specify the region for the selected model. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest region that make sense.
+   * This is helpful when you are required to comply with Data Residency rules. Learn more about Azure regions here https://azure.microsoft.com/en-us/explore/global-infrastructure/data-residency/.
+   * @maxLength 100
+   */
+  model:
+    | "gpt-5"
+    | "gpt-5-mini"
+    | "gpt-5-nano"
+    | "gpt-4.1-2025-04-14"
+    | "gpt-4.1-mini-2025-04-14"
+    | "gpt-4.1-nano-2025-04-14"
+    | "gpt-4.1"
+    | "gpt-4.1-mini"
+    | "gpt-4.1-nano"
+    | "chatgpt-4o-latest"
+    | "o3"
+    | "o3-mini"
+    | "o4-mini"
+    | "o1-mini"
+    | "o1-mini-2024-09-12"
+    | "gpt-4o-mini-2024-07-18"
+    | "gpt-4o-mini"
+    | "gpt-4o"
+    | "gpt-4o-2024-05-13"
+    | "gpt-4o-2024-08-06"
+    | "gpt-4o-2024-11-20"
+    | "gpt-4-turbo"
+    | "gpt-4-turbo-2024-04-09"
+    | "gpt-4-turbo-preview"
+    | "gpt-4-0125-preview"
+    | "gpt-4-1106-preview"
+    | "gpt-4"
+    | "gpt-4-0613"
+    | "gpt-3.5-turbo"
+    | "gpt-3.5-turbo-0125"
+    | "gpt-3.5-turbo-1106"
+    | "gpt-3.5-turbo-16k"
+    | "gpt-3.5-turbo-0613"
+    | "gpt-4.1-2025-04-14:westus"
+    | "gpt-4.1-2025-04-14:eastus2"
+    | "gpt-4.1-2025-04-14:eastus"
+    | "gpt-4.1-2025-04-14:westus3"
+    | "gpt-4.1-2025-04-14:northcentralus"
+    | "gpt-4.1-2025-04-14:southcentralus"
+    | "gpt-4.1-mini-2025-04-14:westus"
+    | "gpt-4.1-mini-2025-04-14:eastus2"
+    | "gpt-4.1-mini-2025-04-14:eastus"
+    | "gpt-4.1-mini-2025-04-14:westus3"
+    | "gpt-4.1-mini-2025-04-14:northcentralus"
+    | "gpt-4.1-mini-2025-04-14:southcentralus"
+    | "gpt-4.1-nano-2025-04-14:westus"
+    | "gpt-4.1-nano-2025-04-14:eastus2"
+    | "gpt-4.1-nano-2025-04-14:westus3"
+    | "gpt-4.1-nano-2025-04-14:northcentralus"
+    | "gpt-4.1-nano-2025-04-14:southcentralus"
+    | "gpt-4o-2024-11-20:swedencentral"
+    | "gpt-4o-2024-11-20:westus"
+    | "gpt-4o-2024-11-20:eastus2"
+    | "gpt-4o-2024-11-20:eastus"
+    | "gpt-4o-2024-11-20:westus3"
+    | "gpt-4o-2024-11-20:southcentralus"
+    | "gpt-4o-2024-08-06:westus"
+    | "gpt-4o-2024-08-06:westus3"
+    | "gpt-4o-2024-08-06:eastus"
+    | "gpt-4o-2024-08-06:eastus2"
+    | "gpt-4o-2024-08-06:northcentralus"
+    | "gpt-4o-2024-08-06:southcentralus"
+    | "gpt-4o-mini-2024-07-18:westus"
+    | "gpt-4o-mini-2024-07-18:westus3"
+    | "gpt-4o-mini-2024-07-18:eastus"
+    | "gpt-4o-mini-2024-07-18:eastus2"
+    | "gpt-4o-mini-2024-07-18:northcentralus"
+    | "gpt-4o-mini-2024-07-18:southcentralus"
+    | "gpt-4o-2024-05-13:eastus2"
+    | "gpt-4o-2024-05-13:eastus"
+    | "gpt-4o-2024-05-13:northcentralus"
+    | "gpt-4o-2024-05-13:southcentralus"
+    | "gpt-4o-2024-05-13:westus3"
+    | "gpt-4o-2024-05-13:westus"
+    | "gpt-4-turbo-2024-04-09:eastus2"
+    | "gpt-4-0125-preview:eastus"
+    | "gpt-4-0125-preview:northcentralus"
+    | "gpt-4-0125-preview:southcentralus"
+    | "gpt-4-1106-preview:australia"
+    | "gpt-4-1106-preview:canadaeast"
+    | "gpt-4-1106-preview:france"
+    | "gpt-4-1106-preview:india"
+    | "gpt-4-1106-preview:norway"
+    | "gpt-4-1106-preview:swedencentral"
+    | "gpt-4-1106-preview:uk"
+    | "gpt-4-1106-preview:westus"
+    | "gpt-4-1106-preview:westus3"
+    | "gpt-4-0613:canadaeast"
+    | "gpt-3.5-turbo-0125:canadaeast"
+    | "gpt-3.5-turbo-0125:northcentralus"
+    | "gpt-3.5-turbo-0125:southcentralus"
+    | "gpt-3.5-turbo-1106:canadaeast"
+    | "gpt-3.5-turbo-1106:westus";
+  /**
+   * This is the temperature of the model. For LLM-as-a-judge, it's recommended to set it between 0 - 0.3 to avoid hallucinations and ensure the model judges the output correctly based on the instructions.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /**
+   * This is the max tokens of the model.
+   * If your Judge instructions return `true` or `false` takes only 1 token (as per the OpenAI Tokenizer), and therefore is recommended to set it to a low number to force the model to return a short response.
+   * @min 50
+   * @max 10000
+   */
+  maxTokens?: number;
+}
+
+export interface EvalAnthropicModel {
+  /** This is the provider of the model (`anthropic`). */
+  provider: "anthropic";
+  /**
+   * This is the specific model that will be used.
+   * @maxLength 100
+   */
+  model:
+    | "claude-3-opus-20240229"
+    | "claude-3-sonnet-20240229"
+    | "claude-3-haiku-20240307"
+    | "claude-3-5-sonnet-20240620"
+    | "claude-3-5-sonnet-20241022"
+    | "claude-3-5-haiku-20241022"
+    | "claude-3-7-sonnet-20250219"
+    | "claude-opus-4-20250514"
+    | "claude-sonnet-4-20250514";
+  /**
+   * This is the optional configuration for Anthropic's thinking feature.
+   *
+   * - Only applicable for `claude-3-7-sonnet-20250219` model.
+   * - If provided, `maxTokens` must be greater than `thinking.budgetTokens`.
+   */
+  thinking?: AnthropicThinkingConfig;
+  /**
+   * This is the temperature of the model. For LLM-as-a-judge, it's recommended to set it between 0 - 0.3 to avoid hallucinations and ensure the model judges the output correctly based on the instructions.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /**
+   * This is the max tokens of the model.
+   * If your Judge instructions return `true` or `false` takes only 1 token (as per the OpenAI Tokenizer), and therefore is recommended to set it to a low number to force the model to return a short response.
+   * @min 50
+   * @max 10000
+   */
+  maxTokens?: number;
+}
+
+export interface EvalGoogleModel {
+  /** This is the provider of the model (`google`). */
+  provider: "google";
+  /**
+   * This is the name of the model. Ex. gpt-4o
+   * @maxLength 100
+   */
+  model:
+    | "gemini-2.5-pro"
+    | "gemini-2.5-flash"
+    | "gemini-2.5-flash-lite"
+    | "gemini-2.0-flash-thinking-exp"
+    | "gemini-2.0-pro-exp-02-05"
+    | "gemini-2.0-flash"
+    | "gemini-2.0-flash-lite"
+    | "gemini-2.0-flash-exp"
+    | "gemini-2.0-flash-realtime-exp"
+    | "gemini-1.5-flash"
+    | "gemini-1.5-flash-002"
+    | "gemini-1.5-pro"
+    | "gemini-1.5-pro-002"
+    | "gemini-1.0-pro";
+  /**
+   * This is the temperature of the model. For LLM-as-a-judge, it's recommended to set it between 0 - 0.3 to avoid hallucinations and ensure the model judges the output correctly based on the instructions.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /**
+   * This is the max tokens of the model.
+   * If your Judge instructions return `true` or `false` takes only 1 token (as per the OpenAI Tokenizer), and therefore is recommended to set it to a low number to force the model to return a short response.
+   * @min 50
+   * @max 10000
+   */
+  maxTokens?: number;
+}
+
+export interface EvalGroqModel {
+  /** This is the provider of the model (`groq`). */
+  provider: "groq";
+  /**
+   * This is the name of the model. Ex. gpt-4o
+   * @maxLength 100
+   */
+  model:
+    | "openai/gpt-oss-20b"
+    | "openai/gpt-oss-120b"
+    | "deepseek-r1-distill-llama-70b"
+    | "llama-3.3-70b-versatile"
+    | "llama-3.1-405b-reasoning"
+    | "llama-3.1-8b-instant"
+    | "llama3-8b-8192"
+    | "llama3-70b-8192"
+    | "gemma2-9b-it"
+    | "moonshotai/kimi-k2-instruct-0905"
+    | "meta-llama/llama-4-maverick-17b-128e-instruct"
+    | "meta-llama/llama-4-scout-17b-16e-instruct"
+    | "mistral-saba-24b"
+    | "compound-beta"
+    | "compound-beta-mini";
+  /**
+   * This is the temperature of the model. For LLM-as-a-judge, it's recommended to set it between 0 - 0.3 to avoid hallucinations and ensure the model judges the output correctly based on the instructions.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /**
+   * This is the max tokens of the model.
+   * If your Judge instructions return `true` or `false` takes only 1 token (as per the OpenAI Tokenizer), and therefore is recommended to set it to a low number to force the model to return a short response.
+   * @min 50
+   * @max 10000
+   */
+  maxTokens?: number;
+}
+
+export interface EvalCustomModel {
+  /** This is the provider of the model (`custom-llm`). */
+  provider: "custom-llm";
+  /** These is the URL we'll use for the OpenAI client's `baseURL`. Ex. https://openrouter.ai/api/v1 */
+  url: string;
+  /** These are the headers we'll use for the OpenAI client's `headers`. */
+  headers?: object;
+  /**
+   * This sets the timeout for the connection to the custom provider without needing to stream any tokens back. Default is 20 seconds.
+   * @min 20
+   * @max 600
+   */
+  timeoutSeconds?: number;
+  /**
+   * This is the name of the model. Ex. gpt-4o
+   * @maxLength 100
+   */
+  model: string;
+  /**
+   * This is the temperature of the model. For LLM-as-a-judge, it's recommended to set it between 0 - 0.3 to avoid hallucinations and ensure the model judges the output correctly based on the instructions.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /**
+   * This is the max tokens of the model.
+   * If your Judge instructions return `true` or `false` takes only 1 token (as per the OpenAI Tokenizer), and therefore is recommended to set it to a low number to force the model to return a short response.
+   * @min 50
+   * @max 10000
+   */
+  maxTokens?: number;
+}
+
+export interface AssistantMessageJudgePlanAI {
+  /**
+   * This is the model to use for the LLM-as-a-judge.
+   * If not provided, will default to the assistant's model.
+   *
+   * The instructions on how to evaluate the model output with this LLM-Judge must be passed as a system message in the messages array of the model.
+   *
+   * The Mock conversation can be passed to the LLM-Judge to evaluate using the prompt {{messages}} and will be evaluated as a LiquidJS Variable. To access and judge only the last message, use {{messages[-1]}}
+   *
+   * The LLM-Judge must respond with "pass" or "fail" and only those two responses are allowed.
+   * @example "{"
+   */
+  model:
+    | EvalOpenAIModel
+    | EvalAnthropicModel
+    | EvalGoogleModel
+    | EvalCustomModel;
+  /**
+   * This is the type of the judge plan.
+   * Use 'ai' to evaluate the assistant message content using LLM-as-a-judge.
+   * @default 'ai'
+   */
+  type: "ai";
+}
+
+export interface AssistantMessageJudgePlanRegex {
+  /**
+   * This is the type of the judge plan.
+   * Use 'regex' for a regex match on the content and tool calls - without using LLM-as-a-judge.
+   * @default 'regex'
+   */
+  type: "regex";
+  /**
+   * This is what that will be used to evaluate the model's message content.
+   * The content will be evaluated against the regex pattern provided in the Judge Plan content field.
+   * Evaluation is considered successful if the regex pattern matches any part of the assistant message content.
+   * @maxLength 1000
+   * @example "/sunny/i"
+   */
+  content: string;
+  /**
+   * This is the tool calls that will be used to evaluate the model's message content.
+   * The tool name must be a valid tool that the assistant is allowed to call.
+   * The values to the arguments for the tool call should be a Regular Expression.
+   * Evaluation is considered successful if the regex pattern matches any part of each tool call argument.
+   *
+   * For the Query tool, the arguments for the tool call are in the format - {knowledgeBaseNames: ['kb_name', 'kb_name_2']}
+   *
+   * For the DTMF tool, the arguments for the tool call are in the format - {dtmf: "1234*"}
+   *
+   * For the Handoff tool, the arguments for the tool call are in the format - {destination: "assistant_id"}
+   *
+   * For the Transfer Call tool, the arguments for the tool call are in the format - {destination: "phone_number_or_assistant_id"}
+   *
+   * For all other tools, they are called without arguments or with user-defined arguments
+   * @example "[{ name: "get_weather", arguments: { city: "/San Francisco/i" } }]"
+   */
+  toolCalls?: ChatEvalAssistantMessageMockToolCall[];
+}
+
+export interface GetEvalPaginatedDTO {
+  id?: string;
+  /**
+   * This is the page number to return. Defaults to 1.
+   * @min 1
+   */
+  page?: number;
+  /** This is the sort order for pagination. Defaults to 'DESC'. */
+  sortOrder?: "ASC" | "DESC";
+  /**
+   * This is the maximum number of items to return. Defaults to 100.
+   * @min 0
+   * @max 1000
+   */
+  limit?: number;
+  /**
+   * This will return items where the createdAt is greater than the specified value.
+   * @format date-time
+   */
+  createdAtGt?: string;
+  /**
+   * This will return items where the createdAt is less than the specified value.
+   * @format date-time
+   */
+  createdAtLt?: string;
+  /**
+   * This will return items where the createdAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtGe?: string;
+  /**
+   * This will return items where the createdAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtLe?: string;
+  /**
+   * This will return items where the updatedAt is greater than the specified value.
+   * @format date-time
+   */
+  updatedAtGt?: string;
+  /**
+   * This will return items where the updatedAt is less than the specified value.
+   * @format date-time
+   */
+  updatedAtLt?: string;
+  /**
+   * This will return items where the updatedAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtGe?: string;
+  /**
+   * This will return items where the updatedAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtLe?: string;
+}
+
+export interface EvalPaginatedResponse {
+  results: Eval[];
+  metadata: PaginationMeta;
+}
+
+export interface UpdateEvalDTO {
+  /**
+   * This is the mock conversation that will be used to evaluate the flow of the conversation.
+   *
+   * Mock Messages are used to simulate the flow of the conversation
+   *
+   * Evaluation Messages are used as checkpoints in the flow where the model's response to previous conversation needs to be evaluated to check the content and tool calls
+   * @example "[{ role: "user", content: "Hello, how are you?" }, { role: "assistant", judgePlan: { type: "exact", content: "I am good, thank you!" } }]"
+   */
+  messages?: (
+    | ChatEvalAssistantMessageMock
+    | ChatEvalSystemMessageMock
+    | ChatEvalToolResponseMessageMock
+    | ChatEvalUserMessageMock
+    | ChatEvalAssistantMessageEvaluation
+  )[];
+  /**
+   * This is the name of the eval.
+   * It helps identify what the eval is checking for.
+   * @minLength 1
+   * @maxLength 80
+   * @example "Verified User Flow Eval"
+   */
+  name?: string;
+  /**
+   * This is the description of the eval.
+   * This helps describe the eval and its purpose in detail. It will not be used to evaluate the flow of the conversation.
+   * @minLength 1
+   * @maxLength 500
+   * @example "This eval checks if the user flow is verified."
+   */
+  description?: string;
+  /**
+   * This is the type of the eval.
+   * Currently it is fixed to `chat.mockConversation`.
+   * @example "chat.mockConversation"
+   */
+  type?: "chat.mockConversation";
+}
+
+export interface CreateEvalRunDTO {
+  /** This is the transient eval that will be run */
+  eval?: CreateEvalDTO;
+  /** This is the target that will be run against the eval */
+  target: EvalRunTargetAssistant | EvalRunTargetSquad;
+  /**
+   * This is the type of the run.
+   * Currently it is fixed to `eval`.
+   * @example "eval"
+   */
+  type: "eval";
+  /**
+   * This is the id of the eval that will be run.
+   * @example "123e4567-e89b-12d3-a456-426614174000"
+   */
+  evalId?: string;
+}
+
+export interface EvalRunResult {
+  /**
+   * This is the status of the eval run result.
+   * The status is only 'pass' or 'fail' for an eval run result.
+   * Currently, An eval is considered `pass` only if all the Assistant Judge messages are evaluated to pass.
+   * @example "pass"
+   */
+  status: "pass" | "fail";
+  /**
+   * This is the messages of the eval run result.
+   * It contains the user/system messages
+   */
+  messages: (
+    | ChatEvalUserMessageMock
+    | ChatEvalSystemMessageMock
+    | ChatEvalToolResponseMessageMock
+    | ChatEvalAssistantMessageMock
+  )[];
+  /**
+   * This is the start time of the eval run result.
+   * @format date-time
+   * @example "2021-01-01T00:00:00.000Z"
+   */
+  startedAt: string;
+  /**
+   * This is the end time of the eval run result.
+   * @format date-time
+   * @example "2021-01-01T00:00:00.000Z"
+   */
+  endedAt: string;
+}
+
+export interface EvalRun {
+  /**
+   * This is the status of the eval run. When an eval run is created, the status is 'running'.
+   * When the eval run is completed, the status is 'ended'.
+   * @example "running"
+   */
+  status: "running" | "ended" | "queued";
+  /**
+   * This is the reason for the eval run to end.
+   * When the eval run is completed normally i.e end of mock conversation, the status is 'mockConversation.done'.
+   * When the eval fails due to an error like Chat error or incorrect configuration, the status is 'error'.
+   * When the eval runs for too long, due to model issues or tool call issues, the status is 'timeout'.
+   * When the eval run is cancelled by the user, the status is 'cancelled'.
+   * When the eval run is cancelled by Vapi for any reason, the status is 'aborted'.
+   * @example "mockConversation.done"
+   */
+  endedReason:
+    | "mockConversation.done"
+    | "error"
+    | "timeout"
+    | "cancelled"
+    | "aborted";
+  /** This is the transient eval that will be run */
+  eval?: CreateEvalDTO;
+  /** This is the target that will be run against the eval */
+  target: EvalRunTargetAssistant | EvalRunTargetSquad;
+  id: string;
+  orgId: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  startedAt: string;
+  /** @format date-time */
+  endedAt: string;
+  /**
+   * This is the ended message when the eval run ended for any reason apart from mockConversation.done
+   * @example "The Assistant returned an error"
+   */
+  endedMessage?: string;
+  /**
+   * This is the results of the eval or suite run.
+   * The array will have a single item for an eval run, and multiple items each corresponding to the an eval in a suite run in the same order as the evals in the suite.
+   */
+  results: EvalRunResult[];
+  /**
+   * This is the type of the run.
+   * Currently it is fixed to `eval`.
+   * @example "eval"
+   */
+  type: "eval";
+  /**
+   * This is the id of the eval that will be run.
+   * @example "123e4567-e89b-12d3-a456-426614174000"
+   */
+  evalId?: string;
+}
+
+export interface EvalRunPaginatedResponse {
+  results: EvalRun[];
+  metadata: PaginationMeta;
+}
+
+export interface GetEvalRunPaginatedDTO {
+  id?: string;
+  /**
+   * This is the page number to return. Defaults to 1.
+   * @min 1
+   */
+  page?: number;
+  /** This is the sort order for pagination. Defaults to 'DESC'. */
+  sortOrder?: "ASC" | "DESC";
+  /**
+   * This is the maximum number of items to return. Defaults to 100.
+   * @min 0
+   * @max 1000
+   */
+  limit?: number;
+  /**
+   * This will return items where the createdAt is greater than the specified value.
+   * @format date-time
+   */
+  createdAtGt?: string;
+  /**
+   * This will return items where the createdAt is less than the specified value.
+   * @format date-time
+   */
+  createdAtLt?: string;
+  /**
+   * This will return items where the createdAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtGe?: string;
+  /**
+   * This will return items where the createdAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtLe?: string;
+  /**
+   * This will return items where the updatedAt is greater than the specified value.
+   * @format date-time
+   */
+  updatedAtGt?: string;
+  /**
+   * This will return items where the updatedAt is less than the specified value.
+   * @format date-time
+   */
+  updatedAtLt?: string;
+  /**
+   * This will return items where the updatedAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtGe?: string;
+  /**
+   * This will return items where the updatedAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtLe?: string;
+}
+
+export interface EvalRunTargetAssistant {
+  /** This is the transient assistant that will be run against the eval */
+  assistant?: CreateAssistantDTO;
+  /**
+   * This is the overrides that will be applied to the assistant.
+   * @example "{"
+   */
+  assistantOverrides?: AssistantOverrides;
+  /**
+   * This is the type of the target.
+   * Currently it is fixed to `assistant`.
+   * @example "assistant"
+   */
+  type: "assistant";
+  /**
+   * This is the id of the assistant that will be run against the eval
+   * @example "123e4567-e89b-12d3-a456-426614174000"
+   */
+  assistantId?: string;
+}
+
+export interface EvalRunTargetSquad {
+  /** This is the transient squad that will be run against the eval */
+  squad?: CreateSquadDTO;
+  /**
+   * This is the overrides that will be applied to the assistants.
+   * @example "{"
+   */
+  assistantOverrides?: AssistantOverrides;
+  /**
+   * This is the type of the target.
+   * Currently it is fixed to `squad`.
+   * @example "squad"
+   */
+  type: "squad";
+  /**
+   * This is the id of the squad that will be run against the eval
+   * @example "123e4567-e89b-12d3-a456-426614174000"
+   */
+  squadId?: string;
+}
+
 export interface CreateOrgDTO {
   /**
    * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
@@ -30745,6 +32093,14 @@ export interface CloneVoiceDTO {
   files: File[];
 }
 
+export interface VariableValueGroupBy {
+  /**
+   * This is the key of the variable value to group by.
+   * @maxLength 100
+   */
+  key: string;
+}
+
 export interface TimeRange {
   /**
    * This is the time step for aggregations.
@@ -30822,6 +32178,8 @@ export interface AnalyticsQuery {
     | "endedReason"
     | "analysis.successEvaluation"
     | "status";
+  /** This is the list of variable value keys you want to group by. */
+  groupByVariableValue?: VariableValueGroupBy[];
   /**
    * This is the name of the query. This will be used to identify the query in the response.
    * @maxLength 40
@@ -31416,6 +32774,7 @@ export interface ServerMessageEndOfCallReport {
     | "call.start.error-vapi-number-outbound-daily-limit"
     | "call.start.error-get-transport"
     | "call.start.error-subscription-wallet-does-not-exist"
+    | "call.start.error-fraud-check-failed"
     | "call.start.error-subscription-frozen"
     | "call.start.error-subscription-insufficient-credits"
     | "call.start.error-subscription-upgrade-failed"
@@ -31468,6 +32827,7 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-providerfault-vapi-500-server-error"
     | "call.in-progress.error-providerfault-vapi-503-server-overloaded-error"
     | "pipeline-error-deepgram-transcriber-failed"
+    | "pipeline-error-deepgram-transcriber-api-key-missing"
     | "call.in-progress.error-vapifault-deepgram-transcriber-failed"
     | "pipeline-error-gladia-transcriber-failed"
     | "call.in-progress.error-vapifault-gladia-transcriber-failed"
@@ -31957,6 +33317,38 @@ export interface ServerMessageEndOfCallReport {
    * @format date-time
    */
   endedAt?: string;
+  /** This is the compliance result of the call. This can also be found at `call.compliance` on GET /call/:id. */
+  compliance?: Compliance;
+}
+
+export interface ServerMessageHandoffDestinationRequest {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "handoff-destination-request" is sent when the model is requesting handoff but destination is unknown. */
+  type: "handoff-destination-request";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
+  /** This is the parameters of the handoff destination request. */
+  parameters: object;
 }
 
 export interface ServerMessageHang {
@@ -32169,6 +33561,7 @@ export interface ServerMessageStatusUpdate {
     | "call.start.error-vapi-number-outbound-daily-limit"
     | "call.start.error-get-transport"
     | "call.start.error-subscription-wallet-does-not-exist"
+    | "call.start.error-fraud-check-failed"
     | "call.start.error-subscription-frozen"
     | "call.start.error-subscription-insufficient-credits"
     | "call.start.error-subscription-upgrade-failed"
@@ -32221,6 +33614,7 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-providerfault-vapi-500-server-error"
     | "call.in-progress.error-providerfault-vapi-503-server-overloaded-error"
     | "pipeline-error-deepgram-transcriber-failed"
+    | "pipeline-error-deepgram-transcriber-api-key-missing"
     | "call.in-progress.error-vapifault-deepgram-transcriber-failed"
     | "pipeline-error-gladia-transcriber-failed"
     | "call.in-progress.error-vapifault-gladia-transcriber-failed"
@@ -33231,6 +34625,7 @@ export interface ServerMessage {
     | ServerMessageAssistantRequest
     | ServerMessageConversationUpdate
     | ServerMessageEndOfCallReport
+    | ServerMessageHandoffDestinationRequest
     | ServerMessageHang
     | ServerMessageKnowledgeBaseRequest
     | ServerMessageModelOutput
@@ -33329,6 +34724,8 @@ export interface ServerMessageResponseAssistantRequest {
 export interface ServerMessageResponseHandoffDestinationRequest {
   /** This is the destination you'd like the call to be transferred to. */
   destination: HandoffDestinationAssistant;
+  /** This is the error message if the handoff should not be made. */
+  error?: string;
 }
 
 export interface KnowledgeBaseResponseDocument {
@@ -33481,11 +34878,18 @@ export interface ClientInboundMessageControl {
    * This is the type of the message. Send "control" message to control the assistant. `control` options are:
    * - "mute-assistant" - mute the assistant
    * - "unmute-assistant" - unmute the assistant
+   * - "mute-customer" - mute the user
+   * - "unmute-customer" - unmute the user
    * - "say-first-message" - say the first message (this is used when video recording is enabled and the conversation is only started once the client side kicks off the recording)
    */
   type: "control";
   /** This is the control action */
-  control: "mute-assistant" | "unmute-assistant" | "say-first-message";
+  control:
+    | "mute-assistant"
+    | "unmute-assistant"
+    | "mute-customer"
+    | "unmute-customer"
+    | "say-first-message";
 }
 
 export interface ClientInboundMessageSay {
@@ -33580,7 +34984,13 @@ export interface ToolCallResultMessage {
 export interface TransportCost {
   /** This is the type of cost, always 'transport' for this class. */
   type: "transport";
-  provider?: "twilio" | "vonage" | "vapi";
+  provider?:
+    | "daily"
+    | "vapi.websocket"
+    | "twilio"
+    | "vonage"
+    | "telnyx"
+    | "vapi.sip";
   /** This is the minutes of `transport` usage. This should match `call.endedAt` - `call.startedAt`. */
   minutes: number;
   /** This is the cost of the component in USD. */
@@ -35215,9 +36625,10 @@ export class HttpClient<SecurityDataType = unknown> {
       r.data = null as unknown as T;
       r.error = null as unknown as E;
 
+      const responseToParse = responseFormat ? response.clone() : response;
       const data = !responseFormat
         ? r
-        : await response[responseFormat]()
+        : await responseToParse[responseFormat]()
             .then((data) => {
               if (r.ok) {
                 r.data = data;
@@ -35663,6 +37074,31 @@ export class Api<
          */
         externalId?: string;
         /**
+         * Filter calls by structured output values. Use structured output ID as key and filter operators as values.
+         * @example {"c9dddda4-d70a-4dad-aa5c-aaf117f85cea":{"eq":"2","gt":"1"}}
+         */
+        structuredOutputs?: Record<
+          string,
+          {
+            /** Equal to */
+            eq?: string;
+            /** Not equal to */
+            neq?: string;
+            /** Greater than */
+            gt?: string;
+            /** Greater than or equal to */
+            gte?: string;
+            /** Less than */
+            lt?: string;
+            /** Less than or equal to */
+            lte?: string;
+            /** Contains */
+            contains?: string;
+            /** Not contains */
+            notContains?: string;
+          }
+        >;
+        /**
          * This is the page number to return. Defaults to 1.
          * @min 1
          */
@@ -35815,6 +37251,31 @@ export class Api<
          * @maxLength 40
          */
         externalId?: string;
+        /**
+         * Filter calls by structured output values. Use structured output ID as key and filter operators as values.
+         * @example {"c9dddda4-d70a-4dad-aa5c-aaf117f85cea":{"eq":"2","gt":"1"}}
+         */
+        structuredOutputs?: Record<
+          string,
+          {
+            /** Equal to */
+            eq?: string;
+            /** Not equal to */
+            neq?: string;
+            /** Greater than */
+            gt?: string;
+            /** Greater than or equal to */
+            gte?: string;
+            /** Less than */
+            lt?: string;
+            /** Less than or equal to */
+            lte?: string;
+            /** Contains */
+            contains?: string;
+            /** Not contains */
+            notContains?: string;
+          }
+        >;
         /**
          * This is the page number to return. Defaults to 1.
          * @min 1
@@ -35969,6 +37430,31 @@ export class Api<
          * @maxLength 40
          */
         externalId?: string;
+        /**
+         * Filter calls by structured output values. Use structured output ID as key and filter operators as values.
+         * @example {"c9dddda4-d70a-4dad-aa5c-aaf117f85cea":{"eq":"2","gt":"1"}}
+         */
+        structuredOutputs?: Record<
+          string,
+          {
+            /** Equal to */
+            eq?: string;
+            /** Not equal to */
+            neq?: string;
+            /** Greater than */
+            gt?: string;
+            /** Greater than or equal to */
+            gte?: string;
+            /** Less than */
+            lt?: string;
+            /** Less than or equal to */
+            lte?: string;
+            /** Contains */
+            contains?: string;
+            /** Not contains */
+            notContains?: string;
+          }
+        >;
         /**
          * This is the page number to return. Defaults to 1.
          * @min 1
@@ -36588,6 +38074,8 @@ export class Api<
       query?: {
         /** This is the unique identifier for the assistant that will be used for the chat. */
         assistantId?: string;
+        /** This is the unique identifier for the squad that will be used for the chat. */
+        squadId?: string;
         /** This is the unique identifier for the workflow that will be used for the chat. */
         workflowId?: string;
         /** This is the unique identifier for the session that will be used for the chat. */
@@ -36658,7 +38146,7 @@ export class Api<
       }),
 
     /**
-     * @description Creates a new chat. Requires at least one of: assistantId/assistant, sessionId, or previousChatId. Note: sessionId and previousChatId are mutually exclusive.
+     * @description Creates a new chat with optional SMS delivery via transport field. Requires at least one of: assistantId/assistant, sessionId, or previousChatId. Note: sessionId and previousChatId are mutually exclusive. Transport field enables SMS delivery with two modes: (1) New conversation - provide transport.phoneNumberId and transport.customer to create a new session, (2) Existing conversation - provide sessionId to use existing session data. Cannot specify both sessionId and transport fields together. The transport.useLLMGeneratedMessageForOutbound flag controls whether input is processed by LLM (true, default) or forwarded directly as SMS (false).
      *
      * @tags Chats
      * @name ChatControllerCreateChat
@@ -37000,6 +38488,8 @@ export class Api<
         name?: string;
         /** This is the ID of the assistant to filter sessions by. */
         assistantId?: string;
+        /** This is the ID of the squad to filter sessions by. */
+        squadId?: string;
         /** This is the ID of the workflow to filter sessions by. */
         workflowId?: string;
         /**
@@ -39107,6 +40597,296 @@ export class Api<
       this.request<TestSuiteRun, any>({
         path: `/test-suite/${testSuiteId}/run/${id}`,
         method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+  };
+  eval = {
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerCreate
+     * @summary Create Eval
+     * @request POST:/eval
+     * @secure
+     */
+    evalControllerCreate: (data: CreateEvalDTO, params: RequestParams = {}) =>
+      this.request<Eval, any>({
+        path: `/eval`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerGetPaginated
+     * @summary List Evals
+     * @request GET:/eval
+     * @secure
+     */
+    evalControllerGetPaginated: (
+      query?: {
+        id?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<EvalPaginatedResponse, any>({
+        path: `/eval`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerUpdate
+     * @summary Update Eval
+     * @request PATCH:/eval/{id}
+     * @secure
+     */
+    evalControllerUpdate: (
+      id: string,
+      data: UpdateEvalDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Eval, any>({
+        path: `/eval/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerRemove
+     * @summary Delete Eval
+     * @request DELETE:/eval/{id}
+     * @secure
+     */
+    evalControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Eval, any>({
+        path: `/eval/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerGet
+     * @summary Get Eval
+     * @request GET:/eval/{id}
+     * @secure
+     */
+    evalControllerGet: (id: string, params: RequestParams = {}) =>
+      this.request<Eval, any>({
+        path: `/eval/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerRemoveRun
+     * @summary Delete Eval Run
+     * @request DELETE:/eval/run/{id}
+     * @secure
+     */
+    evalControllerRemoveRun: (id: string, params: RequestParams = {}) =>
+      this.request<EvalRun, any>({
+        path: `/eval/run/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerGetRun
+     * @summary Get Eval Run
+     * @request GET:/eval/run/{id}
+     * @secure
+     */
+    evalControllerGetRun: (id: string, params: RequestParams = {}) =>
+      this.request<EvalRun, any>({
+        path: `/eval/run/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerRun
+     * @summary Create Eval Run
+     * @request POST:/eval/run
+     * @secure
+     */
+    evalControllerRun: (data: CreateEvalRunDTO, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/eval/run`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerGetRunsPaginated
+     * @summary List Eval Runs
+     * @request GET:/eval/run
+     * @secure
+     */
+    evalControllerGetRunsPaginated: (
+      query?: {
+        id?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<EvalRunPaginatedResponse, any>({
+        path: `/eval/run`,
+        method: "GET",
+        query: query,
         secure: true,
         format: "json",
         ...params,
