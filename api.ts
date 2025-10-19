@@ -18143,6 +18143,15 @@ export interface CreateWebCallDTO {
   workflow?: CreateWorkflowDTO;
   /** These are the overrides for the `workflow` or `workflowId`'s settings and template variables. */
   workflowOverrides?: WorkflowOverrides;
+  /**
+   * This determines whether the daily room will be deleted and all participants will be kicked once the user leaves the room.
+   * If set to `false`, the room will be kept alive even after the user leaves, allowing clients to reconnect to the same room.
+   * If set to `true`, the room will be deleted and reconnection will not be allowed.
+   *
+   * Defaults to `true`.
+   * @example true
+   */
+  roomDeleteOnUserLeaveEnabled?: boolean;
 }
 
 export interface UpdateCallDTO {

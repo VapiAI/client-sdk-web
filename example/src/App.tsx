@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Vapi from '@vapi-ai/web';
 
 const VAPI_PUBLIC_KEY = import.meta.env.VITE_VAPI_PUBLIC_KEY;
+const VAPI_API_BASE_URL = import.meta.env.VITE_VAPI_API_BASE_URL;
 
 if (!VAPI_PUBLIC_KEY) {
   throw new Error('VITE_VAPI_PUBLIC_KEY is required. Please set it in your .env.local file.');
@@ -14,7 +15,7 @@ interface Message {
 }
 
 function App() {
-  const [vapi] = useState(() => new Vapi(VAPI_PUBLIC_KEY));
+  const [vapi] = useState(() => new Vapi(VAPI_PUBLIC_KEY, VAPI_API_BASE_URL));
   const [connected, setConnected] = useState(false);
   const [assistantIsSpeaking, setAssistantIsSpeaking] = useState(false);
   const [volumeLevel, setVolumeLevel] = useState(0);
@@ -25,8 +26,21 @@ function App() {
   const [interruptionsEnabled, setInterruptionsEnabled] = useState(true);
   const [interruptAssistantEnabled, setInterruptAssistantEnabled] = useState(true);
   const [endCallAfterSay, setEndCallAfterSay] = useState(false);
+  const [storedWebCall, setStoredWebCall] = useState<any>(null);
 
   useEffect(() => {
+    // Check for stored webCall on component mount
+    const stored = localStorage.getItem('vapi-webcall');
+    if (stored) {
+      try {
+        const parsedWebCall = JSON.parse(stored);
+        setStoredWebCall(parsedWebCall);
+      } catch (error) {
+        console.error('Error parsing stored webCall:', error);
+        localStorage.removeItem('vapi-webcall');
+      }
+    }
+
     // Update current time every second
     const timer = setInterval(() => {
       setCurrentTime(new Date().toLocaleTimeString());
@@ -34,7 +48,7 @@ function App() {
 
     // Set up Vapi event listeners
     vapi.on('call-start', () => {
-      console.log('Call started');
+      console.log('Call started - call-start event fired');
       setConnected(true);
       addMessage('system', 'Call connected');
     });
@@ -44,7 +58,7 @@ function App() {
       setConnected(false);
       setAssistantIsSpeaking(false);
       setVolumeLevel(0);
-      addMessage('system', 'Call ended');
+      addMessage('system', 'Call ended - webCall data preserved for reconnection');
     });
 
     vapi.on('speech-start', () => {
@@ -84,7 +98,7 @@ function App() {
       console.error('Vapi error:', error);
       addMessage('system', `Error: ${error.message || error}`);
     });
-
+    
     return () => {
       clearInterval(timer);
       vapi.stop();
@@ -104,7 +118,7 @@ function App() {
       addMessage('system', 'Starting call...');
       
       // Start call with assistant configuration
-      await vapi.start({
+      const webCall = await vapi.start({
         // Basic assistant configuration
         model: {
           provider: "openai",
@@ -137,7 +151,22 @@ function App() {
         
         // Max call duration (in seconds) - 10 minutes
         maxDurationSeconds: 600
+      }, undefined, undefined, undefined, undefined, {
+        roomDeleteOnUserLeaveEnabled: false
       });
+      
+      // Store webCall in localStorage if it was created successfully
+      if (webCall) {
+        const webCallToStore = {
+          webCallUrl: (webCall as any).webCallUrl,
+          id: webCall.id,
+          artifactPlan: webCall.artifactPlan,
+          assistant: webCall.assistant
+        };
+        localStorage.setItem('vapi-webcall', JSON.stringify(webCallToStore));
+        setStoredWebCall(webCallToStore);
+        addMessage('system', 'Call data stored for reconnection');
+      }
       
     } catch (error) {
       console.error('Error starting call:', error);
@@ -147,6 +176,41 @@ function App() {
 
   const stopCall = () => {
     vapi.stop();
+  };
+
+  const reconnectCall = async () => {
+    if (!storedWebCall) {
+      addMessage('system', 'No stored call data found');
+      return;
+    }
+
+    try {
+      addMessage('system', 'Reconnecting to previous call...');
+      console.log('Attempting reconnect with data:', storedWebCall);
+      await vapi.reconnect(storedWebCall);
+      addMessage('system', 'Reconnect method completed successfully');
+      
+      // Add a small delay to allow events to propagate
+      setTimeout(() => {
+        if (!connected) {
+          addMessage('system', 'Warning: Reconnect completed but connected state not updated. This may indicate an issue with event handling.');
+        }
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error reconnecting:', error);
+      addMessage('system', `Failed to reconnect: ${error}`);
+      
+      // Clear invalid stored data
+      localStorage.removeItem('vapi-webcall');
+      setStoredWebCall(null);
+    }
+  };
+
+  const clearStoredCall = () => {
+    localStorage.removeItem('vapi-webcall');
+    setStoredWebCall(null);
+    addMessage('system', 'Cleared stored call data');
   };
 
   const toggleMute = () => {
@@ -216,7 +280,7 @@ function App() {
         borderRadius: '8px',
         marginBottom: '20px'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <strong>Status:</strong> 
             <span style={{ 
@@ -225,9 +289,32 @@ function App() {
             }}>
               {connected ? 'Connected' : 'Disconnected'}
             </span>
+            {storedWebCall && !connected && (
+              <span style={{ 
+                color: '#f59e0b',
+                marginLeft: '8px',
+                fontSize: '14px'
+              }}>
+                (Reconnect Available)
+              </span>
+            )}
           </div>
           <div>Current Time: {currentTime}</div>
         </div>
+        
+        {storedWebCall && (
+          <div style={{ 
+            marginTop: '10px', 
+            padding: '8px 12px', 
+            backgroundColor: connected ? '#dcfce7' : '#fef3c7', 
+            borderRadius: '4px',
+            fontSize: '14px',
+            color: connected ? '#166534' : '#92400e'
+          }}>
+            <strong>Stored Call:</strong> ID {storedWebCall.id || 'Unknown'} - 
+            {connected ? ' Currently active' : ' Ready to reconnect'}
+          </div>
+        )}
         
         {connected && (
           <div style={{ marginTop: '10px' }}>
@@ -261,7 +348,8 @@ function App() {
         display: 'flex', 
         gap: '10px', 
         justifyContent: 'center',
-        marginBottom: '20px'
+        marginBottom: '20px',
+        flexWrap: 'wrap'
       }}>
         <button 
           onClick={startCall} 
@@ -278,6 +366,23 @@ function App() {
         >
           Start Call
         </button>
+
+        {storedWebCall && !connected && (
+          <button 
+            onClick={reconnectCall} 
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            Reconnect to Stored Call
+          </button>
+        )}
         
         <button 
           onClick={stopCall} 
@@ -326,6 +431,23 @@ function App() {
         >
           Send Context
         </button>
+
+        {storedWebCall && (
+          <button 
+            onClick={clearStoredCall} 
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#6b7280',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            Clear Stored Call
+          </button>
+        )}
       </div>
 
       {/* Manual Say Controls */}
@@ -539,6 +661,9 @@ function App() {
           <li>Use "Mute" to temporarily disable your microphone</li>
           <li>Say "goodbye" or "end call" to end the conversation</li>
           <li>Click "Stop Call" to manually end the call</li>
+          <li><strong>Persistent Storage:</strong> Call data is automatically saved and persists even after calls end</li>
+          <li><strong>Reconnection:</strong> Use "Reconnect to Stored Call" to rejoin your previous session anytime</li>
+          <li>Use "Clear Stored Call" to permanently remove saved call data when no longer needed</li>
         </ul>
       </div>
     </div>

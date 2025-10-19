@@ -14,7 +14,8 @@
     "test:example": "npm run pack:local && cd example && npm install && npm run build",
     "pack:local": "./scripts/build-latest.sh",
     "clean-builds": "rm -f vapi-ai-web-*.tgz && echo '🧹 Cleaned up all build tarballs'",
-    "dev:example": "npm run pack:local && cd example && npm install && npm run dev"
+    "dev:example": "npm run pack:local && cd example && npm install && npm run dev",
+    "re-build-local-example": "./scripts/re-build-local-example.sh"
   },
   "repository": {
     "type": "git",
