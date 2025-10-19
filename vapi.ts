@@ -28,6 +28,10 @@ import {
   safeSetInputDevicesAsync,
 } from './daily-guards';
 
+export interface EndCallMessage {
+  type: 'end-call';
+}
+
 export interface AddMessageMessage {
   type: 'add-message';
   message: ChatCompletionMessageParam;
@@ -51,7 +55,8 @@ export interface SayMessage {
 type VapiClientToServerMessage =
   | AddMessageMessage
   | ControlMessages
-  | SayMessage;
+  | SayMessage
+  | EndCallMessage;
 
 type VapiEventNames =
   | 'call-end'
@@ -121,6 +126,31 @@ type StartCallOptions = {
    * @example true
    */
   roomDeleteOnUserLeaveEnabled?: boolean;
+}
+
+type WebCall = {
+  /**
+   * The Vapi WebCall URL. This is the URL that the call will be joined on.
+   * 
+   * call.webCallUrl or call.transport.callUrl
+   */
+  webCallUrl: string;
+  /**
+   * The Vapi WebCall ID. This is the ID of the call.
+   * 
+   * call.id
+   */
+  id?: string;
+  /**
+   * The Vapi WebCall artifact plan. This is the artifact plan of the call.
+   */
+  artifactPlan?: { videoRecordingEnabled?: boolean };
+  /**
+   * The Vapi WebCall assistant. This is the assistant of the call.
+   * 
+   * call.assistant
+   */
+  assistant?: { voice?: { provider?: string } };
 }
 
 async function startAudioPlayer(
@@ -816,6 +846,12 @@ export default class Vapi extends VapiEventEmitter {
     }, 1000);
   }
 
+  /**
+   * Stops the call by destroying the Daily call object.
+   * 
+   * If `roomDeleteOnUserLeaveEnabled` is set to `false`, the Vapi call will be kept alive, allowing reconnections to the same call using the `reconnect` method.
+   * If `roomDeleteOnUserLeaveEnabled` is set to `true`, the Vapi call will also be destroyed, preventing any reconnections.
+   */
   async stop(): Promise<void> {
     this.started = false;
     if (this.call) {
@@ -825,6 +861,11 @@ export default class Vapi extends VapiEventEmitter {
     this.speakingTimeout = null;
   }
 
+  /**
+   * Sends a Live Call Control message to the Vapi server.
+   * 
+   * Docs: https://docs.vapi.ai/calls/call-features
+   */
   send(message: VapiClientToServerMessage): void {
     this.call?.sendAppMessage(JSON.stringify(message));
   }
@@ -849,6 +890,18 @@ export default class Vapi extends VapiEventEmitter {
       interruptionsEnabled: interruptionsEnabled ?? false,
       interruptAssistantEnabled: interruptAssistantEnabled ?? false,
     });
+  }
+
+  /**
+   * Ends the call immediately by sending a `end-call` message using Live Call Control, and destroys the Daily call object.
+   * 
+   * This method always ends the call, regardless of the `roomDeleteOnUserLeaveEnabled` option.
+   */
+  public end() {
+    this.send({
+      type: 'end-call',
+    });
+    this.stop();
   }
 
   public setInputDevicesAsync(
@@ -904,12 +957,13 @@ export default class Vapi extends VapiEventEmitter {
     this.call?.stopScreenShare();
   }
 
-  async reconnect(webCall: {
-    webCallUrl: string;
-    id?: string;
-    artifactPlan?: { videoRecordingEnabled?: boolean };
-    assistant?: { voice?: { provider?: string } };
-  }): Promise<void> {
+  /**
+   * Reconnects to an active call.
+   * 
+   * 
+   * @param webCall 
+   */
+  async reconnect(webCall: WebCall): Promise<void> {
     const startTime = Date.now();
     
     if (this.started) {
@@ -1272,8 +1326,6 @@ export default class Vapi extends VapiEventEmitter {
         timestamp: new Date().toISOString()
       });
 
-      // For reconnection, manually emit call-start since 'listening' message may not be sent
-      console.log('Reconnect completed successfully - manually emitting call-start event');
       this.emit('call-start');
 
     } catch (e) {

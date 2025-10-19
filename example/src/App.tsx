@@ -175,7 +175,7 @@ function App() {
   };
 
   const stopCall = () => {
-    vapi.stop();
+    vapi.end();
   };
 
   const reconnectCall = async () => {
