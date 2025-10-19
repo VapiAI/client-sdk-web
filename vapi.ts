@@ -347,6 +347,7 @@ export default class Vapi extends VapiEventEmitter {
           workflow: typeof workflow === 'string' ? undefined : workflow,
           workflowId: typeof workflow === 'string' ? workflow : undefined,
           workflowOverrides,
+          // @ts-expect-error: API hidden property
           roomDeleteOnUserLeaveEnabled: options?.roomDeleteOnUserLeaveEnabled,
         })
       ).data;
