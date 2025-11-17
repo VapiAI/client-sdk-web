@@ -1365,4 +1365,129 @@ export default class Vapi extends VapiEventEmitter {
       throw e;
     }
   }
+
+  /**
+   * Runs all network connectivity tests for pre-call diagnostics.
+   * Creates a temporary Daily call object for testing purposes.
+   * 
+   * Tests performed:
+   * 1. Network connectivity (TURN server) - Tests if traffic can be relayed through TURN servers
+   * 2. Websocket connectivity - Tests if websocket connections can be established  
+   * 3. Call quality - Tests overall call quality metrics (if available in SDK version)
+   * 
+   * @returns {Promise<Record<string, any>>} Test results object with status for each test
+   * 
+   * @example
+   * // Run pre-call network diagnostics
+   * const results = await Vapi.runNetworkTestsStandalone();
+   * if (results.networkConnectivity?.result === 'failed') {
+   *   console.warn('Network issues detected - calls may not work properly');
+   * }
+   * 
+   * @static
+   */
+  public static async runNetworkTestsStandalone(): Promise<Record<string, any>> {
+    console.log('Starting standalone network connectivity tests...');
+    
+    const results: Record<string, any> = {};
+    let tempCall: DailyCall | null = null;
+    
+    try {
+      // Create a temporary call object for testing
+      console.log('Creating temporary call object for testing...');
+      tempCall = DailyIframe.createCallObject({
+        audioSource: true,
+        videoSource: true,
+      });
+
+      // Test 1: Network Connectivity (TURN server test)
+      console.log('\n1. Testing network connectivity (TURN server)...');
+      let videoTrack: MediaStreamTrack | null = null;
+      
+      try {
+        // Create a dummy video track for the test
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoTrack = stream.getVideoTracks()[0];
+        
+        const networkTest = await tempCall.testNetworkConnectivity(videoTrack);
+        results.networkConnectivity = networkTest;
+        console.log('Network connectivity test result:', networkTest);
+      } catch (error) {
+        results.networkConnectivity = { result: 'error', error: error?.toString() };
+        console.error('Network connectivity test error:', error);
+      } finally {
+        // Clean up the video track
+        if (videoTrack) {
+          videoTrack.stop();
+        }
+      }
+
+      // Test 2: Websocket Connectivity
+      console.log('\n2. Testing websocket connectivity...');
+      try {
+        const websocketTest = await tempCall.testWebsocketConnectivity();
+        results.websocketConnectivity = websocketTest;
+        console.log('Websocket connectivity test result:', websocketTest);
+      } catch (error) {
+        results.websocketConnectivity = { result: 'error', error: error?.toString() };
+        console.error('Websocket connectivity test error:', error);
+      }
+
+      // Test 3: Call Quality (if available)
+      console.log('\n3. Testing call quality...');
+      try {
+        // Check if the method exists
+        if (typeof tempCall.testCallQuality === 'function') {
+          // Call quality test requires startCamera to initialize call state
+          try {
+            // Use startCamera to initialize the call state without needing a room
+            console.log('Initializing call state with startCamera...');
+            await tempCall.startCamera();
+            
+            // Now run the call quality test
+            const callQualityTest = await tempCall.testCallQuality();
+            results.callQuality = callQualityTest;
+            console.log('Call quality test result:', callQualityTest);
+            
+            // Camera will be cleaned up when we destroy the call object
+          } catch (startCameraError: any) {
+            // If startCamera fails, it might be due to permissions or other issues
+            console.error('Failed to start camera for call quality test:', startCameraError);
+            results.callQuality = { 
+              result: 'error', 
+              error: startCameraError?.toString(),
+              message: 'Failed to initialize camera for call quality test. Check camera permissions.' 
+            };
+          }
+        } else {
+          results.callQuality = { result: 'not-available', message: 'testCallQuality method not available' };
+          console.log('Call quality test not available in current Daily.co version');
+        }
+      } catch (error: any) {
+        results.callQuality = { result: 'error', error: error?.toString() };
+        console.error('Call quality test error:', error);
+      }
+
+    } catch (error) {
+      console.error('Failed to create temporary call object:', error);
+      results.error = error?.toString();
+    } finally {
+      // Clean up the temporary call object
+      if (tempCall) {
+        try {
+          console.log('Cleaning up temporary call object...');
+          await tempCall.destroy();
+        } catch (error) {
+          console.error('Error destroying temporary call object:', error);
+        }
+      }
+    }
+
+    // Summary
+    console.log('\n=== Network Test Summary ===');
+    console.log('Results:', JSON.stringify(results, null, 2));
+    
+    return results;
+  }
+
 }
