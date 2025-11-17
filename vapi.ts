@@ -1438,43 +1438,34 @@ export default class Vapi extends VapiEventEmitter {
       try {
         // Check if the method exists
         if (typeof tempCall.testCallQuality === 'function') {
-          // Call quality test requires preAuth or startCamera to initialize call state
+          // Call quality test requires startCamera to initialize call state
           try {
-            // Use preAuth to initialize without actually joining a call
-            await tempCall.preAuth();
+            // Use startCamera to initialize the call state without needing a room
+            console.log('Initializing call state with startCamera...');
+            await tempCall.startCamera();
             
+            // Now run the call quality test
             const callQualityTest = await tempCall.testCallQuality();
             results.callQuality = callQualityTest;
             console.log('Call quality test result:', callQualityTest);
-          } catch (preAuthError: any) {
-            // If preAuth fails, it might be because we don't have a valid room URL
-            // In this case, we'll mark the test as not available for standalone testing
-            if (preAuthError.message?.includes('preAuth') || preAuthError.message?.includes('startCamera')) {
-              results.callQuality = { 
-                result: 'not-available', 
-                message: 'Call quality test requires an active room connection. Run this test after joining a call.' 
-              };
-              console.log('Call quality test not available in standalone mode');
-            } else {
-              throw preAuthError;
-            }
+            
+            // Camera will be cleaned up when we destroy the call object
+          } catch (startCameraError: any) {
+            // If startCamera fails, it might be due to permissions or other issues
+            console.error('Failed to start camera for call quality test:', startCameraError);
+            results.callQuality = { 
+              result: 'error', 
+              error: startCameraError?.toString(),
+              message: 'Failed to initialize camera for call quality test. Check camera permissions.' 
+            };
           }
         } else {
           results.callQuality = { result: 'not-available', message: 'testCallQuality method not available' };
           console.log('Call quality test not available in current Daily.co version');
         }
       } catch (error: any) {
-        // Check if it's the specific initialization error
-        if (error.message?.includes('preAuth') || error.message?.includes('startCamera')) {
-          results.callQuality = { 
-            result: 'not-available', 
-            message: 'Call quality test requires an active room connection. Run this test after joining a call.' 
-          };
-          console.log('Call quality test not available in standalone mode:', error.message);
-        } else {
-          results.callQuality = { result: 'error', error: error?.toString() };
-          console.error('Call quality test error:', error);
-        }
+        results.callQuality = { result: 'error', error: error?.toString() };
+        console.error('Call quality test error:', error);
       }
 
     } catch (error) {
