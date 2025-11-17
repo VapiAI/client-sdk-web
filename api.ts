@@ -67,9 +67,7 @@ export interface AssemblyAITranscriber {
    */
   minEndOfTurnSilenceWhenConfident?: number;
   /**
-   * This is the maximum wait time for word finalization in milliseconds.
-   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
-   * @default 160
+   * @deprecated
    * @min 0
    * @example 160
    */
@@ -86,6 +84,12 @@ export interface AssemblyAITranscriber {
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
   wordBoost?: string[];
+  /**
+   * Keyterms prompting improves recognition accuracy for specific words and phrases.
+   * Can include up to 100 keyterms, each up to 50 characters.
+   * Costs an additional $0.04/hour when enabled.
+   */
+  keytermsPrompt?: string[];
   /** The duration of the end utterance silence threshold in milliseconds. */
   endUtteranceSilenceThreshold?: number;
   /**
@@ -503,12 +507,21 @@ export interface Server {
    * @example "550e8400-e29b-41d4-a716-446655440000"
    */
   credentialId?: string;
+  /**
+   * If enabled, requests will originate from a static set of IPs owned and managed by Vapi.
+   *
+   * @default false
+   * @example false
+   */
+  staticIpAddressesEnabled?: boolean;
   /** This is where the request will be sent. */
   url?: string;
   /**
    * These are the headers to include in the request.
    *
    * Each key-value pair represents a header name and its value.
+   *
+   * Note: Specifying an Authorization header here will override the authorization provided by the `credentialId` (if provided). This is an anti-pattern and should be avoided outside of edge case scenarios.
    */
   headers?: object;
   /**
@@ -604,6 +617,7 @@ export interface DeepgramTranscriber {
     | "base-voicemail"
     | "base-video"
     | "whisper"
+    | "flux-general-en"
     | string;
   /** This is the language that will be set for the transcription. The list of languages Deepgram supports can be found here: https://developers.deepgram.com/docs/models-languages-overview */
   language?:
@@ -719,11 +733,30 @@ export interface DeepgramTranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
-  /** @example 0.3 */
-  preflightThreshold?: number;
-  /** @example 0.7 */
+  /**
+   * Eager end-of-turn confidence required to fire a eager end-of-turn event. Setting a value here will enable EagerEndOfTurn and SpeechResumed events. It is disabled by default. Only used with Flux models.
+   * @min 0
+   * @max 1
+   * @example 0.3
+   */
+  eagerEotThreshold?: number;
+  /**
+   * End-of-turn confidence required to finish a turn. Only used with Flux models.
+   *
+   * @default 0.7
+   * @min 0.5
+   * @max 0.9
+   * @example 0.7
+   */
   eotThreshold?: number;
-  /** @example 3000 */
+  /**
+   * A turn will be finished when this much time has passed after speech, regardless of EOT confidence. Only used with Flux models.
+   *
+   * @default 5000
+   * @min 500
+   * @max 10000
+   * @example 5000
+   */
   eotTimeoutMs?: number;
   /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
@@ -1226,6 +1259,20 @@ export interface GladiaTranscriber {
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
+export interface SpeechmaticsCustomVocabularyItem {
+  /**
+   * The word or phrase to add to the custom vocabulary.
+   * @minLength 1
+   * @example "Speechmatics"
+   */
+  content: string;
+  /**
+   * Alternative phonetic representations of how the word might sound. This helps recognition when the word might be pronounced differently.
+   * @example ["speech mattix"]
+   */
+  soundsLike?: string[];
+}
+
 export interface SpeechmaticsTranscriber {
   /** This is the transcription provider that will be used. */
   provider: "speechmatics";
@@ -1288,6 +1335,125 @@ export interface SpeechmaticsTranscriber {
     | "ug"
     | "vi"
     | "cy";
+  /**
+   * This is the operating point for the transcription. Choose between `standard` for faster turnaround with strong accuracy or `enhanced` for highest accuracy when precision is critical.
+   *
+   * @default 'enhanced'
+   * @default "enhanced"
+   * @example "enhanced"
+   */
+  operatingPoint?: "standard" | "enhanced";
+  /**
+   * This is the region for the Speechmatics API. Choose between EU (Europe) and US (United States) regions for lower latency and data sovereignty compliance.
+   *
+   * @default 'eu'
+   * @default "eu"
+   * @example "us"
+   */
+  region?: "eu" | "us";
+  /**
+   * This enables speaker diarization, which identifies and separates speakers in the transcription. Essential for multi-speaker conversations and conference calls.
+   *
+   * @default false
+   * @default false
+   * @example true
+   */
+  enableDiarization?: boolean;
+  /**
+   * This sets the maximum number of speakers to detect when diarization is enabled. Only used when enableDiarization is true.
+   *
+   * @default 2
+   * @min 2
+   * @max 50
+   * @default 2
+   * @example 4
+   */
+  maxSpeakers?: number;
+  /**
+   * Provides friendly speaker labels that map to diarization indices (Speaker 1 -> labels[0]).
+   * @example ["Agent","Customer"]
+   */
+  speakerLabels?: string[];
+  /**
+   * This enables partial transcripts during speech recognition. When false, only final transcripts are returned.
+   *
+   * @default true
+   * @default true
+   * @example false
+   */
+  enablePartials?: boolean;
+  /**
+   * This sets the maximum delay in milliseconds for partial transcripts. Balances latency and accuracy.
+   *
+   * @default 3000
+   * @min 500
+   * @max 10000
+   * @default 3000
+   * @example 1500
+   */
+  maxDelay?: number;
+  /** @example [{"content":"Speechmatics","soundsLike":["speech mattix"]}] */
+  customVocabulary: SpeechmaticsCustomVocabularyItem[];
+  /**
+   * This controls how numbers are formatted in the transcription output.
+   *
+   * @default 'written'
+   * @default "written"
+   * @example "spoken"
+   */
+  numeralStyle?: "written" | "spoken";
+  /**
+   * This enables detection of non-speech audio events like music, applause, and laughter.
+   *
+   * @default false
+   * @default false
+   * @example true
+   */
+  enableEntities?: boolean;
+  /**
+   * This enables automatic punctuation in the transcription output.
+   *
+   * @default true
+   * @default true
+   * @example false
+   */
+  enablePunctuation?: boolean;
+  /**
+   * This enables automatic capitalization in the transcription output.
+   *
+   * @default true
+   * @default true
+   * @example false
+   */
+  enableCapitalization?: boolean;
+  /**
+   * This is the sensitivity level for end-of-turn detection, which determines when a speaker has finished talking. Higher values are more sensitive.
+   *
+   * @default 0.5
+   * @min 0
+   * @max 1
+   * @default 0.5
+   * @example 0.8
+   */
+  endOfTurnSensitivity?: number;
+  /**
+   * This enables removal of disfluencies (um, uh) from the transcript to create cleaner, more professional output.
+   *
+   * @default false
+   * @default false
+   * @example true
+   */
+  removeDisfluencies?: boolean;
+  /**
+   * This is the minimum duration in seconds for speech segments. Shorter segments will be filtered out. Helps remove noise and improve accuracy.
+   *
+   * @default 0.0
+   * @min 0
+   * @max 5
+   * @default 0
+   * @example 0.2
+   */
+  minimumSpeechDuration?: number;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
@@ -1576,9 +1742,7 @@ export interface FallbackAssemblyAITranscriber {
    */
   minEndOfTurnSilenceWhenConfident?: number;
   /**
-   * This is the maximum wait time for word finalization in milliseconds.
-   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
-   * @default 160
+   * @deprecated
    * @min 0
    * @example 160
    */
@@ -1595,6 +1759,12 @@ export interface FallbackAssemblyAITranscriber {
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
   wordBoost?: string[];
+  /**
+   * Keyterms prompting improves recognition accuracy for specific words and phrases.
+   * Can include up to 100 keyterms, each up to 50 characters.
+   * Costs an additional $0.04/hour when enabled.
+   */
+  keytermsPrompt?: string[];
   /** The duration of the end utterance silence threshold in milliseconds. */
   endUtteranceSilenceThreshold?: number;
   /**
@@ -2042,6 +2212,7 @@ export interface FallbackDeepgramTranscriber {
     | "base-voicemail"
     | "base-video"
     | "whisper"
+    | "flux-general-en"
     | string;
   /** This is the language that will be set for the transcription. The list of languages Deepgram supports can be found here: https://developers.deepgram.com/docs/models-languages-overview */
   language?:
@@ -2157,11 +2328,30 @@ export interface FallbackDeepgramTranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
-  /** @example 0.3 */
-  preflightThreshold?: number;
-  /** @example 0.7 */
+  /**
+   * Eager end-of-turn confidence required to fire a eager end-of-turn event. Setting a value here will enable EagerEndOfTurn and SpeechResumed events. It is disabled by default. Only used with Flux models.
+   * @min 0
+   * @max 1
+   * @example 0.3
+   */
+  eagerEotThreshold?: number;
+  /**
+   * End-of-turn confidence required to finish a turn. Only used with Flux models.
+   *
+   * @default 0.7
+   * @min 0.5
+   * @max 0.9
+   * @example 0.7
+   */
   eotThreshold?: number;
-  /** @example 3000 */
+  /**
+   * A turn will be finished when this much time has passed after speech, regardless of EOT confidence. Only used with Flux models.
+   *
+   * @default 5000
+   * @min 500
+   * @max 10000
+   * @example 5000
+   */
   eotTimeoutMs?: number;
   /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
@@ -2723,6 +2913,125 @@ export interface FallbackSpeechmaticsTranscriber {
     | "ug"
     | "vi"
     | "cy";
+  /**
+   * This is the operating point for the transcription. Choose between `standard` for faster turnaround with strong accuracy or `enhanced` for highest accuracy when precision is critical.
+   *
+   * @default 'enhanced'
+   * @default "enhanced"
+   * @example "enhanced"
+   */
+  operatingPoint?: "standard" | "enhanced";
+  /**
+   * This is the region for the Speechmatics API. Choose between EU (Europe) and US (United States) regions for lower latency and data sovereignty compliance.
+   *
+   * @default 'eu'
+   * @default "eu"
+   * @example "us"
+   */
+  region?: "eu" | "us";
+  /**
+   * This enables speaker diarization, which identifies and separates speakers in the transcription. Essential for multi-speaker conversations and conference calls.
+   *
+   * @default false
+   * @default false
+   * @example true
+   */
+  enableDiarization?: boolean;
+  /**
+   * This sets the maximum number of speakers to detect when diarization is enabled. Only used when enableDiarization is true.
+   *
+   * @default 2
+   * @min 2
+   * @max 50
+   * @default 2
+   * @example 4
+   */
+  maxSpeakers?: number;
+  /**
+   * Provides friendly speaker labels that map to diarization indices (Speaker 1 -> labels[0]).
+   * @example ["Agent","Customer"]
+   */
+  speakerLabels?: string[];
+  /**
+   * This enables partial transcripts during speech recognition. When false, only final transcripts are returned.
+   *
+   * @default true
+   * @default true
+   * @example false
+   */
+  enablePartials?: boolean;
+  /**
+   * This sets the maximum delay in milliseconds for partial transcripts. Balances latency and accuracy.
+   *
+   * @default 3000
+   * @min 500
+   * @max 10000
+   * @default 3000
+   * @example 1500
+   */
+  maxDelay?: number;
+  /** @example [{"content":"Speechmatics","soundsLike":["speech mattix"]}] */
+  customVocabulary: SpeechmaticsCustomVocabularyItem[];
+  /**
+   * This controls how numbers are formatted in the transcription output.
+   *
+   * @default 'written'
+   * @default "written"
+   * @example "spoken"
+   */
+  numeralStyle?: "written" | "spoken";
+  /**
+   * This enables detection of non-speech audio events like music, applause, and laughter.
+   *
+   * @default false
+   * @default false
+   * @example true
+   */
+  enableEntities?: boolean;
+  /**
+   * This enables automatic punctuation in the transcription output.
+   *
+   * @default true
+   * @default true
+   * @example false
+   */
+  enablePunctuation?: boolean;
+  /**
+   * This enables automatic capitalization in the transcription output.
+   *
+   * @default true
+   * @default true
+   * @example false
+   */
+  enableCapitalization?: boolean;
+  /**
+   * This is the sensitivity level for end-of-turn detection, which determines when a speaker has finished talking. Higher values are more sensitive.
+   *
+   * @default 0.5
+   * @min 0
+   * @max 1
+   * @default 0.5
+   * @example 0.8
+   */
+  endOfTurnSensitivity?: number;
+  /**
+   * This enables removal of disfluencies (um, uh) from the transcript to create cleaner, more professional output.
+   *
+   * @default false
+   * @default false
+   * @example true
+   */
+  removeDisfluencies?: boolean;
+  /**
+   * This is the minimum duration in seconds for speech segments. Shorter segments will be filtered out. Helps remove noise and improve accuracy.
+   *
+   * @default 0.0
+   * @min 0
+   * @max 5
+   * @default 0
+   * @example 0.2
+   */
+  minimumSpeechDuration?: number;
 }
 
 export interface FallbackTalkscriberTranscriber {
@@ -3844,10 +4153,7 @@ export interface OpenAIFunction {
    * @pattern /^[a-zA-Z0-9_-]{1,64}$/
    */
   name: string;
-  /**
-   * This is the description of what the function does, used by the AI to choose when and how to call the function.
-   * @maxLength 1000
-   */
+  /** This is the description of what the function does, used by the AI to choose when and how to call the function. */
   description?: string;
   /**
    * These are the parameters the functions accepts, described as a JSON Schema object.
@@ -4386,6 +4692,38 @@ export interface TransferAssistant {
   name?: string;
   /** Model configuration for the transfer assistant */
   model: TransferAssistantModel;
+  /** These are the options for the transfer assistant's voice. */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | TavusVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice;
+  /** These are the options for the transfer assistant's transcriber. */
+  transcriber?:
+    | AssemblyAITranscriber
+    | AzureSpeechTranscriber
+    | CustomTranscriber
+    | DeepgramTranscriber
+    | ElevenLabsTranscriber
+    | GladiaTranscriber
+    | GoogleTranscriber
+    | SpeechmaticsTranscriber
+    | TalkscriberTranscriber
+    | OpenAITranscriber
+    | CartesiaTranscriber;
   /**
    * This is the first message that the transfer assistant will say.
    * This can also be a URL to a custom audio file.
@@ -4394,6 +4732,11 @@ export interface TransferAssistant {
    * @example "Hello! I understand you need to be transferred. Let me connect you."
    */
   firstMessage?: string;
+  /**
+   * This is the background sound in the transfer assistant call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
   /**
    * This is the mode for the first message. Default is 'assistant-speaks-first'.
    *
@@ -4740,6 +5083,20 @@ export interface TransferPlan {
    * - Supported formats: MP3 and WAV.
    */
   transferCompleteAudioUrl?: string;
+  /**
+   * This is the plan for manipulating the message context before initiating the warm transfer.
+   * Usage:
+   * - Used only when `mode` is `warm-transfer-experimental`.
+   * - These messages will automatically be added to the transferAssistant's system message.
+   * - If 'none', we will not add any transcript to the transferAssistant's system message.
+   * - If you want to provide your own messages, use transferAssistant.model.messages instead.
+   *
+   * @default { type: 'all' }
+   */
+  contextEngineeringPlan?:
+    | ContextEngineeringPlanLastNMessages
+    | ContextEngineeringPlanNone
+    | ContextEngineeringPlanAll;
   /**
    * This is the TwiML instructions to execute on the destination call leg before connecting the customer.
    *
@@ -5151,6 +5508,8 @@ export interface HandoffDestinationAssistant {
   assistant?: CreateAssistantDTO;
   /** This is the variable extraction plan for the handoff tool. */
   variableExtractionPlan?: VariableExtractionPlan;
+  /** These are the assistant overrides to apply to the destination assistant. */
+  assistantOverrides?: AssistantOverrides;
   /** This is the description of the destination, used by the AI to choose when and how to transfer the call. */
   description?: string;
 }
@@ -5368,6 +5727,108 @@ export interface CreateHandoffToolDTO {
    * The properties `customerAreaCode`, `customerIntent`, and `customerSentiment` will be passed to the server in the webhook request body.
    */
   destinations?: (HandoffDestinationAssistant | HandoffDestinationDynamic)[];
+  /**
+   * This is the optional function definition that will be passed to the LLM.
+   * If this is not defined, we will construct this based on the other properties.
+   *
+   * For example, given the following tools definition:
+   * ```json
+   * {
+   *   "tools": [
+   *     {
+   *       "type": "handoff",
+   *       "destinations": [
+   *         {
+   *           "type": "assistant",
+   *           "assistantId": "assistant-123",
+   *           "description": "customer wants to be handed off to assistant-123",
+   *           "contextEngineeringPlan": {
+   *             "type": "all"
+   *           }
+   *         },
+   *         {
+   *           "type": "assistant",
+   *           "assistantId": "assistant-456",
+   *           "description": "customer wants to be handed off to assistant-456",
+   *           "contextEngineeringPlan": {
+   *             "type": "all"
+   *           }
+   *         }
+   *       ],
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * We will construct the following function definition:
+   * ```json
+   * {
+   *   "function": {
+   *     "name": "handoff_to_assistant-123",
+   *     "description": "
+   *          Use this function to handoff the call to the next assistant.
+   *          Only use it when instructions explicitly ask you to use the handoff_to_assistant function.
+   *          DO NOT call this function unless you are instructed to do so.
+   *          Here are the destinations you can handoff the call to:
+   *          1. assistant-123. When: customer wants to be handed off to assistant-123
+   *          2. assistant-456. When: customer wants to be handed off to assistant-456
+   *     ",
+   *     "parameters": {
+   *       "type": "object",
+   *       "properties": {
+   *         "destination": {
+   *           "type": "string",
+   *           "description": "Options: assistant-123 (customer wants to be handed off to assistant-123), assistant-456 (customer wants to be handed off to assistant-456)",
+   *           "enum": ["assistant-123", "assistant-456"]
+   *         },
+   *       },
+   *       "required": ["destination"]
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * To override this function, please provide an OpenAI function definition and refer to it in the system prompt.
+   * You may override parts of the function definition (i.e. you may only want to change the function name for your prompt).
+   * If you choose to override the function parameters, it must include `destination` as a required parameter, and it must evaluate to either an assistantId, assistantName, or a the string literal `dynamic`.
+   *
+   * To pass custom parameters to the server in a dynamic handoff, you can use the function parameters, with `dynamic` as the destination.
+   * ```json
+   * {
+   *   "function": {
+   *     "name": "dynamic_handoff",
+   *     "description": "
+   *          Call this function when the customer is ready to be handed off to the next assistant
+   *     ",
+   *     "parameters": {
+   *       "type": "object",
+   *       "properties": {
+   *         "destination": {
+   *           "type": "string",
+   *           "enum": ["dynamic"]
+   *         },
+   *         "customerAreaCode": {
+   *           "type": "number",
+   *           "description": "Area code of the customer"
+   *         },
+   *         "customerIntent": {
+   *           "type": "string",
+   *           "enum": ["new-customer", "existing-customer"],
+   *           "description": "Use new-customer when customer is a new customer, existing-customer when customer is an existing customer"
+   *         },
+   *         "customerSentiment": {
+   *           "type": "string",
+   *           "enum": ["positive", "negative", "neutral"],
+   *           "description": "Use positive when customer is happy, negative when customer is unhappy, neutral when customer is neutral"
+   *         }
+   *       },
+   *       "required": ["destination", "customerAreaCode", "customerIntent", "customerSentiment"]
+   *     }
+   *   }
+   * }
+   * ```
+   */
+  function?: OpenAIFunction;
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -6658,7 +7119,9 @@ export interface AnthropicModel {
     | "claude-3-5-haiku-20241022"
     | "claude-3-7-sonnet-20250219"
     | "claude-opus-4-20250514"
-    | "claude-sonnet-4-20250514";
+    | "claude-sonnet-4-20250514"
+    | "claude-sonnet-4-5-20250929"
+    | "claude-haiku-4-5-20251001";
   /** The provider identifier for Anthropic. */
   provider: "anthropic";
   /**
@@ -7356,6 +7819,8 @@ export interface OpenAIModel {
    * @default undefined
    */
   model:
+    | "gpt-5.1"
+    | "gpt-5.1-chat-latest"
     | "gpt-5"
     | "gpt-5-mini"
     | "gpt-5-nano"
@@ -7458,6 +7923,8 @@ export interface OpenAIModel {
    * @example ["gpt-4-0125-preview","gpt-4-0613"]
    */
   fallbackModels?:
+    | "gpt-5.1"
+    | "gpt-5.1-chat-latest"
     | "gpt-5"
     | "gpt-5-mini"
     | "gpt-5-nano"
@@ -7834,6 +8301,8 @@ export interface WorkflowOpenAIModel {
    * @maxLength 100
    */
   model:
+    | "gpt-5.1"
+    | "gpt-5.1-chat-latest"
     | "gpt-5"
     | "gpt-5-mini"
     | "gpt-5-nano"
@@ -7957,7 +8426,9 @@ export interface WorkflowAnthropicModel {
     | "claude-3-5-haiku-20241022"
     | "claude-3-7-sonnet-20250219"
     | "claude-opus-4-20250514"
-    | "claude-sonnet-4-20250514";
+    | "claude-sonnet-4-20250514"
+    | "claude-sonnet-4-5-20250929"
+    | "claude-haiku-4-5-20251001";
   /**
    * This is the optional configuration for Anthropic's thinking feature.
    *
@@ -8470,6 +8941,287 @@ export interface VapiVoicemailDetectionPlan {
   type?: "audio" | "transcript";
 }
 
+export interface TransferHookAction {
+  /** This is the type of action - must be "transfer" */
+  type: "transfer";
+  /** This is the destination details for the transfer - can be a phone number or SIP URI */
+  destination?: TransferDestinationNumber | TransferDestinationSip;
+}
+
+export interface FunctionCallHookAction {
+  /**
+   * These are the messages that will be spoken to the user as the tool is running.
+   *
+   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "function" for Function tool. */
+  type: "function";
+  /**
+   * This determines if the tool is async.
+   *
+   *   If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   *   If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   *   Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+  /** This is the function definition of the tool. */
+  function?: OpenAIFunction;
+}
+
+export interface SayHookAction {
+  /** This is the type of action - must be "say" */
+  type: "say";
+  /**
+   * This is the prompt for the assistant to generate a response based on existing conversation.
+   * Can be a string or an array of chat messages.
+   */
+  prompt?:
+    | string
+    | (
+        | SystemMessage
+        | UserMessage
+        | AssistantMessage
+        | ToolMessage
+        | DeveloperMessage
+      )[];
+  /** This is the message to say */
+  exact?: object;
+}
+
+export interface CallHookFilter {
+  /**
+   * This is the type of filter - currently only "oneOf" is supported
+   * @maxLength 1000
+   */
+  type: "oneOf";
+  /**
+   * This is the key to filter on (e.g. "call.endedReason")
+   * @maxLength 1000
+   */
+  key: string;
+  /** This is the array of possible values to match against */
+  oneOf: string[];
+}
+
+export interface CallHookCallEnding {
+  /**
+   * This is the event that triggers this hook
+   * @maxLength 1000
+   */
+  on: "call.ending";
+  /** This is the set of actions to perform when the hook triggers */
+  do: ToolCallHookAction[];
+  /** This is the set of filters that must match for the hook to trigger */
+  filters?: CallHookFilter[];
+}
+
+export interface CallHookAssistantSpeechInterrupted {
+  /**
+   * This is the event that triggers this hook
+   * @maxLength 1000
+   */
+  on: "assistant.speech.interrupted";
+  /** This is the set of actions to perform when the hook triggers */
+  do: (SayHookAction | ToolCallHookAction)[];
+}
+
+export interface CallHookCustomerSpeechInterrupted {
+  /**
+   * This is the event that triggers this hook
+   * @maxLength 1000
+   */
+  on: "customer.speech.interrupted";
+  /** This is the set of actions to perform when the hook triggers */
+  do: (SayHookAction | ToolCallHookAction)[];
+}
+
+export interface ToolCallHookAction {
+  /** This is the type of action - must be "tool" */
+  type: "tool";
+  /** This is the tool to call. To use an existing tool, send `toolId` instead. */
+  tool?:
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
+    | CreateDtmfToolDTO
+    | CreateEndCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateHandoffToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO;
+  /** This is the tool to call. To use a transient tool, send `tool` instead. */
+  toolId?: string;
+}
+
+export interface CustomerSpeechTimeoutOptions {
+  /**
+   * This is the timeout in seconds before action is triggered.
+   * The clock starts when the assistant finishes speaking and remains active until the user speaks.
+   *
+   * @default 7.5
+   * @min 1
+   * @max 1000
+   */
+  timeoutSeconds: number;
+  /**
+   * This is the maximum number of times the hook will trigger in a call.
+   *
+   * @default 3
+   * @min 1
+   * @max 10
+   */
+  triggerMaxCount?: number;
+  /**
+   * This is whether the counter for hook trigger resets the user speaks.
+   *
+   * @default never
+   */
+  triggerResetMode?: object;
+}
+
+export interface CallHookCustomerSpeechTimeout {
+  /**
+   * Must be either "customer.speech.timeout" or match the pattern "customer.speech.timeout[property=value]"
+   * @maxLength 1000
+   */
+  on: string;
+  /** This is the set of actions to perform when the hook triggers */
+  do: (SayHookAction | ToolCallHookAction)[];
+  /** This is the set of filters that must match for the hook to trigger */
+  options?: CustomerSpeechTimeoutOptions;
+  /**
+   * This is the name of the hook, it can be set by the user to identify the hook.
+   * If no name is provided, the hook will be auto generated as UUID.
+   *
+   * @default UUID
+   * @maxLength 1000
+   */
+  name?: string;
+}
+
+export interface CallHookModelResponseTimeout {
+  /**
+   * This is the event that triggers this hook
+   * @maxLength 1000
+   */
+  on: "model.response.timeout";
+  /** This is the set of actions to perform when the hook triggers */
+  do: (SayHookAction | ToolCallHookAction)[];
+}
+
 export interface AIEdgeCondition {
   type: "ai";
   /**
@@ -8823,6 +9575,44 @@ export interface TranscriptPlan {
   userName?: string;
 }
 
+export interface ScorecardMetric {
+  /**
+   * This is the unique identifier for the structured output that will be used to evaluate the scorecard.
+   * The structured output must be of type number or boolean only for now.
+   */
+  structuredOutputId: string;
+  /**
+   * These are the conditions that will be used to evaluate the scorecard.
+   * Each condition will have a comparator, value, and points that will be used to calculate the final score.
+   * The points will be added to the overall score if the condition is met.
+   * The overall score will be normalized to a 100 point scale to ensure uniformity across different scorecards.
+   */
+  conditions: object[];
+}
+
+export interface CreateScorecardDTO {
+  /**
+   * This is the name of the scorecard. It is only for user reference and will not be used for any evaluation.
+   * @maxLength 80
+   */
+  name?: string;
+  /**
+   * This is the description of the scorecard. It is only for user reference and will not be used for any evaluation.
+   * @maxLength 500
+   */
+  description?: string;
+  /**
+   * These are the metrics that will be used to evaluate the scorecard.
+   * Each metric will have a set of conditions and points that will be used to generate the score.
+   */
+  metrics: ScorecardMetric[];
+  /**
+   * These are the assistant IDs that this scorecard is linked to.
+   * When linked to assistants, this scorecard will be available for evaluation during those assistants' calls.
+   */
+  assistantIds?: string[];
+}
+
 export interface ArtifactPlan {
   /**
    * This determines whether assistant's calls are recorded. Defaults to true.
@@ -8944,6 +9734,16 @@ export interface ArtifactPlan {
    * The outputs will be extracted and stored in `call.artifact.structuredOutputs` after the call is ended.
    */
   structuredOutputIds?: string[];
+  /**
+   * This is an array of scorecard IDs that will be evaluated based on the structured outputs extracted during the call.
+   * The scorecards will be evaluated and the results will be stored in `call.artifact.scorecards` after the call has ended.
+   */
+  scorecardIds?: string[];
+  /**
+   * This is the array of scorecards that will be evaluated based on the structured outputs extracted during the call.
+   * The scorecards will be evaluated and the results will be stored in `call.artifact.scorecards` after the call has ended.
+   */
+  scorecards?: CreateScorecardDTO[];
   /**
    * This is the path where the call logs will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
    *
@@ -9543,6 +10343,7 @@ export interface WorkflowUserEditable {
     | CallHookAssistantSpeechInterrupted
     | CallHookCustomerSpeechInterrupted
     | CallHookCustomerSpeechTimeout
+    | CallHookModelResponseTimeout
   )[];
   /** These are dynamic credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
@@ -9702,10 +10503,22 @@ export interface WorkflowUserEditable {
   )[];
   /** This is the voicemail detection plan for the workflow. */
   voicemailDetection?:
+    | "off"
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
     | VapiVoicemailDetectionPlan;
+  /**
+   * This is the maximum duration of the call in seconds.
+   *
+   * After this duration, the call will automatically end.
+   *
+   * Default is 1800 (30 minutes), max is 43200 (12 hours), and min is 10 seconds.
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
@@ -9896,7 +10709,12 @@ export interface XaiModel {
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
-  model: "grok-beta" | "grok-2" | "grok-3";
+  model:
+    | "grok-beta"
+    | "grok-2"
+    | "grok-3"
+    | "grok-4-fast-reasoning"
+    | "grok-4-fast-non-reasoning";
   provider: "xai";
   /**
    * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
@@ -10186,6 +11004,38 @@ export interface CartesiaExperimentalControls {
     | "curiosity:highest";
 }
 
+export interface CartesiaGenerationConfigExperimental {
+  /**
+   * Toggle accent localization for sonic-3: 0 (disabled, default) or 1 (enabled). When enabled, the voice adapts to match the transcript language accent while preserving vocal characteristics.
+   * @min 0
+   * @max 1
+   * @default 0
+   * @example 0
+   */
+  accentLocalization?: number;
+}
+
+export interface CartesiaGenerationConfig {
+  /**
+   * Fine-grained speed control for sonic-3. Only available for sonic-3 model.
+   * @min 0.6
+   * @max 1.5
+   * @default 1
+   * @example 1
+   */
+  speed?: number;
+  /**
+   * Fine-grained volume control for sonic-3. Only available for sonic-3 model.
+   * @min 0.5
+   * @max 2
+   * @default 1
+   * @example 1
+   */
+  volume?: number;
+  /** Experimental model controls for sonic-3. These are subject to breaking changes. */
+  experimental?: CartesiaGenerationConfigExperimental;
+}
+
 export interface CartesiaVoice {
   /**
    * This is the flag to toggle voice caching for the assistant.
@@ -10202,6 +11052,7 @@ export interface CartesiaVoice {
    * @example "sonic-english"
    */
   model?:
+    | "sonic-3"
     | "sonic-2"
     | "sonic-english"
     | "sonic-multilingual"
@@ -10212,23 +11063,57 @@ export interface CartesiaVoice {
    * @example "en"
    */
   language?:
-    | "en"
+    | "ar"
+    | "bg"
+    | "bn"
+    | "cs"
+    | "da"
     | "de"
+    | "el"
+    | "en"
     | "es"
+    | "fi"
     | "fr"
-    | "ja"
-    | "pt"
-    | "zh"
+    | "gu"
+    | "he"
     | "hi"
+    | "hr"
+    | "hu"
+    | "id"
     | "it"
+    | "ja"
+    | "ka"
+    | "kn"
     | "ko"
+    | "ml"
+    | "mr"
+    | "ms"
     | "nl"
+    | "no"
+    | "pa"
     | "pl"
+    | "pt"
+    | "ro"
     | "ru"
+    | "sk"
     | "sv"
-    | "tr";
+    | "ta"
+    | "te"
+    | "th"
+    | "tl"
+    | "tr"
+    | "uk"
+    | "vi"
+    | "zh";
   /** Experimental controls for Cartesia voice generation */
   experimentalControls?: CartesiaExperimentalControls;
+  /** Generation config for fine-grained control of sonic-3 voice output (speed, volume, and experimental controls). Only available for sonic-3 model. */
+  generationConfig?: CartesiaGenerationConfig;
+  /**
+   * Pronunciation dictionary ID for sonic-3. Allows custom pronunciations for specific words. Only available for sonic-3 model.
+   * @example "dict_abc123"
+   */
+  pronunciationDictId?: string;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -10489,9 +11374,9 @@ export interface HumeVoice {
   provider: "hume";
   /**
    * This is the model that will be used.
-   * @example "octave"
+   * @example "octave2"
    */
-  model?: "octave";
+  model?: "octave" | "octave2";
   /** The ID of the particular voice you want to use. */
   voiceId: string;
   /**
@@ -11272,7 +12157,9 @@ export interface VapiVoice {
     | "Cole"
     | "Harry"
     | "Paige"
-    | "Spencer";
+    | "Spencer"
+    | "Leah"
+    | "Tara";
   /**
    * This is the speed multiplier that will be used.
    *
@@ -11545,6 +12432,7 @@ export interface FallbackCartesiaVoice {
    * @example "sonic-english"
    */
   model?:
+    | "sonic-3"
     | "sonic-2"
     | "sonic-english"
     | "sonic-multilingual"
@@ -11555,23 +12443,57 @@ export interface FallbackCartesiaVoice {
    * @example "en"
    */
   language?:
-    | "en"
+    | "ar"
+    | "bg"
+    | "bn"
+    | "cs"
+    | "da"
     | "de"
+    | "el"
+    | "en"
     | "es"
+    | "fi"
     | "fr"
-    | "ja"
-    | "pt"
-    | "zh"
+    | "gu"
+    | "he"
     | "hi"
+    | "hr"
+    | "hu"
+    | "id"
     | "it"
+    | "ja"
+    | "ka"
+    | "kn"
     | "ko"
+    | "ml"
+    | "mr"
+    | "ms"
     | "nl"
+    | "no"
+    | "pa"
     | "pl"
+    | "pt"
+    | "ro"
     | "ru"
+    | "sk"
     | "sv"
-    | "tr";
+    | "ta"
+    | "te"
+    | "th"
+    | "tl"
+    | "tr"
+    | "uk"
+    | "vi"
+    | "zh";
   /** Experimental controls for Cartesia voice generation */
   experimentalControls?: CartesiaExperimentalControls;
+  /** Generation config for fine-grained control of sonic-3 voice output (speed, volume, and experimental controls). Only available for sonic-3 model. */
+  generationConfig?: CartesiaGenerationConfig;
+  /**
+   * Pronunciation dictionary ID for sonic-3. Allows custom pronunciations for specific words. Only available for sonic-3 model.
+   * @example "dict_abc123"
+   */
+  pronunciationDictId?: string;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -11811,9 +12733,9 @@ export interface FallbackHumeVoice {
   provider: "hume";
   /**
    * This is the model that will be used.
-   * @example "octave"
+   * @example "octave2"
    */
-  model?: "octave";
+  model?: "octave" | "octave2";
   /** The ID of the particular voice you want to use. */
   voiceId: string;
   /**
@@ -12535,7 +13457,9 @@ export interface FallbackVapiVoice {
     | "Cole"
     | "Harry"
     | "Paige"
-    | "Spencer";
+    | "Spencer"
+    | "Leah"
+    | "Tara";
   /**
    * This is the speed multiplier that will be used.
    *
@@ -13720,277 +14644,6 @@ export interface CreateMinimaxCredentialDTO {
   name?: string;
 }
 
-export interface TransferHookAction {
-  /** This is the type of action - must be "transfer" */
-  type: "transfer";
-  /** This is the destination details for the transfer - can be a phone number or SIP URI */
-  destination?: TransferDestinationNumber | TransferDestinationSip;
-}
-
-export interface FunctionCallHookAction {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
-  messages?: (
-    | ToolMessageStart
-    | ToolMessageComplete
-    | ToolMessageFailed
-    | ToolMessageDelayed
-  )[];
-  /** The type of tool. "function" for Function tool. */
-  type: "function";
-  /**
-   * This determines if the tool is async.
-   *
-   *   If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-   *
-   *   If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-   *
-   *   Defaults to synchronous (`false`).
-   * @example false
-   */
-  async?: boolean;
-  /**
-   *
-   *   This is the server where a `tool-calls` webhook will be sent.
-   *
-   *   Notes:
-   *   - Webhook is sent to this server when a tool call is made.
-   *   - Webhook contains the call, assistant, and phone number objects.
-   *   - Webhook contains the variables set on the assistant.
-   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
-   *   - Webhook expects a response with tool call result.
-   */
-  server?: Server;
-  /**
-   * This is the plan to reject a tool call based on the conversation state.
-   *
-   * // Example 1: Reject endCall if user didn't say goodbye
-   * ```json
-   * {
-   *   conditions: [{
-   *     type: 'regex',
-   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
-   *     target: { position: -1, role: 'user' },
-   *     negate: true  // Reject if pattern does NOT match
-   *   }]
-   * }
-   * ```
-   *
-   * // Example 2: Reject transfer if user is actually asking a question
-   * ```json
-   * {
-   *   conditions: [{
-   *     type: 'regex',
-   *     regex: '\\?',
-   *     target: { position: -1, role: 'user' }
-   *   }]
-   * }
-   * ```
-   *
-   * // Example 3: Reject transfer if user didn't mention transfer recently
-   * ```json
-   * {
-   *   conditions: [{
-   *     type: 'liquid',
-   *     liquid: `{% assign recentMessages = messages | last: 5 %}
-   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
-   * {% assign mentioned = false %}
-   * {% for msg in userMessages %}
-   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
-   *     {% assign mentioned = true %}
-   *     {% break %}
-   *   {% endif %}
-   * {% endfor %}
-   * {% if mentioned %}
-   *   false
-   * {% else %}
-   *   true
-   * {% endif %}`
-   *   }]
-   * }
-   * ```
-   *
-   * // Example 4: Reject endCall if the bot is looping and trying to exit
-   * ```json
-   * {
-   *   conditions: [{
-   *     type: 'liquid',
-   *     liquid: `{% assign recentMessages = messages | last: 6 %}
-   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
-   * {% if userMessages.size < 3 %}
-   *   false
-   * {% else %}
-   *   {% assign msg1 = userMessages[0].content | downcase %}
-   *   {% assign msg2 = userMessages[1].content | downcase %}
-   *   {% assign msg3 = userMessages[2].content | downcase %}
-   *   {% comment %} Check for repetitive messages {% endcomment %}
-   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
-   *     true
-   *   {% comment %} Check for common loop phrases {% endcomment %}
-   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
-   *     true
-   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
-   *     true
-   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
-   *     true
-   *   {% else %}
-   *     false
-   *   {% endif %}
-   * {% endif %}`
-   *   }]
-   * }
-   * ```
-   */
-  rejectionPlan?: ToolRejectionPlan;
-  /** This is the function definition of the tool. */
-  function?: OpenAIFunction;
-}
-
-export interface SayHookAction {
-  /** This is the type of action - must be "say" */
-  type: "say";
-  /**
-   * This is the prompt for the assistant to generate a response based on existing conversation.
-   * Can be a string or an array of chat messages.
-   */
-  prompt?:
-    | string
-    | (
-        | SystemMessage
-        | UserMessage
-        | AssistantMessage
-        | ToolMessage
-        | DeveloperMessage
-      )[];
-  /** This is the message to say */
-  exact?: object;
-}
-
-export interface CallHookFilter {
-  /**
-   * This is the type of filter - currently only "oneOf" is supported
-   * @maxLength 1000
-   */
-  type: "oneOf";
-  /**
-   * This is the key to filter on (e.g. "call.endedReason")
-   * @maxLength 1000
-   */
-  key: string;
-  /** This is the array of possible values to match against */
-  oneOf: string[];
-}
-
-export interface CallHookCallEnding {
-  /**
-   * This is the event that triggers this hook
-   * @maxLength 1000
-   */
-  on: "call.ending";
-  /** This is the set of actions to perform when the hook triggers */
-  do: ToolCallHookAction[];
-  /** This is the set of filters that must match for the hook to trigger */
-  filters?: CallHookFilter[];
-}
-
-export interface CallHookAssistantSpeechInterrupted {
-  /**
-   * This is the event that triggers this hook
-   * @maxLength 1000
-   */
-  on: "assistant.speech.interrupted";
-  /** This is the set of actions to perform when the hook triggers */
-  do: (SayHookAction | ToolCallHookAction)[];
-}
-
-export interface CallHookCustomerSpeechInterrupted {
-  /**
-   * This is the event that triggers this hook
-   * @maxLength 1000
-   */
-  on: "customer.speech.interrupted";
-  /** This is the set of actions to perform when the hook triggers */
-  do: (SayHookAction | ToolCallHookAction)[];
-}
-
-export interface ToolCallHookAction {
-  /** This is the type of action - must be "tool" */
-  type: "tool";
-  /** This is the tool to call. To use an existing tool, send `toolId` instead. */
-  tool?:
-    | CreateApiRequestToolDTO
-    | CreateBashToolDTO
-    | CreateComputerToolDTO
-    | CreateDtmfToolDTO
-    | CreateEndCallToolDTO
-    | CreateFunctionToolDTO
-    | CreateGoHighLevelCalendarAvailabilityToolDTO
-    | CreateGoHighLevelCalendarEventCreateToolDTO
-    | CreateGoHighLevelContactCreateToolDTO
-    | CreateGoHighLevelContactGetToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
-    | CreateGoogleCalendarCreateEventToolDTO
-    | CreateGoogleSheetsRowAppendToolDTO
-    | CreateHandoffToolDTO
-    | CreateMcpToolDTO
-    | CreateQueryToolDTO
-    | CreateSlackSendMessageToolDTO
-    | CreateSmsToolDTO
-    | CreateTextEditorToolDTO
-    | CreateTransferCallToolDTO;
-  /** This is the tool to call. To use a transient tool, send `tool` instead. */
-  toolId?: string;
-}
-
-export interface CustomerSpeechTimeoutOptions {
-  /**
-   * This is the timeout in seconds before action is triggered.
-   * The clock starts when the assistant finishes speaking and remains active until the user speaks.
-   *
-   * @default 7.5
-   * @min 1
-   * @max 1000
-   */
-  timeoutSeconds: number;
-  /**
-   * This is the maximum number of times the hook will trigger in a call.
-   *
-   * @default 3
-   * @min 1
-   * @max 10
-   */
-  triggerMaxCount?: number;
-  /**
-   * This is whether the counter for hook trigger resets the user speaks.
-   *
-   * @default never
-   */
-  triggerResetMode?: object;
-}
-
-export interface CallHookCustomerSpeechTimeout {
-  /**
-   * Must be either "customer.speech.timeout" or match the pattern "customer.speech.timeout[property=value]"
-   * @maxLength 1000
-   */
-  on: string;
-  /** This is the set of actions to perform when the hook triggers */
-  do: (SayHookAction | ToolCallHookAction)[];
-  /** This is the set of filters that must match for the hook to trigger */
-  options?: CustomerSpeechTimeoutOptions;
-  /**
-   * This is the name of the hook, it can be set by the user to identify the hook.
-   * If no name is provided, the hook will be auto generated as UUID.
-   *
-   * @default UUID
-   * @maxLength 1000
-   */
-  name?: string;
-}
-
 export interface SQLInjectionSecurityFilter {
   /** The type of security threat to filter. */
   type: "sql-injection";
@@ -14024,6 +14677,456 @@ export interface RegexSecurityFilter {
    * @example "badword1|badword2"
    */
   regex: string;
+}
+
+export interface AssistantOverrides {
+  /** These are the options for the assistant's transcriber. */
+  transcriber?:
+    | AssemblyAITranscriber
+    | AzureSpeechTranscriber
+    | CustomTranscriber
+    | DeepgramTranscriber
+    | ElevenLabsTranscriber
+    | GladiaTranscriber
+    | GoogleTranscriber
+    | SpeechmaticsTranscriber
+    | TalkscriberTranscriber
+    | OpenAITranscriber
+    | CartesiaTranscriber;
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | AnthropicModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel;
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | TavusVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice;
+  /**
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
+   *
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
+   * @example "Hello! How can I help you today?"
+   */
+  firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Use:
+   * - 'assistant-speaks-first' to have the assistant speak first.
+   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
+   *
+   * @default 'assistant-speaks-first'
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?:
+    | "assistant-speaks-first"
+    | "assistant-speaks-first-with-model-generated-message"
+    | "assistant-waits-for-user";
+  /**
+   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+   * By default, voicemail detection is disabled.
+   */
+  voicemailDetection?:
+    | "off"
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
+   */
+  clientMessages?:
+    | "conversation-update"
+    | "function-call"
+    | "function-call-result"
+    | "hang"
+    | "language-changed"
+    | "metadata"
+    | "model-output"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "tool-calls"
+    | "tool-calls-result"
+    | "tool.completed"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "workflow.node.started"
+    | "assistant.started";
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
+   */
+  serverMessages?:
+    | "assistant.started"
+    | "conversation-update"
+    | "end-of-call-report"
+    | "function-call"
+    | "hang"
+    | "language-changed"
+    | "language-change-detected"
+    | "model-output"
+    | "phone-call-control"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "transcript[transcriptType='final']"
+    | "tool-calls"
+    | "transfer-destination-request"
+    | "handoff-destination-request"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted"
+    | "call.deleted"
+    | "call.delete.failed";
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   *
+   * @default 600 (10 minutes)
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /**
+   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
+   *
+   * Default `false` while in beta.
+   *
+   * @default false
+   * @example false
+   */
+  modelOutputInMessagesEnabled?: boolean;
+  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
+  transportConfigurations?: TransportConfigurationTwilio[];
+  /**
+   * This is the plan for observability of assistant's calls.
+   *
+   * Currently, only Langfuse is supported.
+   */
+  observabilityPlan?: LangfuseObservabilityPlan;
+  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
+  credentials?: (
+    | ({
+        provider: "11labs";
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: "anthropic";
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anyscale";
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: "assembly-ai";
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: "azure-openai";
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: "azure";
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: "byo-sip-trunk";
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: "cartesia";
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: "cerebras";
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: "cloudflare";
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: "custom-llm";
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: "deepgram";
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: "deepinfra";
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: "deep-seek";
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: "gcp";
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: "gladia";
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: "gohighlevel";
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: "google";
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: "groq";
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: "inflection-ai";
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: "langfuse";
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: "lmnt";
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: "make";
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: "openai";
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: "openrouter";
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: "perplexity-ai";
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: "playht";
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: "rime-ai";
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: "runpod";
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: "s3";
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: "supabase";
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: "smallest-ai";
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: "tavus";
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: "together-ai";
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: "twilio";
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: "vonage";
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: "webhook";
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: "custom-credential";
+      } & CreateCustomCredentialDTO)
+    | ({
+        provider: "xai";
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: "neuphonic";
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: "hume";
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: "mistral";
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: "speechmatics";
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: "trieve";
+      } & CreateTrieveCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-client";
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-authorization";
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "google.sheets.oauth2-authorization";
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "slack.oauth2-authorization";
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "ghl.oauth2-authorization";
+      } & CreateGoHighLevelMCPCredentialDTO)
+    | ({
+        provider: "inworld";
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
+  )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+  )[];
+  "tools:append"?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateComputerToolDTO
+    | CreateDtmfToolDTO
+    | CreateEndCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateHandoffToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
+  )[];
+  /**
+   * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
+   * This uses LiquidJS syntax. https://liquidjs.com/tutorials/intro-to-liquid.html
+   *
+   * So for example, `{{ name }}` will be replaced with the value of `name` in `variableValues`.
+   * `{{"now" | date: "%b %d, %Y, %I:%M %p", "America/New_York"}}` will be replaced with the current date and time in New York.
+   *  Some VAPI reserved defaults:
+   *  - *customer* - the customer object
+   */
+  variableValues?: object;
+  /**
+   * This is the name of the assistant.
+   *
+   * This is required when you want to transfer between assistants in a call.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 1000
+   */
+  endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
+  compliancePlan?: CompliancePlan;
+  /** This is for metadata you want to store on the assistant. */
+  metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
+  /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
+  analysisPlan?: AnalysisPlan;
+  /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
+  artifactPlan?: ArtifactPlan;
+  /**
+   * This is the plan for when the assistant should start talking.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to start talking after the customer is done speaking.
+   * - The assistant is too fast to start talking after the customer is done speaking.
+   * - The assistant is so fast that it's actually interrupting the customer.
+   */
+  startSpeakingPlan?: StartSpeakingPlan;
+  /**
+   * This is the plan for when assistant should stop talking on customer interruption.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to recognize customer's interruption.
+   * - The assistant is too fast to recognize customer's interruption.
+   * - The assistant is getting interrupted by phrases that are just acknowledgments.
+   * - The assistant is getting interrupted by background noises.
+   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+   */
+  stopSpeakingPlan?: StopSpeakingPlan;
+  /**
+   * This is the plan for real-time monitoring of the assistant's calls.
+   *
+   * Usage:
+   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
+   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   */
+  monitorPlan?: MonitorPlan;
+  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
+  credentialIds?: string[];
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. assistant.server.url
+   * 2. phoneNumber.serverUrl
+   * 3. org.serverUrl
+   */
+  server?: Server;
+  keypadInputPlan?: KeypadInputPlan;
 }
 
 export interface CreateAssistantDTO {
@@ -14101,17 +15204,17 @@ export interface CreateAssistantDTO {
     | "assistant-waits-for-user";
   /**
    * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
-   * This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
-   * You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+   * By default, voicemail detection is disabled.
    */
   voicemailDetection?:
+    | "off"
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
     | VapiVoicemailDetectionPlan;
   /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
    */
   clientMessages?:
     | "conversation-update"
@@ -14130,12 +15233,14 @@ export interface CreateAssistantDTO {
     | "transfer-update"
     | "user-interrupted"
     | "voice-input"
-    | "workflow.node.started";
+    | "workflow.node.started"
+    | "assistant.started";
   /**
-   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted"]
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
    */
   serverMessages?:
+    | "assistant.started"
     | "conversation-update"
     | "end-of-call-report"
     | "function-call"
@@ -14158,7 +15263,9 @@ export interface CreateAssistantDTO {
     | "chat.deleted"
     | "session.created"
     | "session.updated"
-    | "session.deleted";
+    | "session.deleted"
+    | "call.deleted"
+    | "call.delete.failed";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -14515,17 +15622,17 @@ export interface Assistant {
     | "assistant-waits-for-user";
   /**
    * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
-   * This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
-   * You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+   * By default, voicemail detection is disabled.
    */
   voicemailDetection?:
+    | "off"
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
     | VapiVoicemailDetectionPlan;
   /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
    */
   clientMessages?:
     | "conversation-update"
@@ -14544,12 +15651,14 @@ export interface Assistant {
     | "transfer-update"
     | "user-interrupted"
     | "voice-input"
-    | "workflow.node.started";
+    | "workflow.node.started"
+    | "assistant.started";
   /**
-   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted"]
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
    */
   serverMessages?:
+    | "assistant.started"
     | "conversation-update"
     | "end-of-call-report"
     | "function-call"
@@ -14572,7 +15681,9 @@ export interface Assistant {
     | "chat.deleted"
     | "session.created"
     | "session.updated"
-    | "session.deleted";
+    | "session.deleted"
+    | "call.deleted"
+    | "call.delete.failed";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -14965,17 +16076,17 @@ export interface UpdateAssistantDTO {
     | "assistant-waits-for-user";
   /**
    * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
-   * This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
-   * You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+   * By default, voicemail detection is disabled.
    */
   voicemailDetection?:
+    | "off"
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
     | VapiVoicemailDetectionPlan;
   /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
    */
   clientMessages?:
     | "conversation-update"
@@ -14994,12 +16105,14 @@ export interface UpdateAssistantDTO {
     | "transfer-update"
     | "user-interrupted"
     | "voice-input"
-    | "workflow.node.started";
+    | "workflow.node.started"
+    | "assistant.started";
   /**
-   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted"]
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
    */
   serverMessages?:
+    | "assistant.started"
     | "conversation-update"
     | "end-of-call-report"
     | "function-call"
@@ -15022,7 +16135,9 @@ export interface UpdateAssistantDTO {
     | "chat.deleted"
     | "session.created"
     | "session.updated"
-    | "session.deleted";
+    | "session.deleted"
+    | "call.deleted"
+    | "call.delete.failed";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -15217,430 +16332,6 @@ export interface UpdateAssistantDTO {
     | CallHookCustomerSpeechInterrupted
     | CallHookCustomerSpeechTimeout
   )[];
-  /**
-   * This is the name of the assistant.
-   *
-   * This is required when you want to transfer between assistants in a call.
-   * @maxLength 40
-   */
-  name?: string;
-  /**
-   * This is the message that the assistant will say if the call is forwarded to voicemail.
-   *
-   * If unspecified, it will hang up.
-   * @maxLength 1000
-   */
-  voicemailMessage?: string;
-  /**
-   * This is the message that the assistant will say if it ends the call.
-   *
-   * If unspecified, it will hang up without saying anything.
-   * @maxLength 1000
-   */
-  endCallMessage?: string;
-  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
-  endCallPhrases?: string[];
-  compliancePlan?: CompliancePlan;
-  /** This is for metadata you want to store on the assistant. */
-  metadata?: object;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Features:
-   * - Smart denoising using Krisp
-   * - Fourier denoising
-   *
-   * Smart denoising can be combined with or used independently of Fourier denoising.
-   *
-   * Order of precedence:
-   * - Smart denoising
-   * - Fourier denoising
-   */
-  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
-  /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
-  analysisPlan?: AnalysisPlan;
-  /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
-  artifactPlan?: ArtifactPlan;
-  /**
-   * This is the plan for when the assistant should start talking.
-   *
-   * You should configure this if you're running into these issues:
-   * - The assistant is too slow to start talking after the customer is done speaking.
-   * - The assistant is too fast to start talking after the customer is done speaking.
-   * - The assistant is so fast that it's actually interrupting the customer.
-   */
-  startSpeakingPlan?: StartSpeakingPlan;
-  /**
-   * This is the plan for when assistant should stop talking on customer interruption.
-   *
-   * You should configure this if you're running into these issues:
-   * - The assistant is too slow to recognize customer's interruption.
-   * - The assistant is too fast to recognize customer's interruption.
-   * - The assistant is getting interrupted by phrases that are just acknowledgments.
-   * - The assistant is getting interrupted by background noises.
-   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
-   */
-  stopSpeakingPlan?: StopSpeakingPlan;
-  /**
-   * This is the plan for real-time monitoring of the assistant's calls.
-   *
-   * Usage:
-   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
-   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
-   */
-  monitorPlan?: MonitorPlan;
-  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
-  credentialIds?: string[];
-  /**
-   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
-   *
-   * The order of precedence is:
-   *
-   * 1. assistant.server.url
-   * 2. phoneNumber.serverUrl
-   * 3. org.serverUrl
-   */
-  server?: Server;
-  keypadInputPlan?: KeypadInputPlan;
-}
-
-export interface AssistantOverrides {
-  /** These are the options for the assistant's transcriber. */
-  transcriber?:
-    | AssemblyAITranscriber
-    | AzureSpeechTranscriber
-    | CustomTranscriber
-    | DeepgramTranscriber
-    | ElevenLabsTranscriber
-    | GladiaTranscriber
-    | GoogleTranscriber
-    | SpeechmaticsTranscriber
-    | TalkscriberTranscriber
-    | OpenAITranscriber
-    | CartesiaTranscriber;
-  /** These are the options for the assistant's LLM. */
-  model?:
-    | AnthropicModel
-    | AnyscaleModel
-    | CerebrasModel
-    | CustomLLMModel
-    | DeepInfraModel
-    | DeepSeekModel
-    | GoogleModel
-    | GroqModel
-    | InflectionAIModel
-    | OpenAIModel
-    | OpenRouterModel
-    | PerplexityAIModel
-    | TogetherAIModel
-    | XaiModel;
-  /** These are the options for the assistant's voice. */
-  voice?:
-    | AzureVoice
-    | CartesiaVoice
-    | CustomVoice
-    | DeepgramVoice
-    | ElevenLabsVoice
-    | HumeVoice
-    | LMNTVoice
-    | NeuphonicVoice
-    | OpenAIVoice
-    | PlayHTVoice
-    | RimeAIVoice
-    | SmallestAIVoice
-    | TavusVoice
-    | VapiVoice
-    | SesameVoice
-    | InworldVoice
-    | MinimaxVoice;
-  /**
-   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
-   *
-   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
-   * @example "Hello! How can I help you today?"
-   */
-  firstMessage?: string;
-  /** @default false */
-  firstMessageInterruptionsEnabled?: boolean;
-  /**
-   * This is the mode for the first message. Default is 'assistant-speaks-first'.
-   *
-   * Use:
-   * - 'assistant-speaks-first' to have the assistant speak first.
-   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
-   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
-   *
-   * @default 'assistant-speaks-first'
-   * @example "assistant-speaks-first"
-   */
-  firstMessageMode?:
-    | "assistant-speaks-first"
-    | "assistant-speaks-first-with-model-generated-message"
-    | "assistant-waits-for-user";
-  /**
-   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
-   * This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
-   * You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
-   */
-  voicemailDetection?:
-    | GoogleVoicemailDetectionPlan
-    | OpenAIVoicemailDetectionPlan
-    | TwilioVoicemailDetectionPlan
-    | VapiVoicemailDetectionPlan;
-  /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started"]
-   */
-  clientMessages?:
-    | "conversation-update"
-    | "function-call"
-    | "function-call-result"
-    | "hang"
-    | "language-changed"
-    | "metadata"
-    | "model-output"
-    | "speech-update"
-    | "status-update"
-    | "transcript"
-    | "tool-calls"
-    | "tool-calls-result"
-    | "tool.completed"
-    | "transfer-update"
-    | "user-interrupted"
-    | "voice-input"
-    | "workflow.node.started";
-  /**
-   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted"]
-   */
-  serverMessages?:
-    | "conversation-update"
-    | "end-of-call-report"
-    | "function-call"
-    | "hang"
-    | "language-changed"
-    | "language-change-detected"
-    | "model-output"
-    | "phone-call-control"
-    | "speech-update"
-    | "status-update"
-    | "transcript"
-    | "transcript[transcriptType='final']"
-    | "tool-calls"
-    | "transfer-destination-request"
-    | "handoff-destination-request"
-    | "transfer-update"
-    | "user-interrupted"
-    | "voice-input"
-    | "chat.created"
-    | "chat.deleted"
-    | "session.created"
-    | "session.updated"
-    | "session.deleted";
-  /**
-   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
-   *
-   * @default 600 (10 minutes)
-   * @min 10
-   * @max 43200
-   * @example 600
-   */
-  maxDurationSeconds?: number;
-  /**
-   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * You can also provide a custom sound by providing a URL to an audio file.
-   */
-  backgroundSound?: "off" | "office" | string;
-  /**
-   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
-   *
-   * Default `false` while in beta.
-   *
-   * @default false
-   * @example false
-   */
-  modelOutputInMessagesEnabled?: boolean;
-  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
-  transportConfigurations?: TransportConfigurationTwilio[];
-  /**
-   * This is the plan for observability of assistant's calls.
-   *
-   * Currently, only Langfuse is supported.
-   */
-  observabilityPlan?: LangfuseObservabilityPlan;
-  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
-  credentials?: (
-    | ({
-        provider: "11labs";
-      } & CreateElevenLabsCredentialDTO)
-    | ({
-        provider: "anthropic";
-      } & CreateAnthropicCredentialDTO)
-    | ({
-        provider: "anyscale";
-      } & CreateAnyscaleCredentialDTO)
-    | ({
-        provider: "assembly-ai";
-      } & CreateAssemblyAICredentialDTO)
-    | ({
-        provider: "azure-openai";
-      } & CreateAzureOpenAICredentialDTO)
-    | ({
-        provider: "azure";
-      } & CreateAzureCredentialDTO)
-    | ({
-        provider: "byo-sip-trunk";
-      } & CreateByoSipTrunkCredentialDTO)
-    | ({
-        provider: "cartesia";
-      } & CreateCartesiaCredentialDTO)
-    | ({
-        provider: "cerebras";
-      } & CreateCerebrasCredentialDTO)
-    | ({
-        provider: "cloudflare";
-      } & CreateCloudflareCredentialDTO)
-    | ({
-        provider: "custom-llm";
-      } & CreateCustomLLMCredentialDTO)
-    | ({
-        provider: "deepgram";
-      } & CreateDeepgramCredentialDTO)
-    | ({
-        provider: "deepinfra";
-      } & CreateDeepInfraCredentialDTO)
-    | ({
-        provider: "deep-seek";
-      } & CreateDeepSeekCredentialDTO)
-    | ({
-        provider: "gcp";
-      } & CreateGcpCredentialDTO)
-    | ({
-        provider: "gladia";
-      } & CreateGladiaCredentialDTO)
-    | ({
-        provider: "gohighlevel";
-      } & CreateGoHighLevelCredentialDTO)
-    | ({
-        provider: "google";
-      } & CreateGoogleCredentialDTO)
-    | ({
-        provider: "groq";
-      } & CreateGroqCredentialDTO)
-    | ({
-        provider: "inflection-ai";
-      } & CreateInflectionAICredentialDTO)
-    | ({
-        provider: "langfuse";
-      } & CreateLangfuseCredentialDTO)
-    | ({
-        provider: "lmnt";
-      } & CreateLmntCredentialDTO)
-    | ({
-        provider: "make";
-      } & CreateMakeCredentialDTO)
-    | ({
-        provider: "openai";
-      } & CreateOpenAICredentialDTO)
-    | ({
-        provider: "openrouter";
-      } & CreateOpenRouterCredentialDTO)
-    | ({
-        provider: "perplexity-ai";
-      } & CreatePerplexityAICredentialDTO)
-    | ({
-        provider: "playht";
-      } & CreatePlayHTCredentialDTO)
-    | ({
-        provider: "rime-ai";
-      } & CreateRimeAICredentialDTO)
-    | ({
-        provider: "runpod";
-      } & CreateRunpodCredentialDTO)
-    | ({
-        provider: "s3";
-      } & CreateS3CredentialDTO)
-    | ({
-        provider: "supabase";
-      } & CreateSupabaseCredentialDTO)
-    | ({
-        provider: "smallest-ai";
-      } & CreateSmallestAICredentialDTO)
-    | ({
-        provider: "tavus";
-      } & CreateTavusCredentialDTO)
-    | ({
-        provider: "together-ai";
-      } & CreateTogetherAICredentialDTO)
-    | ({
-        provider: "twilio";
-      } & CreateTwilioCredentialDTO)
-    | ({
-        provider: "vonage";
-      } & CreateVonageCredentialDTO)
-    | ({
-        provider: "webhook";
-      } & CreateWebhookCredentialDTO)
-    | ({
-        provider: "custom-credential";
-      } & CreateCustomCredentialDTO)
-    | ({
-        provider: "xai";
-      } & CreateXAiCredentialDTO)
-    | ({
-        provider: "neuphonic";
-      } & CreateNeuphonicCredentialDTO)
-    | ({
-        provider: "hume";
-      } & CreateHumeCredentialDTO)
-    | ({
-        provider: "mistral";
-      } & CreateMistralCredentialDTO)
-    | ({
-        provider: "speechmatics";
-      } & CreateSpeechmaticsCredentialDTO)
-    | ({
-        provider: "trieve";
-      } & CreateTrieveCredentialDTO)
-    | ({
-        provider: "google.calendar.oauth2-client";
-      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
-    | ({
-        provider: "google.calendar.oauth2-authorization";
-      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
-    | ({
-        provider: "google.sheets.oauth2-authorization";
-      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
-    | ({
-        provider: "slack.oauth2-authorization";
-      } & CreateSlackOAuth2AuthorizationCredentialDTO)
-    | ({
-        provider: "ghl.oauth2-authorization";
-      } & CreateGoHighLevelMCPCredentialDTO)
-    | ({
-        provider: "inworld";
-      } & CreateInworldCredentialDTO)
-    | ({
-        provider: "minimax";
-      } & CreateMinimaxCredentialDTO)
-  )[];
-  /** This is a set of actions that will be performed on certain events. */
-  hooks?: (
-    | CallHookCallEnding
-    | CallHookAssistantSpeechInterrupted
-    | CallHookCustomerSpeechInterrupted
-    | CallHookCustomerSpeechTimeout
-  )[];
-  /**
-   * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
-   * This uses LiquidJS syntax. https://liquidjs.com/tutorials/intro-to-liquid.html
-   *
-   * So for example, `{{ name }}` will be replaced with the value of `name` in `variableValues`.
-   * `{{"now" | date: "%b %d, %Y, %I:%M %p", "America/New_York"}}` will be replaced with the current date and time in New York.
-   *  Some VAPI reserved defaults:
-   *  - *customer* - the customer object
-   */
-  variableValues?: object;
   /**
    * This is the name of the assistant.
    *
@@ -15729,15 +16420,6 @@ export interface AssistantOverrides {
 }
 
 export interface SquadMemberDTO {
-  /**
-   * These are the other assistants that this assistant can transfer or handoff to.
-   *
-   * Supports both:
-   * - TransferDestinationAssistant: For transfer call tool (legacy)
-   * - HandoffDestinationAssistant: For handoff tool (recommended)
-   *
-   * If the assistant already has transfer call or handoff tools, these destinations are just appended to existing ones.
-   */
   assistantDestinations?: (
     | TransferDestinationAssistant
     | HandoffDestinationAssistant
@@ -15884,6 +16566,7 @@ export interface Workflow {
     | CallHookAssistantSpeechInterrupted
     | CallHookCustomerSpeechInterrupted
     | CallHookCustomerSpeechTimeout
+    | CallHookModelResponseTimeout
   )[];
   /** These are dynamic credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
@@ -16043,10 +16726,22 @@ export interface Workflow {
   )[];
   /** This is the voicemail detection plan for the workflow. */
   voicemailDetection?:
+    | "off"
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
     | VapiVoicemailDetectionPlan;
+  /**
+   * This is the maximum duration of the call in seconds.
+   *
+   * After this duration, the call will automatically end.
+   *
+   * Default is 1800 (30 minutes), max is 43200 (12 hours), and min is 10 seconds.
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
   id: string;
   orgId: string;
   /** @format date-time */
@@ -16197,6 +16892,7 @@ export interface CreateWorkflowDTO {
     | CallHookAssistantSpeechInterrupted
     | CallHookCustomerSpeechInterrupted
     | CallHookCustomerSpeechTimeout
+    | CallHookModelResponseTimeout
   )[];
   /** These are dynamic credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
@@ -16356,10 +17052,22 @@ export interface CreateWorkflowDTO {
   )[];
   /** This is the voicemail detection plan for the workflow. */
   voicemailDetection?:
+    | "off"
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
     | VapiVoicemailDetectionPlan;
+  /**
+   * This is the maximum duration of the call in seconds.
+   *
+   * After this duration, the call will automatically end.
+   *
+   * Default is 1800 (30 minutes), max is 43200 (12 hours), and min is 10 seconds.
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
   /** @maxLength 80 */
   name: string;
   edges: Edge[];
@@ -16504,6 +17212,7 @@ export interface UpdateWorkflowDTO {
     | CallHookAssistantSpeechInterrupted
     | CallHookCustomerSpeechInterrupted
     | CallHookCustomerSpeechTimeout
+    | CallHookModelResponseTimeout
   )[];
   /** These are dynamic credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
   credentials?: (
@@ -16663,10 +17372,22 @@ export interface UpdateWorkflowDTO {
   )[];
   /** This is the voicemail detection plan for the workflow. */
   voicemailDetection?:
+    | "off"
     | GoogleVoicemailDetectionPlan
     | OpenAIVoicemailDetectionPlan
     | TwilioVoicemailDetectionPlan
     | VapiVoicemailDetectionPlan;
+  /**
+   * This is the maximum duration of the call in seconds.
+   *
+   * After this duration, the call will automatically end.
+   *
+   * Default is 1800 (30 minutes), max is 43200 (12 hours), and min is 10 seconds.
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
   /** @maxLength 80 */
   name?: string;
   edges?: Edge[];
@@ -16740,6 +17461,18 @@ export interface UpdateWorkflowDTO {
    * @maxLength 1000
    */
   voicemailMessage?: string;
+}
+
+export interface SubscriptionLimits {
+  /**
+   * True if this call was blocked by the Call Concurrency limit
+   * @default false
+   */
+  concurrencyBlocked?: boolean;
+  /** Account Call Concurrency limit */
+  concurrencyLimit?: number;
+  /** Incremental number of concurrent calls that will be allowed, including this call */
+  remainingConcurrentCalls?: number;
 }
 
 export interface AnalysisCostBreakdown {
@@ -16873,6 +17606,14 @@ export interface PerformanceMetrics {
   endpointingLatencyAverage?: number;
   /** This is the average latency for complete turns. */
   turnLatencyAverage?: number;
+  /** This is the average latency for packets received from the transport provider in milliseconds. */
+  fromTransportLatencyAverage?: number;
+  /** This is the average latency for packets sent to the transport provider in milliseconds. */
+  toTransportLatencyAverage?: number;
+  /** This is the number of times the user was interrupted by the assistant during the call. */
+  numUserInterrupted?: number;
+  /** This is the number of times the assistant was interrupted by the user during the call. */
+  numAssistantInterrupted?: number;
 }
 
 export interface Artifact {
@@ -16925,8 +17666,18 @@ export interface Artifact {
    * To enable, set `assistant.artifactPlan.structuredOutputIds` with the IDs of the structured outputs you want to extract.
    */
   structuredOutputs?: object;
+  /**
+   * These are the scorecards that have been evaluated based on the structured outputs extracted during the call.
+   * To enable, set `assistant.artifactPlan.scorecardIds` or `assistant.artifactPlan.scorecards` with the IDs or objects of the scorecards you want to evaluate.
+   */
+  scorecards?: object;
   /** These are the transfer records from warm transfers, including destinations, transcripts, and status. */
   transfers?: string[];
+  /**
+   * This is when the structured outputs were last updated
+   * @format date-time
+   */
+  structuredOutputsLastUpdatedAt?: string;
 }
 
 export interface RecordingConsent {
@@ -17198,7 +17949,9 @@ export interface Call {
     | "ringing"
     | "in-progress"
     | "forwarding"
-    | "ended";
+    | "ended"
+    | "not-found"
+    | "deletion-failed";
   /** This is the explanation for how the call ended. */
   endedReason?:
     | "call-start-error-neither-assistant-nor-server-set"
@@ -17224,8 +17977,9 @@ export interface Call {
     | "call.start.error-subscription-insufficient-credits"
     | "call.start.error-subscription-upgrade-failed"
     | "call.start.error-subscription-concurrency-limit-reached"
+    | "call.start.error-enterprise-feature-not-available-recording-consent"
     | "assistant-not-valid"
-    | "database-error"
+    | "call.start.error-vapifault-database-error"
     | "assistant-not-found"
     | "pipeline-error-openai-voice-failed"
     | "pipeline-error-cartesia-voice-failed"
@@ -17236,6 +17990,7 @@ export interface Call {
     | "pipeline-error-azure-voice-failed"
     | "pipeline-error-rime-ai-voice-failed"
     | "pipeline-error-smallest-ai-voice-failed"
+    | "pipeline-error-vapi-voice-failed"
     | "pipeline-error-neuphonic-voice-failed"
     | "pipeline-error-hume-voice-failed"
     | "pipeline-error-sesame-voice-failed"
@@ -17251,6 +18006,7 @@ export interface Call {
     | "call.in-progress.error-vapifault-azure-voice-failed"
     | "call.in-progress.error-vapifault-rime-ai-voice-failed"
     | "call.in-progress.error-vapifault-smallest-ai-voice-failed"
+    | "call.in-progress.error-vapifault-vapi-voice-failed"
     | "call.in-progress.error-vapifault-neuphonic-voice-failed"
     | "call.in-progress.error-vapifault-hume-voice-failed"
     | "call.in-progress.error-vapifault-sesame-voice-failed"
@@ -17581,6 +18337,7 @@ export interface Call {
     | "call.in-progress.error-vapifault-custom-llm-429-exceeded-quota"
     | "call.in-progress.error-providerfault-custom-llm-500-server-error"
     | "call.in-progress.error-providerfault-custom-llm-503-server-overloaded-error"
+    | "call.in-progress.error-pipeline-ws-model-connection-failed"
     | "pipeline-error-custom-voice-failed"
     | "pipeline-error-cartesia-socket-hang-up"
     | "pipeline-error-cartesia-requested-payment"
@@ -17636,6 +18393,7 @@ export interface Call {
     | "call.in-progress.error-vapifault-eleven-labs-voice-not-allowed-for-free-users"
     | "call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded"
     | "call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
+    | "call.in-progress.error-providerfault-eleven-labs-system-busy-and-requested-upgrade"
     | "call.in-progress.error-providerfault-eleven-labs-500-server-error"
     | "call.in-progress.error-providerfault-eleven-labs-503-server-error"
     | "pipeline-error-playht-request-timed-out"
@@ -17689,8 +18447,6 @@ export interface Call {
     | "call.in-progress.error-warm-transfer-assistant-cancelled"
     | "call.in-progress.error-warm-transfer-silence-timeout"
     | "call.in-progress.error-warm-transfer-microphone-timeout"
-    | "call.in-progress.error-warm-transfer-hang-timeout"
-    | "call.in-progress.error-warm-transfer-idle-timeout"
     | "assistant-ended-call"
     | "assistant-said-end-call-phrase"
     | "assistant-ended-call-with-hangup-task"
@@ -17701,6 +18457,7 @@ export interface Call {
     | "call.in-progress.error-transfer-failed"
     | "customer-busy"
     | "customer-ended-call"
+    | "customer-ended-call-before-warm-transfer"
     | "customer-ended-call-after-warm-transfer-attempt"
     | "customer-did-not-answer"
     | "customer-did-not-give-microphone-permission"
@@ -17724,7 +18481,8 @@ export interface Call {
     | "twilio-failed-to-connect-call"
     | "twilio-reported-customer-misdialed"
     | "vonage-rejected"
-    | "voicemail";
+    | "voicemail"
+    | "call-deleted";
   /** This is the destination where the call ended up being transferred to. If the call was not transferred, this will be empty. */
   destination?: TransferDestinationNumber | TransferDestinationSip;
   /** This is the unique identifier for the call. */
@@ -17813,6 +18571,11 @@ export interface Call {
    */
   squad?: CreateSquadDTO;
   /**
+   * These are the overrides for the `squad` or `squadId`'s member settings and template variables.
+   * This will apply to all members of the squad.
+   */
+  squadOverrides?: AssistantOverrides;
+  /**
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
    *
    * To start a call with:
@@ -17873,6 +18636,8 @@ export interface CallBatchError {
 }
 
 export interface CallBatchResponse {
+  /** Subscription limits at the end of this batch */
+  subscriptionLimits?: SubscriptionLimits;
   /** This is the list of calls that were created. */
   results: Call[];
   /** This is the list of calls that failed to be created. */
@@ -17934,6 +18699,11 @@ export interface CreateCallDTO {
    */
   squad?: CreateSquadDTO;
   /**
+   * These are the overrides for the `squad` or `squadId`'s member settings and template variables.
+   * This will apply to all members of the squad.
+   */
+  squadOverrides?: AssistantOverrides;
+  /**
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
    *
    * To start a call with:
@@ -17977,6 +18747,25 @@ export interface CreateCallDTO {
    * Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
    */
   customer?: CreateCustomerDTO;
+}
+
+export interface StructuredOutputFilterDTO {
+  /** Equal to */
+  eq?: string;
+  /** Not equal to */
+  neq?: string;
+  /** Greater than */
+  gt?: string;
+  /** Greater than or equal to */
+  gte?: string;
+  /** Less than */
+  lt?: string;
+  /** Less than or equal to */
+  lte?: string;
+  /** Contains */
+  contains?: string;
+  /** Not contains */
+  notContains?: string;
 }
 
 export interface CallPaginatedResponse {
@@ -18039,6 +18828,11 @@ export interface CreateOutboundCallDTO {
    */
   squad?: CreateSquadDTO;
   /**
+   * These are the overrides for the `squad` or `squadId`'s member settings and template variables.
+   * This will apply to all members of the squad.
+   */
+  squadOverrides?: AssistantOverrides;
+  /**
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
    *
    * To start a call with:
@@ -18085,6 +18879,8 @@ export interface CreateOutboundCallDTO {
 }
 
 export interface CreateWebCallDTO {
+  /** @default true */
+  roomDeleteOnUserLeaveEnabled?: boolean;
   /**
    * This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
    *
@@ -18124,6 +18920,11 @@ export interface CreateWebCallDTO {
    */
   squad?: CreateSquadDTO;
   /**
+   * These are the overrides for the `squad` or `squadId`'s member settings and template variables.
+   * This will apply to all members of the squad.
+   */
+  squadOverrides?: AssistantOverrides;
+  /**
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
    *
    * To start a call with:
@@ -18143,15 +18944,6 @@ export interface CreateWebCallDTO {
   workflow?: CreateWorkflowDTO;
   /** These are the overrides for the `workflow` or `workflowId`'s settings and template variables. */
   workflowOverrides?: WorkflowOverrides;
-  /**
-   * This determines whether the daily room will be deleted and all participants will be kicked once the user leaves the room.
-   * If set to `false`, the room will be kept alive even after the user leaves, allowing clients to reconnect to the same room.
-   * If set to `true`, the room will be deleted and reconnection will not be allowed.
-   *
-   * Defaults to `true`.
-   * @example true
-   */
-  roomDeleteOnUserLeaveEnabled?: boolean;
 }
 
 export interface UpdateCallDTO {
@@ -18160,6 +18952,16 @@ export interface UpdateCallDTO {
    * @maxLength 40
    */
   name?: string;
+}
+
+export interface DeleteCallDTO {
+  /**
+   * These are the Call IDs to be bulk deleted.
+   * If provided, the call ID if any in the request query will be ignored
+   * When requesting a bulk delete, updates when a call is deleted will be sent as a webhook to the server URL configured in the Org settings.
+   * It may take up to a few hours to complete the bulk delete, and will be asynchronous.
+   */
+  ids?: string[];
 }
 
 export interface DeveloperMessage {
@@ -18473,10 +19275,10 @@ export interface GetChatPaginatedDTO {
   assistantId?: string;
   /** This is the unique identifier for the squad that will be used for the chat. */
   squadId?: string;
-  /** This is the unique identifier for the workflow that will be used for the chat. */
-  workflowId?: string;
   /** This is the unique identifier for the session that will be used for the chat. */
   sessionId?: string;
+  /** This is the unique identifier for the previous chat to filter by. */
+  previousChatId?: string;
   /**
    * This is the page number to return. Defaults to 1.
    * @min 1
@@ -18683,6 +19485,13 @@ export interface CreateWebChatDTO {
    */
   sessionId?: string;
   /**
+   * This is the expiration time for the session. This can ONLY be set if starting a new chat and therefore a new session is created.
+   * If session already exists, this will be ignored and NOT be updated for the existing session. Use PATCH /session/:id to update the session expiration time.
+   * @min 60
+   * @max 2592000
+   */
+  sessionExpirationSeconds?: number;
+  /**
    * These are the variable values that will be used to replace template variables in the assistant messages.
    * Only variable substitution is supported in web chat - other assistant properties cannot be overridden.
    */
@@ -18711,6 +19520,13 @@ export interface CreateWebChatDTO {
    * @default false
    */
   stream?: boolean;
+  /**
+   * This is a flag to indicate end of session. When true, the session will be marked as completed and the chat will be ended.
+   * Used to end session to send End-of-session report to the customer.
+   * When flag is set to true, any messages sent will not be processed and session will directly be marked as completed.
+   * @default false
+   */
+  sessionEnd?: boolean;
 }
 
 export interface WebChat {
@@ -18737,6 +19553,13 @@ export interface OpenAIWebChatRequest {
    * If not provided or expired, a new session will be created.
    */
   sessionId?: string;
+  /**
+   * This is the expiration time for the session. This can ONLY be set if starting a new chat and therefore a new session is created.
+   * If session already exists, this will be ignored and NOT be updated for the existing session. Use PATCH /session/:id to update the session expiration time.
+   * @min 60
+   * @max 2592000
+   */
+  sessionExpirationSeconds?: number;
   /**
    * These are the variable values that will be used to replace template variables in the assistant messages.
    * Only variable substitution is supported in web chat - other assistant properties cannot be overridden.
@@ -18765,6 +19588,13 @@ export interface OpenAIWebChatRequest {
    * @default true
    */
   stream?: boolean;
+  /**
+   * This is a flag to indicate end of session. When true, the session will be marked as completed and the chat will be ended.
+   * Used to end session to send End-of-session report to the customer.
+   * When flag is set to true, any messages sent will not be processed and session will directly be marked as completed.
+   * @default false
+   */
+  sessionEnd?: boolean;
 }
 
 export interface ResponseOutputText {
@@ -18901,7 +19731,7 @@ export interface CreateCampaignDTO {
   workflowId?: string;
   /** This is the phone number ID that will be used for the campaign calls. */
   phoneNumberId: string;
-  /** This is the schedule plan for the campaign. */
+  /** This is the schedule plan for the campaign. Calls will start at startedAt and continue until your organization’s concurrency limit is reached. Any remaining calls will be retried for up to one hour as capacity becomes available. After that hour or after latestAt, whichever comes first, any calls that couldn’t be placed won’t be retried. */
   schedulePlan?: SchedulePlan;
   /** These are the customers that will be called in the campaign. */
   customers: CreateCustomerDTO[];
@@ -18926,7 +19756,7 @@ export interface Campaign {
   workflowId?: string;
   /** This is the phone number ID that will be used for the campaign calls. */
   phoneNumberId: string;
-  /** This is the schedule plan for the campaign. */
+  /** This is the schedule plan for the campaign. Calls will start at startedAt and continue until your organization’s concurrency limit is reached. Any remaining calls will be retried for up to one hour as capacity becomes available. After that hour or after latestAt, whichever comes first, any calls that couldn’t be placed won’t be retried. */
   schedulePlan?: SchedulePlan;
   /** These are the customers that will be called in the campaign. */
   customers: CreateCustomerDTO[];
@@ -19009,6 +19839,10 @@ export interface Session {
    * @format date-time
    */
   updatedAt: string;
+  /** This is the cost of the session in USD. */
+  cost?: number;
+  /** These are the costs of individual components of the session in USD. */
+  costs?: (ModelCost | AnalysisCost | SessionCost)[];
   /**
    * This is a user-defined name for the session. Maximum length is 40 characters.
    * @maxLength 40
@@ -19051,6 +19885,14 @@ export interface Session {
   phoneNumberId?: string;
   /** This is the phone number configuration for this session. */
   phoneNumber?: ImportTwilioPhoneNumberDTO;
+  /**
+   * These are the artifacts that were extracted from the session messages.
+   * They are only available after the session has completed.
+   * The artifact plan from the assistant or active assistant of squad is used to generate the artifact.
+   * Currently the only supported fields of assistant artifact plan are:
+   * - structuredOutputIds
+   */
+  artifact?: Artifact;
 }
 
 export interface CreateSessionDTO {
@@ -19132,6 +19974,8 @@ export interface GetSessionPaginatedDTO {
   squadId?: string;
   /** This is the ID of the workflow to filter sessions by. */
   workflowId?: string;
+  /** This is the customer information to filter by. */
+  customer?: CreateCustomerDTO;
   /**
    * This is the page number to return. Defaults to 1.
    * @min 1
@@ -20422,10 +21266,7 @@ export interface ApiRequestTool {
    * @pattern /^[a-zA-Z0-9_-]{1,40}$/
    */
   name?: string;
-  /**
-   * This is the description of the tool. This will be passed to the model.
-   * @maxLength 1000
-   */
+  /** This is the description of the tool. This will be passed to the model. */
   description?: string;
   /** This is where the request will be sent. */
   url: string;
@@ -21586,6 +22427,108 @@ export interface HandoffTool {
    * ```
    */
   rejectionPlan?: ToolRejectionPlan;
+  /**
+   * This is the optional function definition that will be passed to the LLM.
+   * If this is not defined, we will construct this based on the other properties.
+   *
+   * For example, given the following tools definition:
+   * ```json
+   * {
+   *   "tools": [
+   *     {
+   *       "type": "handoff",
+   *       "destinations": [
+   *         {
+   *           "type": "assistant",
+   *           "assistantId": "assistant-123",
+   *           "description": "customer wants to be handed off to assistant-123",
+   *           "contextEngineeringPlan": {
+   *             "type": "all"
+   *           }
+   *         },
+   *         {
+   *           "type": "assistant",
+   *           "assistantId": "assistant-456",
+   *           "description": "customer wants to be handed off to assistant-456",
+   *           "contextEngineeringPlan": {
+   *             "type": "all"
+   *           }
+   *         }
+   *       ],
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * We will construct the following function definition:
+   * ```json
+   * {
+   *   "function": {
+   *     "name": "handoff_to_assistant-123",
+   *     "description": "
+   *          Use this function to handoff the call to the next assistant.
+   *          Only use it when instructions explicitly ask you to use the handoff_to_assistant function.
+   *          DO NOT call this function unless you are instructed to do so.
+   *          Here are the destinations you can handoff the call to:
+   *          1. assistant-123. When: customer wants to be handed off to assistant-123
+   *          2. assistant-456. When: customer wants to be handed off to assistant-456
+   *     ",
+   *     "parameters": {
+   *       "type": "object",
+   *       "properties": {
+   *         "destination": {
+   *           "type": "string",
+   *           "description": "Options: assistant-123 (customer wants to be handed off to assistant-123), assistant-456 (customer wants to be handed off to assistant-456)",
+   *           "enum": ["assistant-123", "assistant-456"]
+   *         },
+   *       },
+   *       "required": ["destination"]
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * To override this function, please provide an OpenAI function definition and refer to it in the system prompt.
+   * You may override parts of the function definition (i.e. you may only want to change the function name for your prompt).
+   * If you choose to override the function parameters, it must include `destination` as a required parameter, and it must evaluate to either an assistantId, assistantName, or a the string literal `dynamic`.
+   *
+   * To pass custom parameters to the server in a dynamic handoff, you can use the function parameters, with `dynamic` as the destination.
+   * ```json
+   * {
+   *   "function": {
+   *     "name": "dynamic_handoff",
+   *     "description": "
+   *          Call this function when the customer is ready to be handed off to the next assistant
+   *     ",
+   *     "parameters": {
+   *       "type": "object",
+   *       "properties": {
+   *         "destination": {
+   *           "type": "string",
+   *           "enum": ["dynamic"]
+   *         },
+   *         "customerAreaCode": {
+   *           "type": "number",
+   *           "description": "Area code of the customer"
+   *         },
+   *         "customerIntent": {
+   *           "type": "string",
+   *           "enum": ["new-customer", "existing-customer"],
+   *           "description": "Use new-customer when customer is a new customer, existing-customer when customer is an existing customer"
+   *         },
+   *         "customerSentiment": {
+   *           "type": "string",
+   *           "enum": ["positive", "negative", "neutral"],
+   *           "description": "Use positive when customer is happy, negative when customer is unhappy, neutral when customer is neutral"
+   *         }
+   *       },
+   *       "required": ["destination", "customerAreaCode", "customerIntent", "customerSentiment"]
+   *     }
+   *   }
+   * }
+   * ```
+   */
+  function?: OpenAIFunction;
 }
 
 export interface OutputTool {
@@ -23368,10 +24311,7 @@ export interface CreateApiRequestToolDTO {
    * @pattern /^[a-zA-Z0-9_-]{1,40}$/
    */
   name?: string;
-  /**
-   * This is the description of the tool. This will be passed to the model.
-   * @maxLength 1000
-   */
+  /** This is the description of the tool. This will be passed to the model. */
   description?: string;
   /** This is where the request will be sent. */
   url: string;
@@ -24288,10 +25228,7 @@ export interface UpdateApiRequestToolDTO {
    * @pattern /^[a-zA-Z0-9_-]{1,40}$/
    */
   name?: string;
-  /**
-   * This is the description of the tool. This will be passed to the model.
-   * @maxLength 1000
-   */
+  /** This is the description of the tool. This will be passed to the model. */
   description?: string;
   /** This is where the request will be sent. */
   url?: string;
@@ -25228,6 +26165,108 @@ export interface UpdateHandoffToolDTO {
    * ```
    */
   rejectionPlan?: ToolRejectionPlan;
+  /**
+   * This is the optional function definition that will be passed to the LLM.
+   * If this is not defined, we will construct this based on the other properties.
+   *
+   * For example, given the following tools definition:
+   * ```json
+   * {
+   *   "tools": [
+   *     {
+   *       "type": "handoff",
+   *       "destinations": [
+   *         {
+   *           "type": "assistant",
+   *           "assistantId": "assistant-123",
+   *           "description": "customer wants to be handed off to assistant-123",
+   *           "contextEngineeringPlan": {
+   *             "type": "all"
+   *           }
+   *         },
+   *         {
+   *           "type": "assistant",
+   *           "assistantId": "assistant-456",
+   *           "description": "customer wants to be handed off to assistant-456",
+   *           "contextEngineeringPlan": {
+   *             "type": "all"
+   *           }
+   *         }
+   *       ],
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * We will construct the following function definition:
+   * ```json
+   * {
+   *   "function": {
+   *     "name": "handoff_to_assistant-123",
+   *     "description": "
+   *          Use this function to handoff the call to the next assistant.
+   *          Only use it when instructions explicitly ask you to use the handoff_to_assistant function.
+   *          DO NOT call this function unless you are instructed to do so.
+   *          Here are the destinations you can handoff the call to:
+   *          1. assistant-123. When: customer wants to be handed off to assistant-123
+   *          2. assistant-456. When: customer wants to be handed off to assistant-456
+   *     ",
+   *     "parameters": {
+   *       "type": "object",
+   *       "properties": {
+   *         "destination": {
+   *           "type": "string",
+   *           "description": "Options: assistant-123 (customer wants to be handed off to assistant-123), assistant-456 (customer wants to be handed off to assistant-456)",
+   *           "enum": ["assistant-123", "assistant-456"]
+   *         },
+   *       },
+   *       "required": ["destination"]
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * To override this function, please provide an OpenAI function definition and refer to it in the system prompt.
+   * You may override parts of the function definition (i.e. you may only want to change the function name for your prompt).
+   * If you choose to override the function parameters, it must include `destination` as a required parameter, and it must evaluate to either an assistantId, assistantName, or a the string literal `dynamic`.
+   *
+   * To pass custom parameters to the server in a dynamic handoff, you can use the function parameters, with `dynamic` as the destination.
+   * ```json
+   * {
+   *   "function": {
+   *     "name": "dynamic_handoff",
+   *     "description": "
+   *          Call this function when the customer is ready to be handed off to the next assistant
+   *     ",
+   *     "parameters": {
+   *       "type": "object",
+   *       "properties": {
+   *         "destination": {
+   *           "type": "string",
+   *           "enum": ["dynamic"]
+   *         },
+   *         "customerAreaCode": {
+   *           "type": "number",
+   *           "description": "Area code of the customer"
+   *         },
+   *         "customerIntent": {
+   *           "type": "string",
+   *           "enum": ["new-customer", "existing-customer"],
+   *           "description": "Use new-customer when customer is a new customer, existing-customer when customer is an existing customer"
+   *         },
+   *         "customerSentiment": {
+   *           "type": "string",
+   *           "enum": ["positive", "negative", "neutral"],
+   *           "description": "Use positive when customer is happy, negative when customer is unhappy, neutral when customer is neutral"
+   *         }
+   *       },
+   *       "required": ["destination", "customerAreaCode", "customerIntent", "customerSentiment"]
+   *     }
+   *   }
+   * }
+   * ```
+   */
+  function?: OpenAIFunction;
 }
 
 export interface UpdateTransferCallToolDTO {
@@ -27081,6 +28120,14 @@ export interface TrieveKnowledgeBaseImport {
   providerId: string;
 }
 
+export interface ComplianceOverride {
+  /**
+   * Force storage for this output under HIPAA. Only enable if output contains no sensitive data.
+   * @example false
+   */
+  forceStoreOnHipaaEnabled?: boolean;
+}
+
 export interface StructuredOutput {
   /**
    * This is the model that will be used to extract the structured output.
@@ -27102,6 +28149,24 @@ export interface StructuredOutput {
     | WorkflowAnthropicModel
     | WorkflowGoogleModel
     | WorkflowCustomModel;
+  /**
+   * Compliance configuration for this output. Only enable overrides if no sensitive data will be stored.
+   * @example {"forceStoreOnHipaaEnabled":false}
+   */
+  compliancePlan?: ComplianceOverride;
+  /**
+   * This is the toggle to enable or disable the structured output reason analysis.
+   * Reason analysis provides information on why the analysis value was chosen based on the messages provided.
+   * Defaults to enabled, and should be set to false to disable the reason field.
+   * @example true
+   */
+  reasonEnabled?: boolean;
+  /**
+   * This is the prompt to use for the structured output reasoning.
+   * If not set, the default prompt will be used - "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point".
+   * @example "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point."
+   */
+  reasonPrompt?: string;
   /** This is the unique identifier for the structured output. */
   id: string;
   /** This is the unique identifier for the org that this structured output belongs to. */
@@ -27181,6 +28246,24 @@ export interface CreateStructuredOutputDTO {
     | WorkflowGoogleModel
     | WorkflowCustomModel;
   /**
+   * Compliance configuration for this output. Only enable overrides if no sensitive data will be stored.
+   * @example {"forceStoreOnHipaaEnabled":false}
+   */
+  compliancePlan?: ComplianceOverride;
+  /**
+   * This is the toggle to enable or disable the structured output reason analysis.
+   * Reason analysis provides information on why the analysis value was chosen based on the messages provided.
+   * Defaults to enabled, and should be set to false to disable the reason field.
+   * @example true
+   */
+  reasonEnabled?: boolean;
+  /**
+   * This is the prompt to use for the structured output reasoning.
+   * If not set, the default prompt will be used - "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point".
+   * @example "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point."
+   */
+  reasonPrompt?: string;
+  /**
    * This is the name of the structured output.
    * @minLength 1
    * @maxLength 40
@@ -27240,6 +28323,24 @@ export interface UpdateStructuredOutputDTO {
     | WorkflowGoogleModel
     | WorkflowCustomModel;
   /**
+   * Compliance configuration for this output. Only enable overrides if no sensitive data will be stored.
+   * @example {"forceStoreOnHipaaEnabled":false}
+   */
+  compliancePlan?: ComplianceOverride;
+  /**
+   * This is the toggle to enable or disable the structured output reason analysis.
+   * Reason analysis provides information on why the analysis value was chosen based on the messages provided.
+   * Defaults to enabled, and should be set to false to disable the reason field.
+   * @example true
+   */
+  reasonEnabled?: boolean;
+  /**
+   * This is the prompt to use for the structured output reasoning.
+   * If not set, the default prompt will be used - "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point".
+   * @example "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point."
+   */
+  reasonPrompt?: string;
+  /**
    * This is the name of the structured output.
    * @minLength 1
    * @maxLength 40
@@ -27275,6 +28376,54 @@ export interface UpdateStructuredOutputDTO {
    * - Composition with allOf, anyOf, oneOf
    */
   schema?: JsonSchema;
+}
+
+export interface StructuredOutputRunDTO {
+  /**
+   * This is the preview flag for the re-run. If true, the re-run will be executed and the response will be returned immediately and the call artifact will NOT be updated.
+   * If false (default), the re-run will be executed and the response will be updated in the call artifact.
+   * @default false
+   */
+  previewEnabled?: boolean;
+  /**
+   * This is the ID of the structured output that will be run. This must be provided unless a transient structured output is provided.
+   * When the re-run is executed, only the value of this structured output will be replaced with the new value, or added if not present.
+   */
+  structuredOutputId?: string;
+  /**
+   * This is the transient structured output that will be run. This must be provided if a structured output ID is not provided.
+   * When the re-run is executed, the structured output value will be added to the existing artifact.
+   */
+  structuredOutput?: CreateStructuredOutputDTO;
+  /**
+   * This is the array of callIds that will be updated with the new structured output value. If preview is true, this array must be provided and contain exactly 1 callId.
+   * If preview is false, up to 100 callIds may be provided.
+   */
+  callIds: string[];
+}
+
+export interface GenerateStructuredOutputSuggestionsDTO {
+  /**
+   * The assistant ID to analyze and generate suggestions for
+   * @example "550e8400-e29b-41d4-a716-446655440000"
+   */
+  assistantId: string;
+  /**
+   * Number of suggestions to generate
+   * @min 1
+   * @max 10
+   * @default 6
+   */
+  count?: number;
+  /** Existing structured output IDs to exclude from suggestions */
+  excludeIds?: string[];
+  /**
+   * Iteration/seed for generating diverse suggestions (0 = first generation, 1+ = regenerations with increasing specificity)
+   * @min 0
+   * @max 10
+   * @default 0
+   */
+  seed?: number;
 }
 
 export interface TesterPlan {
@@ -27722,6 +28871,1411 @@ export interface UpdateTestSuiteRunDto {
   name?: string;
 }
 
+export interface BarInsightMetadata {
+  /**
+   * @minLength 1
+   * @maxLength 40
+   */
+  xAxisLabel?: string;
+  /**
+   * @minLength 1
+   * @maxLength 40
+   */
+  yAxisLabel?: string;
+  yAxisMin?: number;
+  yAxisMax?: number;
+  /**
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface InsightTimeRangeWithStep {
+  /**
+   * This is the group by step for aggregation.
+   *
+   * If not provided, defaults to group by day.
+   */
+  step?: "minute" | "hour" | "day" | "week" | "month" | "quarter" | "year";
+  /**
+   * This is the start date for the time range.
+   *
+   * Should be a valid ISO 8601 date-time string or relative time string.
+   * If not provided, defaults to the 7 days ago.
+   *
+   * Relative time strings of the format "-{number}{unit}" are allowed.
+   *
+   * Valid units are:
+   * - d: days
+   * - h: hours
+   * - w: weeks
+   * - m: months
+   * - y: years
+   * @example ""2025-01-01" or "-7d" or "now""
+   */
+  start?: object;
+  /**
+   * This is the end date for the time range.
+   *
+   * Should be a valid ISO 8601 date-time string or relative time string.
+   * If not provided, defaults to now.
+   *
+   * Relative time strings of the format "-{number}{unit}" are allowed.
+   *
+   * Valid units are:
+   * - d: days
+   * - h: hours
+   * - w: weeks
+   * - m: months
+   * - y: years
+   * @example ""2025-01-01" or "now""
+   */
+  end?: object;
+  /**
+   * This is the timezone you want to set for the query.
+   *
+   * If not provided, defaults to UTC.
+   */
+  timezone?: string;
+}
+
+export interface BarInsight {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `bar` to create a bar insight.
+   */
+  type: "bar";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  /** This is the metadata for the insight. */
+  metadata?: BarInsightMetadata;
+  timeRange?: InsightTimeRangeWithStep;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+  /** This is the unique identifier for the Insight. */
+  id: string;
+  /** This is the unique identifier for the org that this Insight belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Insight was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Insight was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface InsightTimeRange {
+  /**
+   * This is the start date for the time range.
+   *
+   * Should be a valid ISO 8601 date-time string or relative time string.
+   * If not provided, defaults to the 7 days ago.
+   *
+   * Relative time strings of the format "-{number}{unit}" are allowed.
+   *
+   * Valid units are:
+   * - d: days
+   * - h: hours
+   * - w: weeks
+   * - m: months
+   * - y: years
+   * @example ""2025-01-01" or "-7d" or "now""
+   */
+  start?: object;
+  /**
+   * This is the end date for the time range.
+   *
+   * Should be a valid ISO 8601 date-time string or relative time string.
+   * If not provided, defaults to now.
+   *
+   * Relative time strings of the format "-{number}{unit}" are allowed.
+   *
+   * Valid units are:
+   * - d: days
+   * - h: hours
+   * - w: weeks
+   * - m: months
+   * - y: years
+   * @example ""2025-01-01" or "now""
+   */
+  end?: object;
+  /**
+   * This is the timezone you want to set for the query.
+   *
+   * If not provided, defaults to UTC.
+   */
+  timezone?: string;
+}
+
+export interface PieInsight {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `pie` to create a pie insight.
+   */
+  type: "pie";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  timeRange?: InsightTimeRange;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+  /** This is the unique identifier for the Insight. */
+  id: string;
+  /** This is the unique identifier for the org that this Insight belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Insight was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Insight was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface LineInsightMetadata {
+  /**
+   * @minLength 1
+   * @maxLength 40
+   */
+  xAxisLabel?: string;
+  /**
+   * @minLength 1
+   * @maxLength 40
+   */
+  yAxisLabel?: string;
+  yAxisMin?: number;
+  yAxisMax?: number;
+  /**
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface LineInsight {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `line` to create a line insight.
+   */
+  type: "line";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  /** This is the metadata for the insight. */
+  metadata?: LineInsightMetadata;
+  timeRange?: InsightTimeRangeWithStep;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+  /** This is the unique identifier for the Insight. */
+  id: string;
+  /** This is the unique identifier for the org that this Insight belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Insight was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Insight was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface TextInsight {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `text` to create a text insight.
+   */
+  type: "text";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formula?: object;
+  timeRange?: InsightTimeRange;
+  /**
+   * These are the queries to run to generate the insight.
+   * For Text Insights, we only allow a single query, or require a formula if multiple queries are provided
+   */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+  /** This is the unique identifier for the Insight. */
+  id: string;
+  /** This is the unique identifier for the org that this Insight belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Insight was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Insight was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface UpdateBarInsightFromCallTableDTO {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `bar` to create a bar insight.
+   */
+  type?: "bar";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  /** This is the metadata for the insight. */
+  metadata?: BarInsightMetadata;
+  timeRange?: InsightTimeRangeWithStep;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries?: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface UpdatePieInsightFromCallTableDTO {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `pie` to create a pie insight.
+   */
+  type?: "pie";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  timeRange?: InsightTimeRange;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries?: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface UpdateLineInsightFromCallTableDTO {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `line` to create a line insight.
+   */
+  type?: "line";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  /** This is the metadata for the insight. */
+  metadata?: LineInsightMetadata;
+  timeRange?: InsightTimeRangeWithStep;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries?: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface UpdateTextInsightFromCallTableDTO {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `text` to create a text insight.
+   */
+  type?: "text";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formula?: object;
+  timeRange?: InsightTimeRange;
+  /**
+   * These are the queries to run to generate the insight.
+   * For Text Insights, we only allow a single query, or require a formula if multiple queries are provided
+   */
+  queries?: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface CreateBarInsightFromCallTableDTO {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `bar` to create a bar insight.
+   */
+  type: "bar";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  /** This is the metadata for the insight. */
+  metadata?: BarInsightMetadata;
+  timeRange?: InsightTimeRangeWithStep;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface CreatePieInsightFromCallTableDTO {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `pie` to create a pie insight.
+   */
+  type: "pie";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  timeRange?: InsightTimeRange;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface CreateLineInsightFromCallTableDTO {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `line` to create a line insight.
+   */
+  type: "line";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  /** This is the metadata for the insight. */
+  metadata?: LineInsightMetadata;
+  timeRange?: InsightTimeRangeWithStep;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface CreateTextInsightFromCallTableDTO {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `text` to create a text insight.
+   */
+  type: "text";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formula?: object;
+  timeRange?: InsightTimeRange;
+  /**
+   * These are the queries to run to generate the insight.
+   * For Text Insights, we only allow a single query, or require a formula if multiple queries are provided
+   */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface JSONQueryOnCallTableWithStringTypeColumn {
+  /**
+   * This is the type of query. Only allowed type is "vapiql-json".
+   * @example "vapiql-json"
+   */
+  type: "vapiql-json";
+  /** This is the table that will be queried. */
+  table: "call";
+  /**
+   * This is the filters to apply to the insight.
+   * The discriminator automatically selects the correct filter type based on column and operator.
+   */
+  filters?: (
+    | FilterStringTypeColumnOnCallTable
+    | FilterStringArrayTypeColumnOnCallTable
+    | FilterNumberTypeColumnOnCallTable
+    | FilterNumberArrayTypeColumnOnCallTable
+    | FilterDateTypeColumnOnCallTable
+    | FilterStructuredOutputColumnOnCallTable
+  )[];
+  /**
+   * This is the column that will be queried in the selected table.
+   * Available columns depend on the selected table.
+   * String Type columns are columns where the rows store String data
+   * @example "id"
+   */
+  column: "id" | "artifact.structuredOutputs[OutputID]";
+  /**
+   * This is the aggregation operation to perform on the column.
+   * When the column is a string type, the operation must be "count".
+   * @example "count"
+   */
+  operation: "count";
+  /**
+   * This is the name of the query.
+   * It will be used to label the query in the insight board on the UI.
+   * @example "Total Calls"
+   */
+  name?: string;
+}
+
+export interface JSONQueryOnCallTableWithNumberTypeColumn {
+  /**
+   * This is the type of query. Only allowed type is "vapiql-json".
+   * @example "vapiql-json"
+   */
+  type: "vapiql-json";
+  /** This is the table that will be queried. */
+  table: "call";
+  /**
+   * This is the filters to apply to the insight.
+   * The discriminator automatically selects the correct filter type based on column and operator.
+   */
+  filters?: (
+    | FilterStringTypeColumnOnCallTable
+    | FilterStringArrayTypeColumnOnCallTable
+    | FilterNumberTypeColumnOnCallTable
+    | FilterNumberArrayTypeColumnOnCallTable
+    | FilterDateTypeColumnOnCallTable
+    | FilterStructuredOutputColumnOnCallTable
+  )[];
+  /**
+   * This is the column that will be queried in the selected table.
+   * Available columns depend on the selected table.
+   * Number Type columns are columns where the rows store Number data
+   * @example "duration"
+   */
+  column:
+    | "cost"
+    | "duration"
+    | "averageModelLatency"
+    | "averageVoiceLatency"
+    | "averageTranscriberLatency"
+    | "averageTurnLatency"
+    | "averageEndpointingLatency"
+    | "artifact.structuredOutputs[OutputID]";
+  /**
+   * This is the aggregation operation to perform on the column.
+   * When the column is a number type, the operation must be one of the following:
+   * - average
+   * - sum
+   * - min
+   * - max
+   * @example "sum"
+   */
+  operation: "average" | "sum" | "min" | "max";
+  /**
+   * This is the name of the query.
+   * It will be used to label the query in the insight board on the UI.
+   * @example "Total Calls"
+   */
+  name?: string;
+}
+
+export interface JSONQueryOnCallTableWithStructuredOutputColumn {
+  /**
+   * This is the type of query. Only allowed type is "vapiql-json".
+   * @example "vapiql-json"
+   */
+  type: "vapiql-json";
+  /** This is the table that will be queried. */
+  table: "call";
+  /**
+   * This is the filters to apply to the insight.
+   * The discriminator automatically selects the correct filter type based on column and operator.
+   */
+  filters?: (
+    | FilterStringTypeColumnOnCallTable
+    | FilterStringArrayTypeColumnOnCallTable
+    | FilterNumberTypeColumnOnCallTable
+    | FilterNumberArrayTypeColumnOnCallTable
+    | FilterDateTypeColumnOnCallTable
+    | FilterStructuredOutputColumnOnCallTable
+  )[];
+  /**
+   * This is the column that will be queried in the call table.
+   * Structured Output Type columns are only to query on artifact.structuredOutputs[OutputID] column.
+   * @example "artifact.structuredOutputs[OutputID]"
+   */
+  column: "artifact.structuredOutputs[OutputID]";
+  /**
+   * This is the aggregation operation to perform on the column.
+   * When the column is a structured output type, the operation depends on the value of the structured output.
+   * If the structured output is a string or boolean, the operation must be "count".
+   * If the structured output is a number, the operation can be "average", "sum", "min", or "max".
+   * @example "count"
+   */
+  operation: "average" | "count" | "sum" | "min" | "max";
+  /**
+   * This is the name of the query.
+   * It will be used to label the query in the insight board on the UI.
+   * @example "Total Calls"
+   */
+  name?: string;
+}
+
+export interface FilterStringTypeColumnOnCallTable {
+  /**
+   * This is the column in the call table that will be filtered on.
+   * String Type columns are columns where the rows store data as a string.
+   * Must be a valid column for the selected table.
+   * @example "assistant_id"
+   */
+  column:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "customerNumber"
+    | "status"
+    | "endedReason"
+    | "forwardedPhoneNumber"
+    | "campaignId";
+  /**
+   * This is the operator to use for the filter.
+   * For string type columns, the operator must be "=", "!=", "contains", "not contains"
+   * @example ""=" or "!=""
+   */
+  operator: "=" | "!=" | "contains" | "not_contains";
+  /** This is the value to filter on. */
+  value: string;
+}
+
+export interface FilterNumberTypeColumnOnCallTable {
+  /**
+   * This is the column in the call table that will be filtered on.
+   * Number Type columns are columns where the rows store data as a number.
+   * Must be a valid column for the selected table.
+   * @example "duration"
+   */
+  column:
+    | "duration"
+    | "cost"
+    | "averageModelLatency"
+    | "averageVoiceLatency"
+    | "averageTranscriberLatency"
+    | "averageTurnLatency"
+    | "averageEndpointingLatency";
+  /**
+   * This is the operator to use for the filter.
+   * For number type columns, the operator must be "=", ">", "<", ">=", "<="
+   * @example ""=" or ">" or "<" or ">=" or "<=""
+   */
+  operator: "=" | "!=" | ">" | "<" | ">=" | "<=";
+  /** This is the value to filter on. */
+  value: number;
+}
+
+export interface FilterDateTypeColumnOnCallTable {
+  /**
+   * This is the column in the call table that will be filtered on.
+   * Date Type columns are columns where the rows store data as a date.
+   * Must be a valid column for the selected table.
+   * @example "created_at"
+   */
+  column: "startedAt" | "endedAt";
+  /**
+   * This is the operator to use for the filter.
+   * For date type columns, the operator must be "=", ">", "<", ">=", "<="
+   * @example ""=" or ">" or "<" or ">=" or "<=""
+   */
+  operator: "=" | "!=" | ">" | "<" | ">=" | "<=";
+  /**
+   * This is the value to filter on.
+   * Must be a valid ISO 8601 date-time string.
+   * @example "2025-01-01T00:00:00Z"
+   */
+  value: string;
+}
+
+export interface FilterStructuredOutputColumnOnCallTable {
+  /**
+   * This is the column in the call table that will be filtered on.
+   * Structured Output Type columns are only to filter on artifact.structuredOutputs[OutputID] column.
+   * @example "artifact.structuredOutputs[OutputID]"
+   */
+  column: "artifact.structuredOutputs[OutputID]";
+  /**
+   * This is the operator to use for the filter.
+   * The operator depends on the value type of the structured output.
+   * If the structured output is a string or boolean, the operator must be "=", "!="
+   * If the structured output is a number, the operator must be "=", ">", "<", ">=", "<="
+   * If the structured output is an array, the operator must be "in" or "not_in"
+   * @example ""=" or ">" or "<" or "in" or "not_in""
+   */
+  operator:
+    | "="
+    | "!="
+    | ">"
+    | "<"
+    | ">="
+    | "<="
+    | "in"
+    | "not_in"
+    | "contains"
+    | "not_contains";
+  /**
+   * This is the value to filter on.
+   * The value type depends on the structured output type being filtered.
+   */
+  value: object;
+}
+
+export interface FilterStringArrayTypeColumnOnCallTable {
+  /**
+   * This is the column in the call table that will be filtered on.
+   * String Array Type columns are the same as String Type columns, but provides the ability to filter on multiple values provided as an array.
+   * Must be a valid column for the selected table.
+   * @example "assistant_id"
+   */
+  column:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "customerNumber"
+    | "status"
+    | "endedReason"
+    | "forwardedPhoneNumber"
+    | "campaignId";
+  /**
+   * This is the operator to use for the filter.
+   * The operator must be `in` or `not_in`.
+   * @example ""in" or "not_in""
+   */
+  operator: "in" | "not_in";
+  /** These are the values to filter on. */
+  value: string[];
+}
+
+export interface FilterNumberArrayTypeColumnOnCallTable {
+  /**
+   * This is the column in the call table that will be filtered on.
+   * Number Array Type columns are the same as Number Type columns, but provides the ability to filter on multiple values provided as an array.
+   * Must be a valid column for the selected table.
+   * @example "duration"
+   */
+  column:
+    | "duration"
+    | "cost"
+    | "averageModelLatency"
+    | "averageVoiceLatency"
+    | "averageTranscriberLatency"
+    | "averageTurnLatency"
+    | "averageEndpointingLatency";
+  /**
+   * This is the operator to use for the filter.
+   * The operator must be `in` or `not_in`.
+   * @example ""in" or "not_in""
+   */
+  operator: "in" | "not_in";
+  /** This is the value to filter on. */
+  value: number[];
+}
+
+export interface BarInsightFromCallTable {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `bar` to create a bar insight.
+   */
+  type: "bar";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  /** This is the metadata for the insight. */
+  metadata?: BarInsightMetadata;
+  timeRange?: InsightTimeRangeWithStep;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface PieInsightFromCallTable {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `pie` to create a pie insight.
+   */
+  type: "pie";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  timeRange?: InsightTimeRange;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface LineInsightFromCallTable {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `line` to create a line insight.
+   */
+  type: "line";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formulas?: InsightFormula[];
+  /** This is the metadata for the insight. */
+  metadata?: LineInsightMetadata;
+  timeRange?: InsightTimeRangeWithStep;
+  /**
+   * This is the group by column for the insight when table is `call`.
+   * These are the columns to group the results by.
+   * All results are grouped by the time range step by default.
+   * @example ["assistant_id"]
+   */
+  groupBy?:
+    | "assistantId"
+    | "workflowId"
+    | "squadId"
+    | "phoneNumberId"
+    | "type"
+    | "endedReason"
+    | "campaignId"
+    | "artifact.structuredOutputs[OutputID]";
+  /** These are the queries to run to generate the insight. */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface TextInsightFromCallTable {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the type of the Insight.
+   * It is required to be `text` to create a text insight.
+   */
+  type: "text";
+  /**
+   * Formulas are mathematical expressions applied on the data returned by the queries to transform them before being used to create the insight.
+   * The formulas needs to be a valid mathematical expression, supported by MathJS - https://mathjs.org/docs/expressions/syntax.html
+   * A formula is created by using the query names as the variable.
+   * The formulas must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * For example, if you have 2 queries, 'Was Booking Made' and 'Average Call Duration', you can create a formula like this:
+   * ```
+   * {{['Query 1']}} / {{['Query 2']}} * 100
+   * ```
+   *
+   * ```
+   * ({{[Query 1]}} * 10) + {{[Query 2]}}
+   * ```
+   * This will take the
+   *
+   * You can also use the query names as the variable in the formula.
+   */
+  formula?: object;
+  timeRange?: InsightTimeRange;
+  /**
+   * These are the queries to run to generate the insight.
+   * For Text Insights, we only allow a single query, or require a formula if multiple queries are provided
+   */
+  queries: (
+    | JSONQueryOnCallTableWithStringTypeColumn
+    | JSONQueryOnCallTableWithNumberTypeColumn
+    | JSONQueryOnCallTableWithStructuredOutputColumn
+  )[];
+}
+
+export interface InsightFormula {
+  /**
+   * This is the name of the formula.
+   * It will be used to label the formula in the insight board on the UI.
+   * @minLength 1
+   * @maxLength 40
+   * @example "Booking Rate"
+   */
+  name?: string;
+  /**
+   * This is the formula to calculate the insight from the queries.
+   * The formula needs to be a valid mathematical expression.
+   * The formula must contain at least one query name in the LiquidJS format {{query_name}} or {{['query name']}} which will be substituted with the query result.
+   * Any MathJS formula is allowed - https://mathjs.org/docs/expressions/syntax.html
+   *
+   * Common valid math operations are +, -, *, /, %
+   * @minLength 1
+   * @maxLength 1000
+   */
+  formula: string;
+}
+
+export interface InsightRunFormatPlan {
+  /**
+   * This is the format of the data to return.
+   * If not provided, defaults to "raw".
+   * Raw provides the data as fetched from the database, with formulas evaluated.
+   * Recharts provides the data in a format that can is ready to be used by recharts.js to render charts.
+   * @example "raw"
+   */
+  format?: "raw" | "recharts";
+}
+
+export interface InsightRunDTO {
+  formatPlan?: InsightRunFormatPlan;
+  /**
+   * This is the optional time range override for the insight.
+   * If provided, overrides every field in the insight's timeRange.
+   * If this is provided with missing fields, defaults will be used, not the insight's timeRange.
+   * start default - "-7d"
+   * end default - "now"
+   * step default - "day"
+   * For Pie and Text Insights, step will be ignored even if provided.
+   * @example "{ start: "2025-01-01", end: "2025-01-07", step: "day" }"
+   */
+  timeRangeOverride?: InsightTimeRangeWithStep;
+}
+
+export interface InsightRunResponse {
+  id: string;
+  insightId: string;
+  orgId: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+}
+
+export interface Insight {
+  /**
+   * This is the name of the Insight.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /** This is the type of the Insight. */
+  type: "bar" | "line" | "pie" | "text";
+  /** This is the unique identifier for the Insight. */
+  id: string;
+  /** This is the unique identifier for the org that this Insight belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Insight was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Insight was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface InsightPaginatedResponse {
+  results: Insight[];
+  metadata: PaginationMeta;
+}
+
 export interface CreateEvalDTO {
   /**
    * This is the mock conversation that will be used to evaluate the flow of the conversation.
@@ -27735,6 +30289,7 @@ export interface CreateEvalDTO {
     | ChatEvalAssistantMessageMock
     | ChatEvalSystemMessageMock
     | ChatEvalToolResponseMessageMock
+    | ChatEvalToolResponseMessageEvaluation
     | ChatEvalUserMessageMock
     | ChatEvalAssistantMessageEvaluation
   )[];
@@ -27749,7 +30304,6 @@ export interface CreateEvalDTO {
   /**
    * This is the description of the eval.
    * This helps describe the eval and its purpose in detail. It will not be used to evaluate the flow of the conversation.
-   * @minLength 1
    * @maxLength 500
    * @example "This eval checks if the user flow is verified."
    */
@@ -27775,6 +30329,7 @@ export interface Eval {
     | ChatEvalAssistantMessageMock
     | ChatEvalSystemMessageMock
     | ChatEvalToolResponseMessageMock
+    | ChatEvalToolResponseMessageEvaluation
     | ChatEvalUserMessageMock
     | ChatEvalAssistantMessageEvaluation
   )[];
@@ -27795,7 +30350,6 @@ export interface Eval {
   /**
    * This is the description of the eval.
    * This helps describe the eval and its purpose in detail. It will not be used to evaluate the flow of the conversation.
-   * @minLength 1
    * @maxLength 500
    * @example "This eval checks if the user flow is verified."
    */
@@ -27826,6 +30380,7 @@ export interface EvalUserEditable {
     | ChatEvalAssistantMessageMock
     | ChatEvalSystemMessageMock
     | ChatEvalToolResponseMessageMock
+    | ChatEvalToolResponseMessageEvaluation
     | ChatEvalUserMessageMock
     | ChatEvalAssistantMessageEvaluation
   )[];
@@ -27840,7 +30395,6 @@ export interface EvalUserEditable {
   /**
    * This is the description of the eval.
    * This helps describe the eval and its purpose in detail. It will not be used to evaluate the flow of the conversation.
-   * @minLength 1
    * @maxLength 500
    * @example "This eval checks if the user flow is verified."
    */
@@ -27901,7 +30455,6 @@ export interface ChatEvalSystemMessageMock {
   /**
    * This is the content of the system message that would have been added in the middle of the conversation.
    * Do not include the assistant prompt as a part of this message. It will automatically be fetched during runtime.
-   * @maxLength 100000000
    * @example "You are a helpful assistant."
    */
   content: string;
@@ -27915,10 +30468,7 @@ export interface ChatEvalToolResponseMessageMock {
    * @default "tool"
    */
   role: "tool";
-  /**
-   * This is the content of the tool response message. JSON Objects should be stringified.
-   * @maxLength 1000
-   */
+  /** This is the content of the tool response message. JSON Objects should be stringified. */
   content: string;
 }
 
@@ -27984,38 +30534,6 @@ export interface ChatEvalAssistantMessageEvaluation {
   continuePlan?: AssistantMessageEvaluationContinuePlan;
 }
 
-export interface AssistantMessageJudgePlanExact {
-  /**
-   * This is the type of the judge plan.
-   * Use 'exact' for an exact match on the content and tool calls - without using LLM-as-a-judge.
-   * @default 'exact'
-   */
-  type: "exact";
-  /**
-   * This is what that will be used to evaluate the model's message content.
-   * If you provide a string, the assistant message content will be evaluated against it as an exact match, case-insensitive.
-   * @maxLength 1000
-   * @example "The weather in San Francisco is sunny."
-   */
-  content: string;
-  /**
-   * This is the tool calls that will be used to evaluate the model's message content.
-   * The tool name must be a valid tool that the assistant is allowed to call.
-   *
-   * For the Query tool, the arguments for the tool call are in the format - {knowledgeBaseNames: ['kb_name', 'kb_name_2']}
-   *
-   * For the DTMF tool, the arguments for the tool call are in the format - {dtmf: "1234*"}
-   *
-   * For the Handoff tool, the arguments for the tool call are in the format - {destination: "assistant_id"}
-   *
-   * For the Transfer Call tool, the arguments for the tool call are in the format - {destination: "phone_number_or_assistant_id"}
-   *
-   * For all other tools, they are called without arguments or with user-defined arguments
-   * @example "[{ name: "get_weather", arguments: { city: "San Francisco" } }]"
-   */
-  toolCalls?: ChatEvalAssistantMessageMockToolCall[];
-}
-
 export interface EvalOpenAIModel {
   /** This is the provider of the model (`openai`). */
   provider: "openai";
@@ -28027,6 +30545,8 @@ export interface EvalOpenAIModel {
    * @maxLength 100
    */
   model:
+    | "gpt-5.1"
+    | "gpt-5.1-chat-latest"
     | "gpt-5"
     | "gpt-5-mini"
     | "gpt-5-nano"
@@ -28133,6 +30653,17 @@ export interface EvalOpenAIModel {
    * @max 10000
    */
   maxTokens?: number;
+  /**
+   * These are the messages which will instruct the AI Judge on how to evaluate the assistant message.
+   * The LLM-Judge must respond with "pass" or "fail" to indicate if the assistant message passes the eval.
+   *
+   * To access the messages in the mock conversation, use the LiquidJS variable `{{messages}}`.
+   * The assistant message to be evaluated will be passed as the last message in the `messages` array and can be accessed using `{{messages[-1]}}`.
+   *
+   * It is recommended to use the system message to instruct the LLM how to evaluate the assistant message, and then use the first user message to pass the assistant message to be evaluated.
+   * @example "{"
+   */
+  messages: object[];
 }
 
 export interface EvalAnthropicModel {
@@ -28151,7 +30682,9 @@ export interface EvalAnthropicModel {
     | "claude-3-5-haiku-20241022"
     | "claude-3-7-sonnet-20250219"
     | "claude-opus-4-20250514"
-    | "claude-sonnet-4-20250514";
+    | "claude-sonnet-4-20250514"
+    | "claude-sonnet-4-5-20250929"
+    | "claude-haiku-4-5-20251001";
   /**
    * This is the optional configuration for Anthropic's thinking feature.
    *
@@ -28172,6 +30705,17 @@ export interface EvalAnthropicModel {
    * @max 10000
    */
   maxTokens?: number;
+  /**
+   * These are the messages which will instruct the AI Judge on how to evaluate the assistant message.
+   * The LLM-Judge must respond with "pass" or "fail" to indicate if the assistant message passes the eval.
+   *
+   * To access the messages in the mock conversation, use the LiquidJS variable `{{messages}}`.
+   * The assistant message to be evaluated will be passed as the last message in the `messages` array and can be accessed using `{{messages[-1]}}`.
+   *
+   * It is recommended to use the system message to instruct the LLM how to evaluate the assistant message, and then use the first user message to pass the assistant message to be evaluated.
+   * @example "{"
+   */
+  messages: object[];
 }
 
 export interface EvalGoogleModel {
@@ -28209,6 +30753,17 @@ export interface EvalGoogleModel {
    * @max 10000
    */
   maxTokens?: number;
+  /**
+   * These are the messages which will instruct the AI Judge on how to evaluate the assistant message.
+   * The LLM-Judge must respond with "pass" or "fail" to indicate if the assistant message passes the eval.
+   *
+   * To access the messages in the mock conversation, use the LiquidJS variable `{{messages}}`.
+   * The assistant message to be evaluated will be passed as the last message in the `messages` array and can be accessed using `{{messages[-1]}}`.
+   *
+   * It is recommended to use the system message to instruct the LLM how to evaluate the assistant message, and then use the first user message to pass the assistant message to be evaluated.
+   * @example "{"
+   */
+  messages: object[];
 }
 
 export interface EvalGroqModel {
@@ -28247,6 +30802,17 @@ export interface EvalGroqModel {
    * @max 10000
    */
   maxTokens?: number;
+  /**
+   * These are the messages which will instruct the AI Judge on how to evaluate the assistant message.
+   * The LLM-Judge must respond with "pass" or "fail" to indicate if the assistant message passes the eval.
+   *
+   * To access the messages in the mock conversation, use the LiquidJS variable `{{messages}}`.
+   * The assistant message to be evaluated will be passed as the last message in the `messages` array and can be accessed using `{{messages[-1]}}`.
+   *
+   * It is recommended to use the system message to instruct the LLM how to evaluate the assistant message, and then use the first user message to pass the assistant message to be evaluated.
+   * @example "{"
+   */
+  messages: object[];
 }
 
 export interface EvalCustomModel {
@@ -28280,6 +30846,17 @@ export interface EvalCustomModel {
    * @max 10000
    */
   maxTokens?: number;
+  /**
+   * These are the messages which will instruct the AI Judge on how to evaluate the assistant message.
+   * The LLM-Judge must respond with "pass" or "fail" to indicate if the assistant message passes the eval.
+   *
+   * To access the messages in the mock conversation, use the LiquidJS variable `{{messages}}`.
+   * The assistant message to be evaluated will be passed as the last message in the `messages` array and can be accessed using `{{messages[-1]}}`.
+   *
+   * It is recommended to use the system message to instruct the LLM how to evaluate the assistant message, and then use the first user message to pass the assistant message to be evaluated.
+   * @example "{"
+   */
+  messages: object[];
 }
 
 export interface AssistantMessageJudgePlanAI {
@@ -28305,6 +30882,53 @@ export interface AssistantMessageJudgePlanAI {
    * @default 'ai'
    */
   type: "ai";
+}
+
+export interface ChatEvalToolResponseMessageEvaluation {
+  /**
+   * This is the role of the message author.
+   * For a tool response message evaluation, the role is always 'tool'
+   * @default 'tool'
+   * @default "tool"
+   */
+  role: "tool";
+  /**
+   * This is the judge plan that instructs how to evaluate the tool response message.
+   * The tool response message can be evaluated with an LLM-as-judge by defining the evaluation criteria in a prompt.
+   */
+  judgePlan: AssistantMessageJudgePlanAI;
+}
+
+export interface AssistantMessageJudgePlanExact {
+  /**
+   * This is the type of the judge plan.
+   * Use 'exact' for an exact match on the content and tool calls - without using LLM-as-a-judge.
+   * @default 'exact'
+   */
+  type: "exact";
+  /**
+   * This is what that will be used to evaluate the model's message content.
+   * If you provide a string, the assistant message content will be evaluated against it as an exact match, case-insensitive.
+   * @maxLength 1000
+   * @example "The weather in San Francisco is sunny."
+   */
+  content: string;
+  /**
+   * This is the tool calls that will be used to evaluate the model's message content.
+   * The tool name must be a valid tool that the assistant is allowed to call.
+   *
+   * For the Query tool, the arguments for the tool call are in the format - {knowledgeBaseNames: ['kb_name', 'kb_name_2']}
+   *
+   * For the DTMF tool, the arguments for the tool call are in the format - {dtmf: "1234*"}
+   *
+   * For the Handoff tool, the arguments for the tool call are in the format - {destination: "assistant_id"}
+   *
+   * For the Transfer Call tool, the arguments for the tool call are in the format - {destination: "phone_number_or_assistant_id"}
+   *
+   * For all other tools, they are called without arguments or with user-defined arguments
+   * @example "[{ name: "get_weather", arguments: { city: "San Francisco" } }]"
+   */
+  toolCalls?: ChatEvalAssistantMessageMockToolCall[];
 }
 
 export interface AssistantMessageJudgePlanRegex {
@@ -28417,6 +31041,7 @@ export interface UpdateEvalDTO {
     | ChatEvalAssistantMessageMock
     | ChatEvalSystemMessageMock
     | ChatEvalToolResponseMessageMock
+    | ChatEvalToolResponseMessageEvaluation
     | ChatEvalUserMessageMock
     | ChatEvalAssistantMessageEvaluation
   )[];
@@ -28431,7 +31056,6 @@ export interface UpdateEvalDTO {
   /**
    * This is the description of the eval.
    * This helps describe the eval and its purpose in detail. It will not be used to evaluate the flow of the conversation.
-   * @minLength 1
    * @maxLength 500
    * @example "This eval checks if the user flow is verified."
    */
@@ -28538,6 +31162,16 @@ export interface EvalRun {
    * The array will have a single item for an eval run, and multiple items each corresponding to the an eval in a suite run in the same order as the evals in the suite.
    */
   results: EvalRunResult[];
+  /**
+   * This is the cost of the eval or suite run in USD.
+   * @example 0.01
+   */
+  cost: number;
+  /**
+   * This is the break up of costs of the eval or suite run.
+   * @example "[{ type: "model", model: "gpt-4o", cost: 0.01 }]"
+   */
+  costs: object[];
   /**
    * This is the type of the run.
    * Currently it is fixed to `eval`.
@@ -28653,6 +31287,71 @@ export interface EvalRunTargetSquad {
    * @example "123e4567-e89b-12d3-a456-426614174000"
    */
   squadId?: string;
+}
+
+export interface Scorecard {
+  /** This is the unique identifier for the scorecard. */
+  id: string;
+  /** This is the unique identifier for the org that this scorecard belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the scorecard was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the scorecard was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of the scorecard. It is only for user reference and will not be used for any evaluation.
+   * @maxLength 80
+   */
+  name?: string;
+  /**
+   * This is the description of the scorecard. It is only for user reference and will not be used for any evaluation.
+   * @maxLength 500
+   */
+  description?: string;
+  /**
+   * These are the metrics that will be used to evaluate the scorecard.
+   * Each metric will have a set of conditions and points that will be used to generate the score.
+   */
+  metrics: ScorecardMetric[];
+  /**
+   * These are the assistant IDs that this scorecard is linked to.
+   * When linked to assistants, this scorecard will be available for evaluation during those assistants' calls.
+   */
+  assistantIds?: string[];
+}
+
+export interface ScorecardPaginatedResponse {
+  results: Scorecard[];
+  metadata: PaginationMeta;
+}
+
+export interface UpdateScorecardDTO {
+  /**
+   * This is the name of the scorecard. It is only for user reference and will not be used for any evaluation.
+   * @maxLength 80
+   */
+  name?: string;
+  /**
+   * This is the description of the scorecard. It is only for user reference and will not be used for any evaluation.
+   * @maxLength 500
+   */
+  description?: string;
+  /**
+   * These are the metrics that will be used to evaluate the scorecard.
+   * Each metric will have a set of conditions and points that will be used to generate the score.
+   */
+  metrics?: ScorecardMetric[];
+  /**
+   * These are the assistant IDs that this scorecard is linked to.
+   * When linked to assistants, this scorecard will be available for evaluation during those assistants' calls.
+   */
+  assistantIds?: string[];
 }
 
 export interface CreateOrgDTO {
@@ -28801,6 +31500,11 @@ export interface Subscription {
    * subscription have the option to enable HIPAA compliance.
    */
   hipaaEnabled?: boolean;
+  /**
+   * This is the data retention enabled flag for the subscription. It determines whether orgs under this
+   * subscription have the option to enable data retention.
+   */
+  dataRetentionEnabled?: boolean;
   /** This is the ID for the Common Paper agreement outlining the HIPAA contract. */
   hipaaCommonPaperAgreementId?: string;
   /**
@@ -31597,6 +34301,7 @@ export interface CredentialSessionResponse {
 export interface CredentialEndUser {
   endUserId: string;
   organizationId: string;
+  tags?: object;
 }
 
 export interface CredentialSessionError {
@@ -31655,15 +34360,6 @@ export interface BearerAuthenticationPlan {
   headerName?: string;
   /** Whether to include the 'Bearer ' prefix in the header value. Defaults to true. */
   bearerPrefixEnabled?: boolean;
-}
-
-export interface CredentialSessionDTO {
-  /** The type of credential to generate a session for. Only Nango user-facing providers are supported. */
-  provider:
-    | "google.calendar.oauth2-client"
-    | "google.calendar.oauth2-authorization"
-    | "google.sheets.oauth2-authorization"
-    | "slack.oauth2-authorization";
 }
 
 export interface ToolTemplateSetup {
@@ -31928,7 +34624,8 @@ export interface VoiceLibrary {
     | "tavus"
     | "sesame"
     | "inworld"
-    | "minimax";
+    | "minimax"
+    | "orpheus";
   /** The ID of the voice provided by the provider. */
   providerId?: string;
   /** The unique slug of the voice. */
@@ -31992,7 +34689,8 @@ export interface SyncVoiceLibraryDTO {
     | "tavus"
     | "sesame"
     | "inworld"
-    | "minimax";
+    | "minimax"
+    | "orpheus";
 }
 
 export interface CreateSesameVoiceDTO {
@@ -32243,6 +34941,28 @@ export interface ClientMessageWorkflowNodeStarted {
   assistant?: CreateAssistantDTO;
   /** This is the active node. */
   node: object;
+}
+
+export interface ClientMessageAssistantStarted {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "assistant.started" is sent when the assistant is started. */
+  type: "assistant.started";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the assistant that was updated. */
+  newAssistant: CreateAssistantDTO;
 }
 
 export interface ClientMessageConversationUpdate {
@@ -32664,10 +35384,51 @@ export interface ClientMessageSessionDeleted {
   session: Session;
 }
 
+export interface ClientMessageCallDeleted {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "call.deleted" is sent when a call is deleted. */
+  type: "call.deleted";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+}
+
+export interface ClientMessageCallDeleteFailed {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "call.deleted" is sent when a call is deleted. */
+  type: "call.delete.failed";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+}
+
 export interface ClientMessage {
   /** These are all the messages that can be sent to the client-side SDKs during the call. Configure the messages you'd like to receive in `assistant.clientMessages`. */
   message:
     | ClientMessageWorkflowNodeStarted
+    | ClientMessageAssistantStarted
     | ClientMessageConversationUpdate
     | ClientMessageHang
     | ClientMessageMetadata
@@ -32684,7 +35445,9 @@ export interface ClientMessage {
     | ClientMessageChatDeleted
     | ClientMessageSessionCreated
     | ClientMessageSessionUpdated
-    | ClientMessageSessionDeleted;
+    | ClientMessageSessionDeleted
+    | ClientMessageCallDeleted
+    | ClientMessageCallDeleteFailed;
 }
 
 export interface ServerMessageAssistantRequest {
@@ -32788,8 +35551,9 @@ export interface ServerMessageEndOfCallReport {
     | "call.start.error-subscription-insufficient-credits"
     | "call.start.error-subscription-upgrade-failed"
     | "call.start.error-subscription-concurrency-limit-reached"
+    | "call.start.error-enterprise-feature-not-available-recording-consent"
     | "assistant-not-valid"
-    | "database-error"
+    | "call.start.error-vapifault-database-error"
     | "assistant-not-found"
     | "pipeline-error-openai-voice-failed"
     | "pipeline-error-cartesia-voice-failed"
@@ -32800,6 +35564,7 @@ export interface ServerMessageEndOfCallReport {
     | "pipeline-error-azure-voice-failed"
     | "pipeline-error-rime-ai-voice-failed"
     | "pipeline-error-smallest-ai-voice-failed"
+    | "pipeline-error-vapi-voice-failed"
     | "pipeline-error-neuphonic-voice-failed"
     | "pipeline-error-hume-voice-failed"
     | "pipeline-error-sesame-voice-failed"
@@ -32815,6 +35580,7 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-vapifault-azure-voice-failed"
     | "call.in-progress.error-vapifault-rime-ai-voice-failed"
     | "call.in-progress.error-vapifault-smallest-ai-voice-failed"
+    | "call.in-progress.error-vapifault-vapi-voice-failed"
     | "call.in-progress.error-vapifault-neuphonic-voice-failed"
     | "call.in-progress.error-vapifault-hume-voice-failed"
     | "call.in-progress.error-vapifault-sesame-voice-failed"
@@ -33145,6 +35911,7 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-vapifault-custom-llm-429-exceeded-quota"
     | "call.in-progress.error-providerfault-custom-llm-500-server-error"
     | "call.in-progress.error-providerfault-custom-llm-503-server-overloaded-error"
+    | "call.in-progress.error-pipeline-ws-model-connection-failed"
     | "pipeline-error-custom-voice-failed"
     | "pipeline-error-cartesia-socket-hang-up"
     | "pipeline-error-cartesia-requested-payment"
@@ -33200,6 +35967,7 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-vapifault-eleven-labs-voice-not-allowed-for-free-users"
     | "call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded"
     | "call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
+    | "call.in-progress.error-providerfault-eleven-labs-system-busy-and-requested-upgrade"
     | "call.in-progress.error-providerfault-eleven-labs-500-server-error"
     | "call.in-progress.error-providerfault-eleven-labs-503-server-error"
     | "pipeline-error-playht-request-timed-out"
@@ -33253,8 +36021,6 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-warm-transfer-assistant-cancelled"
     | "call.in-progress.error-warm-transfer-silence-timeout"
     | "call.in-progress.error-warm-transfer-microphone-timeout"
-    | "call.in-progress.error-warm-transfer-hang-timeout"
-    | "call.in-progress.error-warm-transfer-idle-timeout"
     | "assistant-ended-call"
     | "assistant-said-end-call-phrase"
     | "assistant-ended-call-with-hangup-task"
@@ -33265,6 +36031,7 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-transfer-failed"
     | "customer-busy"
     | "customer-ended-call"
+    | "customer-ended-call-before-warm-transfer"
     | "customer-ended-call-after-warm-transfer-attempt"
     | "customer-did-not-answer"
     | "customer-did-not-give-microphone-permission"
@@ -33288,7 +36055,8 @@ export interface ServerMessageEndOfCallReport {
     | "twilio-failed-to-connect-call"
     | "twilio-reported-customer-misdialed"
     | "vonage-rejected"
-    | "voicemail";
+    | "voicemail"
+    | "call-deleted";
   /** This is the cost of the call in USD. This can also be found at `call.cost` on GET /call/:id. */
   cost?: number;
   /** These are the costs of individual components of the call in USD. This can also be found at `call.costs` on GET /call/:id. */
@@ -33549,7 +36317,9 @@ export interface ServerMessageStatusUpdate {
     | "ringing"
     | "in-progress"
     | "forwarding"
-    | "ended";
+    | "ended"
+    | "not-found"
+    | "deletion-failed";
   /** This is the reason the call ended. This is only sent if the status is "ended". */
   endedReason?:
     | "call-start-error-neither-assistant-nor-server-set"
@@ -33575,8 +36345,9 @@ export interface ServerMessageStatusUpdate {
     | "call.start.error-subscription-insufficient-credits"
     | "call.start.error-subscription-upgrade-failed"
     | "call.start.error-subscription-concurrency-limit-reached"
+    | "call.start.error-enterprise-feature-not-available-recording-consent"
     | "assistant-not-valid"
-    | "database-error"
+    | "call.start.error-vapifault-database-error"
     | "assistant-not-found"
     | "pipeline-error-openai-voice-failed"
     | "pipeline-error-cartesia-voice-failed"
@@ -33587,6 +36358,7 @@ export interface ServerMessageStatusUpdate {
     | "pipeline-error-azure-voice-failed"
     | "pipeline-error-rime-ai-voice-failed"
     | "pipeline-error-smallest-ai-voice-failed"
+    | "pipeline-error-vapi-voice-failed"
     | "pipeline-error-neuphonic-voice-failed"
     | "pipeline-error-hume-voice-failed"
     | "pipeline-error-sesame-voice-failed"
@@ -33602,6 +36374,7 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-vapifault-azure-voice-failed"
     | "call.in-progress.error-vapifault-rime-ai-voice-failed"
     | "call.in-progress.error-vapifault-smallest-ai-voice-failed"
+    | "call.in-progress.error-vapifault-vapi-voice-failed"
     | "call.in-progress.error-vapifault-neuphonic-voice-failed"
     | "call.in-progress.error-vapifault-hume-voice-failed"
     | "call.in-progress.error-vapifault-sesame-voice-failed"
@@ -33932,6 +36705,7 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-vapifault-custom-llm-429-exceeded-quota"
     | "call.in-progress.error-providerfault-custom-llm-500-server-error"
     | "call.in-progress.error-providerfault-custom-llm-503-server-overloaded-error"
+    | "call.in-progress.error-pipeline-ws-model-connection-failed"
     | "pipeline-error-custom-voice-failed"
     | "pipeline-error-cartesia-socket-hang-up"
     | "pipeline-error-cartesia-requested-payment"
@@ -33987,6 +36761,7 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-vapifault-eleven-labs-voice-not-allowed-for-free-users"
     | "call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded"
     | "call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
+    | "call.in-progress.error-providerfault-eleven-labs-system-busy-and-requested-upgrade"
     | "call.in-progress.error-providerfault-eleven-labs-500-server-error"
     | "call.in-progress.error-providerfault-eleven-labs-503-server-error"
     | "pipeline-error-playht-request-timed-out"
@@ -34040,8 +36815,6 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-warm-transfer-assistant-cancelled"
     | "call.in-progress.error-warm-transfer-silence-timeout"
     | "call.in-progress.error-warm-transfer-microphone-timeout"
-    | "call.in-progress.error-warm-transfer-hang-timeout"
-    | "call.in-progress.error-warm-transfer-idle-timeout"
     | "assistant-ended-call"
     | "assistant-said-end-call-phrase"
     | "assistant-ended-call-with-hangup-task"
@@ -34052,6 +36825,7 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-transfer-failed"
     | "customer-busy"
     | "customer-ended-call"
+    | "customer-ended-call-before-warm-transfer"
     | "customer-ended-call-after-warm-transfer-attempt"
     | "customer-did-not-answer"
     | "customer-did-not-give-microphone-permission"
@@ -34075,7 +36849,8 @@ export interface ServerMessageStatusUpdate {
     | "twilio-failed-to-connect-call"
     | "twilio-reported-customer-misdialed"
     | "vonage-rejected"
-    | "voicemail";
+    | "voicemail"
+    | "call-deleted";
   /** These are the conversation messages of the call. This is only sent if the status is "forwarding". */
   messages?: (
     | UserMessage
@@ -34619,6 +37394,62 @@ export interface ServerMessageSessionDeleted {
   session: Session;
 }
 
+export interface ServerMessageCallDeleted {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "call.deleted" is sent when a call is deleted. */
+  type: "call.deleted";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
+}
+
+export interface ServerMessageCallDeleteFailed {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /** This is the type of the message. "call.deleted" is sent when a call is deleted. */
+  type: "call.delete.failed";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
+}
+
 export interface ServerMessage {
   /**
    * These are all the messages that can be sent to your server before, after and during the call. Configure the messages you'd like to receive in `assistant.serverMessages`.
@@ -34654,7 +37485,9 @@ export interface ServerMessage {
     | ServerMessageChatDeleted
     | ServerMessageSessionCreated
     | ServerMessageSessionUpdated
-    | ServerMessageSessionDeleted;
+    | ServerMessageSessionDeleted
+    | ServerMessageCallDeleted
+    | ServerMessageCallDeleteFailed;
 }
 
 export interface ServerMessageResponseAssistantRequest {
@@ -34702,6 +37535,11 @@ export interface ServerMessageResponseAssistantRequest {
    * - Workflow, use `workflow` or `workflowId`
    */
   squad?: CreateSquadDTO;
+  /**
+   * These are the overrides for the `squad` or `squadId`'s member settings and template variables.
+   * This will apply to all members of the squad.
+   */
+  squadOverrides?: AssistantOverrides;
   /**
    * This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
    *
@@ -34958,6 +37796,8 @@ export interface BotMessage {
   source?: string;
   /** The duration of the message in seconds. */
   duration?: number;
+  /** Stable speaker label for diarized user speakers (e.g., "Speaker 1"). */
+  speakerLabel?: string;
 }
 
 export interface ToolCallMessage {
@@ -35136,6 +37976,13 @@ export interface KnowledgeBaseCost {
 export interface ChatCost {
   /** This is the type of cost, always 'chat' for this class. */
   type: "chat";
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface SessionCost {
+  /** This is the type of cost, always 'session' for this class. */
+  type: "session";
   /** This is the cost of the component in USD. */
   cost: number;
 }
@@ -36527,12 +39374,8 @@ export class HttpClient<SecurityDataType = unknown> {
       input !== null && typeof input !== "string"
         ? JSON.stringify(input)
         : input,
-    [ContentType.FormData]: (input: any) => {
-      if (input instanceof FormData) {
-        return input;
-      }
-
-      return Object.keys(input || {}).reduce((formData, key) => {
+    [ContentType.FormData]: (input: any) =>
+      Object.keys(input || {}).reduce((formData, key) => {
         const property = input[key];
         formData.append(
           key,
@@ -36543,8 +39386,7 @@ export class HttpClient<SecurityDataType = unknown> {
               : `${property}`,
         );
         return formData;
-      }, new FormData());
-    },
+      }, new FormData()),
     [ContentType.UrlEncoded]: (input: any) => this.toQueryString(input),
   };
 
@@ -36630,14 +39472,13 @@ export class HttpClient<SecurityDataType = unknown> {
             : payloadFormatter(body),
       },
     ).then(async (response) => {
-      const r = response as HttpResponse<T, E>;
+      const r = response.clone() as HttpResponse<T, E>;
       r.data = null as unknown as T;
       r.error = null as unknown as E;
 
-      const responseToParse = responseFormat ? response.clone() : response;
       const data = !responseFormat
         ? r
-        : await responseToParse[responseFormat]()
+        : await response[responseFormat]()
             .then((data) => {
               if (r.ok) {
                 r.data = data;
@@ -36965,6 +39806,16 @@ export class Api<
     callControllerCallsExport: (
       query?: {
         /**
+         * Filter by assistant overrides. Use variableValues to filter by template variables.
+         * @example {"variableValues":{"name":"John","age":"25"}}
+         */
+        assistantOverrides?: object;
+        /**
+         * Filter by customer properties. Supports filtering by number, name, externalId, and extension.
+         * @example {"number":"+1234567890","name":"John Doe"}
+         */
+        customer?: object;
+        /**
          * Columns to include in the CSV export
          * @default ["id","assistantId","squadId","customerId","customerName","customerNumber","customerSipUri","customerExtension","phoneNumberId","endedReason","type","duration","startedAt","endedAt","transcript","summary","successEvaluation","recordingUrl","cost","phoneCallProvider","phoneCallProviderId","createdAt","updatedAt"]
          */
@@ -37005,8 +39856,20 @@ export class Api<
          */
         async?: boolean;
         /**
-         * This is the email of the customer.
-         * @maxLength 40
+         * This determines the export format.
+         *
+         * If 'csv', exports calls as CSV with selected columns.
+         * If 'json', exports the full Call objects as a JSON array.
+         *
+         * Defaults to 'csv'.
+         * @default "csv"
+         * @example "csv"
+         */
+        format?: "csv" | "json";
+        /**
+         * This is the email to send the export to, if async is true and API Private Key is used to make the request.
+         * If JWT is used, or request made from the dashboard, the email will be the user's email.
+         * @maxLength 1000
          */
         email?: string;
         /** This will return calls with the specified assistantId. */
@@ -37016,6 +39879,10 @@ export class Api<
          * @maxLength 40
          */
         assistantName?: string;
+        /** This will return calls with the specified squadId. */
+        squadId?: string;
+        /** This will return calls where the transient squad name exactly matches the specified value (case-insensitive). */
+        squadName?: string;
         /** This will return calls with the specified callId. */
         id?: string;
         /** This will return calls with the specified callIds. */
@@ -37039,74 +39906,15 @@ export class Api<
         /** This will return calls with the specified phoneNumberId. */
         phoneNumberId?: string;
         /**
-         * This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
-         *
-         * Use cases:
-         * - `false`: To allow non-E164 numbers like `+001234567890`, `1234`, or `abc`. This is useful for dialing out to non-E164 numbers on your SIP trunks.
-         * - `true` (default): To allow only E164 numbers like `+14155551234`. This is standard for PSTN calls.
-         *
-         * If `false`, the `number` is still required to only contain alphanumeric characters (regex: `/^\+?[a-zA-Z0-9]+$/`).
-         *
-         * @default true (E164 check is enabled)
-         * @default true
-         */
-        numberE164CheckEnabled?: boolean;
-        /**
-         * This is the extension that will be dialed after the call is answered.
-         * @maxLength 10
-         * @example null
-         */
-        extension?: string;
-        /**
-         * These are the overrides for the assistant's settings and template variables specific to this customer.
-         * This allows customization of the assistant's behavior for individual customers in batch calls.
-         */
-        assistantOverrides?: AssistantOverrides;
-        /**
-         * This is the number of the customer.
-         * @minLength 3
-         * @maxLength 40
-         */
-        number?: string;
-        /** This is the SIP URI of the customer. */
-        sipUri?: string;
-        /**
-         * This is the name of the customer. This is just for your own reference.
-         *
-         * For SIP inbound calls, this is extracted from the `From` SIP header with format `"Display Name" <sip:username@domain>`.
-         * @maxLength 40
-         */
-        name?: string;
-        /**
-         * This is the external ID of the customer.
-         * @maxLength 40
-         */
-        externalId?: string;
-        /**
          * Filter calls by structured output values. Use structured output ID as key and filter operators as values.
          * @example {"c9dddda4-d70a-4dad-aa5c-aaf117f85cea":{"eq":"2","gt":"1"}}
          */
-        structuredOutputs?: Record<
-          string,
-          {
-            /** Equal to */
-            eq?: string;
-            /** Not equal to */
-            neq?: string;
-            /** Greater than */
-            gt?: string;
-            /** Greater than or equal to */
-            gte?: string;
-            /** Less than */
-            lt?: string;
-            /** Less than or equal to */
-            lte?: string;
-            /** Contains */
-            contains?: string;
-            /** Not contains */
-            notContains?: string;
-          }
-        >;
+        structuredOutputs?: Record<string, StructuredOutputFilterDTO>;
+        /**
+         * Filter calls by the first scorecard's normalized score.
+         * @example {"gte":80,"lt":100}
+         */
+        score?: StructuredOutputFilterDTO;
         /**
          * This is the page number to return. Defaults to 1.
          * @min 1
@@ -37182,6 +39990,16 @@ export class Api<
      */
     callControllerFindAllPaginated: (
       query?: {
+        /**
+         * Filter by assistant overrides. Use variableValues to filter by template variables.
+         * @example {"variableValues":{"name":"John","age":"25"}}
+         */
+        assistantOverrides?: object;
+        /**
+         * Filter by customer properties. Supports filtering by number, name, externalId, and extension.
+         * @example {"number":"+1234567890","name":"John Doe"}
+         */
+        customer?: object;
         /** This will return calls with the specified assistantId. */
         assistantId?: string;
         /**
@@ -37189,6 +40007,10 @@ export class Api<
          * @maxLength 40
          */
         assistantName?: string;
+        /** This will return calls with the specified squadId. */
+        squadId?: string;
+        /** This will return calls where the transient squad name exactly matches the specified value (case-insensitive). */
+        squadName?: string;
         /** This will return calls with the specified callId. */
         id?: string;
         /** This will return calls with the specified callIds. */
@@ -37212,79 +40034,15 @@ export class Api<
         /** This will return calls with the specified phoneNumberId. */
         phoneNumberId?: string;
         /**
-         * This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
-         *
-         * Use cases:
-         * - `false`: To allow non-E164 numbers like `+001234567890`, `1234`, or `abc`. This is useful for dialing out to non-E164 numbers on your SIP trunks.
-         * - `true` (default): To allow only E164 numbers like `+14155551234`. This is standard for PSTN calls.
-         *
-         * If `false`, the `number` is still required to only contain alphanumeric characters (regex: `/^\+?[a-zA-Z0-9]+$/`).
-         *
-         * @default true (E164 check is enabled)
-         * @default true
-         */
-        numberE164CheckEnabled?: boolean;
-        /**
-         * This is the extension that will be dialed after the call is answered.
-         * @maxLength 10
-         * @example null
-         */
-        extension?: string;
-        /**
-         * These are the overrides for the assistant's settings and template variables specific to this customer.
-         * This allows customization of the assistant's behavior for individual customers in batch calls.
-         */
-        assistantOverrides?: AssistantOverrides;
-        /**
-         * This is the number of the customer.
-         * @minLength 3
-         * @maxLength 40
-         */
-        number?: string;
-        /** This is the SIP URI of the customer. */
-        sipUri?: string;
-        /**
-         * This is the name of the customer. This is just for your own reference.
-         *
-         * For SIP inbound calls, this is extracted from the `From` SIP header with format `"Display Name" <sip:username@domain>`.
-         * @maxLength 40
-         */
-        name?: string;
-        /**
-         * This is the email of the customer.
-         * @maxLength 40
-         */
-        email?: string;
-        /**
-         * This is the external ID of the customer.
-         * @maxLength 40
-         */
-        externalId?: string;
-        /**
          * Filter calls by structured output values. Use structured output ID as key and filter operators as values.
          * @example {"c9dddda4-d70a-4dad-aa5c-aaf117f85cea":{"eq":"2","gt":"1"}}
          */
-        structuredOutputs?: Record<
-          string,
-          {
-            /** Equal to */
-            eq?: string;
-            /** Not equal to */
-            neq?: string;
-            /** Greater than */
-            gt?: string;
-            /** Greater than or equal to */
-            gte?: string;
-            /** Less than */
-            lt?: string;
-            /** Less than or equal to */
-            lte?: string;
-            /** Contains */
-            contains?: string;
-            /** Not contains */
-            notContains?: string;
-          }
-        >;
+        structuredOutputs?: Record<string, StructuredOutputFilterDTO>;
+        /**
+         * Filter calls by the first scorecard's normalized score.
+         * @example {"gte":80,"lt":100}
+         */
+        score?: StructuredOutputFilterDTO;
         /**
          * This is the page number to return. Defaults to 1.
          * @min 1
@@ -37361,6 +40119,16 @@ export class Api<
      */
     callControllerFindAllMetadataPaginated: (
       query?: {
+        /**
+         * Filter by assistant overrides. Use variableValues to filter by template variables.
+         * @example {"variableValues":{"name":"John","age":"25"}}
+         */
+        assistantOverrides?: object;
+        /**
+         * Filter by customer properties. Supports filtering by number, name, externalId, and extension.
+         * @example {"number":"+1234567890","name":"John Doe"}
+         */
+        customer?: object;
         /** This will return calls with the specified assistantId. */
         assistantId?: string;
         /**
@@ -37368,6 +40136,10 @@ export class Api<
          * @maxLength 40
          */
         assistantName?: string;
+        /** This will return calls with the specified squadId. */
+        squadId?: string;
+        /** This will return calls where the transient squad name exactly matches the specified value (case-insensitive). */
+        squadName?: string;
         /** This will return calls with the specified callId. */
         id?: string;
         /** This will return calls with the specified callIds. */
@@ -37391,79 +40163,15 @@ export class Api<
         /** This will return calls with the specified phoneNumberId. */
         phoneNumberId?: string;
         /**
-         * This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
-         *
-         * Use cases:
-         * - `false`: To allow non-E164 numbers like `+001234567890`, `1234`, or `abc`. This is useful for dialing out to non-E164 numbers on your SIP trunks.
-         * - `true` (default): To allow only E164 numbers like `+14155551234`. This is standard for PSTN calls.
-         *
-         * If `false`, the `number` is still required to only contain alphanumeric characters (regex: `/^\+?[a-zA-Z0-9]+$/`).
-         *
-         * @default true (E164 check is enabled)
-         * @default true
-         */
-        numberE164CheckEnabled?: boolean;
-        /**
-         * This is the extension that will be dialed after the call is answered.
-         * @maxLength 10
-         * @example null
-         */
-        extension?: string;
-        /**
-         * These are the overrides for the assistant's settings and template variables specific to this customer.
-         * This allows customization of the assistant's behavior for individual customers in batch calls.
-         */
-        assistantOverrides?: AssistantOverrides;
-        /**
-         * This is the number of the customer.
-         * @minLength 3
-         * @maxLength 40
-         */
-        number?: string;
-        /** This is the SIP URI of the customer. */
-        sipUri?: string;
-        /**
-         * This is the name of the customer. This is just for your own reference.
-         *
-         * For SIP inbound calls, this is extracted from the `From` SIP header with format `"Display Name" <sip:username@domain>`.
-         * @maxLength 40
-         */
-        name?: string;
-        /**
-         * This is the email of the customer.
-         * @maxLength 40
-         */
-        email?: string;
-        /**
-         * This is the external ID of the customer.
-         * @maxLength 40
-         */
-        externalId?: string;
-        /**
          * Filter calls by structured output values. Use structured output ID as key and filter operators as values.
          * @example {"c9dddda4-d70a-4dad-aa5c-aaf117f85cea":{"eq":"2","gt":"1"}}
          */
-        structuredOutputs?: Record<
-          string,
-          {
-            /** Equal to */
-            eq?: string;
-            /** Not equal to */
-            neq?: string;
-            /** Greater than */
-            gt?: string;
-            /** Greater than or equal to */
-            gte?: string;
-            /** Less than */
-            lt?: string;
-            /** Less than or equal to */
-            lte?: string;
-            /** Contains */
-            contains?: string;
-            /** Not contains */
-            notContains?: string;
-          }
-        >;
+        structuredOutputs?: Record<string, StructuredOutputFilterDTO>;
+        /**
+         * Filter calls by the first scorecard's normalized score.
+         * @example {"gte":80,"lt":100}
+         */
+        score?: StructuredOutputFilterDTO;
         /**
          * This is the page number to return. Defaults to 1.
          * @min 1
@@ -38013,11 +40721,17 @@ export class Api<
      * @request DELETE:/call/{id}
      * @secure
      */
-    callControllerDeleteCallData: (id: string, params: RequestParams = {}) =>
+    callControllerDeleteCallData: (
+      id: string,
+      data: DeleteCallDTO,
+      params: RequestParams = {},
+    ) =>
       this.request<Call, any>({
         path: `/call/${id}`,
         method: "DELETE",
+        body: data,
         secure: true,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
@@ -38085,10 +40799,10 @@ export class Api<
         assistantId?: string;
         /** This is the unique identifier for the squad that will be used for the chat. */
         squadId?: string;
-        /** This is the unique identifier for the workflow that will be used for the chat. */
-        workflowId?: string;
         /** This is the unique identifier for the session that will be used for the chat. */
         sessionId?: string;
+        /** This is the unique identifier for the previous chat to filter by. */
+        previousChatId?: string;
         /**
          * This is the page number to return. Defaults to 1.
          * @min 1
@@ -38493,7 +41207,12 @@ export class Api<
      */
     sessionControllerFindAllPaginated: (
       query?: {
-        /** This is the name of the session to filter by. */
+        /**
+         * This is the name of the customer. This is just for your own reference.
+         *
+         * For SIP inbound calls, this is extracted from the `From` SIP header with format `"Display Name" <sip:username@domain>`.
+         * @maxLength 40
+         */
         name?: string;
         /** This is the ID of the assistant to filter sessions by. */
         assistantId?: string;
@@ -38501,6 +41220,48 @@ export class Api<
         squadId?: string;
         /** This is the ID of the workflow to filter sessions by. */
         workflowId?: string;
+        /**
+         * This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
+         *
+         * Use cases:
+         * - `false`: To allow non-E164 numbers like `+001234567890`, `1234`, or `abc`. This is useful for dialing out to non-E164 numbers on your SIP trunks.
+         * - `true` (default): To allow only E164 numbers like `+14155551234`. This is standard for PSTN calls.
+         *
+         * If `false`, the `number` is still required to only contain alphanumeric characters (regex: `/^\+?[a-zA-Z0-9]+$/`).
+         *
+         * @default true (E164 check is enabled)
+         * @default true
+         */
+        numberE164CheckEnabled?: boolean;
+        /**
+         * This is the extension that will be dialed after the call is answered.
+         * @maxLength 10
+         * @example null
+         */
+        extension?: string;
+        /**
+         * These are the overrides for the assistant's settings and template variables specific to this customer.
+         * This allows customization of the assistant's behavior for individual customers in batch calls.
+         */
+        assistantOverrides?: AssistantOverrides;
+        /**
+         * This is the number of the customer.
+         * @minLength 3
+         * @maxLength 40
+         */
+        number?: string;
+        /** This is the SIP URI of the customer. */
+        sipUri?: string;
+        /**
+         * This is the email of the customer.
+         * @maxLength 40
+         */
+        email?: string;
+        /**
+         * This is the external ID of the customer.
+         * @maxLength 40
+         */
+        externalId?: string;
         /**
          * This is the page number to return. Defaults to 1.
          * @min 1
@@ -40066,6 +42827,51 @@ export class Api<
         format: "json",
         ...params,
       }),
+
+    /**
+     * No description
+     *
+     * @tags Structured Outputs
+     * @name StructuredOutputControllerRun
+     * @summary Run Structured Output
+     * @request POST:/structured-output/run
+     * @secure
+     */
+    structuredOutputControllerRun: (
+      data: StructuredOutputRunDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<StructuredOutput, any>({
+        path: `/structured-output/run`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Analyzes assistant configuration and generates contextual structured output recommendations
+     *
+     * @tags Structured Outputs
+     * @name StructuredOutputControllerSuggest
+     * @summary Generate AI-Powered Structured Output Suggestions
+     * @request POST:/structured-output/suggest
+     * @secure
+     */
+    structuredOutputControllerSuggest: (
+      data: GenerateStructuredOutputSuggestionsDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, any>({
+        path: `/structured-output/suggest`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
   };
   testSuite = {
     /**
@@ -40611,6 +43417,306 @@ export class Api<
         ...params,
       }),
   };
+  reporting = {
+    /**
+     * No description
+     *
+     * @tags Insight
+     * @name InsightControllerCreate
+     * @summary Create Insight
+     * @request POST:/reporting/insight
+     * @secure
+     */
+    insightControllerCreate: (
+      data:
+        | ({
+            type: "bar";
+          } & CreateBarInsightFromCallTableDTO)
+        | ({
+            type: "pie";
+          } & CreatePieInsightFromCallTableDTO)
+        | ({
+            type: "line";
+          } & CreateLineInsightFromCallTableDTO)
+        | ({
+            type: "text";
+          } & CreateTextInsightFromCallTableDTO),
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        | ({
+            type: "bar";
+          } & BarInsight)
+        | ({
+            type: "pie";
+          } & PieInsight)
+        | ({
+            type: "line";
+          } & LineInsight)
+        | ({
+            type: "text";
+          } & TextInsight),
+        any
+      >({
+        path: `/reporting/insight`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Insight
+     * @name InsightControllerFindAll
+     * @summary Get Insights
+     * @request GET:/reporting/insight
+     * @secure
+     */
+    insightControllerFindAll: (
+      query?: {
+        id?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<InsightPaginatedResponse, any>({
+        path: `/reporting/insight`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Insight
+     * @name InsightControllerUpdate
+     * @summary Update Insight
+     * @request PATCH:/reporting/insight/{id}
+     * @secure
+     */
+    insightControllerUpdate: (
+      id: string,
+      data:
+        | ({
+            type: "bar";
+          } & UpdateBarInsightFromCallTableDTO)
+        | ({
+            type: "pie";
+          } & UpdatePieInsightFromCallTableDTO)
+        | ({
+            type: "line";
+          } & UpdateLineInsightFromCallTableDTO)
+        | ({
+            type: "text";
+          } & UpdateTextInsightFromCallTableDTO),
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        | ({
+            type: "bar";
+          } & BarInsight)
+        | ({
+            type: "pie";
+          } & PieInsight)
+        | ({
+            type: "line";
+          } & LineInsight)
+        | ({
+            type: "text";
+          } & TextInsight),
+        any
+      >({
+        path: `/reporting/insight/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Insight
+     * @name InsightControllerFindOne
+     * @summary Get Insight
+     * @request GET:/reporting/insight/{id}
+     * @secure
+     */
+    insightControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<
+        | ({
+            type: "bar";
+          } & BarInsight)
+        | ({
+            type: "pie";
+          } & PieInsight)
+        | ({
+            type: "line";
+          } & LineInsight)
+        | ({
+            type: "text";
+          } & TextInsight),
+        any
+      >({
+        path: `/reporting/insight/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Insight
+     * @name InsightControllerRemove
+     * @summary Delete Insight
+     * @request DELETE:/reporting/insight/{id}
+     * @secure
+     */
+    insightControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<
+        | ({
+            type: "bar";
+          } & BarInsight)
+        | ({
+            type: "pie";
+          } & PieInsight)
+        | ({
+            type: "line";
+          } & LineInsight)
+        | ({
+            type: "text";
+          } & TextInsight),
+        any
+      >({
+        path: `/reporting/insight/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Insight
+     * @name InsightControllerRun
+     * @summary Run Insight
+     * @request POST:/reporting/insight/{id}/run
+     * @secure
+     */
+    insightControllerRun: (
+      id: string,
+      data: InsightRunDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<InsightRunResponse, any>({
+        path: `/reporting/insight/${id}/run`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Insight
+     * @name InsightControllerPreview
+     * @summary Preview Insight
+     * @request POST:/reporting/insight/preview
+     * @secure
+     */
+    insightControllerPreview: (
+      data:
+        | ({
+            type: "bar";
+          } & CreateBarInsightFromCallTableDTO)
+        | ({
+            type: "pie";
+          } & CreatePieInsightFromCallTableDTO)
+        | ({
+            type: "line";
+          } & CreateLineInsightFromCallTableDTO)
+        | ({
+            type: "text";
+          } & CreateTextInsightFromCallTableDTO),
+      params: RequestParams = {},
+    ) =>
+      this.request<InsightRunResponse, any>({
+        path: `/reporting/insight/preview`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+  };
   eval = {
     /**
      * No description
@@ -40897,6 +44003,167 @@ export class Api<
         method: "GET",
         query: query,
         secure: true,
+        format: "json",
+        ...params,
+      }),
+  };
+  observability = {
+    /**
+     * No description
+     *
+     * @tags Observability/Scorecard
+     * @name ScorecardControllerGet
+     * @summary Get Scorecard
+     * @request GET:/observability/scorecard/{id}
+     * @secure
+     */
+    scorecardControllerGet: (id: string, params: RequestParams = {}) =>
+      this.request<Scorecard, any>({
+        path: `/observability/scorecard/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Observability/Scorecard
+     * @name ScorecardControllerUpdate
+     * @summary Update Scorecard
+     * @request PATCH:/observability/scorecard/{id}
+     * @secure
+     */
+    scorecardControllerUpdate: (
+      id: string,
+      data: UpdateScorecardDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Scorecard, any>({
+        path: `/observability/scorecard/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Observability/Scorecard
+     * @name ScorecardControllerRemove
+     * @summary Delete Scorecard
+     * @request DELETE:/observability/scorecard/{id}
+     * @secure
+     */
+    scorecardControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Scorecard, any>({
+        path: `/observability/scorecard/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Observability/Scorecard
+     * @name ScorecardControllerGetPaginated
+     * @summary List Scorecards
+     * @request GET:/observability/scorecard
+     * @secure
+     */
+    scorecardControllerGetPaginated: (
+      query?: {
+        id?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<ScorecardPaginatedResponse, any>({
+        path: `/observability/scorecard`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Observability/Scorecard
+     * @name ScorecardControllerCreate
+     * @summary Create Scorecard
+     * @request POST:/observability/scorecard
+     * @secure
+     */
+    scorecardControllerCreate: (
+      data: CreateScorecardDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Scorecard, any>({
+        path: `/observability/scorecard`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
@@ -42529,71 +45796,6 @@ export class Api<
         format: "json",
         ...params,
       }),
-
-    /**
-     * No description
-     *
-     * @tags Credentials
-     * @name CredentialControllerGenerateSession
-     * @summary Generate a credential session
-     * @request POST:/credential/session
-     * @secure
-     */
-    credentialControllerGenerateSession: (
-      data: CredentialSessionDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<CredentialSessionResponse, any>({
-        path: `/credential/session`,
-        method: "POST",
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Credentials
-     * @name CredentialControllerHandleWebhook
-     * @summary Handle credential webhook
-     * @request POST:/credential/webhook
-     */
-    credentialControllerHandleWebhook: (
-      data: CredentialWebhookDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<void, any>({
-        path: `/credential/webhook`,
-        method: "POST",
-        body: data,
-        type: ContentType.Json,
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Credentials
-     * @name CredentialControllerTriggerCredentialAction
-     * @summary Trigger a credential action
-     * @request POST:/credential/trigger
-     * @secure
-     */
-    credentialControllerTriggerCredentialAction: (
-      data: CredentialActionRequest,
-      params: RequestParams = {},
-    ) =>
-      this.request<void, any>({
-        path: `/credential/trigger`,
-        method: "POST",
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        ...params,
-      }),
   };
   template = {
     /**
@@ -42797,7 +45999,8 @@ export class Api<
         | "tavus"
         | "sesame"
         | "inworld"
-        | "minimax",
+        | "minimax"
+        | "orpheus",
       query?: {
         page?: number;
         keyword?: string;
@@ -42889,7 +46092,8 @@ export class Api<
         | "tavus"
         | "sesame"
         | "inworld"
-        | "minimax",
+        | "minimax"
+        | "orpheus",
       params: RequestParams = {},
     ) =>
       this.request<VoiceLibrary[], any>({
@@ -42927,7 +46131,8 @@ export class Api<
         | "tavus"
         | "sesame"
         | "inworld"
-        | "minimax",
+        | "minimax"
+        | "orpheus",
       params: RequestParams = {},
     ) =>
       this.request<VoiceLibrary[], any>({

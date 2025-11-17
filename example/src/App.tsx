@@ -27,6 +27,8 @@ function App() {
   const [interruptAssistantEnabled, setInterruptAssistantEnabled] = useState(true);
   const [endCallAfterSay, setEndCallAfterSay] = useState(false);
   const [storedWebCall, setStoredWebCall] = useState<any>(null);
+  const [networkTestRunning, setNetworkTestRunning] = useState(false);
+  const [networkTestResults, setNetworkTestResults] = useState<any>(null);
 
   useEffect(() => {
     // Check for stored webCall on component mount
@@ -264,6 +266,53 @@ function App() {
     handleManualSay(text, endCallAfterSay);
   };
 
+  const runNetworkTests = async () => {
+    setNetworkTestRunning(true);
+    setNetworkTestResults(null);
+    addMessage('system', 'Starting network connectivity tests...');
+    
+    try {
+      // @ts-ignore - This static method exists on the Vapi class
+      const results = await Vapi.runNetworkTestsStandalone();
+      setNetworkTestResults(results);
+      
+      // Log summary to conversation
+      const passed = [];
+      const failed = [];
+      
+      if (results.networkConnectivity?.result === 'passed') {
+        passed.push('TURN Server');
+      } else {
+        failed.push('TURN Server');
+      }
+      
+      if (results.websocketConnectivity?.result === 'passed') {
+        passed.push('WebSocket');
+      } else {
+        failed.push('WebSocket');
+      }
+      
+      if (results.callQuality?.result === 'passed') {
+        passed.push('Call Quality');
+      } else if (results.callQuality?.result === 'not-available') {
+        // Don't count as failed if not available
+      } else {
+        failed.push('Call Quality');
+      }
+      
+      addMessage('system', 
+        `Network tests completed. Passed: ${passed.join(', ') || 'None'}. ${failed.length > 0 ? `Failed: ${failed.join(', ')}` : ''}`
+      );
+      
+    } catch (error) {
+      console.error('Network test error:', error);
+      addMessage('system', `Network test failed: ${error}`);
+      setNetworkTestResults({ error: error?.toString() });
+    } finally {
+      setNetworkTestRunning(false);
+    }
+  };
+
   return (
     <div style={{ 
       maxWidth: '800px', 
@@ -448,7 +497,135 @@ function App() {
             Clear Stored Call
           </button>
         )}
+        
+        <button 
+          onClick={runNetworkTests} 
+          disabled={networkTestRunning || connected}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: (networkTestRunning || connected) ? '#9ca3af' : '#14b8a6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: (networkTestRunning || connected) ? 'not-allowed' : 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          {networkTestRunning ? 'Testing...' : 'Test Network'}
+        </button>
       </div>
+
+      {/* Network Test Results */}
+      {networkTestResults && (
+        <div style={{
+          backgroundColor: networkTestResults.error ? '#fee2e2' : '#f0fdf4',
+          border: `1px solid ${networkTestResults.error ? '#fecaca' : '#bbf7d0'}`,
+          borderRadius: '8px',
+          padding: '15px',
+          marginBottom: '20px'
+        }}>
+          <h3 style={{ 
+            marginTop: 0, 
+            marginBottom: '15px', 
+            color: networkTestResults.error ? '#dc2626' : '#166534' 
+          }}>
+            Network Test Results
+          </h3>
+          
+          {networkTestResults.error ? (
+            <div style={{ color: '#dc2626' }}>
+              Error: {networkTestResults.error}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: '10px' }}>
+              {/* TURN Server Test */}
+              <div style={{ 
+                padding: '10px', 
+                backgroundColor: 'white', 
+                borderRadius: '6px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong>TURN Server Connectivity:</strong>
+                  <span style={{ 
+                    color: networkTestResults.networkConnectivity?.result === 'passed' ? '#16a34a' : 
+                           networkTestResults.networkConnectivity?.result === 'failed' ? '#dc2626' : '#f59e0b',
+                    fontWeight: 'bold'
+                  }}>
+                    {networkTestResults.networkConnectivity?.result?.toUpperCase() || 'UNKNOWN'}
+                  </span>
+                </div>
+                {networkTestResults.networkConnectivity?.error && (
+                  <div style={{ color: '#6b7280', fontSize: '14px', marginTop: '5px' }}>
+                    {networkTestResults.networkConnectivity.error}
+                  </div>
+                )}
+              </div>
+
+              {/* WebSocket Test */}
+              <div style={{ 
+                padding: '10px', 
+                backgroundColor: 'white', 
+                borderRadius: '6px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong>WebSocket Connectivity:</strong>
+                  <span style={{ 
+                    color: networkTestResults.websocketConnectivity?.result === 'passed' ? '#16a34a' : 
+                           networkTestResults.websocketConnectivity?.result === 'failed' ? '#dc2626' : '#f59e0b',
+                    fontWeight: 'bold'
+                  }}>
+                    {networkTestResults.websocketConnectivity?.result?.toUpperCase() || 'UNKNOWN'}
+                  </span>
+                </div>
+                {networkTestResults.websocketConnectivity?.error && (
+                  <div style={{ color: '#6b7280', fontSize: '14px', marginTop: '5px' }}>
+                    {networkTestResults.websocketConnectivity.error}
+                  </div>
+                )}
+              </div>
+
+              {/* Call Quality Test */}
+              <div style={{ 
+                padding: '10px', 
+                backgroundColor: 'white', 
+                borderRadius: '6px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong>Call Quality Test:</strong>
+                  <span style={{ 
+                    color: networkTestResults.callQuality?.result === 'passed' ? '#16a34a' : 
+                           networkTestResults.callQuality?.result === 'failed' ? '#dc2626' : 
+                           networkTestResults.callQuality?.result === 'not-available' ? '#6b7280' : '#f59e0b',
+                    fontWeight: 'bold'
+                  }}>
+                    {networkTestResults.callQuality?.result === 'not-available' ? 'NOT AVAILABLE' :
+                     networkTestResults.callQuality?.result?.toUpperCase() || 'UNKNOWN'}
+                  </span>
+                </div>
+                {networkTestResults.callQuality?.message && (
+                  <div style={{ color: '#6b7280', fontSize: '14px', marginTop: '5px' }}>
+                    {networkTestResults.callQuality.message}
+                  </div>
+                )}
+                {networkTestResults.callQuality?.error && (
+                  <div style={{ color: '#6b7280', fontSize: '14px', marginTop: '5px' }}>
+                    {networkTestResults.callQuality.error}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          <div style={{ marginTop: '10px', fontSize: '14px', color: '#6b7280' }}>
+            💡 Tip: Run this test before starting a call to check network conditions. 
+            {networkTestResults.networkConnectivity?.result === 'failed' && 
+              ' TURN server failures may indicate strict firewall or VPN issues.'}
+          </div>
+        </div>
+      )}
 
       {/* Manual Say Controls */}
       <div style={{
@@ -661,6 +838,7 @@ function App() {
           <li>Use "Mute" to temporarily disable your microphone</li>
           <li>Say "goodbye" or "end call" to end the conversation</li>
           <li>Click "Stop Call" to manually end the call</li>
+          <li><strong>Network Testing:</strong> Use "Test Network" before starting a call to check connectivity to TURN servers and WebSocket support</li>
           <li><strong>Persistent Storage:</strong> Call data is automatically saved and persists even after calls end</li>
           <li><strong>Reconnection:</strong> Use "Reconnect to Stored Call" to rejoin your previous session anytime</li>
           <li>Use "Clear Stored Call" to permanently remove saved call data when no longer needed</li>
