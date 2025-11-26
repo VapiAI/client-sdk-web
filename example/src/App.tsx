@@ -29,6 +29,7 @@ function App() {
   const [storedWebCall, setStoredWebCall] = useState<any>(null);
   const [networkTestRunning, setNetworkTestRunning] = useState(false);
   const [networkTestResults, setNetworkTestResults] = useState<any>(null);
+  const [simulateFailure, setSimulateFailure] = useState<string>('none');
 
   useEffect(() => {
     // Check for stored webCall on component mount
@@ -98,7 +99,46 @@ function App() {
 
     vapi.on('error', (error) => {
       console.error('Vapi error:', error);
-      addMessage('system', `Error: ${error.message || error}`);
+      // Display serialized error details
+      const errorMsg = error?.error?.message || error?.message || JSON.stringify(error);
+      addMessage('system', `Error: ${errorMsg}`);
+    });
+
+    // New instrumentation events for observability
+    vapi.on('call-start-progress', (event) => {
+      console.log('📊 Call Start Progress:', event);
+      const statusEmoji = event.status === 'completed' ? '✅' : event.status === 'failed' ? '❌' : '⏳';
+      const duration = event.duration ? ` (${event.duration}ms)` : '';
+      addMessage('system', `${statusEmoji} ${event.stage}: ${event.status}${duration}`);
+    });
+
+    vapi.on('call-start-success', (event) => {
+      console.log('🎉 Call Start Success:', event);
+      addMessage('system', `🎉 Call started successfully in ${event.totalDuration}ms (Call ID: ${event.callId})`);
+    });
+
+    vapi.on('call-start-failed', (event) => {
+      console.error('💥 Call Start Failed:', event);
+      addMessage('system', `💥 Call failed at stage "${event.stage}" after ${event.totalDuration}ms: ${event.error}`);
+    });
+
+    // Camera error event
+    vapi.on('camera-error', (event) => {
+      console.error('📷 Camera Error:', event);
+      const errorMsg = event?.error?.message || JSON.stringify(event);
+      addMessage('system', `📷 Camera Error: ${errorMsg}`);
+    });
+
+    // Network quality events
+    vapi.on('network-quality-change', (event) => {
+      console.log('📶 Network Quality Change:', event);
+      addMessage('system', `📶 Network quality changed: ${JSON.stringify(event)}`);
+    });
+
+    vapi.on('network-connection', (event) => {
+      console.log('🔌 Network Connection:', event);
+      const emoji = event.event === 'connected' ? '🟢' : '🔴';
+      addMessage('system', `${emoji} Network ${event.type}: ${event.event}`);
     });
     
     return () => {
@@ -117,8 +157,21 @@ function App() {
 
   const startCall = async () => {
     try {
-      addMessage('system', 'Starting call...');
+      addMessage('system', `Starting call... ${simulateFailure !== 'none' ? `(Simulating: ${simulateFailure})` : ''}`);
       
+      // Simulate different failure scenarios
+      if (simulateFailure === 'invalid-assistant') {
+        // Use an invalid assistant ID to trigger API error
+        const webCall = await vapi.start('invalid-assistant-id-12345');
+        return;
+      }
+      
+      if (simulateFailure === 'null-config') {
+        // Pass null/undefined to trigger validation error
+        const webCall = await vapi.start(undefined, undefined, undefined, undefined, undefined);
+        return;
+      }
+
       // Start call with assistant configuration
       const webCall = await vapi.start({
         // Basic assistant configuration
@@ -390,6 +443,52 @@ function App() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Failure Simulation Controls */}
+      <div style={{
+        backgroundColor: '#fef2f2',
+        border: '1px solid #fecaca',
+        borderRadius: '8px',
+        padding: '15px',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ marginTop: 0, marginBottom: '10px', color: '#dc2626' }}>🧪 Test Error Scenarios</h4>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <input 
+              type="radio" 
+              name="failure" 
+              value="none" 
+              checked={simulateFailure === 'none'}
+              onChange={(e) => setSimulateFailure(e.target.value)}
+            />
+            <span>Normal (no failure)</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <input 
+              type="radio" 
+              name="failure" 
+              value="invalid-assistant" 
+              checked={simulateFailure === 'invalid-assistant'}
+              onChange={(e) => setSimulateFailure(e.target.value)}
+            />
+            <span>Invalid Assistant ID</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <input 
+              type="radio" 
+              name="failure" 
+              value="null-config" 
+              checked={simulateFailure === 'null-config'}
+              onChange={(e) => setSimulateFailure(e.target.value)}
+            />
+            <span>Null Config (validation error)</span>
+          </label>
+        </div>
+        <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: 0, marginTop: '10px' }}>
+          Select a failure mode, then click "Start Call" to see how errors are reported with detailed serialization.
+        </p>
       </div>
 
       {/* Control Buttons */}
