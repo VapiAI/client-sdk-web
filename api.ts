@@ -80,6 +80,16 @@ export interface AssemblyAITranscriber {
    * @example 400
    */
   maxTurnSilence?: number;
+  /**
+   * Use VAD to assist with endpointing decisions from the transcriber.
+   * When enabled, transcriber endpointing will be buffered if VAD detects the user is still speaking, preventing premature turn-taking.
+   * When disabled, transcriber endpointing will be used immediately regardless of VAD state, allowing for quicker but more aggressive turn-taking.
+   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
+   *
+   * @default true
+   * @example true
+   */
+  vadAssistedEndpointingEnabled?: boolean;
   /** The WebSocket URL that the transcriber connects to. */
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
@@ -1755,6 +1765,16 @@ export interface FallbackAssemblyAITranscriber {
    * @example 400
    */
   maxTurnSilence?: number;
+  /**
+   * Use VAD to assist with endpointing decisions from the transcriber.
+   * When enabled, transcriber endpointing will be buffered if VAD detects the user is still speaking, preventing premature turn-taking.
+   * When disabled, transcriber endpointing will be used immediately regardless of VAD state, allowing for quicker but more aggressive turn-taking.
+   * Note: Only used if startSpeakingPlan.smartEndpointingPlan is not set.
+   *
+   * @default true
+   * @example true
+   */
+  vadAssistedEndpointingEnabled?: boolean;
   /** The WebSocket URL that the transcriber connects to. */
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
@@ -4682,6 +4702,324 @@ export interface TransferAssistantModel {
   tools?: any[];
 }
 
+export interface RegexOption {
+  /**
+   * This is the type of the regex option. Options are:
+   * - `ignore-case`: Ignores the case of the text being matched. Add
+   * - `whole-word`: Matches whole words only.
+   * - `multi-line`: Matches across multiple lines.
+   */
+  type: "ignore-case" | "whole-word" | "multi-line";
+  /**
+   * This is whether to enable the option.
+   *
+   * @default false
+   */
+  enabled: boolean;
+}
+
+export interface AssistantCustomEndpointingRule {
+  /**
+   * This endpointing rule is based on the last assistant message before customer started speaking.
+   *
+   * Flow:
+   * - Assistant speaks
+   * - Customer starts speaking
+   * - Customer transcription comes in
+   * - This rule is evaluated on the last assistant message
+   * - If a match is found based on `regex`, the endpointing timeout is set to `timeoutSeconds`
+   *
+   * Usage:
+   * - If you have yes/no questions in your use case like "are you interested in a loan?", you can set a shorter timeout.
+   * - If you have questions where the customer may pause to look up information like "what's my account number?", you can set a longer timeout.
+   */
+  type: "assistant";
+  /**
+   * This is the regex pattern to match.
+   *
+   * Note:
+   * - This works by using the `RegExp.test` method in Node.JS. Eg. `/hello/.test("hello there")` will return `true`.
+   *
+   * Hot tip:
+   * - In JavaScript, escape `\` when sending the regex pattern. Eg. `"hello\sthere"` will be sent over the wire as `"hellosthere"`. Send `"hello\\sthere"` instead.
+   * - `RegExp.test` does substring matching, so `/cat/.test("I love cats")` will return `true`. To do full string matching, send "^cat$".
+   */
+  regex: string;
+  /**
+   * These are the options for the regex match. Defaults to all disabled.
+   *
+   * @default []
+   */
+  regexOptions?: RegexOption[];
+  /**
+   * This is the endpointing timeout in seconds, if the rule is matched.
+   * @min 0
+   * @max 15
+   */
+  timeoutSeconds: number;
+}
+
+export interface CustomerCustomEndpointingRule {
+  /**
+   * This endpointing rule is based on current customer message as they are speaking.
+   *
+   * Flow:
+   * - Assistant speaks
+   * - Customer starts speaking
+   * - Customer transcription comes in
+   * - This rule is evaluated on the current customer transcription
+   * - If a match is found based on `regex`, the endpointing timeout is set to `timeoutSeconds`
+   *
+   * Usage:
+   * - If you want to wait longer while customer is speaking numbers, you can set a longer timeout.
+   */
+  type: "customer";
+  /**
+   * This is the regex pattern to match.
+   *
+   * Note:
+   * - This works by using the `RegExp.test` method in Node.JS. Eg. `/hello/.test("hello there")` will return `true`.
+   *
+   * Hot tip:
+   * - In JavaScript, escape `\` when sending the regex pattern. Eg. `"hello\sthere"` will be sent over the wire as `"hellosthere"`. Send `"hello\\sthere"` instead.
+   * - `RegExp.test` does substring matching, so `/cat/.test("I love cats")` will return `true`. To do full string matching, send "^cat$".
+   */
+  regex: string;
+  /**
+   * These are the options for the regex match. Defaults to all disabled.
+   *
+   * @default []
+   */
+  regexOptions?: RegexOption[];
+  /**
+   * This is the endpointing timeout in seconds, if the rule is matched.
+   * @min 0
+   * @max 15
+   */
+  timeoutSeconds: number;
+}
+
+export interface BothCustomEndpointingRule {
+  /**
+   * This endpointing rule is based on both the last assistant message and the current customer message as they are speaking.
+   *
+   * Flow:
+   * - Assistant speaks
+   * - Customer starts speaking
+   * - Customer transcription comes in
+   * - This rule is evaluated on the last assistant message and the current customer transcription
+   * - If assistant message matches `assistantRegex` AND customer message matches `customerRegex`, the endpointing timeout is set to `timeoutSeconds`
+   *
+   * Usage:
+   * - If you want to wait longer while customer is speaking numbers, you can set a longer timeout.
+   */
+  type: "both";
+  /**
+   * This is the regex pattern to match the assistant's message.
+   *
+   * Note:
+   * - This works by using the `RegExp.test` method in Node.JS. Eg. `/hello/.test("hello there")` will return `true`.
+   *
+   * Hot tip:
+   * - In JavaScript, escape `\` when sending the regex pattern. Eg. `"hello\sthere"` will be sent over the wire as `"hellosthere"`. Send `"hello\\sthere"` instead.
+   * - `RegExp.test` does substring matching, so `/cat/.test("I love cats")` will return `true`. To do full string matching, send "^cat$".
+   */
+  assistantRegex: string;
+  /**
+   * These are the options for the assistant's message regex match. Defaults to all disabled.
+   *
+   * @default []
+   */
+  assistantRegexOptions?: RegexOption[];
+  customerRegex: string;
+  /**
+   * These are the options for the customer's message regex match. Defaults to all disabled.
+   *
+   * @default []
+   */
+  customerRegexOptions?: RegexOption[];
+  /**
+   * This is the endpointing timeout in seconds, if the rule is matched.
+   * @min 0
+   * @max 15
+   */
+  timeoutSeconds: number;
+}
+
+export interface VapiSmartEndpointingPlan {
+  /**
+   * This is the provider for the smart endpointing plan.
+   * @example "vapi"
+   */
+  provider: "vapi" | "livekit" | "custom-endpointing-model";
+}
+
+export interface LivekitSmartEndpointingPlan {
+  /**
+   * This is the provider for the smart endpointing plan.
+   * @example "livekit"
+   */
+  provider: "vapi" | "livekit" | "custom-endpointing-model";
+  /**
+   * This expression describes how long the bot will wait to start speaking based on the likelihood that the user has reached an endpoint.
+   *
+   * This is a millisecond valued function. It maps probabilities (real numbers on [0,1]) to milliseconds that the bot should wait before speaking ([0, \infty]). Any negative values that are returned are set to zero (the bot can't start talking in the past).
+   *
+   * A probability of zero represents very high confidence that the caller has stopped speaking, and would like the bot to speak to them. A probability of one represents very high confidence that the caller is still speaking.
+   *
+   * Under the hood, this is parsed into a mathjs expression. Whatever you use to write your expression needs to be valid with respect to mathjs
+   *
+   * @default "20 + 500 * sqrt(x) + 2500 * x^3"
+   */
+  waitFunction?: string;
+}
+
+export interface CustomEndpointingModelSmartEndpointingPlan {
+  /**
+   * This is the provider for the smart endpointing plan. Use `custom-endpointing-model` for custom endpointing providers that are not natively supported.
+   * @example "custom-endpointing-model"
+   */
+  provider: "vapi" | "livekit" | "custom-endpointing-model";
+  /**
+   * This is where the endpointing request will be sent. If not provided, will be sent to `assistant.server`. If that does not exist either, will be sent to `org.server`.
+   *
+   * Request Example:
+   *
+   * POST https://{server.url}
+   * Content-Type: application/json
+   *
+   * {
+   *   "message": {
+   *     "type": "call.endpointing.request",
+   *     "messages": [
+   *       {
+   *         "role": "user",
+   *         "message": "Hello, how are you?",
+   *         "time": 1234567890,
+   *         "secondsFromStart": 0
+   *       }
+   *     ],
+   *     ...other metadata about the call...
+   *   }
+   * }
+   *
+   * Response Expected:
+   * {
+   *   "timeoutSeconds": 0.5
+   * }
+   *
+   * The timeout is the number of seconds to wait before considering the user's speech as finished. The endpointing timeout is automatically reset each time a new transcript is received (and another `call.endpointing.request` is sent).
+   */
+  server?: Server;
+}
+
+export interface TranscriptionEndpointingPlan {
+  /**
+   * The minimum number of seconds to wait after transcription ending with punctuation before sending a request to the model. Defaults to 0.1.
+   *
+   * This setting exists because the transcriber punctuates the transcription when it's more confident that customer has completed a thought.
+   *
+   * @default 0.1
+   * @min 0
+   * @max 3
+   * @example 0.1
+   */
+  onPunctuationSeconds?: number;
+  /**
+   * The minimum number of seconds to wait after transcription ending without punctuation before sending a request to the model. Defaults to 1.5.
+   *
+   * This setting exists to catch the cases where the transcriber was not confident enough to punctuate the transcription, but the customer is done and has been silent for a long time.
+   *
+   * @default 1.5
+   * @min 0
+   * @max 3
+   * @example 1.5
+   */
+  onNoPunctuationSeconds?: number;
+  /**
+   * The minimum number of seconds to wait after transcription ending with a number before sending a request to the model. Defaults to 0.4.
+   *
+   * This setting exists because the transcriber will sometimes punctuate the transcription ending with a number, even though the customer hasn't uttered the full number. This happens commonly for long numbers when the customer reads the number in chunks.
+   *
+   * @default 0.5
+   * @min 0
+   * @max 3
+   * @example 0.5
+   */
+  onNumberSeconds?: number;
+}
+
+export interface StartSpeakingPlan {
+  /**
+   * This is how long assistant waits before speaking. Defaults to 0.4.
+   *
+   * This is the minimum it will wait but if there is latency is the pipeline, this minimum will be exceeded. This is intended as a stopgap in case the pipeline is moving too fast.
+   *
+   * Example:
+   * - If model generates tokens and voice generates bytes within 100ms, the pipeline still waits 300ms before outputting speech.
+   *
+   * Usage:
+   * - If the customer is taking long pauses, set this to a higher value.
+   * - If the assistant is accidentally jumping in too much, set this to a higher value.
+   *
+   * @default 0.4
+   * @min 0
+   * @max 5
+   * @example 0.4
+   */
+  waitSeconds?: number;
+  /**
+   * @deprecated
+   * @example false
+   */
+  smartEndpointingEnabled?: boolean | "livekit";
+  /**
+   * This is the plan for smart endpointing. Pick between Vapi smart endpointing, LiveKit, or custom endpointing model (or nothing). We strongly recommend using livekit endpointing when working in English. LiveKit endpointing is not supported in other languages, yet.
+   *
+   * If this is set, it will override and take precedence over `transcriptionEndpointingPlan`.
+   * This plan will still be overridden by any matching `customEndpointingRules`.
+   *
+   * If this is not set, the system will automatically use the transcriber's built-in endpointing capabilities if available.
+   */
+  smartEndpointingPlan?:
+    | VapiSmartEndpointingPlan
+    | LivekitSmartEndpointingPlan
+    | CustomEndpointingModelSmartEndpointingPlan;
+  /**
+   * These are the custom endpointing rules to set an endpointing timeout based on a regex on the customer's speech or the assistant's last message.
+   *
+   * Usage:
+   * - If you have yes/no questions like "are you interested in a loan?", you can set a shorter timeout.
+   * - If you have questions where the customer may pause to look up information like "what's my account number?", you can set a longer timeout.
+   * - If you want to wait longer while customer is enumerating a list of numbers, you can set a longer timeout.
+   *
+   * These rules have the highest precedence and will override both `smartEndpointingPlan` and `transcriptionEndpointingPlan` when a rule is matched.
+   *
+   * The rules are evaluated in order and the first one that matches will be used.
+   *
+   * Order of precedence for endpointing:
+   * 1. customEndpointingRules (if any match)
+   * 2. smartEndpointingPlan (if set)
+   * 3. transcriptionEndpointingPlan
+   *
+   * @default []
+   */
+  customEndpointingRules?: (
+    | AssistantCustomEndpointingRule
+    | CustomerCustomEndpointingRule
+    | BothCustomEndpointingRule
+  )[];
+  /**
+   * This determines how a customer speech is considered done (endpointing) using the transcription of customer's speech.
+   *
+   * Once an endpoint is triggered, the request is sent to `assistant.model`.
+   *
+   * Note: This plan is only used if `smartEndpointingPlan` is not set and transcriber does not have built-in endpointing capabilities. If both are provided, `smartEndpointingPlan` takes precedence.
+   * This plan will also be overridden by any matching `customEndpointingRules`.
+   */
+  transcriptionEndpointingPlan?: TranscriptionEndpointingPlan;
+}
+
 export interface TransferAssistant {
   /**
    * Optional name for the transfer assistant
@@ -4737,6 +5075,14 @@ export interface TransferAssistant {
    * You can also provide a custom sound by providing a URL to an audio file.
    */
   backgroundSound?: "off" | "office" | string;
+  /**
+   * This is the plan for when the transfer assistant should start talking.
+   *
+   * You should configure this if the transfer assistant needs different endpointing behavior than the base assistant.
+   *
+   * If this is not set, the transfer assistant will inherit the start speaking plan from the base assistant.
+   */
+  startSpeakingPlan?: StartSpeakingPlan;
   /**
    * This is the mode for the first message. Default is 'assistant-speaks-first'.
    *
@@ -5061,6 +5407,17 @@ export interface TransferPlan {
    * @default "refer"
    */
   sipVerb?: "refer" | "bye" | "dial";
+  /**
+   * This sets the timeout for the dial operation in seconds. This is the duration the call will ring before timing out.
+   *
+   * Only applicable when `sipVerb='dial'`. Not applicable for SIP REFER or BYE.
+   *
+   * @default 60
+   * @min 1
+   * @max 600
+   * @default 60
+   */
+  dialTimeout?: number;
   /**
    * This is the URL to an audio file played while the customer is on hold during transfer.
    *
@@ -7119,6 +7476,7 @@ export interface AnthropicModel {
     | "claude-3-5-haiku-20241022"
     | "claude-3-7-sonnet-20250219"
     | "claude-opus-4-20250514"
+    | "claude-opus-4-5-20251101"
     | "claude-sonnet-4-20250514"
     | "claude-sonnet-4-5-20250929"
     | "claude-haiku-4-5-20251001";
@@ -8426,13 +8784,13 @@ export interface WorkflowAnthropicModel {
     | "claude-3-5-haiku-20241022"
     | "claude-3-7-sonnet-20250219"
     | "claude-opus-4-20250514"
+    | "claude-opus-4-5-20251101"
     | "claude-sonnet-4-20250514"
     | "claude-sonnet-4-5-20250929"
     | "claude-haiku-4-5-20251001";
   /**
    * This is the optional configuration for Anthropic's thinking feature.
    *
-   * - Only applicable for `claude-3-7-sonnet-20250219` model.
    * - If provided, `maxTokens` must be greater than `thinking.budgetTokens`.
    */
   thinking?: AnthropicThinkingConfig;
@@ -9756,324 +10114,6 @@ export interface ArtifactPlan {
    * @default '/'
    */
   loggingPath?: string;
-}
-
-export interface RegexOption {
-  /**
-   * This is the type of the regex option. Options are:
-   * - `ignore-case`: Ignores the case of the text being matched. Add
-   * - `whole-word`: Matches whole words only.
-   * - `multi-line`: Matches across multiple lines.
-   */
-  type: "ignore-case" | "whole-word" | "multi-line";
-  /**
-   * This is whether to enable the option.
-   *
-   * @default false
-   */
-  enabled: boolean;
-}
-
-export interface AssistantCustomEndpointingRule {
-  /**
-   * This endpointing rule is based on the last assistant message before customer started speaking.
-   *
-   * Flow:
-   * - Assistant speaks
-   * - Customer starts speaking
-   * - Customer transcription comes in
-   * - This rule is evaluated on the last assistant message
-   * - If a match is found based on `regex`, the endpointing timeout is set to `timeoutSeconds`
-   *
-   * Usage:
-   * - If you have yes/no questions in your use case like "are you interested in a loan?", you can set a shorter timeout.
-   * - If you have questions where the customer may pause to look up information like "what's my account number?", you can set a longer timeout.
-   */
-  type: "assistant";
-  /**
-   * This is the regex pattern to match.
-   *
-   * Note:
-   * - This works by using the `RegExp.test` method in Node.JS. Eg. `/hello/.test("hello there")` will return `true`.
-   *
-   * Hot tip:
-   * - In JavaScript, escape `\` when sending the regex pattern. Eg. `"hello\sthere"` will be sent over the wire as `"hellosthere"`. Send `"hello\\sthere"` instead.
-   * - `RegExp.test` does substring matching, so `/cat/.test("I love cats")` will return `true`. To do full string matching, send "^cat$".
-   */
-  regex: string;
-  /**
-   * These are the options for the regex match. Defaults to all disabled.
-   *
-   * @default []
-   */
-  regexOptions?: RegexOption[];
-  /**
-   * This is the endpointing timeout in seconds, if the rule is matched.
-   * @min 0
-   * @max 15
-   */
-  timeoutSeconds: number;
-}
-
-export interface CustomerCustomEndpointingRule {
-  /**
-   * This endpointing rule is based on current customer message as they are speaking.
-   *
-   * Flow:
-   * - Assistant speaks
-   * - Customer starts speaking
-   * - Customer transcription comes in
-   * - This rule is evaluated on the current customer transcription
-   * - If a match is found based on `regex`, the endpointing timeout is set to `timeoutSeconds`
-   *
-   * Usage:
-   * - If you want to wait longer while customer is speaking numbers, you can set a longer timeout.
-   */
-  type: "customer";
-  /**
-   * This is the regex pattern to match.
-   *
-   * Note:
-   * - This works by using the `RegExp.test` method in Node.JS. Eg. `/hello/.test("hello there")` will return `true`.
-   *
-   * Hot tip:
-   * - In JavaScript, escape `\` when sending the regex pattern. Eg. `"hello\sthere"` will be sent over the wire as `"hellosthere"`. Send `"hello\\sthere"` instead.
-   * - `RegExp.test` does substring matching, so `/cat/.test("I love cats")` will return `true`. To do full string matching, send "^cat$".
-   */
-  regex: string;
-  /**
-   * These are the options for the regex match. Defaults to all disabled.
-   *
-   * @default []
-   */
-  regexOptions?: RegexOption[];
-  /**
-   * This is the endpointing timeout in seconds, if the rule is matched.
-   * @min 0
-   * @max 15
-   */
-  timeoutSeconds: number;
-}
-
-export interface BothCustomEndpointingRule {
-  /**
-   * This endpointing rule is based on both the last assistant message and the current customer message as they are speaking.
-   *
-   * Flow:
-   * - Assistant speaks
-   * - Customer starts speaking
-   * - Customer transcription comes in
-   * - This rule is evaluated on the last assistant message and the current customer transcription
-   * - If assistant message matches `assistantRegex` AND customer message matches `customerRegex`, the endpointing timeout is set to `timeoutSeconds`
-   *
-   * Usage:
-   * - If you want to wait longer while customer is speaking numbers, you can set a longer timeout.
-   */
-  type: "both";
-  /**
-   * This is the regex pattern to match the assistant's message.
-   *
-   * Note:
-   * - This works by using the `RegExp.test` method in Node.JS. Eg. `/hello/.test("hello there")` will return `true`.
-   *
-   * Hot tip:
-   * - In JavaScript, escape `\` when sending the regex pattern. Eg. `"hello\sthere"` will be sent over the wire as `"hellosthere"`. Send `"hello\\sthere"` instead.
-   * - `RegExp.test` does substring matching, so `/cat/.test("I love cats")` will return `true`. To do full string matching, send "^cat$".
-   */
-  assistantRegex: string;
-  /**
-   * These are the options for the assistant's message regex match. Defaults to all disabled.
-   *
-   * @default []
-   */
-  assistantRegexOptions?: RegexOption[];
-  customerRegex: string;
-  /**
-   * These are the options for the customer's message regex match. Defaults to all disabled.
-   *
-   * @default []
-   */
-  customerRegexOptions?: RegexOption[];
-  /**
-   * This is the endpointing timeout in seconds, if the rule is matched.
-   * @min 0
-   * @max 15
-   */
-  timeoutSeconds: number;
-}
-
-export interface VapiSmartEndpointingPlan {
-  /**
-   * This is the provider for the smart endpointing plan.
-   * @example "vapi"
-   */
-  provider: "vapi" | "livekit" | "custom-endpointing-model";
-}
-
-export interface LivekitSmartEndpointingPlan {
-  /**
-   * This is the provider for the smart endpointing plan.
-   * @example "livekit"
-   */
-  provider: "vapi" | "livekit" | "custom-endpointing-model";
-  /**
-   * This expression describes how long the bot will wait to start speaking based on the likelihood that the user has reached an endpoint.
-   *
-   * This is a millisecond valued function. It maps probabilities (real numbers on [0,1]) to milliseconds that the bot should wait before speaking ([0, \infty]). Any negative values that are returned are set to zero (the bot can't start talking in the past).
-   *
-   * A probability of zero represents very high confidence that the caller has stopped speaking, and would like the bot to speak to them. A probability of one represents very high confidence that the caller is still speaking.
-   *
-   * Under the hood, this is parsed into a mathjs expression. Whatever you use to write your expression needs to be valid with respect to mathjs
-   *
-   * @default "20 + 500 * sqrt(x) + 2500 * x^3"
-   */
-  waitFunction?: string;
-}
-
-export interface CustomEndpointingModelSmartEndpointingPlan {
-  /**
-   * This is the provider for the smart endpointing plan. Use `custom-endpointing-model` for custom endpointing providers that are not natively supported.
-   * @example "custom-endpointing-model"
-   */
-  provider: "vapi" | "livekit" | "custom-endpointing-model";
-  /**
-   * This is where the endpointing request will be sent. If not provided, will be sent to `assistant.server`. If that does not exist either, will be sent to `org.server`.
-   *
-   * Request Example:
-   *
-   * POST https://{server.url}
-   * Content-Type: application/json
-   *
-   * {
-   *   "message": {
-   *     "type": "call.endpointing.request",
-   *     "messages": [
-   *       {
-   *         "role": "user",
-   *         "message": "Hello, how are you?",
-   *         "time": 1234567890,
-   *         "secondsFromStart": 0
-   *       }
-   *     ],
-   *     ...other metadata about the call...
-   *   }
-   * }
-   *
-   * Response Expected:
-   * {
-   *   "timeoutSeconds": 0.5
-   * }
-   *
-   * The timeout is the number of seconds to wait before considering the user's speech as finished. The endpointing timeout is automatically reset each time a new transcript is received (and another `call.endpointing.request` is sent).
-   */
-  server?: Server;
-}
-
-export interface TranscriptionEndpointingPlan {
-  /**
-   * The minimum number of seconds to wait after transcription ending with punctuation before sending a request to the model. Defaults to 0.1.
-   *
-   * This setting exists because the transcriber punctuates the transcription when it's more confident that customer has completed a thought.
-   *
-   * @default 0.1
-   * @min 0
-   * @max 3
-   * @example 0.1
-   */
-  onPunctuationSeconds?: number;
-  /**
-   * The minimum number of seconds to wait after transcription ending without punctuation before sending a request to the model. Defaults to 1.5.
-   *
-   * This setting exists to catch the cases where the transcriber was not confident enough to punctuate the transcription, but the customer is done and has been silent for a long time.
-   *
-   * @default 1.5
-   * @min 0
-   * @max 3
-   * @example 1.5
-   */
-  onNoPunctuationSeconds?: number;
-  /**
-   * The minimum number of seconds to wait after transcription ending with a number before sending a request to the model. Defaults to 0.4.
-   *
-   * This setting exists because the transcriber will sometimes punctuate the transcription ending with a number, even though the customer hasn't uttered the full number. This happens commonly for long numbers when the customer reads the number in chunks.
-   *
-   * @default 0.5
-   * @min 0
-   * @max 3
-   * @example 0.5
-   */
-  onNumberSeconds?: number;
-}
-
-export interface StartSpeakingPlan {
-  /**
-   * This is how long assistant waits before speaking. Defaults to 0.4.
-   *
-   * This is the minimum it will wait but if there is latency is the pipeline, this minimum will be exceeded. This is intended as a stopgap in case the pipeline is moving too fast.
-   *
-   * Example:
-   * - If model generates tokens and voice generates bytes within 100ms, the pipeline still waits 300ms before outputting speech.
-   *
-   * Usage:
-   * - If the customer is taking long pauses, set this to a higher value.
-   * - If the assistant is accidentally jumping in too much, set this to a higher value.
-   *
-   * @default 0.4
-   * @min 0
-   * @max 5
-   * @example 0.4
-   */
-  waitSeconds?: number;
-  /**
-   * @deprecated
-   * @example false
-   */
-  smartEndpointingEnabled?: boolean | "livekit";
-  /**
-   * This is the plan for smart endpointing. Pick between Vapi smart endpointing, LiveKit, or custom endpointing model (or nothing). We strongly recommend using livekit endpointing when working in English. LiveKit endpointing is not supported in other languages, yet.
-   *
-   * If this is set, it will override and take precedence over `transcriptionEndpointingPlan`.
-   * This plan will still be overridden by any matching `customEndpointingRules`.
-   *
-   * If this is not set, the system will automatically use the transcriber's built-in endpointing capabilities if available.
-   */
-  smartEndpointingPlan?:
-    | VapiSmartEndpointingPlan
-    | LivekitSmartEndpointingPlan
-    | CustomEndpointingModelSmartEndpointingPlan;
-  /**
-   * These are the custom endpointing rules to set an endpointing timeout based on a regex on the customer's speech or the assistant's last message.
-   *
-   * Usage:
-   * - If you have yes/no questions like "are you interested in a loan?", you can set a shorter timeout.
-   * - If you have questions where the customer may pause to look up information like "what's my account number?", you can set a longer timeout.
-   * - If you want to wait longer while customer is enumerating a list of numbers, you can set a longer timeout.
-   *
-   * These rules have the highest precedence and will override both `smartEndpointingPlan` and `transcriptionEndpointingPlan` when a rule is matched.
-   *
-   * The rules are evaluated in order and the first one that matches will be used.
-   *
-   * Order of precedence for endpointing:
-   * 1. customEndpointingRules (if any match)
-   * 2. smartEndpointingPlan (if set)
-   * 3. transcriptionEndpointingPlan
-   *
-   * @default []
-   */
-  customEndpointingRules?: (
-    | AssistantCustomEndpointingRule
-    | CustomerCustomEndpointingRule
-    | BothCustomEndpointingRule
-  )[];
-  /**
-   * This determines how a customer speech is considered done (endpointing) using the transcription of customer's speech.
-   *
-   * Once an endpoint is triggered, the request is sent to `assistant.model`.
-   *
-   * Note: This plan is only used if `smartEndpointingPlan` is not set and transcriber does not have built-in endpointing capabilities. If both are provided, `smartEndpointingPlan` takes precedence.
-   * This plan will also be overridden by any matching `customEndpointingRules`.
-   */
-  transcriptionEndpointingPlan?: TranscriptionEndpointingPlan;
 }
 
 export interface StopSpeakingPlan {
@@ -19186,6 +19226,11 @@ export interface Chat {
 
 export interface TwilioSMSChatTransport {
   /**
+   * This is the conversation type of the call (ie, voice or chat).
+   * @default "chat"
+   */
+  conversationType?: "chat";
+  /**
    * This is the phone number that will be used to send the SMS.
    * If provided, will create a new session. If not provided, uses existing session's phoneNumberId.
    * The phone number must have SMS enabled and belong to your organization.
@@ -28154,19 +28199,6 @@ export interface StructuredOutput {
    * @example {"forceStoreOnHipaaEnabled":false}
    */
   compliancePlan?: ComplianceOverride;
-  /**
-   * This is the toggle to enable or disable the structured output reason analysis.
-   * Reason analysis provides information on why the analysis value was chosen based on the messages provided.
-   * Defaults to enabled, and should be set to false to disable the reason field.
-   * @example true
-   */
-  reasonEnabled?: boolean;
-  /**
-   * This is the prompt to use for the structured output reasoning.
-   * If not set, the default prompt will be used - "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point".
-   * @example "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point."
-   */
-  reasonPrompt?: string;
   /** This is the unique identifier for the structured output. */
   id: string;
   /** This is the unique identifier for the org that this structured output belongs to. */
@@ -28251,19 +28283,6 @@ export interface CreateStructuredOutputDTO {
    */
   compliancePlan?: ComplianceOverride;
   /**
-   * This is the toggle to enable or disable the structured output reason analysis.
-   * Reason analysis provides information on why the analysis value was chosen based on the messages provided.
-   * Defaults to enabled, and should be set to false to disable the reason field.
-   * @example true
-   */
-  reasonEnabled?: boolean;
-  /**
-   * This is the prompt to use for the structured output reasoning.
-   * If not set, the default prompt will be used - "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point".
-   * @example "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point."
-   */
-  reasonPrompt?: string;
-  /**
    * This is the name of the structured output.
    * @minLength 1
    * @maxLength 40
@@ -28328,19 +28347,6 @@ export interface UpdateStructuredOutputDTO {
    */
   compliancePlan?: ComplianceOverride;
   /**
-   * This is the toggle to enable or disable the structured output reason analysis.
-   * Reason analysis provides information on why the analysis value was chosen based on the messages provided.
-   * Defaults to enabled, and should be set to false to disable the reason field.
-   * @example true
-   */
-  reasonEnabled?: boolean;
-  /**
-   * This is the prompt to use for the structured output reasoning.
-   * If not set, the default prompt will be used - "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point".
-   * @example "You are an expert analysis reasoner. For the analysis done for value, explain why based on the messages provided to understand the reasoning for the analysis. Keep the reasoning concise and to the point."
-   */
-  reasonPrompt?: string;
-  /**
    * This is the name of the structured output.
    * @minLength 1
    * @maxLength 40
@@ -28400,30 +28406,6 @@ export interface StructuredOutputRunDTO {
    * If preview is false, up to 100 callIds may be provided.
    */
   callIds: string[];
-}
-
-export interface GenerateStructuredOutputSuggestionsDTO {
-  /**
-   * The assistant ID to analyze and generate suggestions for
-   * @example "550e8400-e29b-41d4-a716-446655440000"
-   */
-  assistantId: string;
-  /**
-   * Number of suggestions to generate
-   * @min 1
-   * @max 10
-   * @default 6
-   */
-  count?: number;
-  /** Existing structured output IDs to exclude from suggestions */
-  excludeIds?: string[];
-  /**
-   * Iteration/seed for generating diverse suggestions (0 = first generation, 1+ = regenerations with increasing specificity)
-   * @min 0
-   * @max 10
-   * @default 0
-   */
-  seed?: number;
 }
 
 export interface TesterPlan {
@@ -30682,13 +30664,13 @@ export interface EvalAnthropicModel {
     | "claude-3-5-haiku-20241022"
     | "claude-3-7-sonnet-20250219"
     | "claude-opus-4-20250514"
+    | "claude-opus-4-5-20251101"
     | "claude-sonnet-4-20250514"
     | "claude-sonnet-4-5-20250929"
     | "claude-haiku-4-5-20251001";
   /**
    * This is the optional configuration for Anthropic's thinking feature.
    *
-   * - Only applicable for `claude-3-7-sonnet-20250219` model.
    * - If provided, `maxTokens` must be greater than `thinking.budgetTokens`.
    */
   thinking?: AnthropicThinkingConfig;
@@ -31370,7 +31352,7 @@ export interface CreateOrgDTO {
    */
   name?: string;
   /** This is the channel of the org. There is the cluster the API traffic for the org will be directed. */
-  channel?: "default" | "weekly";
+  channel?: "daily" | "default" | "weekly" | "intuit";
   /**
    * This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
    * @min 0
@@ -31621,7 +31603,7 @@ export interface Org {
    */
   name?: string;
   /** This is the channel of the org. There is the cluster the API traffic for the org will be directed. */
-  channel?: "default" | "weekly";
+  channel?: "daily" | "default" | "weekly" | "intuit";
   /**
    * This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
    * @min 0
@@ -31672,7 +31654,7 @@ export interface UpdateOrgDTO {
    */
   name?: string;
   /** This is the channel of the org. There is the cluster the API traffic for the org will be directed. */
-  channel?: "default" | "weekly";
+  channel?: "daily" | "default" | "weekly" | "intuit";
   /**
    * This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
    * @min 0
@@ -31798,7 +31780,7 @@ export interface Token {
    */
   updatedAt: string;
   /** This is the token key. */
-  value: string;
+  value?: string;
   /**
    * This is the name of the token. This is just for your own reference.
    * @maxLength 40
@@ -39374,8 +39356,12 @@ export class HttpClient<SecurityDataType = unknown> {
       input !== null && typeof input !== "string"
         ? JSON.stringify(input)
         : input,
-    [ContentType.FormData]: (input: any) =>
-      Object.keys(input || {}).reduce((formData, key) => {
+    [ContentType.FormData]: (input: any) => {
+      if (input instanceof FormData) {
+        return input;
+      }
+
+      return Object.keys(input || {}).reduce((formData, key) => {
         const property = input[key];
         formData.append(
           key,
@@ -39386,7 +39372,8 @@ export class HttpClient<SecurityDataType = unknown> {
               : `${property}`,
         );
         return formData;
-      }, new FormData()),
+      }, new FormData());
+    },
     [ContentType.UrlEncoded]: (input: any) => this.toQueryString(input),
   };
 
@@ -39472,13 +39459,14 @@ export class HttpClient<SecurityDataType = unknown> {
             : payloadFormatter(body),
       },
     ).then(async (response) => {
-      const r = response.clone() as HttpResponse<T, E>;
+      const r = response as HttpResponse<T, E>;
       r.data = null as unknown as T;
       r.error = null as unknown as E;
 
+      const responseToParse = responseFormat ? response.clone() : response;
       const data = !responseFormat
         ? r
-        : await response[responseFormat]()
+        : await responseToParse[responseFormat]()
             .then((data) => {
               if (r.ok) {
                 r.data = data;
@@ -42848,28 +42836,6 @@ export class Api<
         secure: true,
         type: ContentType.Json,
         format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Analyzes assistant configuration and generates contextual structured output recommendations
-     *
-     * @tags Structured Outputs
-     * @name StructuredOutputControllerSuggest
-     * @summary Generate AI-Powered Structured Output Suggestions
-     * @request POST:/structured-output/suggest
-     * @secure
-     */
-    structuredOutputControllerSuggest: (
-      data: GenerateStructuredOutputSuggestionsDTO,
-      params: RequestParams = {},
-    ) =>
-      this.request<void, any>({
-        path: `/structured-output/suggest`,
-        method: "POST",
-        body: data,
-        secure: true,
-        type: ContentType.Json,
         ...params,
       }),
   };

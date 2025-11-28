@@ -98,6 +98,73 @@ interface CallStartFailedEvent {
   context: Record<string, any>;
 }
 
+interface SerializedError {
+  message: string;
+  name?: string;
+  stack?: string;
+  code?: string | number;
+  cause?: string;
+  [key: string]: any;
+}
+
+/**
+ * Extracts error details into a plain object that serializes properly to JSON.
+ * Error objects don't serialize well because their properties (message, stack, name) 
+ * are not enumerable and get lost when using JSON.stringify().
+ */
+function serializeError(error: unknown): SerializedError {
+  if (error === null || error === undefined) {
+    return { message: 'Unknown error (null or undefined)' };
+  }
+  
+  if (error instanceof Error) {
+    const serialized: SerializedError = {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    };
+    
+    // Include any additional properties that might be on the error
+    const errorAsAny = error as any;
+    if (errorAsAny.code !== undefined) {
+      serialized.code = errorAsAny.code;
+    }
+    if (errorAsAny.cause !== undefined) {
+      serialized.cause = String(errorAsAny.cause);
+    }
+    if (errorAsAny.reason !== undefined) {
+      serialized.reason = errorAsAny.reason;
+    }
+    if (errorAsAny.details !== undefined) {
+      serialized.details = errorAsAny.details;
+    }
+    // Daily.co specific error properties
+    if (errorAsAny.errorMsg !== undefined) {
+      serialized.errorMsg = errorAsAny.errorMsg;
+    }
+    if (errorAsAny.error !== undefined && typeof errorAsAny.error === 'string') {
+      serialized.errorDetail = errorAsAny.error;
+    }
+    
+    return serialized;
+  }
+  
+  if (typeof error === 'string') {
+    return { message: error };
+  }
+  
+  if (typeof error === 'object') {
+    // It's already a plain object, but let's ensure message exists
+    const errorObj = error as Record<string, any>;
+    return {
+      message: errorObj.message || errorObj.error || JSON.stringify(error),
+      ...errorObj
+    };
+  }
+  
+  return { message: String(error) };
+}
+
 type VapiEventListeners = {
   'call-end': () => void;
   'call-start': () => void;
@@ -298,7 +365,7 @@ export default class Vapi extends VapiEventEmitter {
       this.emit('error', { 
         type: 'validation-error', 
         stage: 'input-validation',
-        message: error.message,
+        error: serializeError(error),
         timestamp: new Date().toISOString()
       });
       throw error;
@@ -410,17 +477,18 @@ export default class Vapi extends VapiEventEmitter {
         });
       } catch (error) {
         const dailyCallDuration = Date.now() - dailyCallStartTime;
+        const serializedError = serializeError(error);
         this.emit('call-start-progress', {
           stage: 'daily-call-object-creation',
           status: 'failed',
           duration: dailyCallDuration,
           timestamp: new Date().toISOString(),
-          metadata: { error: error?.toString() }
+          metadata: { error: serializedError.message }
         });
         this.emit('error', {
           type: 'daily-call-object-creation-error',
           stage: 'daily-call-object-creation',
-          error,
+          error: serializedError,
           timestamp: new Date().toISOString()
         });
         throw error;
@@ -445,14 +513,22 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       this.call.on('error', (error: any) => {
-        this.emit('error', error);
+        this.emit('error', {
+          type: 'daily-error',
+          error: serializeError(error),
+          timestamp: new Date().toISOString()
+        });
         if (isVideoRecordingEnabled) {
           this.call?.stopRecording();
         }
       });
 
       this.call.on('camera-error', (error: any) => {
-        this.emit('camera-error', error);
+        this.emit('camera-error', {
+          type: 'camera-error',
+          error: serializeError(error),
+          timestamp: new Date().toISOString()
+        });
       });
 
       this.call.on('network-quality-change', (event: any) => {
@@ -560,17 +636,18 @@ export default class Vapi extends VapiEventEmitter {
         });
       } catch (error) {
         const joinDuration = Date.now() - joinStartTime;
+        const serializedError = serializeError(error);
         this.emit('call-start-progress', {
           stage: 'daily-call-join',
           status: 'failed',
           duration: joinDuration,
           timestamp: new Date().toISOString(),
-          metadata: { error: error?.toString() }
+          metadata: { error: serializedError.message }
         });
         this.emit('error', {
           type: 'daily-call-join-error',
           stage: 'daily-call-join',
-          error,
+          error: serializedError,
           duration: joinDuration,
           timestamp: new Date().toISOString()
         });
@@ -623,17 +700,18 @@ export default class Vapi extends VapiEventEmitter {
           });
         } catch (error) {
           const recordingSetupDuration = Date.now() - recordingStartTime;
+          const serializedError = serializeError(error);
           this.emit('call-start-progress', {
             stage: 'video-recording-setup',
             status: 'failed',
             duration: recordingSetupDuration,
             timestamp: new Date().toISOString(),
-            metadata: { error: error?.toString() }
+            metadata: { error: serializedError.message }
           });
           this.emit('error', {
             type: 'video-recording-setup-error',
             stage: 'video-recording-setup',
-            error,
+            error: serializedError,
             timestamp: new Date().toISOString()
           });
           // Don't throw here, video recording is optional
@@ -667,17 +745,18 @@ export default class Vapi extends VapiEventEmitter {
         });
       } catch (error) {
         const audioObserverDuration = Date.now() - audioObserverStartTime;
+        const serializedError = serializeError(error);
         this.emit('call-start-progress', {
           stage: 'audio-observer-setup',
           status: 'failed',
           duration: audioObserverDuration,
           timestamp: new Date().toISOString(),
-          metadata: { error: error?.toString() }
+          metadata: { error: serializedError.message }
         });
         this.emit('error', {
           type: 'audio-observer-setup-error',
           stage: 'audio-observer-setup',
-          error,
+          error: serializedError,
           timestamp: new Date().toISOString()
         });
         // Don't throw here, this is non-critical
@@ -733,17 +812,18 @@ export default class Vapi extends VapiEventEmitter {
         });
       } catch (error) {
         const audioProcessingDuration = Date.now() - audioProcessingStartTime;
+        const serializedError = serializeError(error);
         this.emit('call-start-progress', {
           stage: 'audio-processing-setup',
           status: 'failed',
           duration: audioProcessingDuration,
           timestamp: new Date().toISOString(),
-          metadata: { error: error?.toString() }
+          metadata: { error: serializedError.message }
         });
         this.emit('error', {
           type: 'audio-processing-setup-error',
           stage: 'audio-processing-setup',
-          error,
+          error: serializedError,
           timestamp: new Date().toISOString()
         });
         // Don't throw here, this is non-critical
@@ -759,12 +839,13 @@ export default class Vapi extends VapiEventEmitter {
       return webCall;
     } catch (e) {
       const totalDuration = Date.now() - startTime;
+      const serializedError = serializeError(e);
       
       this.emit('call-start-failed', {
         stage: 'unknown',
         totalDuration,
-        error: e?.toString() || 'Unknown error occurred',
-        errorStack: e instanceof Error ? e.stack : 'No stack trace available',
+        error: serializedError.message,
+        errorStack: serializedError.stack || 'No stack trace available',
         timestamp: new Date().toISOString(),
         context: {
           hasAssistant: !!assistant,
@@ -778,7 +859,7 @@ export default class Vapi extends VapiEventEmitter {
       this.emit('error', {
         type: 'start-method-error',
         stage: 'unknown',
-        error: e,
+        error: serializedError,
         totalDuration,
         timestamp: new Date().toISOString(),
         context: {
@@ -1054,14 +1135,22 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       this.call.on('error', (error: any) => {
-        this.emit('error', error);
+        this.emit('error', {
+          type: 'daily-error',
+          error: serializeError(error),
+          timestamp: new Date().toISOString()
+        });
         if (isVideoRecordingEnabled) {
           this.call?.stopRecording();
         }
       });
 
       this.call.on('camera-error', (error: any) => {
-        this.emit('camera-error', error);
+        this.emit('camera-error', {
+          type: 'camera-error',
+          error: serializeError(error),
+          timestamp: new Date().toISOString()
+        });
       });
 
       this.call.on('network-quality-change', (event: any) => {
@@ -1234,12 +1323,13 @@ export default class Vapi extends VapiEventEmitter {
           });
         } catch (error) {
           const recordingSetupDuration = Date.now() - recordingStartTime;
+          const serializedError = serializeError(error);
           this.emit('call-start-progress', {
             stage: 'video-recording-setup',
             status: 'failed',
             duration: recordingSetupDuration,
             timestamp: new Date().toISOString(),
-            metadata: { error: error?.toString() }
+            metadata: { error: serializedError.message }
           });
           // Don't throw here, video recording is optional
         }
@@ -1272,12 +1362,13 @@ export default class Vapi extends VapiEventEmitter {
         });
       } catch (error) {
         const audioObserverDuration = Date.now() - audioObserverStartTime;
+        const serializedError = serializeError(error);
         this.emit('call-start-progress', {
           stage: 'audio-observer-setup',
           status: 'failed',
           duration: audioObserverDuration,
           timestamp: new Date().toISOString(),
-          metadata: { error: error?.toString() }
+          metadata: { error: serializedError.message }
         });
         // Don't throw here, this is non-critical
       }
@@ -1309,12 +1400,13 @@ export default class Vapi extends VapiEventEmitter {
         });
       } catch (error) {
         const audioProcessingDuration = Date.now() - audioProcessingStartTime;
+        const serializedError = serializeError(error);
         this.emit('call-start-progress', {
           stage: 'audio-processing-setup',
           status: 'failed',
           duration: audioProcessingDuration,
           timestamp: new Date().toISOString(),
-          metadata: { error: error?.toString() }
+          metadata: { error: serializedError.message }
         });
         // Don't throw here, this is non-critical
       }
@@ -1330,12 +1422,13 @@ export default class Vapi extends VapiEventEmitter {
 
     } catch (e) {
       const totalDuration = Date.now() - startTime;
+      const serializedError = serializeError(e);
       
       this.emit('call-start-failed', {
         stage: 'reconnect',
         totalDuration,
-        error: e?.toString() || 'Unknown error occurred',
-        errorStack: e instanceof Error ? e.stack : 'No stack trace available',
+        error: serializedError.message,
+        errorStack: serializedError.stack || 'No stack trace available',
         timestamp: new Date().toISOString(),
         context: {
           isReconnect: true,
@@ -1349,7 +1442,7 @@ export default class Vapi extends VapiEventEmitter {
       // Also emit the generic error event for backward compatibility
       this.emit('error', {
         type: 'reconnect-error',
-        error: e,
+        error: serializedError,
         totalDuration,
         timestamp: new Date().toISOString(),
         context: {
