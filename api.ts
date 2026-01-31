@@ -7342,7 +7342,17 @@ export interface CreateGoHighLevelContactGetToolDTO {
 export interface OpenAIMessage {
   /** @maxLength 100000000 */
   content: string | null;
-  role: "assistant" | "function" | "user" | "system" | "tool";
+  /**
+   * The role of the message author.
+   * - `system`: System messages that set behavior
+   * - `user`: Messages from the user
+   * - `assistant`: Messages from the AI assistant
+   * - `developer`: Developer messages for GPT-5.x and o-series models (takes precedence over system)
+   * - `tool`: Tool/function response messages
+   * - `function`: Function response messages
+   * @deprecated The `function` role is deprecated. Use `tool` role instead for function responses.
+   */
+  role: "assistant" | "function" | "user" | "system" | "tool" | "developer";
 }
 
 export interface AnyscaleModel {
@@ -8177,6 +8187,8 @@ export interface OpenAIModel {
    * @default undefined
    */
   model:
+    | "gpt-5.2"
+    | "gpt-5.2-chat-latest"
     | "gpt-5.1"
     | "gpt-5.1-chat-latest"
     | "gpt-5"
@@ -8281,6 +8293,8 @@ export interface OpenAIModel {
    * @example ["gpt-4-0125-preview","gpt-4-0613"]
    */
   fallbackModels?:
+    | "gpt-5.2"
+    | "gpt-5.2-chat-latest"
     | "gpt-5.1"
     | "gpt-5.1-chat-latest"
     | "gpt-5"
@@ -8420,6 +8434,58 @@ export interface OpenAIModel {
    * @min 0
    */
   numFastTurns?: number;
+  /**
+   * This is the seed for deterministic sampling. If specified, the model will make a best effort to sample deterministically.
+   * Using the same seed with the same parameters should return the same result.
+   */
+  seed?: number;
+  /**
+   * An alternative to sampling with temperature, called nucleus sampling.
+   * The model considers the results of the tokens with top_p probability mass.
+   * So 0.1 means only the tokens comprising the top 10% probability mass are considered.
+   * We generally recommend altering this or temperature but not both.
+   * @min 0
+   * @max 1
+   */
+  topP?: number;
+  /**
+   * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far,
+   * decreasing the model's likelihood to repeat the same line verbatim.
+   * @min -2
+   * @max 2
+   */
+  frequencyPenalty?: number;
+  /**
+   * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far,
+   * increasing the model's likelihood to talk about new topics.
+   * @min -2
+   * @max 2
+   */
+  presencePenalty?: number;
+  /**
+   * Whether to return log probabilities of the output tokens.
+   * If true, returns the log probabilities of each output token returned in the content of message.
+   */
+  logprobs?: boolean;
+  /**
+   * An integer between 0 and 20 specifying the number of most likely tokens to return at each token position,
+   * each with an associated log probability. logprobs must be set to true if this parameter is used.
+   * @min 0
+   * @max 20
+   */
+  topLogprobs?: number;
+  /**
+   * Whether to enable parallel function calling during tool use.
+   * When set to true, the model may call multiple functions in parallel.
+   * @default true
+   */
+  parallelToolCalls?: boolean;
+  /**
+   * Constrains effort on reasoning for reasoning models (o-series).
+   * Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.
+   * Possible values: 'low', 'medium', 'high'. Default varies by model.
+   */
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 export interface OpenRouterModel {
@@ -8659,6 +8725,8 @@ export interface WorkflowOpenAIModel {
    * @maxLength 100
    */
   model:
+    | "gpt-5.2"
+    | "gpt-5.2-chat-latest"
     | "gpt-5.1"
     | "gpt-5.1-chat-latest"
     | "gpt-5"
@@ -13896,6 +13964,8 @@ export interface CreateAzureOpenAICredentialDTO {
     | "westus3";
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models:
+    | "gpt-5.2"
+    | "gpt-5.1"
     | "gpt-5"
     | "gpt-5-mini"
     | "gpt-5-nano"
@@ -30527,6 +30597,8 @@ export interface EvalOpenAIModel {
    * @maxLength 100
    */
   model:
+    | "gpt-5.2"
+    | "gpt-5.2-chat-latest"
     | "gpt-5.1"
     | "gpt-5.1-chat-latest"
     | "gpt-5"
@@ -31970,6 +32042,8 @@ export interface AzureOpenAICredential {
     | "westus3";
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models:
+    | "gpt-5.2"
+    | "gpt-5.1"
     | "gpt-5"
     | "gpt-5-mini"
     | "gpt-5-nano"
@@ -33620,6 +33694,8 @@ export interface UpdateAzureOpenAICredentialDTO {
     | "westus3";
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models?:
+    | "gpt-5.2"
+    | "gpt-5.1"
     | "gpt-5"
     | "gpt-5-mini"
     | "gpt-5-nano"
