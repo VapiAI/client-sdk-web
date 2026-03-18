@@ -193,6 +193,23 @@ type StartCallOptions = {
    * @example true
    */
   roomDeleteOnUserLeaveEnabled?: boolean;
+  /**
+   * A pre-acquired MediaStream to use for the call. When provided, the SDK will
+   * skip its own `getUserMedia()` call and use this stream's audio track instead.
+   *
+   * This is useful when the caller wants to acquire the microphone earlier in the
+   * user-gesture lifecycle (e.g., in a button click handler) to avoid mobile browser
+   * "user gesture" timeout issues that can cause `NotAllowedError`.
+   *
+   * @example
+   * ```ts
+   * const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+   * await vapi.start('assistant-id', undefined, undefined, undefined, undefined, {
+   *   mediaStream: stream,
+   * });
+   * ```
+   */
+  mediaStream?: MediaStream;
 }
 
 type WebCall = {
@@ -394,6 +411,75 @@ export default class Vapi extends VapiEventEmitter {
     
     this.started = true;
 
+    // Determine whether we need to eagerly acquire a media stream.
+    // On mobile browsers the "user gesture" window is very short (~1-5 s).
+    // If the audioSource is already a MediaStreamTrack (set in constructor
+    // options or passed via options.mediaStream) we can skip this step.
+    let earlyAudioTrack: MediaStreamTrack | null = null;
+
+    const userProvidedStream = options?.mediaStream;
+    const constructorAudioSource = this.dailyCallObject.audioSource;
+    const hasExistingTrack =
+      userProvidedStream ||
+      (constructorAudioSource != null &&
+        typeof constructorAudioSource === 'object' &&
+        'kind' in (constructorAudioSource as any));
+
+    if (!hasExistingTrack) {
+      // Acquire the microphone NOW, while we are still inside the user
+      // gesture window, before any async network calls.
+      this.emit('call-start-progress', {
+        stage: 'early-media-acquisition',
+        status: 'started',
+        timestamp: new Date().toISOString(),
+      });
+
+      const earlyMediaStartTime = Date.now();
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        earlyAudioTrack = stream.getAudioTracks()[0] ?? null;
+
+        const earlyMediaDuration = Date.now() - earlyMediaStartTime;
+        this.emit('call-start-progress', {
+          stage: 'early-media-acquisition',
+          status: 'completed',
+          duration: earlyMediaDuration,
+          timestamp: new Date().toISOString(),
+          metadata: { trackId: earlyAudioTrack?.id },
+        });
+      } catch (mediaError) {
+        const earlyMediaDuration = Date.now() - earlyMediaStartTime;
+        const serializedMediaError = serializeError(mediaError);
+        this.emit('call-start-progress', {
+          stage: 'early-media-acquisition',
+          status: 'failed',
+          duration: earlyMediaDuration,
+          timestamp: new Date().toISOString(),
+          metadata: { error: serializedMediaError.message },
+        });
+        // Non-fatal: fall back to letting Daily.co handle getUserMedia itself.
+        // This path may still fail on mobile due to the gesture timeout, but
+        // it preserves backward compatibility on desktop and other environments.
+      }
+    } else if (userProvidedStream) {
+      // Use the caller-provided MediaStream
+      earlyAudioTrack = userProvidedStream.getAudioTracks()[0] ?? null;
+      this.emit('call-start-progress', {
+        stage: 'early-media-acquisition',
+        status: 'completed',
+        timestamp: new Date().toISOString(),
+        metadata: { source: 'user-provided', trackId: earlyAudioTrack?.id },
+      });
+    } else {
+      this.emit('call-start-progress', {
+        stage: 'early-media-acquisition',
+        status: 'completed',
+        timestamp: new Date().toISOString(),
+        metadata: { source: 'constructor-audio-source' },
+      });
+    }
+
     try {
             // Stage 1: Create web call
       this.emit('call-start-progress', {
@@ -401,9 +487,9 @@ export default class Vapi extends VapiEventEmitter {
         status: 'started',
         timestamp: new Date().toISOString()
       });
-      
+
       const webCallStartTime = Date.now();
-      
+
       const webCall = (
         await client.call.callControllerCreateWebCall({
           assistant: typeof assistant === 'string' ? undefined : assistant,
@@ -446,24 +532,30 @@ export default class Vapi extends VapiEventEmitter {
 
       const isVideoEnabled = webCall?.assistant?.voice?.provider === 'tavus';
 
+      // Determine the audioSource for the Daily call object.
+      // If we pre-acquired a track, use it so Daily.co does not call
+      // getUserMedia again (which would fail outside the gesture window).
+      const resolvedAudioSource: boolean | string | MediaStreamTrack =
+        earlyAudioTrack ?? this.dailyCallObject.audioSource ?? true;
+
       // Stage 2: Create Daily call object
       this.emit('call-start-progress', {
         stage: 'daily-call-object-creation',
         status: 'started',
         timestamp: new Date().toISOString(),
         metadata: {
-          audioSource: this.dailyCallObject.audioSource ?? true,
+          audioSource: earlyAudioTrack ? 'pre-acquired-track' : (this.dailyCallObject.audioSource ?? true),
           videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
           isVideoRecordingEnabled,
           isVideoEnabled
         }
       });
-      
+
       const dailyCallStartTime = Date.now();
-      
+
       try {
         this.call = DailyIframe.createCallObject({
-          audioSource: this.dailyCallObject.audioSource ?? true,
+          audioSource: resolvedAudioSource,
           videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
           dailyConfig: this.dailyCallConfig,
         });
@@ -838,9 +930,18 @@ export default class Vapi extends VapiEventEmitter {
 
       return webCall;
     } catch (e) {
+      // Stop the pre-acquired audio track to free the microphone
+      if (earlyAudioTrack) {
+        try {
+          earlyAudioTrack.stop();
+        } catch {
+          // Ignore errors stopping the track
+        }
+      }
+
       const totalDuration = Date.now() - startTime;
       const serializedError = serializeError(e);
-      
+
       this.emit('call-start-failed', {
         stage: 'unknown',
         totalDuration,
@@ -854,7 +955,7 @@ export default class Vapi extends VapiEventEmitter {
           isMobile: this.isMobileDevice()
         }
       });
-      
+
       // Also emit the generic error event for backward compatibility
       this.emit('error', {
         type: 'start-method-error',
@@ -869,7 +970,7 @@ export default class Vapi extends VapiEventEmitter {
           isMobile: this.isMobileDevice()
         }
       });
-      
+
       await this.cleanup();
       return null;
     }
