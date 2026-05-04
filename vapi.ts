@@ -5,7 +5,11 @@ import DailyIframe, {
   DailyAdvancedConfig,
   DailyFactoryOptions,
   DailyEventObjectAppMessage,
+  DailyEventObjectNoPayload,
   DailyEventObjectParticipant,
+  DailyEventObjectRecordingError,
+  DailyEventObjectRecordingStarted,
+  DailyEventObjectRecordingStopped,
   DailyEventObjectRemoteParticipantsAudioLevel,
   DailyParticipant,
   DailyVideoSendSettings,
@@ -73,7 +77,12 @@ type VapiEventNames =
   | 'daily-participant-updated'
   | 'call-start-progress'
   | 'call-start-success'
-  | 'call-start-failed';
+  | 'call-start-failed'
+  | 'recording-started'
+  | 'recording-stopped'
+  | 'recording-stats'
+  | 'recording-error'
+  | 'recording-upload-completed';
 
 interface CallStartProgressEvent {
   stage: string;
@@ -181,6 +190,11 @@ type VapiEventListeners = {
   'call-start-progress': (event: CallStartProgressEvent) => void;
   'call-start-success': (event: CallStartSuccessEvent) => void;
   'call-start-failed': (event: CallStartFailedEvent) => void;
+  'recording-started': (event: DailyEventObjectRecordingStarted) => void;
+  'recording-stopped': (event: DailyEventObjectRecordingStopped) => void;
+  'recording-stats': (event: DailyEventObjectNoPayload) => void;
+  'recording-error': (event: DailyEventObjectRecordingError) => void;
+  'recording-upload-completed': (event: DailyEventObjectNoPayload) => void;
 };
 
 type StartCallOptions = {
@@ -537,6 +551,26 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('network-connection', (event: any) => {
         this.emit('network-connection', event);
+      });
+
+      this.call.on('recording-started', (event) => {
+        if (event) this.emit('recording-started', event);
+      });
+
+      this.call.on('recording-stopped', (event) => {
+        if (event) this.emit('recording-stopped', event);
+      });
+
+      this.call.on('recording-stats', (event) => {
+        if (event) this.emit('recording-stats', event);
+      });
+
+      this.call.on('recording-error', (event) => {
+        if (event) this.emit('recording-error', event);
+      });
+
+      this.call.on('recording-upload-completed', (event) => {
+        if (event) this.emit('recording-upload-completed', event);
       });
 
       this.call.on('track-started', async (e) => {
@@ -1159,6 +1193,26 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('network-connection', (event: any) => {
         this.emit('network-connection', event);
+      });
+
+      this.call.on('recording-started', (event) => {
+        if (event) this.emit('recording-started', event);
+      });
+
+      this.call.on('recording-stopped', (event) => {
+        if (event) this.emit('recording-stopped', event);
+      });
+
+      this.call.on('recording-stats', (event) => {
+        if (event) this.emit('recording-stats', event);
+      });
+
+      this.call.on('recording-error', (event) => {
+        if (event) this.emit('recording-error', event);
+      });
+
+      this.call.on('recording-upload-completed', (event) => {
+        if (event) this.emit('recording-upload-completed', event);
       });
 
       this.call.on('track-started', async (e) => {
