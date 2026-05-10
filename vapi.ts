@@ -174,6 +174,112 @@ function serializeError(error: unknown): SerializedError {
   return { message: String(error) };
 }
 
+/**
+ * Describes a media source (audioSource/videoSource) in a serializable way.
+ * MediaStreamTrack objects cannot be cloned by the structured clone algorithm
+ * used by postMessage, so we convert them to descriptive strings.
+ *
+ * @param source - The media source which can be a boolean, string device ID, or MediaStreamTrack
+ * @returns A serializable representation of the source
+ */
+export function describeMediaSource(
+  source: string | boolean | MediaStreamTrack | null | undefined
+): string | boolean | null | undefined {
+  if (source === null || source === undefined) {
+    return source;
+  }
+
+  if (typeof source === 'boolean' || typeof source === 'string') {
+    return source;
+  }
+
+  // It's a MediaStreamTrack - convert to a descriptive string
+  if (typeof source === 'object' && 'kind' in source && 'id' in source) {
+    return `[MediaStreamTrack: ${source.kind}, id=${source.id}]`;
+  }
+
+  // Fallback for any other object type
+  return '[Unknown MediaSource]';
+}
+
+/**
+ * Sanitizes a value to ensure it can be safely passed through postMessage.
+ * The structured clone algorithm used by postMessage cannot handle:
+ * - Functions
+ * - DOM nodes
+ * - MediaStreamTrack objects
+ * - Symbols
+ * - WeakMap/WeakSet
+ *
+ * This function recursively processes objects and arrays, converting
+ * non-cloneable values to serializable representations.
+ *
+ * @param value - The value to sanitize
+ * @param seen - Set to track circular references (internal use)
+ * @returns A sanitized value safe for postMessage
+ */
+export function sanitizeForPostMessage(value: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
+  // Handle null and undefined
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  // Handle primitives
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+
+  // Handle symbols
+  if (typeof value === 'symbol') {
+    return value.toString();
+  }
+
+  // Handle functions
+  if (typeof value === 'function') {
+    const name = value.name || 'anonymous';
+    return `[Function: ${name}]`;
+  }
+
+  // Handle Date objects
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  // Handle arrays
+  if (Array.isArray(value)) {
+    return value.map(item => sanitizeForPostMessage(item, seen));
+  }
+
+  // Handle objects
+  if (typeof value === 'object') {
+    // Check for circular references
+    if (seen.has(value)) {
+      return '[Circular Reference]';
+    }
+    seen.add(value);
+
+    // Check if it's a MediaStreamTrack-like object
+    if ('kind' in value && 'id' in value && ('readyState' in value || 'enabled' in value)) {
+      return describeMediaSource(value as MediaStreamTrack);
+    }
+
+    // Handle Error objects
+    if (value instanceof Error) {
+      return serializeError(value);
+    }
+
+    // Handle plain objects
+    const sanitized: Record<string, unknown> = {};
+    for (const key of Object.keys(value)) {
+      sanitized[key] = sanitizeForPostMessage((value as Record<string, unknown>)[key], seen);
+    }
+    return sanitized;
+  }
+
+  // Fallback: convert to string
+  return String(value);
+}
+
 type VapiEventListeners = {
   'call-end': () => void;
   'call-start': () => void;
@@ -466,15 +572,15 @@ export default class Vapi extends VapiEventEmitter {
         status: 'started',
         timestamp: new Date().toISOString(),
         metadata: {
-          audioSource: this.dailyCallObject.audioSource ?? true,
-          videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
+          audioSource: describeMediaSource(this.dailyCallObject.audioSource ?? true),
+          videoSource: describeMediaSource(this.dailyCallObject.videoSource ?? isVideoRecordingEnabled),
           isVideoRecordingEnabled,
           isVideoEnabled
         }
       });
-      
+
       const dailyCallStartTime = Date.now();
-      
+
       try {
         this.call = DailyIframe.createCallObject({
           audioSource: this.dailyCallObject.audioSource ?? true,
@@ -1127,8 +1233,8 @@ export default class Vapi extends VapiEventEmitter {
         status: 'started',
         timestamp: new Date().toISOString(),
         metadata: {
-          audioSource: this.dailyCallObject.audioSource ?? true,
-          videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
+          audioSource: describeMediaSource(this.dailyCallObject.audioSource ?? true),
+          videoSource: describeMediaSource(this.dailyCallObject.videoSource ?? isVideoRecordingEnabled),
           isVideoRecordingEnabled,
           isVideoEnabled
         }
