@@ -53,4 +53,15 @@ describe("Vapi", () => {
       expect(res).toBe(false);
     });
   });
+
+  describe("setOutputDeviceAsync", () => {
+    it("should return the Promise from setOutputDeviceAsync", async () => {
+      const mockError = new Error("setSinkId failed");
+      mockCall.setOutputDeviceAsync = jest.fn().mockRejectedValue(mockError);
+
+      await expect(
+        vapi.setOutputDeviceAsync({ outputDeviceId: "test-device" })
+      ).rejects.toThrow("setSinkId failed");
+    });
+  });
 });
