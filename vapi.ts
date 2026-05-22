@@ -257,11 +257,22 @@ async function buildAudioPlayer(
   return player;
 }
 
+function teardownAudioPlayer(player: HTMLAudioElement) {
+  player.srcObject = null;                                                                                                                                      
+  player.remove();    
+}
+
 function destroyAudioPlayer(participantId: string) {
-  const player = document.querySelector(
-    `audio[data-participant-id="${participantId}"]`,
-  );
-  player?.remove();
+  const player = document.querySelector<HTMLAudioElement>(`audio[data-participant-id="${participantId}"]`);
+  if (player) {
+    teardownAudioPlayer(player)
+  };
+}
+
+function destroyAllAudioPlayers() {
+  document
+    .querySelectorAll<HTMLAudioElement>('audio[data-participant-id]')
+    .forEach(teardownAudioPlayer);
 }
 
 function subscribeToTracks(
@@ -346,6 +357,7 @@ export default class Vapi extends VapiEventEmitter {
       await this.call.destroy();
       this.call = null;
     }
+    destroyAllAudioPlayers();
     this.speakingTimeout = null;
   }
 
@@ -973,6 +985,7 @@ export default class Vapi extends VapiEventEmitter {
       await this.call.destroy();
       this.call = null;
     }
+    destroyAllAudioPlayers();
     this.speakingTimeout = null;
   }
 
