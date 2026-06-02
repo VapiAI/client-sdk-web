@@ -9,6 +9,10 @@ describe("Vapi", () => {
     mockCall = {
       setLocalAudio: jest.fn(),
       localAudio: jest.fn(),
+      getLocalAudioLevel: jest.fn(),
+      startLocalAudioLevelObserver: jest.fn().mockResolvedValue(undefined),
+      stopLocalAudioLevelObserver: jest.fn(),
+      isLocalAudioLevelObserverRunning: jest.fn(),
     };
     // Initialize Vapi instance and inject the mock
     vapi = new Vapi("dummy_token");
@@ -51,6 +55,57 @@ describe("Vapi", () => {
       vapi["call"] = null; // Simulate call object not being available
       const res = vapi.isMuted();
       expect(res).toBe(false);
+    });
+  });
+
+  describe("local audio level", () => {
+    it("emits 'local-volume-level' with the audio level from Daily", () => {
+      const listener = jest.fn();
+      vapi.on("local-volume-level", listener);
+
+      vapi["handleLocalAudioLevel"]({
+        action: "local-audio-level",
+        audioLevel: 0.42,
+      } as any);
+
+      expect(listener).toHaveBeenCalledWith(0.42);
+    });
+
+    it("getLocalAudioLevel returns the value from the call object", () => {
+      mockCall.getLocalAudioLevel.mockReturnValue(0.7);
+      expect(vapi.getLocalAudioLevel()).toBe(0.7);
+    });
+
+    it("getLocalAudioLevel returns 0 when there is no active call", () => {
+      vapi["call"] = null;
+      expect(vapi.getLocalAudioLevel()).toBe(0);
+    });
+
+    it("startLocalAudioLevelObserver forwards the interval to the call object", async () => {
+      await vapi.startLocalAudioLevelObserver(250);
+      expect(mockCall.startLocalAudioLevelObserver).toHaveBeenCalledWith(250);
+    });
+
+    it("startLocalAudioLevelObserver throws when there is no active call", async () => {
+      vapi["call"] = null;
+      await expect(vapi.startLocalAudioLevelObserver()).rejects.toThrow(
+        "Call object is not available."
+      );
+    });
+
+    it("stopLocalAudioLevelObserver delegates to the call object", () => {
+      vapi.stopLocalAudioLevelObserver();
+      expect(mockCall.stopLocalAudioLevelObserver).toHaveBeenCalled();
+    });
+
+    it("isLocalAudioLevelObserverRunning reflects the call object state", () => {
+      mockCall.isLocalAudioLevelObserverRunning.mockReturnValue(true);
+      expect(vapi.isLocalAudioLevelObserverRunning()).toBe(true);
+    });
+
+    it("isLocalAudioLevelObserverRunning returns false when there is no active call", () => {
+      vapi["call"] = null;
+      expect(vapi.isLocalAudioLevelObserverRunning()).toBe(false);
     });
   });
 });
