@@ -99,21 +99,6 @@ vapi.setMuted(true);
 vapi.isMuted(); // true
 ```
 
-You can read the user's current microphone (local) audio level on demand, and control the
-observer that drives the `local-volume-level` event:
-
-```javascript
-vapi.getLocalAudioLevel(); // e.g. 0 when the mic isn't picking up any audio
-vapi.isLocalAudioLevelObserverRunning(); // true during an active call
-vapi.stopLocalAudioLevelObserver();
-await vapi.startLocalAudioLevelObserver(100); // optional: change the sampling interval (ms)
-```
-
-This is helpful for diagnosing cases where the user can't be heard. If `local-volume-level`
-stays at (or near) `0` while the user is talking, the microphone likely isn't capturing audio
-(e.g. the wrong input device is selected or the OS input volume is muted), and you can surface
-a "we can't hear you" prompt in your UI.
-
 The `say(message: string, endCallAfterSpoken?: boolean)` can be used to invoke speech and gracefully terminate the call if needed
 
 ```javascript
@@ -143,18 +128,6 @@ vapi.on('call-end', () => {
 
 vapi.on('volume-level', (volume) => {
   console.log(`Assistant volume level: ${volume}`);
-});
-
-// Local (microphone) audio level of the user, a number between 0 and 1.
-// Useful for detecting when the user's mic isn't being picked up (e.g. wrong
-// input device selected, OS input volume at 0) so you can warn them.
-vapi.on('local-volume-level', (volume) => {
-  console.log(`Your microphone volume level: ${volume}`);
-});
-
-// Emitted if the local audio level observer fails to start.
-vapi.on('local-audio-level-observer-error', (error) => {
-  console.error('Local audio level observer error:', error);
 });
 
 // Function calls and transcripts will be sent via messages
