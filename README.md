@@ -130,6 +130,10 @@ vapi.on('volume-level', (volume) => {
   console.log(`Assistant volume level: ${volume}`);
 });
 
+vapi.on('local-volume-level', (volume) => {
+  console.log(`User microphone level: ${volume}`);
+});
+
 // Function calls and transcripts will be sent via messages
 vapi.on('message', (message) => {
   console.log(message);

@@ -10,6 +10,7 @@ import DailyIframe, {
   DailyEventObjectRecordingError,
   DailyEventObjectRecordingStarted,
   DailyEventObjectRecordingStopped,
+  DailyEventObjectLocalAudioLevel,
   DailyEventObjectRemoteParticipantsAudioLevel,
   DailyParticipant,
   DailyVideoSendSettings,
@@ -66,6 +67,7 @@ type VapiEventNames =
   | 'call-end'
   | 'call-start'
   | 'volume-level'
+  | 'local-volume-level'
   | 'speech-start'
   | 'speech-end'
   | 'message'
@@ -178,6 +180,7 @@ type VapiEventListeners = {
   'call-end': () => void;
   'call-start': () => void;
   'volume-level': (volume: number) => void;
+  'local-volume-level': (volume: number) => void;
   'speech-start': () => void;
   'speech-end': () => void;
   video: (track: MediaStreamTrack) => void;
@@ -769,7 +772,8 @@ export default class Vapi extends VapiEventEmitter {
       const audioObserverStartTime = Date.now();
       
       try {
-        this.call.startRemoteParticipantsAudioLevelObserver(100);
+        await this.call.startRemoteParticipantsAudioLevelObserver(100);
+        await this.call.startLocalAudioLevelObserver(100);
         const audioObserverDuration = Date.now() - audioObserverStartTime;
         this.emit('call-start-progress', {
           stage: 'audio-observer-setup',
@@ -798,6 +802,10 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('remote-participants-audio-level', (e) => {
         if (e) this.handleRemoteParticipantsAudioLevel(e);
+      });
+
+      this.call.on('local-audio-level', (e) => {
+        if (e) this.handleLocalAudioLevel(e);
       });
 
       this.call.on('app-message', (e) => this.onAppMessage(e));
@@ -959,6 +967,10 @@ export default class Vapi extends VapiEventEmitter {
       this.emit('speech-end');
       this.speakingTimeout = null;
     }, 1000);
+  }
+
+  private handleLocalAudioLevel(e: DailyEventObjectLocalAudioLevel) {
+    this.emit('local-volume-level', e.audioLevel);
   }
 
   /**
@@ -1262,6 +1274,10 @@ export default class Vapi extends VapiEventEmitter {
         if (e) this.handleRemoteParticipantsAudioLevel(e);
       });
 
+      this.call.on('local-audio-level', (e) => {
+        if (e) this.handleLocalAudioLevel(e);
+      });
+
       this.call.on('app-message', (e) => this.onAppMessage(e));
 
       this.call.on('nonfatal-error', (e) => {
@@ -1406,7 +1422,8 @@ export default class Vapi extends VapiEventEmitter {
       const audioObserverStartTime = Date.now();
       
       try {
-        this.call.startRemoteParticipantsAudioLevelObserver(100);
+        await this.call.startRemoteParticipantsAudioLevelObserver(100);
+        await this.call.startLocalAudioLevelObserver(100);
         const audioObserverDuration = Date.now() - audioObserverStartTime;
         this.emit('call-start-progress', {
           stage: 'audio-observer-setup',

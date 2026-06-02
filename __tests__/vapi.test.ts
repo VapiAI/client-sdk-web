@@ -53,4 +53,15 @@ describe("Vapi", () => {
       expect(res).toBe(false);
     });
   });
+
+  describe("local audio level", () => {
+    it("should emit local-volume-level from Daily local audio level events", () => {
+      const listener = jest.fn();
+
+      vapi.on("local-volume-level", listener);
+      vapi["handleLocalAudioLevel"]({ audioLevel: 0.42 } as any);
+
+      expect(listener).toHaveBeenCalledWith(0.42);
+    });
+  });
 });
