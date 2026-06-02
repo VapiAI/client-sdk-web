@@ -5,6 +5,7 @@ import DailyIframe, {
   DailyAdvancedConfig,
   DailyFactoryOptions,
   DailyEventObjectAppMessage,
+  DailyEventObjectLocalAudioLevel,
   DailyEventObjectNoPayload,
   DailyEventObjectParticipant,
   DailyEventObjectRecordingError,
@@ -66,6 +67,8 @@ type VapiEventNames =
   | 'call-end'
   | 'call-start'
   | 'volume-level'
+  | 'local-volume-level'
+  | 'local-audio-level-observer-error'
   | 'speech-start'
   | 'speech-end'
   | 'message'
@@ -178,6 +181,8 @@ type VapiEventListeners = {
   'call-end': () => void;
   'call-start': () => void;
   'volume-level': (volume: number) => void;
+  'local-volume-level': (volume: number) => void;
+  'local-audio-level-observer-error': (error: any) => void;
   'speech-start': () => void;
   'speech-end': () => void;
   video: (track: MediaStreamTrack) => void;
@@ -770,6 +775,7 @@ export default class Vapi extends VapiEventEmitter {
       
       try {
         this.call.startRemoteParticipantsAudioLevelObserver(100);
+        this.call.startLocalAudioLevelObserver(100);
         const audioObserverDuration = Date.now() - audioObserverStartTime;
         this.emit('call-start-progress', {
           stage: 'audio-observer-setup',
@@ -800,10 +806,17 @@ export default class Vapi extends VapiEventEmitter {
         if (e) this.handleRemoteParticipantsAudioLevel(e);
       });
 
+      this.call.on('local-audio-level', (e) => {
+        if (e) this.handleLocalAudioLevel(e);
+      });
+
       this.call.on('app-message', (e) => this.onAppMessage(e));
 
       this.call.on('nonfatal-error', (e) => {
         // https://docs.daily.co/reference/daily-js/events/meeting-events#type-audio-processor-error
+        if (e?.type === 'local-audio-level-observer-error') {
+          this.emit('local-audio-level-observer-error', serializeError(e));
+        }
         if (e?.type === 'audio-processor-error') {
           this.call
             ?.updateInputSettings({
@@ -961,6 +974,10 @@ export default class Vapi extends VapiEventEmitter {
     }, 1000);
   }
 
+  private handleLocalAudioLevel(e: DailyEventObjectLocalAudioLevel) {
+    this.emit('local-volume-level', e.audioLevel);
+  }
+
   /**
    * Stops the call by destroying the Daily call object.
    * 
@@ -1059,6 +1076,57 @@ export default class Vapi extends VapiEventEmitter {
 
   public getDailyCallObject(): DailyCall | null {
     return this.call;
+  }
+
+  /**
+   * Returns the most recent local (microphone) audio level, a number between 0 and 1.
+   *
+   * Useful for detecting when the local participant's microphone is not picking up any
+   * audio (e.g. wrong input device selected, OS-level input volume at 0, or muted
+   * hardware) so you can surface a "we can't hear you" style warning in your UI.
+   *
+   * Returns 0 when there is no active call.
+   */
+  public getLocalAudioLevel(): number {
+    if (!this.call) {
+      return 0;
+    }
+    return this.call.getLocalAudioLevel();
+  }
+
+  /**
+   * Starts (or restarts) the local audio level observer. The observer is started
+   * automatically when a call begins, but this can be used to change the sampling
+   * interval or restart it if it was stopped.
+   *
+   * While running, the Vapi instance emits 'local-volume-level' events with the local
+   * microphone audio level (0 to 1).
+   *
+   * @param interval How often, in milliseconds, to emit audio level events. Defaults to Daily's default.
+   */
+  public async startLocalAudioLevelObserver(interval?: number): Promise<void> {
+    if (!this.call) {
+      throw new Error('Call object is not available.');
+    }
+    await this.call.startLocalAudioLevelObserver(interval);
+  }
+
+  /**
+   * Stops the local audio level observer. After calling this, 'local-volume-level'
+   * events will no longer be emitted until the observer is started again.
+   */
+  public stopLocalAudioLevelObserver(): void {
+    this.call?.stopLocalAudioLevelObserver();
+  }
+
+  /**
+   * Returns whether the local audio level observer is currently running.
+   */
+  public isLocalAudioLevelObserverRunning(): boolean {
+    if (!this.call) {
+      return false;
+    }
+    return this.call.isLocalAudioLevelObserverRunning();
   }
 
   public startScreenSharing(displayMediaOptions?: DisplayMediaStreamOptions, screenVideoSendSettings?: DailyVideoSendSettings) {
@@ -1262,10 +1330,17 @@ export default class Vapi extends VapiEventEmitter {
         if (e) this.handleRemoteParticipantsAudioLevel(e);
       });
 
+      this.call.on('local-audio-level', (e) => {
+        if (e) this.handleLocalAudioLevel(e);
+      });
+
       this.call.on('app-message', (e) => this.onAppMessage(e));
 
       this.call.on('nonfatal-error', (e) => {
         // https://docs.daily.co/reference/daily-js/events/meeting-events#type-audio-processor-error
+        if (e?.type === 'local-audio-level-observer-error') {
+          this.emit('local-audio-level-observer-error', serializeError(e));
+        }
         if (e?.type === 'audio-processor-error') {
           this.call
             ?.updateInputSettings({
@@ -1407,6 +1482,7 @@ export default class Vapi extends VapiEventEmitter {
       
       try {
         this.call.startRemoteParticipantsAudioLevelObserver(100);
+        this.call.startLocalAudioLevelObserver(100);
         const audioObserverDuration = Date.now() - audioObserverStartTime;
         this.emit('call-start-progress', {
           stage: 'audio-observer-setup',
