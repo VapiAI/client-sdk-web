@@ -1,0 +1,25 @@
+# Development files
+example/
+scripts/
+__tests__/
+
+# Build artifacts
+*.tgz
+*.log
+
+# Git and CI files
+.git/
+.github/
+.gitignore
+
+# Development configuration
+.nvmrc
+.prettierrc
+jest.config.ts
+tsconfig.json
+
+# Documentation and scripts
+README.md
+RELEASE.md
+generate-api.sh
+update.sh 
