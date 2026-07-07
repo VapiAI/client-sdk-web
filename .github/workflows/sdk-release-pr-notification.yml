@@ -1,0 +1,86 @@
+name: SDK Release PR Notification
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  notify:
+    name: Notify Slack
+    if: ${{ github.event.action == 'ready_for_review' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.PRODUCTION_RELEASE_OBSERVABILITY_SLACK_WEBHOOK }}
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect package version change
+        id: package
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          previous_version="$(
+            git show "${BASE_SHA}:package.json" |
+              node -e "let input = ''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => process.stdout.write(JSON.parse(input).version));"
+          )"
+          version="$(node -p "require('./package.json').version")"
+
+          is_release="false"
+          if [[ "$previous_version" != "$version" ]]; then
+            is_release="true"
+          fi
+
+          {
+            echo "is_release=${is_release}"
+            echo "previous_version=${previous_version}"
+            echo "version=${version}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send Slack notification
+        if: ${{ steps.package.outputs.is_release == 'true' }}
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PREVIOUS_VERSION: ${{ steps.package.outputs.previous_version }}
+          VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$SLACK_WEBHOOK_URL" ]]; then
+            echo "::warning::PRODUCTION_RELEASE_OBSERVABILITY_SLACK_WEBHOOK is not set; skipping Slack notification."
+            exit 0
+          fi
+
+          text="$(cat <<EOF
+          *Web SDK release PR ready for review*
+          *Repo:* \`${GITHUB_REPOSITORY}\`
+          *PR:* <${PR_URL}|#${PR_NUMBER} ${PR_TITLE}>
+          *Author:* \`${PR_AUTHOR}\`
+          *Package:* \`@vapi-ai/web\` (npm)
+          *Version:* \`v${PREVIOUS_VERSION}\` -> \`v${VERSION}\`
+          *Next:* Review and merge the PR, then a human must publish GitHub Release \`v${VERSION}\` to start the npm release.
+          EOF
+          )"
+
+          payload="$(jq -n --arg text "$text" '{text: $text}')"
+          curl --fail --show-error --silent \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --data "$payload" \
+            "$SLACK_WEBHOOK_URL"
