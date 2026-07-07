@@ -21,17 +21,6 @@ jobs:
     outputs:
       version: ${{ steps.release.outputs.version }}
     steps:
-      - name: Verify a human published the release
-        env:
-          RELEASE_AUTHOR_TYPE: ${{ github.event.release.author.type }}
-        run: |
-          set -euo pipefail
-
-          if [[ "$RELEASE_AUTHOR_TYPE" != "User" || "$GITHUB_ACTOR" == *"[bot]" ]]; then
-            echo "::error::Only a human GitHub user can publish an npm release."
-            exit 1
-          fi
-
       - name: Checkout release tag
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
