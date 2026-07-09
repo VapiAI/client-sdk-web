@@ -110,13 +110,31 @@ interface CallStartFailedEvent {
   context: Record<string, any>;
 }
 
-interface SerializedError {
+export interface SerializedError {
   message: string;
   name?: string;
   stack?: string;
   code?: string | number;
   cause?: string;
+  // Provider-specific and backend fields (e.g. reason, details, Daily.co's
+  // errorMsg, or a nested `error` object carrying subscriptionLimits) are
+  // preserved here, so consumers can still read them by narrowing.
   [key: string]: any;
+}
+
+/**
+ * Payload for the `error` event. The SDK always emits this envelope shape:
+ * a `type` discriminator, the serialized `error`, and a `timestamp`, plus an
+ * optional `stage`/`duration` depending on where the failure occurred.
+ */
+export interface VapiError {
+  type: string;
+  error: SerializedError;
+  timestamp: string;
+  stage?: string;
+  duration?: number;
+  totalDuration?: number;
+  context?: Record<string, any>;
 }
 
 /**
@@ -187,7 +205,7 @@ type VapiEventListeners = {
   'speech-end': () => void;
   video: (track: MediaStreamTrack) => void;
   message: (message: any) => void;
-  error: (error: any) => void;
+  error: (error: VapiError) => void;
   'camera-error': (error: any) => void;
   'network-quality-change': (event: any) => void;
   'network-connection': (event: any) => void;
