@@ -121,21 +121,21 @@ interface SerializedError {
 
 /**
  * Extracts error details into a plain object that serializes properly to JSON.
- * Error objects don't serialize well because their properties (message, stack, name) 
+ * Error objects don't serialize well because their properties (message, stack, name)
  * are not enumerable and get lost when using JSON.stringify().
  */
 function serializeError(error: unknown): SerializedError {
   if (error === null || error === undefined) {
     return { message: 'Unknown error (null or undefined)' };
   }
-  
+
   if (error instanceof Error) {
     const serialized: SerializedError = {
       message: error.message,
       name: error.name,
       stack: error.stack,
     };
-    
+
     // Include any additional properties that might be on the error
     const errorAsAny = error as any;
     if (errorAsAny.code !== undefined) {
@@ -157,14 +157,14 @@ function serializeError(error: unknown): SerializedError {
     if (errorAsAny.error !== undefined && typeof errorAsAny.error === 'string') {
       serialized.errorDetail = errorAsAny.error;
     }
-    
+
     return serialized;
   }
-  
+
   if (typeof error === 'string') {
     return { message: error };
   }
-  
+
   if (typeof error === 'object') {
     // It's already a plain object, but let's ensure message exists
     const errorObj = error as Record<string, any>;
@@ -173,7 +173,7 @@ function serializeError(error: unknown): SerializedError {
       ...errorObj
     };
   }
-  
+
   return { message: String(error) };
 }
 
@@ -217,13 +217,13 @@ type StartCallOptions = {
 type WebCall = {
   /**
    * The Vapi WebCall URL. This is the URL that the call will be joined on.
-   * 
+   *
    * call.webCallUrl or call.transport.callUrl
    */
   webCallUrl: string;
   /**
    * The Vapi WebCall ID. This is the ID of the call.
-   * 
+   *
    * call.id
    */
   id?: string;
@@ -233,7 +233,7 @@ type WebCall = {
   artifactPlan?: { videoRecordingEnabled?: boolean };
   /**
    * The Vapi WebCall assistant. This is the assistant of the call.
-   * 
+   *
    * call.assistant
    */
   assistant?: { voice?: { provider?: string } };
@@ -377,12 +377,12 @@ export default class Vapi extends VapiEventEmitter {
     options?: StartCallOptions
   ): Promise<Call | null> {
     const startTime = Date.now();
-    
+
     // Input validation with detailed error messages
     if (!assistant && !squad && !workflow) {
       const error = new Error('Assistant or Squad or Workflow must be provided.');
-      this.emit('error', { 
-        type: 'validation-error', 
+      this.emit('error', {
+        type: 'validation-error',
         stage: 'input-validation',
         error: serializeError(error),
         timestamp: new Date().toISOString()
@@ -399,7 +399,7 @@ export default class Vapi extends VapiEventEmitter {
       });
       return null;
     }
-    
+
     this.emit('call-start-progress', {
       stage: 'initialization',
       status: 'started',
@@ -410,19 +410,19 @@ export default class Vapi extends VapiEventEmitter {
         hasWorkflow: !!workflow
       }
     });
-    
+
     this.started = true;
 
     try {
-            // Stage 1: Create web call
+      // Stage 1: Create web call
       this.emit('call-start-progress', {
         stage: 'web-call-creation',
         status: 'started',
         timestamp: new Date().toISOString()
       });
-      
+
       const webCallStartTime = Date.now();
-      
+
       const webCall = (
         await client.call.callControllerCreateWebCall({
           assistant: typeof assistant === 'string' ? undefined : assistant,
@@ -436,7 +436,7 @@ export default class Vapi extends VapiEventEmitter {
           roomDeleteOnUserLeaveEnabled: options?.roomDeleteOnUserLeaveEnabled,
         })
       ).data;
-      
+
       const webCallDuration = Date.now() - webCallStartTime;
       this.emit('call-start-progress', {
         stage: 'web-call-creation',
@@ -477,16 +477,16 @@ export default class Vapi extends VapiEventEmitter {
           isVideoEnabled
         }
       });
-      
+
       const dailyCallStartTime = Date.now();
-      
+
       try {
         this.call = DailyIframe.createCallObject({
           audioSource: this.dailyCallObject.audioSource ?? true,
           videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
           dailyConfig: this.dailyCallConfig,
         });
-        
+
         const dailyCallDuration = Date.now() - dailyCallStartTime;
         this.emit('call-start-progress', {
           stage: 'daily-call-object-creation',
@@ -512,7 +512,7 @@ export default class Vapi extends VapiEventEmitter {
         });
         throw error;
       }
-      
+
       this.call.iframe()?.style.setProperty('display', 'none');
 
       this.call.on('left-meeting', () => {
@@ -629,7 +629,7 @@ export default class Vapi extends VapiEventEmitter {
         timestamp: new Date().toISOString(),
         metadata: { isMobile }
       });
-      
+
       if (isMobile) {
         const mobileWaitStartTime = Date.now();
         await this.sleep(1000);
@@ -656,16 +656,16 @@ export default class Vapi extends VapiEventEmitter {
         status: 'started',
         timestamp: new Date().toISOString()
       });
-      
+
       const joinStartTime = Date.now();
-      
+
       try {
         await this.call.join({
           // @ts-expect-error This exists
           url: webCall.webCallUrl,
           subscribeToTracksAutomatically: false,
         });
-        
+
         const joinDuration = Date.now() - joinStartTime;
         this.emit('call-start-progress', {
           stage: 'daily-call-join',
@@ -700,7 +700,7 @@ export default class Vapi extends VapiEventEmitter {
           status: 'started',
           timestamp: new Date().toISOString()
         });
-        
+
         const recordingRequestedTime = new Date().getTime();
         const recordingStartTime = Date.now();
 
@@ -730,7 +730,7 @@ export default class Vapi extends VapiEventEmitter {
               timestamp: new Date().toISOString(),
               metadata: { delaySeconds: totalRecordingDelay }
             });
-            
+
             this.send({
               type: 'control',
               control: 'say-first-message',
@@ -770,9 +770,9 @@ export default class Vapi extends VapiEventEmitter {
         status: 'started',
         timestamp: new Date().toISOString()
       });
-      
+
       const audioObserverStartTime = Date.now();
-      
+
       try {
         this.call.startRemoteParticipantsAudioLevelObserver(100);
         this.call.startLocalAudioLevelObserver(100);
@@ -838,9 +838,9 @@ export default class Vapi extends VapiEventEmitter {
         status: 'started',
         timestamp: new Date().toISOString()
       });
-      
+
       const audioProcessingStartTime = Date.now();
-      
+
       try {
         this.call.updateInputSettings({
           audio: {
@@ -849,7 +849,7 @@ export default class Vapi extends VapiEventEmitter {
             },
           },
         });
-        
+
         const audioProcessingDuration = Date.now() - audioProcessingStartTime;
         this.emit('call-start-progress', {
           stage: 'audio-processing-setup',
@@ -887,7 +887,7 @@ export default class Vapi extends VapiEventEmitter {
     } catch (e) {
       const totalDuration = Date.now() - startTime;
       const serializedError = serializeError(e);
-      
+
       this.emit('call-start-failed', {
         stage: 'unknown',
         totalDuration,
@@ -901,7 +901,7 @@ export default class Vapi extends VapiEventEmitter {
           isMobile: this.isMobileDevice()
         }
       });
-      
+
       // Also emit the generic error event for backward compatibility
       this.emit('error', {
         type: 'start-method-error',
@@ -916,7 +916,7 @@ export default class Vapi extends VapiEventEmitter {
           isMobile: this.isMobileDevice()
         }
       });
-      
+
       await this.cleanup();
       return null;
     }
@@ -980,22 +980,20 @@ export default class Vapi extends VapiEventEmitter {
 
   /**
    * Stops the call by destroying the Daily call object.
-   * 
+   *
    * If `roomDeleteOnUserLeaveEnabled` is set to `false`, the Vapi call will be kept alive, allowing reconnections to the same call using the `reconnect` method.
    * If `roomDeleteOnUserLeaveEnabled` is set to `true`, the Vapi call will also be destroyed, preventing any reconnections.
+   *
+   * Delegates to cleanup() to ensure all state (including hasEmittedCallEndedStatus)
+   * is consistently reset.
    */
   async stop(): Promise<void> {
-    this.started = false;
-    if (this.call) {
-      await this.call.destroy();
-      this.call = null;
-    }
-    this.speakingTimeout = null;
+    await this.cleanup();
   }
 
   /**
    * Sends a Live Call Control message to the Vapi server.
-   * 
+   *
    * Docs: https://docs.vapi.ai/calls/call-features
    */
   send(message: VapiClientToServerMessage): void {
@@ -1013,7 +1011,7 @@ export default class Vapi extends VapiEventEmitter {
     return this.call.localAudio() === false;
   }
 
-  public say(message: string, endCallAfterSpoken?: boolean, 
+  public say(message: string, endCallAfterSpoken?: boolean,
     interruptionsEnabled?: boolean, interruptAssistantEnabled?: boolean) {
     this.send({
       type: 'say',
@@ -1026,14 +1024,14 @@ export default class Vapi extends VapiEventEmitter {
 
   /**
    * Ends the call immediately by sending a `end-call` message using Live Call Control, and destroys the Daily call object.
-   * 
+   *
    * This method always ends the call, regardless of the `roomDeleteOnUserLeaveEnabled` option.
    */
-  public end() {
+  public async end(): Promise<void> {
     this.send({
       type: 'end-call',
     });
-    this.stop();
+    await this.stop();
   }
 
   public setInputDevicesAsync(
@@ -1046,27 +1044,27 @@ export default class Vapi extends VapiEventEmitter {
     if (!this.call) {
       throw new Error('Call object is not available.');
     }
-    
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const audioContext = new AudioContext();
-  
+
       const source = audioContext.createMediaStreamSource(stream);
-      
+
       const gainNode = audioContext.createGain();
       gainNode.gain.value = gain;
-      
+
       source.connect(gainNode);
-      
+
       const destination = audioContext.createMediaStreamDestination();
       gainNode.connect(destination);
-  
+
       const [boostedTrack] = destination.stream.getAudioTracks();
-      await safeSetInputDevicesAsync(this.call, { audioSource: boostedTrack });      
+      await safeSetInputDevicesAsync(this.call, { audioSource: boostedTrack });
     } catch (error) {
       console.error("Error adjusting microphone level:", error);
     }
-  }  
+  }
 
   public setOutputDeviceAsync(
     options: Parameters<DailyCall['setOutputDeviceAsync']>[0],
@@ -1142,13 +1140,13 @@ export default class Vapi extends VapiEventEmitter {
 
   /**
    * Reconnects to an active call.
-   * 
-   * 
-   * @param webCall 
+   *
+   *
+   * @param webCall
    */
   async reconnect(webCall: WebCall): Promise<void> {
     const startTime = Date.now();
-    
+
     if (this.started) {
       throw new Error('Cannot reconnect while a call is already in progress. Call stop() first.');
     }
@@ -1364,7 +1362,7 @@ export default class Vapi extends VapiEventEmitter {
         timestamp: new Date().toISOString(),
         metadata: { isMobile }
       });
-      
+
       if (isMobile) {
         const mobileWaitStartTime = Date.now();
         await this.sleep(1000);
@@ -1391,13 +1389,13 @@ export default class Vapi extends VapiEventEmitter {
         status: 'started',
         timestamp: new Date().toISOString()
       });
-      
+
       const joinStartTime = Date.now();
       await this.call.join({
         url: webCall.webCallUrl,
         subscribeToTracksAutomatically: false,
       });
-      
+
       const joinDuration = Date.now() - joinStartTime;
       this.emit('call-start-progress', {
         stage: 'daily-call-join',
@@ -1413,7 +1411,7 @@ export default class Vapi extends VapiEventEmitter {
           status: 'started',
           timestamp: new Date().toISOString()
         });
-        
+
         const recordingStartTime = Date.now();
         const recordingRequestedTime = new Date().getTime();
 
@@ -1443,7 +1441,7 @@ export default class Vapi extends VapiEventEmitter {
               timestamp: new Date().toISOString(),
               metadata: { delaySeconds: totalRecordingDelay }
             });
-            
+
             this.send({
               type: 'control',
               control: 'say-first-message',
@@ -1477,9 +1475,9 @@ export default class Vapi extends VapiEventEmitter {
         status: 'started',
         timestamp: new Date().toISOString()
       });
-      
+
       const audioObserverStartTime = Date.now();
-      
+
       try {
         this.call.startRemoteParticipantsAudioLevelObserver(100);
         this.call.startLocalAudioLevelObserver(100);
@@ -1509,9 +1507,9 @@ export default class Vapi extends VapiEventEmitter {
         status: 'started',
         timestamp: new Date().toISOString()
       });
-      
+
       const audioProcessingStartTime = Date.now();
-      
+
       try {
         this.call.updateInputSettings({
           audio: {
@@ -1520,7 +1518,7 @@ export default class Vapi extends VapiEventEmitter {
             },
           },
         });
-        
+
         const audioProcessingDuration = Date.now() - audioProcessingStartTime;
         this.emit('call-start-progress', {
           stage: 'audio-processing-setup',
@@ -1553,7 +1551,7 @@ export default class Vapi extends VapiEventEmitter {
     } catch (e) {
       const totalDuration = Date.now() - startTime;
       const serializedError = serializeError(e);
-      
+
       this.emit('call-start-failed', {
         stage: 'reconnect',
         totalDuration,
@@ -1568,7 +1566,7 @@ export default class Vapi extends VapiEventEmitter {
           isMobile: this.isMobileDevice()
         }
       });
-      
+
       // Also emit the generic error event for backward compatibility
       this.emit('error', {
         type: 'reconnect-error',
@@ -1583,7 +1581,7 @@ export default class Vapi extends VapiEventEmitter {
           isMobile: this.isMobileDevice()
         }
       });
-      
+
       await this.cleanup();
       throw e;
     }
@@ -1592,29 +1590,29 @@ export default class Vapi extends VapiEventEmitter {
   /**
    * Runs all network connectivity tests for pre-call diagnostics.
    * Creates a temporary Daily call object for testing purposes.
-   * 
+   *
    * Tests performed:
    * 1. Network connectivity (TURN server) - Tests if traffic can be relayed through TURN servers
-   * 2. Websocket connectivity - Tests if websocket connections can be established  
+   * 2. Websocket connectivity - Tests if websocket connections can be established
    * 3. Call quality - Tests overall call quality metrics (if available in SDK version)
-   * 
+   *
    * @returns {Promise<Record<string, any>>} Test results object with status for each test
-   * 
+   *
    * @example
    * // Run pre-call network diagnostics
    * const results = await Vapi.runNetworkTestsStandalone();
    * if (results.networkConnectivity?.result === 'failed') {
    *   console.warn('Network issues detected - calls may not work properly');
    * }
-   * 
+   *
    * @static
    */
   public static async runNetworkTestsStandalone(): Promise<Record<string, any>> {
     console.log('Starting standalone network connectivity tests...');
-    
+
     const results: Record<string, any> = {};
     let tempCall: DailyCall | null = null;
-    
+
     try {
       // Create a temporary call object for testing
       console.log('Creating temporary call object for testing...');
@@ -1626,12 +1624,12 @@ export default class Vapi extends VapiEventEmitter {
       // Test 1: Network Connectivity (TURN server test)
       console.log('\n1. Testing network connectivity (TURN server)...');
       let videoTrack: MediaStreamTrack | null = null;
-      
+
       try {
         // Create a dummy video track for the test
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         videoTrack = stream.getVideoTracks()[0];
-        
+
         const networkTest = await tempCall.testNetworkConnectivity(videoTrack);
         results.networkConnectivity = networkTest;
         console.log('Network connectivity test result:', networkTest);
@@ -1666,20 +1664,20 @@ export default class Vapi extends VapiEventEmitter {
             // Use startCamera to initialize the call state without needing a room
             console.log('Initializing call state with startCamera...');
             await tempCall.startCamera();
-            
+
             // Now run the call quality test
             const callQualityTest = await tempCall.testCallQuality();
             results.callQuality = callQualityTest;
             console.log('Call quality test result:', callQualityTest);
-            
+
             // Camera will be cleaned up when we destroy the call object
           } catch (startCameraError: any) {
             // If startCamera fails, it might be due to permissions or other issues
             console.error('Failed to start camera for call quality test:', startCameraError);
-            results.callQuality = { 
-              result: 'error', 
+            results.callQuality = {
+              result: 'error',
               error: startCameraError?.toString(),
-              message: 'Failed to initialize camera for call quality test. Check camera permissions.' 
+              message: 'Failed to initialize camera for call quality test. Check camera permissions.'
             };
           }
         } else {
@@ -1709,7 +1707,7 @@ export default class Vapi extends VapiEventEmitter {
     // Summary
     console.log('\n=== Network Test Summary ===');
     console.log('Results:', JSON.stringify(results, null, 2));
-    
+
     return results;
   }
 
