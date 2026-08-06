@@ -735,14 +735,7 @@ export default class Vapi extends VapiEventEmitter {
         const recordingStartTime = Date.now();
 
         try {
-          this.call.startRecording({
-            width: 1280,
-            height: 720,
-            backgroundColor: '#FF1F2D3D',
-            layout: {
-              preset: 'default',
-            },
-          });
+          this.startRecording();
 
           const recordingSetupDuration = Date.now() - recordingStartTime;
           this.emit('call-start-progress', {
@@ -752,7 +745,7 @@ export default class Vapi extends VapiEventEmitter {
             timestamp: new Date().toISOString()
           });
 
-          this.call.on('recording-started', () => {
+          this.call.once('recording-started', () => {
             const totalRecordingDelay = (new Date().getTime() - recordingRequestedTime) / 1000;
             this.emit('call-start-progress', {
               stage: 'video-recording-started',
@@ -1351,6 +1344,37 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   /**
+   * Starts (or retries) a cloud recording of the call.
+   *
+   * Recording start is asynchronous: success is signaled by the
+   * 'recording-started' event and failure by 'recording-error'. Daily does not
+   * retry automatically, so if you receive 'recording-error' (e.g. the
+   * recording start timed out), you can call this method again a few seconds
+   * later to retry.
+   */
+  public startRecording(): void {
+    if (!this.call) {
+      throw new Error('Call object is not available.');
+    }
+    this.call.startRecording({
+      width: 1280,
+      height: 720,
+      backgroundColor: '#FF1F2D3D',
+      layout: {
+        preset: 'default',
+      },
+    });
+  }
+
+  /**
+   * Stops the in-progress recording. Completion is signaled by the
+   * 'recording-stopped' event.
+   */
+  public stopRecording(): void {
+    this.call?.stopRecording();
+  }
+
+  /**
    * Reconnects to an active call.
    * 
    * 
@@ -1614,14 +1638,7 @@ export default class Vapi extends VapiEventEmitter {
         const recordingRequestedTime = new Date().getTime();
 
         try {
-          this.call.startRecording({
-            width: 1280,
-            height: 720,
-            backgroundColor: '#FF1F2D3D',
-            layout: {
-              preset: 'default',
-            },
-          });
+          this.startRecording();
 
           const recordingSetupDuration = Date.now() - recordingStartTime;
           this.emit('call-start-progress', {
@@ -1631,7 +1648,7 @@ export default class Vapi extends VapiEventEmitter {
             timestamp: new Date().toISOString()
           });
 
-          this.call.on('recording-started', () => {
+          this.call.once('recording-started', () => {
             const totalRecordingDelay = (new Date().getTime() - recordingRequestedTime) / 1000;
             this.emit('call-start-progress', {
               stage: 'video-recording-started',
