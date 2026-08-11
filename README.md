@@ -105,6 +105,47 @@ The `say(message: string, endCallAfterSpoken?: boolean)` can be used to invoke s
 vapi.say("Our time's up, goodbye!", true)
 ```
 
+The `setVolume(volume: number)` controls how loudly the assistant plays, from
+`0` to `1`. This is playback only: it does not change what the assistant hears,
+and it does not affect the levels reported by the `volume-level` event.
+
+```javascript
+vapi.setVolume(0.5);
+```
+
+The setting is remembered, so you can call it before a call has started and it
+will be applied as soon as the assistant's audio arrives. It also persists
+across calls, so a volume your user picked once is not reset by hanging up.
+Values outside `0` to `1` are clamped, and non-finite values are ignored.
+
+The `getAudioPlayer()` returns the `<audio>` element the SDK uses to play the
+assistant, or `null` before its track has arrived. Use it for anything the
+setter doesn't cover, such as driving a waveform visualizer.
+
+```javascript
+const player = vapi.getAudioPlayer();
+```
+
+Pair it with the `audio` event when you need the element the moment it exists:
+
+```javascript
+vapi.on('audio', (player) => {
+  // e.g. new AudioContext().createMediaElementSource(player)
+});
+```
+
+If the browser blocks playback, usually its autoplay policy when the call was
+not started from a user gesture, no player is attached and an `error` is
+emitted instead. Listen for it to prompt the user:
+
+```javascript
+vapi.on('error', (e) => {
+  if (e.type === 'audio-start-failed') {
+    // show a "tap to enable audio" affordance
+  }
+});
+```
+
 ## Events
 
 You can listen to the following events:
@@ -128,6 +169,11 @@ vapi.on('call-end', () => {
 
 vapi.on('volume-level', (volume) => {
   console.log(`Assistant volume level: ${volume}`);
+});
+
+// The <audio> element playing the assistant, as soon as it exists
+vapi.on('audio', (player) => {
+  console.log(`Assistant audio attached at volume ${player.volume}`);
 });
 
 // Function calls and transcripts will be sent via messages
