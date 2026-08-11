@@ -219,8 +219,6 @@ describe("assistant audio player", () => {
     });
   });
 
-  // Renegotiation reuses the participant id, so a superseded element would
-  // still match the selector teardown uses.
   it("removes the element it supersedes when the track is renegotiated", async () => {
     await vapi["handleTrackStarted"](trackStartedEvent());
     await vapi["handleTrackStarted"](trackStartedEvent());
@@ -231,12 +229,10 @@ describe("assistant audio player", () => {
   });
 
   describe("when playback fails to start", () => {
-    // A browser autoplay block rejects with a DOMException, whose defining
-    // trait for our purposes is `name`. We do NOT construct a real DOMException
-    // here: jest's node environment supplies it from the parent realm while
-    // Error is the sandbox's own, so `instanceof Error` is false and
-    // serializeError would take a branch it never takes in a browser. An
-    // in-realm Error carrying the same name is the faithful stand-in.
+    // Not a real DOMException: jest's node environment supplies it from the
+    // parent realm, so `instanceof Error` is false and serializeError would
+    // take a branch it never takes in a browser. An in-realm Error with the
+    // same `name` is the faithful stand-in.
     const autoplayBlocked = () => {
       const error = new Error(
         "play() failed because the user didn't interact with the document first.",
@@ -264,8 +260,6 @@ describe("assistant audio player", () => {
       reported.mockRestore();
     });
 
-    // Autoplay policy is the usual cause and it is recoverable, so consumers
-    // need a signal to prompt for a gesture on.
     it("emits a serialized error consumers can act on", async () => {
       jest.spyOn(console, "error").mockImplementation(() => {});
       const errors: any[] = [];
@@ -370,8 +364,6 @@ describe("assistant audio player", () => {
       expect(vapi.getAudioPlayer()?.volume).toBe(1);
     });
 
-    // The build is handed an already-normalized value, so the element is never
-    // constructed at the wrong volume and then corrected.
     it("hands the build an already-clamped volume", async () => {
       vapi["desiredVolume"] = 5;
 

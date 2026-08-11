@@ -261,9 +261,7 @@ async function buildAudioPlayer(
 ) {
   const player = document.createElement('audio');
   player.dataset.participantId = participantId;
-  // Set before play() rather than after the element is handed back, so a track
-  // that is already flowing never gets a window at full volume.
-  // Already bounded by desiredVolumeResolve, so assigned as given.
+  // Before play(), so an already-flowing track never plays at full volume first.
   if (typeof volume === 'number') {
     player.volume = volume;
   }
@@ -271,8 +269,7 @@ async function buildAudioPlayer(
   try {
     await startAudioPlayer(player, track);
   } catch (error) {
-    // The element is appended before playback is attempted, so a failure here
-    // would otherwise strand it in the page for the rest of the session.
+    // Appended before playback was attempted, so a failure would strand it.
     player.remove();
     throw error;
   }
@@ -340,13 +337,11 @@ export default class Vapi extends VapiEventEmitter {
   private started: boolean = false;
   private call: DailyCall | null = null;
   private audioPlayer: HTMLAudioElement | null = null;
-  // Outlives any single player, so the caller's choice survives teardown and
-  // gets reapplied to whatever element the next track builds.
+  // Survives teardown so the caller's choice persists across calls.
   private desiredVolume: number | null = null;
-  // Builds are identified individually rather than by a single counter: a
-  // player takes the whole of media startup to build, so several can be in
-  // flight, they can finish out of order, and a teardown must invalidate only
-  // the builds for the participant that actually left.
+  // Builds are tracked individually, not by one counter: several can be in
+  // flight, they finish out of order, and a teardown must invalidate only the
+  // builds belonging to the participant that left.
   private audioBuildSequence = 0;
   private pendingAudioBuilds = new Map<number, string>();
   private attachedAudioBuild = 0;
@@ -379,11 +374,7 @@ export default class Vapi extends VapiEventEmitter {
       await this.call.destroy();
       this.call = null;
     }
-    // Dropped with the call: the element it points at is torn down, and holding
-    // it would let setVolume write to a dead player on the next call.
     this.audioPlayer = null;
-    // Builds that never settle would otherwise keep their entry for the life
-    // of the page. Call identity already rejects them, so this only bounds it.
     this.pendingAudioBuilds.clear();
     this.speakingTimeout = null;
   }
@@ -1007,11 +998,7 @@ export default class Vapi extends VapiEventEmitter {
       await this.call.destroy();
       this.call = null;
     }
-    // Dropped with the call: the element it points at is torn down, and holding
-    // it would let setVolume write to a dead player on the next call.
     this.audioPlayer = null;
-    // Builds that never settle would otherwise keep their entry for the life
-    // of the page. Call identity already rejects them, so this only bounds it.
     this.pendingAudioBuilds.clear();
     this.speakingTimeout = null;
   }
@@ -1026,9 +1013,8 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   /**
-   * The two seams where this class touches the DOM. Kept as thin indirections
-   * so the lifecycle logic around them, which is where the bugs live, can be
-   * exercised without a browser environment.
+   * The two places this class touches the DOM, behind indirections so the
+   * lifecycle logic around them is testable without a browser.
    */
   private audioPlayerBuild(
     track: MediaStreamTrack,
@@ -1043,14 +1029,9 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   /**
-   * The remembered volume, bounded and sanity-checked, or null if there is
-   * nothing valid to apply.
-   *
-   * setVolume already validates, so this only matters if the field is reached
-   * another way. It lives here rather than at each write so the two callers
-   * cannot disagree, and so the bounding is observable in tests: the DOM
-   * rejects a non-finite or out-of-range volume, and that throw would land
-   * mid-attach and stall the call.
+   * The remembered volume, bounded, or null if there is nothing to apply.
+   * Shared by both callers so they cannot disagree: the DOM throws on a
+   * non-finite or out-of-range volume, and that throw would stall the call.
    */
   private desiredVolumeResolve(): number | null {
     if (this.desiredVolume === null || !Number.isFinite(this.desiredVolume)) {
@@ -1059,11 +1040,7 @@ export default class Vapi extends VapiEventEmitter {
     return Math.min(1, Math.max(0, this.desiredVolume));
   }
 
-  /**
-   * Builds the assistant's audio player and hands it to consumers.
-   *
-   * Shared by the initial and reconnect paths so the two cannot drift.
-   */
+  /** Shared by the initial and reconnect paths so the two cannot drift. */
   private async handleTrackStarted(e?: DailyEventObjectTrack) {
     if (!e || !e.participant) {
       return;
@@ -1078,10 +1055,8 @@ export default class Vapi extends VapiEventEmitter {
       this.emitToConsumer('video', e.track);
     }
     if (e.track.kind === 'audio') {
-      // buildAudioPlayer awaits play(), which pends for the whole of media
-      // startup, so the call can end or the participant can leave underneath
-      // us. Anything built for a call we have since left, or for a participant
-      // that has since gone, is discarded rather than adopted.
+      // play() pends for the whole of media startup, so the call can end or
+      // the participant can leave while the player is still being built.
       const call = this.call;
       const build = ++this.audioBuildSequence;
       this.pendingAudioBuilds.set(build, e.participant.session_id);
@@ -1094,15 +1069,11 @@ export default class Vapi extends VapiEventEmitter {
           this.desiredVolumeResolve(),
         );
       } catch (error) {
-        // Autoplay policy and a missing user gesture both land here. Reported
-        // rather than left as an unhandled rejection, and the element the
-        // build already appended is cleaned up by buildAudioPlayer.
+        // Usually autoplay policy, which is recoverable, so consumers get a
+        // signal to prompt for a gesture. Safe with no 'error' listener:
+        // emitToConsumer catches EventEmitter's unlistened-'error' throw.
         this.pendingAudioBuilds.delete(build);
         console.error('[vapi] could not start assistant audio', error);
-        // Autoplay policy is the usual cause and it is recoverable, so give
-        // consumers a signal they can prompt for a user gesture on. Safe with
-        // no listener attached: emitToConsumer catches EventEmitter's
-        // unlistened-'error' throw.
         this.emitToConsumer('error', {
           type: 'audio-start-failed',
           error: serializeError(error),
@@ -1110,9 +1081,6 @@ export default class Vapi extends VapiEventEmitter {
         return;
       }
 
-      // Still wanted only if the call is the same one, this build was not
-      // invalidated by its participant leaving, and no later build has already
-      // attached. Builds finish in whatever order play() resolves.
       const stillPending = this.pendingAudioBuilds.delete(build);
       if (
         !call ||
@@ -1130,21 +1098,16 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   /**
-   * Applies the caller's volume, keeps the player, then announces it.
-   *
-   * Volume is applied before the element is handed out so a fresh player never
-   * plays a moment at full volume after the caller has turned it down.
-   * Assigning before emitting means a listener that calls setVolume or
-   * getAudioPlayer during the event sees it, since emit is synchronous.
+   * Assigns before emitting, since emit is synchronous and a listener may call
+   * getAudioPlayer or setVolume during the event.
    */
   private attachAudioPlayer(player: HTMLAudioElement) {
     // Renegotiation reuses the participant id, so a superseded element would
-    // still match the selector teardown uses and could be removed in its
-    // place, leaving the live one behind.
+    // still match the selector teardown uses and be removed in its place.
     if (this.audioPlayer && this.audioPlayer !== player) {
       this.audioPlayer.remove();
     }
-    // Reapplied to catch a volume changed while the player was still building.
+    // Reapplied in case the volume changed while the player was building.
     const volume = this.desiredVolumeResolve();
     if (volume !== null) {
       player.volume = volume;
@@ -1154,12 +1117,9 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   /**
-   * Emits to consumers without letting a listener that throws take down the
-   * caller. track-started still has to signal that playback is ready, and a
-   * thrown listener there would stall the call.
-   *
-   * Not routed to the `error` event: EventEmitter throws when `error` is
-   * emitted with no listener, which would reintroduce the same failure.
+   * A listener that throws must not take down the caller: track-started still
+   * has to signal that playback is ready. Not routed to the `error` event,
+   * which EventEmitter throws on when nothing is listening.
    */
   private emitToConsumer<E extends VapiEventNames>(
     event: E,
@@ -1172,18 +1132,14 @@ export default class Vapi extends VapiEventEmitter {
     }
   }
 
-  /**
-   * Tears down the player for a departing participant, dropping our reference
-   * to it first so nothing hands out an element that is no longer in the page.
-   */
+  /** Drops the reference before removing, so nothing hands out a detached element. */
   private detachAudioPlayer(participantId: string) {
     if (this.audioPlayer?.dataset.participantId === participantId) {
       this.audioPlayer = null;
     }
-    // Invalidates players still being built for this participant, which the
-    // call check cannot see because the call itself has not changed. Scoped to
-    // the departing participant so an unrelated leave cannot cost us the
-    // assistant's audio.
+    // Scoped to this participant: the call check cannot catch these, since the
+    // call itself has not changed, and an unrelated leave must not invalidate
+    // the assistant's build.
     for (const [build, id] of this.pendingAudioBuilds) {
       if (id === participantId) {
         this.pendingAudioBuilds.delete(build);
