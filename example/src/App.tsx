@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Vapi from '@vapi-ai/web';
 
 const VAPI_PUBLIC_KEY = import.meta.env.VITE_VAPI_PUBLIC_KEY;
@@ -30,6 +30,9 @@ function App() {
   const [networkTestRunning, setNetworkTestRunning] = useState(false);
   const [networkTestResults, setNetworkTestResults] = useState<any>(null);
   const [simulateFailure, setSimulateFailure] = useState<string>('none');
+  const [videoRecordingEnabled, setVideoRecordingEnabled] = useState(false);
+  const [localVideoTrack, setLocalVideoTrack] = useState<MediaStreamTrack | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     // Check for stored webCall on component mount
@@ -61,7 +64,17 @@ function App() {
       setConnected(false);
       setAssistantIsSpeaking(false);
       setVolumeLevel(0);
-      addMessage('system', 'Call ended - webCall data preserved for reconnection');
+      setLocalVideoTrack(null);
+      addMessage('system', 'Call ended');
+    });
+
+    // Tracks the local camera so the UI can show what's being recorded when
+    // video recording is enabled on the call.
+    vapi.on('daily-participant-updated', (participant) => {
+      if (!participant.local) return;
+      const video = participant.tracks?.video;
+      const track = video?.persistentTrack ?? video?.track ?? null;
+      setLocalVideoTrack(video?.state === 'playable' ? track : null);
     });
 
     vapi.on('speech-start', () => {
@@ -147,6 +160,15 @@ function App() {
     };
   }, [vapi]);
 
+  // Attach the local camera track to the preview element whenever it changes.
+  useEffect(() => {
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = localVideoTrack
+        ? new MediaStream([localVideoTrack])
+        : null;
+    }
+  }, [localVideoTrack]);
+
   const addMessage = (type: 'user' | 'assistant' | 'system', content: string) => {
     setMessages(prev => [...prev, {
       time: new Date().toLocaleTimeString(),
@@ -203,6 +225,9 @@ function App() {
         firstMessage: "Hello! I'm your AI assistant. How can I help you today?",
         endCallMessage: "Thank you for the conversation. Goodbye!",
         endCallPhrases: ["goodbye", "bye", "end call", "hang up"],
+        artifactPlan: {
+          videoRecordingEnabled,
+        },
         
         // Max call duration (in seconds) - 10 minutes
         maxDurationSeconds: 600
@@ -216,7 +241,8 @@ function App() {
           webCallUrl: (webCall as any).webCallUrl,
           id: webCall.id,
           artifactPlan: webCall.artifactPlan,
-          assistant: webCall.assistant
+          assistant: webCall.assistant,
+          transport: webCall.transport,
         };
         localStorage.setItem('vapi-webcall', JSON.stringify(webCallToStore));
         setStoredWebCall(webCallToStore);
@@ -230,7 +256,19 @@ function App() {
   };
 
   const stopCall = () => {
+    // Leaves the call without ending it server-side. With
+    // roomDeleteOnUserLeaveEnabled: false the call stays alive, so you can
+    // rejoin it with the Reconnect button.
+    vapi.stop();
+    addMessage('system', 'Left the call - it stays alive for reconnection');
+  };
+
+  const endCall = () => {
+    // Ends the Vapi call for everyone; reconnection is not possible after this.
     vapi.end();
+    localStorage.removeItem('vapi-webcall');
+    setStoredWebCall(null);
+    addMessage('system', 'Ended the call - stored call data cleared');
   };
 
   const reconnectCall = async () => {
@@ -445,6 +483,56 @@ function App() {
         )}
       </div>
 
+      {/* Local Camera Preview */}
+      {localVideoTrack && (
+        <div style={{
+          backgroundColor: '#111827',
+          borderRadius: '8px',
+          padding: '15px',
+          marginBottom: '20px'
+        }}>
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{
+              width: '100%',
+              maxWidth: '400px',
+              display: 'block',
+              margin: '0 auto',
+              borderRadius: '6px',
+              transform: 'scaleX(-1)'
+            }}
+          />
+        </div>
+      )}
+
+      {/* Call Settings */}
+      <div style={{
+        backgroundColor: '#eff6ff',
+        border: '1px solid #bfdbfe',
+        borderRadius: '8px',
+        padding: '15px',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ marginTop: 0, marginBottom: '10px', color: '#1d4ed8' }}>⚙️ Call Settings</h4>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input
+            type="checkbox"
+            checked={videoRecordingEnabled}
+            onChange={(e) => setVideoRecordingEnabled(e.target.checked)}
+            disabled={connected}
+            style={{ cursor: connected ? 'not-allowed' : 'pointer' }}
+          />
+          <span style={{ fontWeight: '500' }}>🎥 Video Recording Enabled</span>
+        </label>
+        <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: 0, marginTop: '10px' }}>
+          When enabled, your camera turns on and the call is recorded to video. Applies to the next
+          call you start.
+        </p>
+      </div>
+
       {/* Failure Simulation Controls */}
       <div style={{
         backgroundColor: '#fef2f2',
@@ -532,8 +620,24 @@ function App() {
           </button>
         )}
         
-        <button 
-          onClick={stopCall} 
+        <button
+          onClick={stopCall}
+          disabled={!connected}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: !connected ? '#9ca3af' : '#f97316',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: !connected ? 'not-allowed' : 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          Stop Call (leave)
+        </button>
+
+        <button
+          onClick={endCall}
           disabled={!connected}
           style={{
             padding: '12px 24px',
@@ -545,9 +649,9 @@ function App() {
             fontSize: '16px'
           }}
         >
-          Stop Call
+          End Call
         </button>
-        
+
         <button 
           onClick={toggleMute} 
           disabled={!connected}
@@ -936,7 +1040,7 @@ function App() {
           <li>Speak naturally - the AI will respond with voice</li>
           <li>Use "Mute" to temporarily disable your microphone</li>
           <li>Say "goodbye" or "end call" to end the conversation</li>
-          <li>Click "Stop Call" to manually end the call</li>
+          <li>Click "End Call" to end the call, or click "Stop Call" to leave without ending (you can reconnect later)</li>
           <li><strong>Network Testing:</strong> Use "Test Network" before starting a call to check connectivity to TURN servers and WebSocket support</li>
           <li><strong>Persistent Storage:</strong> Call data is automatically saved and persists even after calls end</li>
           <li><strong>Reconnection:</strong> Use "Reconnect to Stored Call" to rejoin your previous session anytime</li>
