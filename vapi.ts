@@ -8,6 +8,7 @@ import DailyIframe, {
   DailyEventObjectLocalAudioLevel,
   DailyEventObjectNoPayload,
   DailyEventObjectParticipant,
+  DailyEventObjectTrack,
   DailyEventObjectRecordingError,
   DailyEventObjectRecordingStarted,
   DailyEventObjectRecordingStopped,
@@ -73,6 +74,7 @@ type VapiEventNames =
   | 'speech-end'
   | 'message'
   | 'video'
+  | 'audio'
   | 'error'
   | 'camera-error'
   | 'network-quality-change'
@@ -186,6 +188,7 @@ type VapiEventListeners = {
   'speech-start': () => void;
   'speech-end': () => void;
   video: (track: MediaStreamTrack) => void;
+  audio: (player: HTMLAudioElement) => void;
   message: (message: any) => void;
   error: (error: any) => void;
   'camera-error': (error: any) => void;
@@ -254,11 +257,22 @@ async function startAudioPlayer(
 async function buildAudioPlayer(
   track: MediaStreamTrack,
   participantId: string,
+  volume?: number | null,
 ) {
   const player = document.createElement('audio');
   player.dataset.participantId = participantId;
+  // Before play(), so an already-flowing track never plays at full volume first.
+  if (typeof volume === 'number') {
+    player.volume = volume;
+  }
   document.body.appendChild(player);
-  await startAudioPlayer(player, track);
+  try {
+    await startAudioPlayer(player, track);
+  } catch (error) {
+    // Appended before playback was attempted, so a failure would strand it.
+    player.remove();
+    throw error;
+  }
   return player;
 }
 
@@ -322,6 +336,15 @@ class VapiEventEmitter extends EventEmitter {
 export default class Vapi extends VapiEventEmitter {
   private started: boolean = false;
   private call: DailyCall | null = null;
+  private audioPlayer: HTMLAudioElement | null = null;
+  // Survives teardown so the caller's choice persists across calls.
+  private desiredVolume: number | null = null;
+  // Builds are tracked individually, not by one counter: several can be in
+  // flight, they finish out of order, and a teardown must invalidate only the
+  // builds belonging to the participant that left.
+  private audioBuildSequence = 0;
+  private pendingAudioBuilds = new Map<number, string>();
+  private attachedAudioBuild = 0;
   private speakingTimeout: NodeJS.Timeout | null = null;
   private dailyCallConfig: DailyAdvancedConfig = {};
   private dailyCallObject: DailyFactoryOptions = {};
@@ -351,6 +374,8 @@ export default class Vapi extends VapiEventEmitter {
       await this.call.destroy();
       this.call = null;
     }
+    this.audioPlayer = null;
+    this.pendingAudioBuilds.clear();
     this.speakingTimeout = null;
   }
 
@@ -600,24 +625,7 @@ export default class Vapi extends VapiEventEmitter {
         if (event) this.emit('recording-upload-completed', event);
       });
 
-      this.call.on('track-started', async (e) => {
-        if (!e || !e.participant) {
-          return;
-        }
-        if (e.participant?.local) {
-          return;
-        }
-        if (e.participant?.user_name !== 'Vapi Speaker') {
-          return;
-        }
-        if (e.track.kind === 'video') {
-          this.emit('video', e.track);
-        }
-        if (e.track.kind === 'audio') {
-          await buildAudioPlayer(e.track, e.participant.session_id);
-        }
-        this.call?.sendAppMessage('playable');
-      });
+      this.call.on('track-started', (e) => this.handleTrackStarted(e));
 
       this.call.on('participant-joined', (e) => {
         if (!e || !this.call) return;
@@ -640,7 +648,7 @@ export default class Vapi extends VapiEventEmitter {
         if (!e) {
           return;
         }
-        destroyAudioPlayer(e.participant.session_id);
+        this.detachAudioPlayer(e.participant.session_id);
       });
 
       // Stage 3: Mobile device handling and permissions
@@ -1019,6 +1027,8 @@ export default class Vapi extends VapiEventEmitter {
       await this.call.destroy();
       this.call = null;
     }
+    this.audioPlayer = null;
+    this.pendingAudioBuilds.clear();
     this.speakingTimeout = null;
   }
 
@@ -1029,6 +1039,177 @@ export default class Vapi extends VapiEventEmitter {
    */
   send(message: VapiClientToServerMessage): void {
     this.call?.sendAppMessage(JSON.stringify(message));
+  }
+
+  /**
+   * The two places this class touches the DOM, behind indirections so the
+   * lifecycle logic around them is testable without a browser.
+   */
+  private audioPlayerBuild(
+    track: MediaStreamTrack,
+    participantId: string,
+    volume?: number | null,
+  ): Promise<HTMLAudioElement> {
+    return buildAudioPlayer(track, participantId, volume);
+  }
+
+  private audioPlayerDestroy(participantId: string): void {
+    destroyAudioPlayer(participantId);
+  }
+
+  /**
+   * The remembered volume, bounded, or null if there is nothing to apply.
+   * Shared by both callers so they cannot disagree: the DOM throws on a
+   * non-finite or out-of-range volume, and that throw would stall the call.
+   */
+  private desiredVolumeResolve(): number | null {
+    if (this.desiredVolume === null || !Number.isFinite(this.desiredVolume)) {
+      return null;
+    }
+    return Math.min(1, Math.max(0, this.desiredVolume));
+  }
+
+  /** Shared by the initial and reconnect paths so the two cannot drift. */
+  private async handleTrackStarted(e?: DailyEventObjectTrack) {
+    if (!e || !e.participant) {
+      return;
+    }
+    if (e.participant?.local) {
+      return;
+    }
+    if (e.participant?.user_name !== 'Vapi Speaker') {
+      return;
+    }
+    if (e.track.kind === 'video') {
+      this.emitToConsumer('video', e.track);
+    }
+    if (e.track.kind === 'audio') {
+      // play() pends for the whole of media startup, so the call can end or
+      // the participant can leave while the player is still being built.
+      const call = this.call;
+      const build = ++this.audioBuildSequence;
+      this.pendingAudioBuilds.set(build, e.participant.session_id);
+
+      let player: HTMLAudioElement;
+      try {
+        player = await this.audioPlayerBuild(
+          e.track,
+          e.participant.session_id,
+          this.desiredVolumeResolve(),
+        );
+      } catch (error) {
+        // Usually autoplay policy, which is recoverable, so consumers get a
+        // signal to prompt for a gesture. Safe with no 'error' listener:
+        // emitToConsumer catches EventEmitter's unlistened-'error' throw.
+        this.pendingAudioBuilds.delete(build);
+        console.error('[vapi] could not start assistant audio', error);
+        this.emitToConsumer('error', {
+          type: 'audio-start-failed',
+          error: serializeError(error),
+        });
+        return;
+      }
+
+      const stillPending = this.pendingAudioBuilds.delete(build);
+      if (
+        !call ||
+        this.call !== call ||
+        !stillPending ||
+        build < this.attachedAudioBuild
+      ) {
+        player.remove();
+        return;
+      }
+      this.attachedAudioBuild = build;
+      this.attachAudioPlayer(player);
+    }
+    this.call?.sendAppMessage('playable');
+  }
+
+  /**
+   * Assigns before emitting, since emit is synchronous and a listener may call
+   * getAudioPlayer or setVolume during the event.
+   */
+  private attachAudioPlayer(player: HTMLAudioElement) {
+    // Renegotiation reuses the participant id, so a superseded element would
+    // still match the selector teardown uses and be removed in its place.
+    if (this.audioPlayer && this.audioPlayer !== player) {
+      this.audioPlayer.remove();
+    }
+    // Reapplied in case the volume changed while the player was building.
+    const volume = this.desiredVolumeResolve();
+    if (volume !== null) {
+      player.volume = volume;
+    }
+    this.audioPlayer = player;
+    this.emitToConsumer('audio', player);
+  }
+
+  /**
+   * A listener that throws must not take down the caller: track-started still
+   * has to signal that playback is ready. Not routed to the `error` event,
+   * which EventEmitter throws on when nothing is listening.
+   */
+  private emitToConsumer<E extends VapiEventNames>(
+    event: E,
+    ...args: Parameters<VapiEventListeners[E]>
+  ) {
+    try {
+      this.emit(event, ...args);
+    } catch (error) {
+      console.error(`[vapi] ${event} event listener threw`, error);
+    }
+  }
+
+  /** Drops the reference before removing, so nothing hands out a detached element. */
+  private detachAudioPlayer(participantId: string) {
+    if (this.audioPlayer?.dataset.participantId === participantId) {
+      this.audioPlayer = null;
+    }
+    // Scoped to this participant: the call check cannot catch these, since the
+    // call itself has not changed, and an unrelated leave must not invalidate
+    // the assistant's build.
+    for (const [build, id] of this.pendingAudioBuilds) {
+      if (id === participantId) {
+        this.pendingAudioBuilds.delete(build);
+      }
+    }
+    this.audioPlayerDestroy(participantId);
+  }
+
+  /**
+   * The <audio> element playing the assistant, or null before its track has
+   * arrived. Pair with the `audio` event when you need it the moment it exists.
+   */
+  public getAudioPlayer(): HTMLAudioElement | null {
+    return this.audioPlayer;
+  }
+
+  /**
+   * Sets assistant playback volume, 0 to 1.
+   *
+   * The setting is remembered, so it can be applied before the assistant's
+   * audio track has arrived and it survives across calls and mid-call track
+   * replacement. Callers do not have to race the start of the call.
+   *
+   * Values outside 0 to 1 are clamped and non-finite values are ignored, since
+   * the DOM rejects both rather than saturating.
+   *
+   * Only volume set through this method is remembered. Writing `volume`
+   * directly on the element from getAudioPlayer() or the `audio` event applies
+   * to that element alone, and is overwritten the next time one is attached.
+   *
+   * This is playback only. It does not change what the assistant hears, and it
+   * does not affect the levels reported by the `volume-level` event.
+   */
+  public setVolume(volume: number) {
+    if (!Number.isFinite(volume)) {
+      return;
+    }
+    this.desiredVolume = Math.min(1, Math.max(0, volume));
+    if (this.audioPlayer) {
+      this.audioPlayer.volume = this.desiredVolume;
+    }
   }
 
   public setMuted(mute: boolean) {
@@ -1312,24 +1493,7 @@ export default class Vapi extends VapiEventEmitter {
         if (event) this.emit('recording-upload-completed', event);
       });
 
-      this.call.on('track-started', async (e) => {
-        if (!e || !e.participant) {
-          return;
-        }
-        if (e.participant?.local) {
-          return;
-        }
-        if (e.participant?.user_name !== 'Vapi Speaker') {
-          return;
-        }
-        if (e.track.kind === 'video') {
-          this.emit('video', e.track);
-        }
-        if (e.track.kind === 'audio') {
-          await buildAudioPlayer(e.track, e.participant.session_id);
-        }
-        this.call?.sendAppMessage('playable');
-      });
+      this.call.on('track-started', (e) => this.handleTrackStarted(e));
 
       this.call.on('participant-joined', (e) => {
         if (!e || !this.call) return;
@@ -1352,7 +1516,7 @@ export default class Vapi extends VapiEventEmitter {
         if (!e) {
           return;
         }
-        destroyAudioPlayer(e.participant.session_id);
+        this.detachAudioPlayer(e.participant.session_id);
       });
 
       this.call.on('remote-participants-audio-level', (e) => {
