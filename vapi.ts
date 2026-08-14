@@ -393,6 +393,28 @@ export default class Vapi extends VapiEventEmitter {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  /**
+   * Reports a failed audio processing update on the SDK's `error` event.
+   *
+   * Daily applies input settings inside its remotely loaded call machine, so a
+   * failure - Krisp's `KrispInitError: Canceled`, for example - arrives as a
+   * rejected promise, which a synchronous try/catch around
+   * `updateInputSettings()` cannot see. Without this the rejection escapes to
+   * the page as an unhandled rejection instead of reaching the listeners
+   * consumers register. Audio processing is non-critical, so the call continues.
+   */
+  private emitAudioProcessingError(
+    stage: 'audio-processing-setup' | 'audio-processor-recovery',
+    error: unknown,
+  ) {
+    this.emit('error', {
+      type: `${stage}-error`,
+      stage,
+      error: serializeError(error),
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   async start(
     assistant?: CreateAssistantDTO | string,
     assistantOverrides?: AssistantOverrides,
@@ -836,6 +858,9 @@ export default class Vapi extends VapiEventEmitter {
             })
             .then(() => {
               safeSetLocalAudio(this.call, true);
+            })
+            .catch((error) => {
+              this.emitAudioProcessingError('audio-processor-recovery', error);
             });
         }
       });
@@ -850,14 +875,18 @@ export default class Vapi extends VapiEventEmitter {
       const audioProcessingStartTime = Date.now();
       
       try {
-        this.call.updateInputSettings({
-          audio: {
-            processor: {
-              type: 'noise-cancellation',
+        this.call
+          .updateInputSettings({
+            audio: {
+              processor: {
+                type: 'noise-cancellation',
+              },
             },
-          },
-        });
-        
+          })
+          .catch((error) => {
+            this.emitAudioProcessingError('audio-processing-setup', error);
+          });
+
         const audioProcessingDuration = Date.now() - audioProcessingStartTime;
         this.emit('call-start-progress', {
           stage: 'audio-processing-setup',
@@ -1516,6 +1545,9 @@ export default class Vapi extends VapiEventEmitter {
             })
             .then(() => {
               safeSetLocalAudio(this.call, true);
+            })
+            .catch((error) => {
+              this.emitAudioProcessingError('audio-processor-recovery', error);
             });
         }
       });
@@ -1677,14 +1709,18 @@ export default class Vapi extends VapiEventEmitter {
       const audioProcessingStartTime = Date.now();
       
       try {
-        this.call.updateInputSettings({
-          audio: {
-            processor: {
-              type: 'noise-cancellation',
+        this.call
+          .updateInputSettings({
+            audio: {
+              processor: {
+                type: 'noise-cancellation',
+              },
             },
-          },
-        });
-        
+          })
+          .catch((error) => {
+            this.emitAudioProcessingError('audio-processing-setup', error);
+          });
+
         const audioProcessingDuration = Date.now() - audioProcessingStartTime;
         this.emit('call-start-progress', {
           stage: 'audio-processing-setup',
