@@ -236,10 +236,18 @@ type WebCall = {
   artifactPlan?: { videoRecordingEnabled?: boolean };
   /**
    * The Vapi WebCall assistant. This is the assistant of the call.
-   * 
+   *
    * call.assistant
    */
   assistant?: { voice?: { provider?: string } };
+  /**
+   * The Vapi WebCall transport. When video recording is enabled, the server
+   * sets `callToken` to a Daily meeting token that auto-starts the cloud
+   * recording on join.
+   *
+   * call.transport
+   */
+  transport?: { callToken?: string };
 }
 
 async function startAudioPlayer(
@@ -512,6 +520,14 @@ export default class Vapi extends VapiEventEmitter {
 
       const isVideoEnabled = webCall?.assistant?.voice?.provider === 'tavus';
 
+      // When video recording is enabled, the server sends a Daily meeting
+      // token that auto-starts the cloud recording on join — more reliable
+      // than calling startRecording() from a weak client network. Older
+      // servers don't send one; then the client starts the recording itself.
+      const callToken = (
+        webCall?.transport as { callToken?: string } | undefined
+      )?.callToken;
+
       // Stage 2: Create Daily call object
       this.emit('call-start-progress', {
         stage: 'daily-call-object-creation',
@@ -573,6 +589,8 @@ export default class Vapi extends VapiEventEmitter {
           this.hasEmittedCallEndedStatus = true;
         }
         if (isVideoRecordingEnabled) {
+          // When using a token, the recording doesn't stop automatically on
+          // leave, so still stop it manually to preserve existing behavior.
           this.call?.stopRecording();
         }
         this.cleanup().catch(console.error);
@@ -651,6 +669,28 @@ export default class Vapi extends VapiEventEmitter {
         this.detachAudioPlayer(e.participant.session_id);
       });
 
+      // Registered before join(): a token-auto-started recording can begin
+      // while join() is still in flight, so a listener added after join
+      // could miss the event.
+      let recordingRequestedTime = 0;
+      if (isVideoRecordingEnabled) {
+        this.call.once('recording-started', () => {
+          const totalRecordingDelay = (new Date().getTime() - recordingRequestedTime) / 1000;
+          this.emit('call-start-progress', {
+            stage: 'video-recording-started',
+            status: 'completed',
+            timestamp: new Date().toISOString(),
+            metadata: { delaySeconds: totalRecordingDelay }
+          });
+
+          this.send({
+            type: 'control',
+            control: 'say-first-message',
+            videoRecordingStartDelaySeconds: totalRecordingDelay,
+          });
+        });
+      }
+
       // Stage 3: Mobile device handling and permissions
       const isMobile = this.isMobileDevice();
       this.emit('call-start-progress', {
@@ -688,11 +728,15 @@ export default class Vapi extends VapiEventEmitter {
       });
       
       const joinStartTime = Date.now();
-      
+      recordingRequestedTime = joinStartTime;
+
       try {
         await this.call.join({
           // @ts-expect-error This exists
           url: webCall.webCallUrl,
+          // daily-js rejects a `token` key that is present but undefined, so
+          // only include it when the server actually sent one.
+          ...(callToken ? { token: callToken } : {}),
           subscribeToTracksAutomatically: false,
         });
         
@@ -724,17 +768,26 @@ export default class Vapi extends VapiEventEmitter {
       }
 
       // Stage 5: Video recording setup (if enabled)
-      if (isVideoRecordingEnabled) {
+      if (isVideoRecordingEnabled && callToken) {
+        // The meeting token auto-started the recording at join, so there is
+        // nothing to request from the client.
+        this.emit('call-start-progress', {
+          stage: 'video-recording-setup',
+          status: 'completed',
+          timestamp: new Date().toISOString(),
+          metadata: { action: 'auto-started-via-meeting-token' }
+        });
+      } else if (isVideoRecordingEnabled) {
         this.emit('call-start-progress', {
           stage: 'video-recording-setup',
           status: 'started',
           timestamp: new Date().toISOString()
         });
-        
-        const recordingRequestedTime = new Date().getTime();
+
         const recordingStartTime = Date.now();
 
         try {
+          recordingRequestedTime = new Date().getTime();
           this.startRecording();
 
           const recordingSetupDuration = Date.now() - recordingStartTime;
@@ -743,22 +796,6 @@ export default class Vapi extends VapiEventEmitter {
             status: 'completed',
             duration: recordingSetupDuration,
             timestamp: new Date().toISOString()
-          });
-
-          this.call.once('recording-started', () => {
-            const totalRecordingDelay = (new Date().getTime() - recordingRequestedTime) / 1000;
-            this.emit('call-start-progress', {
-              stage: 'video-recording-started',
-              status: 'completed',
-              timestamp: new Date().toISOString(),
-              metadata: { delaySeconds: totalRecordingDelay }
-            });
-            
-            this.send({
-              type: 'control',
-              control: 'say-first-message',
-              videoRecordingStartDelaySeconds: totalRecordingDelay,
-            });
           });
         } catch (error) {
           const recordingSetupDuration = Date.now() - recordingStartTime;
@@ -1423,6 +1460,11 @@ export default class Vapi extends VapiEventEmitter {
       const isVideoRecordingEnabled = webCall?.artifactPlan?.videoRecordingEnabled ?? false;
       const isVideoEnabled = webCall?.assistant?.voice?.provider === 'tavus';
 
+      // Same auto-start token as in start(). Rejoining with it while the
+      // recording is still running is safe; if the recording stopped when the
+      // user left, the token starts a new one.
+      const callToken = webCall?.transport?.callToken;
+
       // Stage 1: Create Daily call object
       this.emit('call-start-progress', {
         stage: 'daily-call-object-creation',
@@ -1465,6 +1507,8 @@ export default class Vapi extends VapiEventEmitter {
           this.hasEmittedCallEndedStatus = true;
         }
         if (isVideoRecordingEnabled) {
+          // When using a token, the recording doesn't stop automatically on
+          // leave, so still stop it manually to preserve existing behavior.
           this.call?.stopRecording();
         }
         this.cleanup().catch(console.error);
@@ -1576,6 +1620,28 @@ export default class Vapi extends VapiEventEmitter {
         }
       });
 
+      // Registered before join(): a token-auto-started recording can begin
+      // while join() is still in flight, so a listener added after join
+      // could miss the event.
+      let recordingRequestedTime = 0;
+      if (isVideoRecordingEnabled) {
+        this.call.once('recording-started', () => {
+          const totalRecordingDelay = (new Date().getTime() - recordingRequestedTime) / 1000;
+          this.emit('call-start-progress', {
+            stage: 'video-recording-started',
+            status: 'completed',
+            timestamp: new Date().toISOString(),
+            metadata: { delaySeconds: totalRecordingDelay }
+          });
+
+          this.send({
+            type: 'control',
+            control: 'say-first-message',
+            videoRecordingStartDelaySeconds: totalRecordingDelay,
+          });
+        });
+      }
+
       // Stage 2: Mobile device handling and permissions
       const isMobile = this.isMobileDevice();
       this.emit('call-start-progress', {
@@ -1613,8 +1679,12 @@ export default class Vapi extends VapiEventEmitter {
       });
       
       const joinStartTime = Date.now();
+      recordingRequestedTime = joinStartTime;
       await this.call.join({
         url: webCall.webCallUrl,
+        // daily-js rejects a `token` key that is present but undefined, so
+        // only include it when the server actually sent one.
+        ...(callToken ? { token: callToken } : {}),
         subscribeToTracksAutomatically: false,
       });
       
@@ -1627,17 +1697,26 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       // Stage 4: Video recording setup (if enabled)
-      if (isVideoRecordingEnabled) {
+      if (isVideoRecordingEnabled && callToken) {
+        // The meeting token auto-started the recording at join, so there is
+        // nothing to request from the client.
+        this.emit('call-start-progress', {
+          stage: 'video-recording-setup',
+          status: 'completed',
+          timestamp: new Date().toISOString(),
+          metadata: { action: 'auto-started-via-meeting-token' }
+        });
+      } else if (isVideoRecordingEnabled) {
         this.emit('call-start-progress', {
           stage: 'video-recording-setup',
           status: 'started',
           timestamp: new Date().toISOString()
         });
-        
+
         const recordingStartTime = Date.now();
-        const recordingRequestedTime = new Date().getTime();
 
         try {
+          recordingRequestedTime = new Date().getTime();
           this.startRecording();
 
           const recordingSetupDuration = Date.now() - recordingStartTime;
@@ -1646,22 +1725,6 @@ export default class Vapi extends VapiEventEmitter {
             status: 'completed',
             duration: recordingSetupDuration,
             timestamp: new Date().toISOString()
-          });
-
-          this.call.once('recording-started', () => {
-            const totalRecordingDelay = (new Date().getTime() - recordingRequestedTime) / 1000;
-            this.emit('call-start-progress', {
-              stage: 'video-recording-started',
-              status: 'completed',
-              timestamp: new Date().toISOString(),
-              metadata: { delaySeconds: totalRecordingDelay }
-            });
-            
-            this.send({
-              type: 'control',
-              control: 'say-first-message',
-              videoRecordingStartDelaySeconds: totalRecordingDelay,
-            });
           });
         } catch (error) {
           const recordingSetupDuration = Date.now() - recordingStartTime;
