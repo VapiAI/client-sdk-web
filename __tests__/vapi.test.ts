@@ -105,6 +105,8 @@ describe("Vapi", () => {
       setLocalAudio: jest.fn(),
       localAudio: jest.fn(),
       destroy: jest.fn().mockResolvedValue(undefined),
+      startRecording: jest.fn(),
+      stopRecording: jest.fn(),
     };
     // Initialize Vapi instance and inject the mock
     vapi = new Vapi("dummy_token");
@@ -252,6 +254,32 @@ describe("Vapi", () => {
 
       expect(player.volume).toBe(1);
       expect(vapi.getAudioPlayer()).toBeNull();
+    });
+  });
+
+  describe("startRecording", () => {
+    it("should start a recording", () => {
+      vapi.startRecording();
+      expect(mockCall.startRecording).toHaveBeenCalled();
+    });
+
+    it("should throw when call object is not available", () => {
+      vapi["call"] = null; // Simulate call object not being available
+      expect(() => vapi.startRecording()).toThrow(
+        "Call object is not available."
+      );
+    });
+  });
+
+  describe("stopRecording", () => {
+    it("should stop the recording", () => {
+      vapi.stopRecording();
+      expect(mockCall.stopRecording).toHaveBeenCalled();
+    });
+
+    it("should not throw when call object is not available", () => {
+      vapi["call"] = null; // Simulate call object not being available
+      expect(() => vapi.stopRecording()).not.toThrow();
     });
   });
 });

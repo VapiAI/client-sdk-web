@@ -146,6 +146,20 @@ vapi.on('error', (e) => {
 });
 ```
 
+## Recording
+
+When video recording is enabled on the call's artifact plan, Vapi starts a recording automatically when the call begins. Recording start is asynchronous: success is signaled by the `recording-started` event and failure by the `recording-error` event.
+
+A failed recording start is not retried automatically. Use `startRecording()` and `stopRecording()` to control the recording yourself. For example, to retry after a failure:
+
+```javascript
+vapi.on('recording-error', (e) => {
+  console.error('Recording failed', e);
+  // Retry after a short delay
+  setTimeout(() => vapi.startRecording(), 5000);
+});
+```
+
 ## Events
 
 You can listen to the following events:
