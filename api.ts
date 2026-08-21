@@ -11,7 +11,7 @@
  */
 
 export interface FallbackTranscriberPlan {
-  transcribers: (
+  transcribers?: (
     | FallbackAssemblyAITranscriber
     | FallbackAzureSpeechTranscriber
     | FallbackCustomTranscriber
@@ -23,6 +23,8 @@ export interface FallbackTranscriberPlan {
     | FallbackSpeechmaticsTranscriber
     | FallbackOpenAITranscriber
     | FallbackCartesiaTranscriber
+    | FallbackSonioxTranscriber
+    | FallbackXaiTranscriber
   )[];
 }
 
@@ -30,7 +32,7 @@ export interface AssemblyAITranscriber {
   /** This is the transcription provider that will be used. */
   provider: "assembly-ai";
   /** This is the language that will be set for the transcription. */
-  language?: "en";
+  language?: "multi" | "en";
   /**
    * Transcripts below this confidence threshold will be discarded.
    *
@@ -90,6 +92,52 @@ export interface AssemblyAITranscriber {
    * @example true
    */
   vadAssistedEndpointingEnabled?: boolean;
+  /**
+   * This is the transcription mode used by the `universal-3-5-pro` speech model. Only applies to the `universal-3-5-pro` speech model.
+   *
+   * @default 'balanced'
+   */
+  mode?: "max_accuracy" | "min_latency" | "balanced";
+  /**
+   * This is a prompt that provides additional context to the transcription model. Only applies to the `universal-3-5-pro` speech model.
+   * @maxLength 1750
+   */
+  prompt?: string;
+  /**
+   * This is context about the voice agent that guides the transcription model. Only applies to the `universal-3-5-pro` speech model.
+   * @maxLength 1750
+   */
+  agentContext?: string;
+  /** These are language codes used to steer automatic language detection. Only applies to the `universal-3-5-pro` speech model. */
+  languageCodes?:
+    | "en"
+    | "es"
+    | "fr"
+    | "de"
+    | "it"
+    | "pt"
+    | "tr"
+    | "nl"
+    | "sv"
+    | "no"
+    | "da"
+    | "fi"
+    | "hi"
+    | "vi"
+    | "ar"
+    | "he"
+    | "ja"
+    | "zh";
+  /**
+   * This is the speech model used for the streaming session.
+   * Keyterms prompting is supported on universal-streaming-english and universal-3-5-pro.
+   * universal-3-5-pro is AssemblyAI's most accurate voice-agent model.
+   * @default 'universal-streaming-english'
+   */
+  speechModel?:
+    | "universal-streaming-english"
+    | "universal-streaming-multilingual"
+    | "universal-3-5-pro";
   /** The WebSocket URL that the transcriber connects to. */
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
@@ -97,7 +145,7 @@ export interface AssemblyAITranscriber {
   /**
    * Keyterms prompting improves recognition accuracy for specific words and phrases.
    * Can include up to 100 keyterms, each up to 50 characters.
-   * Costs an additional $0.04/hour when enabled.
+   * Costs an additional $0.04/hour on universal-streaming-english and is included at no extra cost on universal-3-5-pro.
    */
   keytermsPrompt?: string[];
   /** The duration of the end utterance silence threshold in milliseconds. */
@@ -107,7 +155,7 @@ export interface AssemblyAITranscriber {
    * Set to `true` to not receive partial transcripts. Defaults to `false`.
    */
   disablePartialTranscripts?: boolean;
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
@@ -273,13 +321,13 @@ export interface AzureSpeechTranscriber {
    * @max 70000
    */
   segmentationMaximumTimeMs?: number;
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
 export interface CartesiaTranscriber {
   provider: "cartesia";
-  model?: "ink-whisper";
+  model?: "ink-whisper" | "ink-2";
   language?:
     | "aa"
     | "ab"
@@ -466,7 +514,7 @@ export interface CartesiaTranscriber {
     | "za"
     | "zh"
     | "zu";
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
@@ -524,6 +572,8 @@ export interface Server {
    * @example false
    */
   staticIpAddressesEnabled?: boolean;
+  /** This is the paths to encrypt in the request body if credentialId and encryptionPlan are defined. */
+  encryptedPaths?: string[];
   /** This is where the request will be sent. */
   url?: string;
   /**
@@ -586,7 +636,7 @@ export interface CustomTranscriber {
    * ```
    */
   server: Server;
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
@@ -628,14 +678,18 @@ export interface DeepgramTranscriber {
     | "base-video"
     | "whisper"
     | "flux-general-en"
+    | "flux-general-multi"
     | string;
   /** This is the language that will be set for the transcription. The list of languages Deepgram supports can be found here: https://developers.deepgram.com/docs/models-languages-overview */
   language?:
     | "ar"
     | "az"
     | "ba"
+    | "be"
     | "bg"
+    | "bn"
     | "br"
+    | "bs"
     | "ca"
     | "cs"
     | "da"
@@ -656,6 +710,7 @@ export interface DeepgramTranscriber {
     | "es-LATAM"
     | "et"
     | "eu"
+    | "fa"
     | "fi"
     | "fr"
     | "fr-CA"
@@ -664,6 +719,7 @@ export interface DeepgramTranscriber {
     | "he"
     | "hi"
     | "hi-Latn"
+    | "hr"
     | "hu"
     | "id"
     | "is"
@@ -677,6 +733,7 @@ export interface DeepgramTranscriber {
     | "lt"
     | "lv"
     | "mk"
+    | "mr"
     | "ms"
     | "multi"
     | "nl"
@@ -698,8 +755,10 @@ export interface DeepgramTranscriber {
     | "sv-SE"
     | "ta"
     | "taq"
+    | "te"
     | "th"
     | "th-TH"
+    | "tl"
     | "tr"
     | "tt"
     | "uk"
@@ -735,6 +794,29 @@ export interface DeepgramTranscriber {
    */
   numerals?: boolean;
   /**
+   * If set to true, Deepgram will replace profanity in transcripts with surrounding asterisks, e.g. "f***".
+   *
+   * @default false
+   * @example false
+   */
+  profanityFilter?: boolean;
+  /**
+   * Enables redaction of sensitive information from transcripts.
+   *
+   * Options include:
+   * - "pci": Redacts credit card numbers, expiration dates, and CVV.
+   * - "pii": Redacts personally identifiable information (names, locations, identifying numbers, etc.).
+   * - "phi": Redacts protected health information (medical conditions, drugs, injuries, etc.).
+   * - "numbers": Redacts numerical and identifying entities (dates, account numbers, SSNs, etc.).
+   *
+   * Multiple values can be provided to redact different categories simultaneously.
+   * Redacted content is replaced with entity labels like [CREDIT_CARD_1], [SSN_1], etc.
+   *
+   * See https://developers.deepgram.com/docs/redaction for details.
+   * @example ["pci","phi"]
+   */
+  redaction?: "pci" | "pii" | "phi" | "numbers";
+  /**
    * Transcripts below this confidence threshold will be discarded.
    *
    * @default 0.4
@@ -743,13 +825,6 @@ export interface DeepgramTranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
-  /**
-   * Eager end-of-turn confidence required to fire a eager end-of-turn event. Setting a value here will enable EagerEndOfTurn and SpeechResumed events. It is disabled by default. Only used with Flux models.
-   * @min 0
-   * @max 1
-   * @example 0.3
-   */
-  eagerEotThreshold?: number;
   /**
    * End-of-turn confidence required to finish a turn. Only used with Flux models.
    *
@@ -768,6 +843,13 @@ export interface DeepgramTranscriber {
    * @example 5000
    */
   eotTimeoutMs?: number;
+  /**
+   * Language hints to bias Flux Multilingual (`flux-general-multi`) toward specific languages.
+   * Provide BCP-47 language codes (e.g. "en", "es", "fr"). Multiple hints can be given for
+   * multilingual or code-switching scenarios. Omit for auto-detection. Only used with `flux-general-multi`.
+   * @example ["en","es"]
+   */
+  languages?: string[];
   /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
   /** Keyterm Prompting allows you improve Keyword Recall Rate (KRR) for important keyterms or phrases up to 90%. */
@@ -785,7 +867,7 @@ export interface DeepgramTranscriber {
    * @max 500
    */
   endpointing?: number;
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
@@ -793,7 +875,8 @@ export interface ElevenLabsTranscriber {
   /** This is the transcription provider that will be used. */
   provider: "11labs";
   /** This is the model that will be used for the transcription. */
-  model?: "scribe_v1";
+  model?: "scribe_v1" | "scribe_v2" | "scribe_v2_realtime";
+  /** This is the language that will be used for the transcription. */
   language?:
     | "aa"
     | "ab"
@@ -980,7 +1063,35 @@ export interface ElevenLabsTranscriber {
     | "za"
     | "zh"
     | "zu";
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /**
+   * This is the number of seconds of silence before VAD commits (0.3-3.0).
+   * @min 0.3
+   * @max 3
+   * @example 1.5
+   */
+  silenceThresholdSeconds?: number;
+  /**
+   * This is the VAD sensitivity (0.1-0.9, lower indicates more sensitive).
+   * @min 0.1
+   * @max 0.9
+   * @example 0.4
+   */
+  confidenceThreshold?: number;
+  /**
+   * This is the minimum speech duration for VAD (50-2000ms).
+   * @min 50
+   * @max 2000
+   * @example 100
+   */
+  minSpeechDurationMs?: number;
+  /**
+   * This is the minimum silence duration for VAD (50-2000ms).
+   * @min 50
+   * @max 2000
+   * @example 100
+   */
+  minSilenceDurationMs?: number;
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
@@ -1108,7 +1219,7 @@ export interface GladiaTranscriber {
     | "yi"
     | "yo";
   /** Defines the languages to use for the transcription. Required when languageBehaviour is 'manual'. */
-  languages?:
+  languages?: (
     | "af"
     | "sq"
     | "am"
@@ -1207,7 +1318,8 @@ export interface GladiaTranscriber {
     | "vi"
     | "cy"
     | "yi"
-    | "yo";
+    | "yo"
+  )[];
   /**
    * Provides a custom vocabulary to the model to improve accuracy of transcribing context specific words, technical terms, names, etc. If empty, this argument is ignored.
    * ⚠️ Warning ⚠️: Please be aware that the transcription_hint field has a character limit of 600. If you provide a transcription_hint longer than 600 characters, it will be automatically truncated to meet this limit.
@@ -1265,7 +1377,420 @@ export interface GladiaTranscriber {
    * @example false
    */
   receivePartialTranscripts?: boolean;
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
+}
+
+export interface SonioxContextGeneralItem {
+  /**
+   * The key describing the type of context (e.g., "domain", "topic", "doctor", "organization").
+   * @minLength 1
+   * @example "domain"
+   */
+  key: string;
+  /**
+   * The value for the context key (e.g., "Healthcare", "Diabetes management consultation").
+   * @minLength 1
+   * @example "Healthcare"
+   */
+  value: string;
+}
+
+export interface SonioxTranscriber {
+  provider: "soniox";
+  /** The Soniox model to use for transcription. */
+  model?: "stt-rt-v4" | "stt-rt-v5";
+  /** Single language for transcription as an ISO 639-1 code (e.g., `en`, `es`). For multi-language hints or to enable Soniox auto-detect, use `languages` instead — when `languages` is set (including to an empty array), this field is ignored when building the Soniox request. Defaults to `en` if neither this nor `languages` is set. */
+  language?:
+    | "aa"
+    | "ab"
+    | "ae"
+    | "af"
+    | "ak"
+    | "am"
+    | "an"
+    | "ar"
+    | "as"
+    | "av"
+    | "ay"
+    | "az"
+    | "ba"
+    | "be"
+    | "bg"
+    | "bh"
+    | "bi"
+    | "bm"
+    | "bn"
+    | "bo"
+    | "br"
+    | "bs"
+    | "ca"
+    | "ce"
+    | "ch"
+    | "co"
+    | "cr"
+    | "cs"
+    | "cu"
+    | "cv"
+    | "cy"
+    | "da"
+    | "de"
+    | "dv"
+    | "dz"
+    | "ee"
+    | "el"
+    | "en"
+    | "eo"
+    | "es"
+    | "et"
+    | "eu"
+    | "fa"
+    | "ff"
+    | "fi"
+    | "fj"
+    | "fo"
+    | "fr"
+    | "fy"
+    | "ga"
+    | "gd"
+    | "gl"
+    | "gn"
+    | "gu"
+    | "gv"
+    | "ha"
+    | "he"
+    | "hi"
+    | "ho"
+    | "hr"
+    | "ht"
+    | "hu"
+    | "hy"
+    | "hz"
+    | "ia"
+    | "id"
+    | "ie"
+    | "ig"
+    | "ii"
+    | "ik"
+    | "io"
+    | "is"
+    | "it"
+    | "iu"
+    | "ja"
+    | "jv"
+    | "ka"
+    | "kg"
+    | "ki"
+    | "kj"
+    | "kk"
+    | "kl"
+    | "km"
+    | "kn"
+    | "ko"
+    | "kr"
+    | "ks"
+    | "ku"
+    | "kv"
+    | "kw"
+    | "ky"
+    | "la"
+    | "lb"
+    | "lg"
+    | "li"
+    | "ln"
+    | "lo"
+    | "lt"
+    | "lu"
+    | "lv"
+    | "mg"
+    | "mh"
+    | "mi"
+    | "mk"
+    | "ml"
+    | "mn"
+    | "mr"
+    | "ms"
+    | "mt"
+    | "my"
+    | "na"
+    | "nb"
+    | "nd"
+    | "ne"
+    | "ng"
+    | "nl"
+    | "nn"
+    | "no"
+    | "nr"
+    | "nv"
+    | "ny"
+    | "oc"
+    | "oj"
+    | "om"
+    | "or"
+    | "os"
+    | "pa"
+    | "pi"
+    | "pl"
+    | "ps"
+    | "pt"
+    | "qu"
+    | "rm"
+    | "rn"
+    | "ro"
+    | "ru"
+    | "rw"
+    | "sa"
+    | "sc"
+    | "sd"
+    | "se"
+    | "sg"
+    | "si"
+    | "sk"
+    | "sl"
+    | "sm"
+    | "sn"
+    | "so"
+    | "sq"
+    | "sr"
+    | "ss"
+    | "st"
+    | "su"
+    | "sv"
+    | "sw"
+    | "ta"
+    | "te"
+    | "tg"
+    | "th"
+    | "ti"
+    | "tk"
+    | "tl"
+    | "tn"
+    | "to"
+    | "tr"
+    | "ts"
+    | "tt"
+    | "tw"
+    | "ty"
+    | "ug"
+    | "uk"
+    | "ur"
+    | "uz"
+    | "ve"
+    | "vi"
+    | "vo"
+    | "wa"
+    | "wo"
+    | "xh"
+    | "yi"
+    | "yue"
+    | "yo"
+    | "za"
+    | "zh"
+    | "zu";
+  /** Language hints sent to Soniox as `language_hints`. Provide `[lang1, lang2, ...]` (ISO 639-1 codes) to bias recognition toward specific languages, or provide an explicit empty array `[]` to enable Soniox auto-detect across all 60+ supported languages. When set (including the empty array), this field takes precedence over the singular `language` field. When omitted, falls back to the singular `language` (which defaults to `en` if also unset). Best accuracy is achieved with a single language. */
+  languages?: (
+    | "aa"
+    | "ab"
+    | "ae"
+    | "af"
+    | "ak"
+    | "am"
+    | "an"
+    | "ar"
+    | "as"
+    | "av"
+    | "ay"
+    | "az"
+    | "ba"
+    | "be"
+    | "bg"
+    | "bh"
+    | "bi"
+    | "bm"
+    | "bn"
+    | "bo"
+    | "br"
+    | "bs"
+    | "ca"
+    | "ce"
+    | "ch"
+    | "co"
+    | "cr"
+    | "cs"
+    | "cu"
+    | "cv"
+    | "cy"
+    | "da"
+    | "de"
+    | "dv"
+    | "dz"
+    | "ee"
+    | "el"
+    | "en"
+    | "eo"
+    | "es"
+    | "et"
+    | "eu"
+    | "fa"
+    | "ff"
+    | "fi"
+    | "fj"
+    | "fo"
+    | "fr"
+    | "fy"
+    | "ga"
+    | "gd"
+    | "gl"
+    | "gn"
+    | "gu"
+    | "gv"
+    | "ha"
+    | "he"
+    | "hi"
+    | "ho"
+    | "hr"
+    | "ht"
+    | "hu"
+    | "hy"
+    | "hz"
+    | "ia"
+    | "id"
+    | "ie"
+    | "ig"
+    | "ii"
+    | "ik"
+    | "io"
+    | "is"
+    | "it"
+    | "iu"
+    | "ja"
+    | "jv"
+    | "ka"
+    | "kg"
+    | "ki"
+    | "kj"
+    | "kk"
+    | "kl"
+    | "km"
+    | "kn"
+    | "ko"
+    | "kr"
+    | "ks"
+    | "ku"
+    | "kv"
+    | "kw"
+    | "ky"
+    | "la"
+    | "lb"
+    | "lg"
+    | "li"
+    | "ln"
+    | "lo"
+    | "lt"
+    | "lu"
+    | "lv"
+    | "mg"
+    | "mh"
+    | "mi"
+    | "mk"
+    | "ml"
+    | "mn"
+    | "mr"
+    | "ms"
+    | "mt"
+    | "my"
+    | "na"
+    | "nb"
+    | "nd"
+    | "ne"
+    | "ng"
+    | "nl"
+    | "nn"
+    | "no"
+    | "nr"
+    | "nv"
+    | "ny"
+    | "oc"
+    | "oj"
+    | "om"
+    | "or"
+    | "os"
+    | "pa"
+    | "pi"
+    | "pl"
+    | "ps"
+    | "pt"
+    | "qu"
+    | "rm"
+    | "rn"
+    | "ro"
+    | "ru"
+    | "rw"
+    | "sa"
+    | "sc"
+    | "sd"
+    | "se"
+    | "sg"
+    | "si"
+    | "sk"
+    | "sl"
+    | "sm"
+    | "sn"
+    | "so"
+    | "sq"
+    | "sr"
+    | "ss"
+    | "st"
+    | "su"
+    | "sv"
+    | "sw"
+    | "ta"
+    | "te"
+    | "tg"
+    | "th"
+    | "ti"
+    | "tk"
+    | "tl"
+    | "tn"
+    | "to"
+    | "tr"
+    | "ts"
+    | "tt"
+    | "tw"
+    | "ty"
+    | "ug"
+    | "uk"
+    | "ur"
+    | "uz"
+    | "ve"
+    | "vi"
+    | "vo"
+    | "wa"
+    | "wo"
+    | "xh"
+    | "yi"
+    | "yue"
+    | "yo"
+    | "za"
+    | "zh"
+    | "zu"
+  )[];
+  /** When `true`, Soniox strictly restricts transcription to the languages in `languages` (or the singular `language` if `languages` is unset). When `false`, Soniox biases toward those languages but still allows transcription in other languages. Has no effect when no language hints are sent (e.g., `languages: []` for auto-detect). Defaults to `true` (strict mode). */
+  languageHintsStrict?: boolean;
+  /**
+   * Maximum delay in milliseconds between when the speaker stops and when the endpoint is detected. Lower values mean faster turn-taking but more false endpoints. Range: 500-3000. Default: 500.
+   * @min 500
+   * @max 3000
+   */
+  maxEndpointDelayMs?: number;
+  /** Custom vocabulary terms to boost recognition accuracy. Useful for brand names, product names, and domain-specific terminology. Maps to Soniox context.terms. */
+  customVocabulary?: string[];
+  /**
+   * General context key-value pairs that guide the AI model during transcription. Helps adapt vocabulary to the correct domain, improving accuracy. Recommended: 10 or fewer pairs. Maps to Soniox context.general.
+   * @example [{"key":"domain","value":"Healthcare"},{"key":"topic","value":"Diabetes management consultation"}]
+   */
+  contextGeneral?: SonioxContextGeneralItem[];
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
@@ -1291,6 +1816,7 @@ export interface SpeechmaticsTranscriber {
   language?:
     | "auto"
     | "ar"
+    | "ar_en"
     | "ba"
     | "eu"
     | "be"
@@ -1322,8 +1848,10 @@ export interface SpeechmaticsTranscriber {
     | "lv"
     | "lt"
     | "ms"
+    | "en_ms"
     | "mt"
     | "cmn"
+    | "cmn_en"
     | "mr"
     | "mn"
     | "no"
@@ -1335,9 +1863,12 @@ export interface SpeechmaticsTranscriber {
     | "sk"
     | "sl"
     | "es"
+    | "en_es"
     | "sw"
     | "sv"
+    | "tl"
     | "ta"
+    | "en_ta"
     | "th"
     | "tr"
     | "uk"
@@ -1370,29 +1901,6 @@ export interface SpeechmaticsTranscriber {
    */
   enableDiarization?: boolean;
   /**
-   * This sets the maximum number of speakers to detect when diarization is enabled. Only used when enableDiarization is true.
-   *
-   * @default 2
-   * @min 2
-   * @max 50
-   * @default 2
-   * @example 4
-   */
-  maxSpeakers?: number;
-  /**
-   * Provides friendly speaker labels that map to diarization indices (Speaker 1 -> labels[0]).
-   * @example ["Agent","Customer"]
-   */
-  speakerLabels?: string[];
-  /**
-   * This enables partial transcripts during speech recognition. When false, only final transcripts are returned.
-   *
-   * @default true
-   * @default true
-   * @example false
-   */
-  enablePartials?: boolean;
-  /**
    * This sets the maximum delay in milliseconds for partial transcripts. Balances latency and accuracy.
    *
    * @default 3000
@@ -1405,37 +1913,13 @@ export interface SpeechmaticsTranscriber {
   /** @example [{"content":"Speechmatics","soundsLike":["speech mattix"]}] */
   customVocabulary: SpeechmaticsCustomVocabularyItem[];
   /**
-   * This controls how numbers are formatted in the transcription output.
+   * This controls how numbers, dates, currencies, and other entities are formatted in the transcription output.
    *
    * @default 'written'
    * @default "written"
    * @example "spoken"
    */
   numeralStyle?: "written" | "spoken";
-  /**
-   * This enables detection of non-speech audio events like music, applause, and laughter.
-   *
-   * @default false
-   * @default false
-   * @example true
-   */
-  enableEntities?: boolean;
-  /**
-   * This enables automatic punctuation in the transcription output.
-   *
-   * @default true
-   * @default true
-   * @example false
-   */
-  enablePunctuation?: boolean;
-  /**
-   * This enables automatic capitalization in the transcription output.
-   *
-   * @default true
-   * @default true
-   * @example false
-   */
-  enableCapitalization?: boolean;
   /**
    * This is the sensitivity level for end-of-turn detection, which determines when a speaker has finished talking. Higher values are more sensitive.
    *
@@ -1448,6 +1932,8 @@ export interface SpeechmaticsTranscriber {
   endOfTurnSensitivity?: number;
   /**
    * This enables removal of disfluencies (um, uh) from the transcript to create cleaner, more professional output.
+   *
+   * This is only supported for the English language transcriber.
    *
    * @default false
    * @default false
@@ -1464,7 +1950,7 @@ export interface SpeechmaticsTranscriber {
    * @example 0.2
    */
   minimumSpeechDuration?: number;
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
@@ -1575,7 +2061,7 @@ export interface TalkscriberTranscriber {
     | "jw"
     | "su"
     | "yue";
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
@@ -1584,6 +2070,9 @@ export interface GoogleTranscriber {
   provider: "google";
   /** This is the model that will be used for the transcription. */
   model?:
+    | "gemini-3.5-flash"
+    | "gemini-3.1-flash-lite"
+    | "gemini-3-flash-preview"
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
@@ -1639,7 +2128,7 @@ export interface GoogleTranscriber {
     | "Turkish"
     | "Ukrainian"
     | "Vietnamese";
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
 }
 
@@ -1707,15 +2196,457 @@ export interface OpenAITranscriber {
     | "ur"
     | "vi"
     | "cy";
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
   fallbackPlan?: FallbackTranscriberPlan;
+}
+
+export interface XaiTranscriber {
+  provider: "xai";
+  /** The xAI speech-to-text model to use. xAI currently exposes a single STT model — placeholder for future model selection. */
+  model?: "default";
+  /** Single language for transcription as an ISO 639-1 code (e.g., `en`, `es`). Defaults to `en` if not set. xAI auto-detects when omitted via the API but Vapi defaults to English for deterministic behavior. */
+  language?:
+    | "ar"
+    | "cs"
+    | "da"
+    | "nl"
+    | "en"
+    | "fil"
+    | "fr"
+    | "de"
+    | "hi"
+    | "id"
+    | "it"
+    | "ja"
+    | "ko"
+    | "mk"
+    | "ms"
+    | "fa"
+    | "pl"
+    | "pt"
+    | "ro"
+    | "ru"
+    | "es"
+    | "sv"
+    | "th"
+    | "tr"
+    | "vi";
+  /** This is the plan for transcriber provider fallbacks in the event that the primary transcriber provider fails. */
+  fallbackPlan?: FallbackTranscriberPlan;
+}
+
+export interface VapiTranscriber {
+  provider: "vapi";
+  /**
+   * This is the version of the Vapi transcriber. Vapi manages the underlying
+   * model and routing. When omitted, the latest version is used.
+   *
+   * Managed version params are additive-only and `'latest'` is an auto-update
+   * channel — see the param-evolution INVARIANT in `vapiManaged/types.ts`.
+   */
+  version?: "latest" | "1";
+  /**
+   * This is the language for transcription as an ISO 639-1 code (e.g. `en`).
+   * Selecting a language locks transcription to it. For multiple languages,
+   * use `languages` instead. When neither `language` nor `languages` is set,
+   * the transcriber auto-detects the spoken language.
+   */
+  language?:
+    | "aa"
+    | "ab"
+    | "ae"
+    | "af"
+    | "ak"
+    | "am"
+    | "an"
+    | "ar"
+    | "as"
+    | "av"
+    | "ay"
+    | "az"
+    | "ba"
+    | "be"
+    | "bg"
+    | "bh"
+    | "bi"
+    | "bm"
+    | "bn"
+    | "bo"
+    | "br"
+    | "bs"
+    | "ca"
+    | "ce"
+    | "ch"
+    | "co"
+    | "cr"
+    | "cs"
+    | "cu"
+    | "cv"
+    | "cy"
+    | "da"
+    | "de"
+    | "dv"
+    | "dz"
+    | "ee"
+    | "el"
+    | "en"
+    | "eo"
+    | "es"
+    | "et"
+    | "eu"
+    | "fa"
+    | "ff"
+    | "fi"
+    | "fj"
+    | "fo"
+    | "fr"
+    | "fy"
+    | "ga"
+    | "gd"
+    | "gl"
+    | "gn"
+    | "gu"
+    | "gv"
+    | "ha"
+    | "he"
+    | "hi"
+    | "ho"
+    | "hr"
+    | "ht"
+    | "hu"
+    | "hy"
+    | "hz"
+    | "ia"
+    | "id"
+    | "ie"
+    | "ig"
+    | "ii"
+    | "ik"
+    | "io"
+    | "is"
+    | "it"
+    | "iu"
+    | "ja"
+    | "jv"
+    | "ka"
+    | "kg"
+    | "ki"
+    | "kj"
+    | "kk"
+    | "kl"
+    | "km"
+    | "kn"
+    | "ko"
+    | "kr"
+    | "ks"
+    | "ku"
+    | "kv"
+    | "kw"
+    | "ky"
+    | "la"
+    | "lb"
+    | "lg"
+    | "li"
+    | "ln"
+    | "lo"
+    | "lt"
+    | "lu"
+    | "lv"
+    | "mg"
+    | "mh"
+    | "mi"
+    | "mk"
+    | "ml"
+    | "mn"
+    | "mr"
+    | "ms"
+    | "mt"
+    | "my"
+    | "na"
+    | "nb"
+    | "nd"
+    | "ne"
+    | "ng"
+    | "nl"
+    | "nn"
+    | "no"
+    | "nr"
+    | "nv"
+    | "ny"
+    | "oc"
+    | "oj"
+    | "om"
+    | "or"
+    | "os"
+    | "pa"
+    | "pi"
+    | "pl"
+    | "ps"
+    | "pt"
+    | "qu"
+    | "rm"
+    | "rn"
+    | "ro"
+    | "ru"
+    | "rw"
+    | "sa"
+    | "sc"
+    | "sd"
+    | "se"
+    | "sg"
+    | "si"
+    | "sk"
+    | "sl"
+    | "sm"
+    | "sn"
+    | "so"
+    | "sq"
+    | "sr"
+    | "ss"
+    | "st"
+    | "su"
+    | "sv"
+    | "sw"
+    | "ta"
+    | "te"
+    | "tg"
+    | "th"
+    | "ti"
+    | "tk"
+    | "tl"
+    | "tn"
+    | "to"
+    | "tr"
+    | "ts"
+    | "tt"
+    | "tw"
+    | "ty"
+    | "ug"
+    | "uk"
+    | "ur"
+    | "uz"
+    | "ve"
+    | "vi"
+    | "vo"
+    | "wa"
+    | "wo"
+    | "xh"
+    | "yi"
+    | "yue"
+    | "yo"
+    | "za"
+    | "zh"
+    | "zu";
+  /**
+   * These are the languages for transcription as ISO 639-1 codes. Set one or
+   * more codes to restrict and bias recognition to those languages. An empty
+   * array `[]` (or omitting both this and `language`) enables auto-detection
+   * of the spoken language.
+   */
+  languages?:
+    | "aa"
+    | "ab"
+    | "ae"
+    | "af"
+    | "ak"
+    | "am"
+    | "an"
+    | "ar"
+    | "as"
+    | "av"
+    | "ay"
+    | "az"
+    | "ba"
+    | "be"
+    | "bg"
+    | "bh"
+    | "bi"
+    | "bm"
+    | "bn"
+    | "bo"
+    | "br"
+    | "bs"
+    | "ca"
+    | "ce"
+    | "ch"
+    | "co"
+    | "cr"
+    | "cs"
+    | "cu"
+    | "cv"
+    | "cy"
+    | "da"
+    | "de"
+    | "dv"
+    | "dz"
+    | "ee"
+    | "el"
+    | "en"
+    | "eo"
+    | "es"
+    | "et"
+    | "eu"
+    | "fa"
+    | "ff"
+    | "fi"
+    | "fj"
+    | "fo"
+    | "fr"
+    | "fy"
+    | "ga"
+    | "gd"
+    | "gl"
+    | "gn"
+    | "gu"
+    | "gv"
+    | "ha"
+    | "he"
+    | "hi"
+    | "ho"
+    | "hr"
+    | "ht"
+    | "hu"
+    | "hy"
+    | "hz"
+    | "ia"
+    | "id"
+    | "ie"
+    | "ig"
+    | "ii"
+    | "ik"
+    | "io"
+    | "is"
+    | "it"
+    | "iu"
+    | "ja"
+    | "jv"
+    | "ka"
+    | "kg"
+    | "ki"
+    | "kj"
+    | "kk"
+    | "kl"
+    | "km"
+    | "kn"
+    | "ko"
+    | "kr"
+    | "ks"
+    | "ku"
+    | "kv"
+    | "kw"
+    | "ky"
+    | "la"
+    | "lb"
+    | "lg"
+    | "li"
+    | "ln"
+    | "lo"
+    | "lt"
+    | "lu"
+    | "lv"
+    | "mg"
+    | "mh"
+    | "mi"
+    | "mk"
+    | "ml"
+    | "mn"
+    | "mr"
+    | "ms"
+    | "mt"
+    | "my"
+    | "na"
+    | "nb"
+    | "nd"
+    | "ne"
+    | "ng"
+    | "nl"
+    | "nn"
+    | "no"
+    | "nr"
+    | "nv"
+    | "ny"
+    | "oc"
+    | "oj"
+    | "om"
+    | "or"
+    | "os"
+    | "pa"
+    | "pi"
+    | "pl"
+    | "ps"
+    | "pt"
+    | "qu"
+    | "rm"
+    | "rn"
+    | "ro"
+    | "ru"
+    | "rw"
+    | "sa"
+    | "sc"
+    | "sd"
+    | "se"
+    | "sg"
+    | "si"
+    | "sk"
+    | "sl"
+    | "sm"
+    | "sn"
+    | "so"
+    | "sq"
+    | "sr"
+    | "ss"
+    | "st"
+    | "su"
+    | "sv"
+    | "sw"
+    | "ta"
+    | "te"
+    | "tg"
+    | "th"
+    | "ti"
+    | "tk"
+    | "tl"
+    | "tn"
+    | "to"
+    | "tr"
+    | "ts"
+    | "tt"
+    | "tw"
+    | "ty"
+    | "ug"
+    | "uk"
+    | "ur"
+    | "uz"
+    | "ve"
+    | "vi"
+    | "vo"
+    | "wa"
+    | "wo"
+    | "xh"
+    | "yi"
+    | "yue"
+    | "yo"
+    | "za"
+    | "zh"
+    | "zu";
+  /**
+   * These are custom keywords/vocabulary to boost recognition of use-case
+   * specific words (company names, product names, jargon).
+   */
+  keywords?: string[];
+  /**
+   * This is the turn-taking mode. `intelligent` uses the underlying model's
+   * native end-of-turn detection; `manual` ignores it and waits a fixed
+   * end-of-turn delay. Defaults to `intelligent`.
+   */
+  turnTaking?: "intelligent" | "manual";
 }
 
 export interface FallbackAssemblyAITranscriber {
   /** This is the transcription provider that will be used. */
   provider: "assembly-ai";
   /** This is the language that will be set for the transcription. */
-  language?: "en";
+  language?: "multi" | "en";
   /**
    * Transcripts below this confidence threshold will be discarded.
    *
@@ -1775,6 +2706,52 @@ export interface FallbackAssemblyAITranscriber {
    * @example true
    */
   vadAssistedEndpointingEnabled?: boolean;
+  /**
+   * This is the transcription mode used by the `universal-3-5-pro` speech model. Only applies to the `universal-3-5-pro` speech model.
+   *
+   * @default 'balanced'
+   */
+  mode?: "max_accuracy" | "min_latency" | "balanced";
+  /**
+   * This is a prompt that provides additional context to the transcription model. Only applies to the `universal-3-5-pro` speech model.
+   * @maxLength 1750
+   */
+  prompt?: string;
+  /**
+   * This is context about the voice agent that guides the transcription model. Only applies to the `universal-3-5-pro` speech model.
+   * @maxLength 1750
+   */
+  agentContext?: string;
+  /** These are language codes used to steer automatic language detection. Only applies to the `universal-3-5-pro` speech model. */
+  languageCodes?:
+    | "en"
+    | "es"
+    | "fr"
+    | "de"
+    | "it"
+    | "pt"
+    | "tr"
+    | "nl"
+    | "sv"
+    | "no"
+    | "da"
+    | "fi"
+    | "hi"
+    | "vi"
+    | "ar"
+    | "he"
+    | "ja"
+    | "zh";
+  /**
+   * This is the speech model used for the streaming session.
+   * Keyterms prompting is supported on universal-streaming-english and universal-3-5-pro.
+   * universal-3-5-pro is AssemblyAI's most accurate voice-agent model.
+   * @default 'universal-streaming-english'
+   */
+  speechModel?:
+    | "universal-streaming-english"
+    | "universal-streaming-multilingual"
+    | "universal-3-5-pro";
   /** The WebSocket URL that the transcriber connects to. */
   realtimeUrl?: string;
   /** Add up to 2500 characters of custom vocabulary. */
@@ -1782,7 +2759,7 @@ export interface FallbackAssemblyAITranscriber {
   /**
    * Keyterms prompting improves recognition accuracy for specific words and phrases.
    * Can include up to 100 keyterms, each up to 50 characters.
-   * Costs an additional $0.04/hour when enabled.
+   * Costs an additional $0.04/hour on universal-streaming-english and is included at no extra cost on universal-3-5-pro.
    */
   keytermsPrompt?: string[];
   /** The duration of the end utterance silence threshold in milliseconds. */
@@ -1960,7 +2937,7 @@ export interface FallbackAzureSpeechTranscriber {
 
 export interface FallbackCartesiaTranscriber {
   provider: "cartesia";
-  model?: "ink-whisper";
+  model?: "ink-whisper" | "ink-2";
   language?:
     | "aa"
     | "ab"
@@ -2233,14 +3210,18 @@ export interface FallbackDeepgramTranscriber {
     | "base-video"
     | "whisper"
     | "flux-general-en"
+    | "flux-general-multi"
     | string;
   /** This is the language that will be set for the transcription. The list of languages Deepgram supports can be found here: https://developers.deepgram.com/docs/models-languages-overview */
   language?:
     | "ar"
     | "az"
     | "ba"
+    | "be"
     | "bg"
+    | "bn"
     | "br"
+    | "bs"
     | "ca"
     | "cs"
     | "da"
@@ -2261,6 +3242,7 @@ export interface FallbackDeepgramTranscriber {
     | "es-LATAM"
     | "et"
     | "eu"
+    | "fa"
     | "fi"
     | "fr"
     | "fr-CA"
@@ -2269,6 +3251,7 @@ export interface FallbackDeepgramTranscriber {
     | "he"
     | "hi"
     | "hi-Latn"
+    | "hr"
     | "hu"
     | "id"
     | "is"
@@ -2282,6 +3265,7 @@ export interface FallbackDeepgramTranscriber {
     | "lt"
     | "lv"
     | "mk"
+    | "mr"
     | "ms"
     | "multi"
     | "nl"
@@ -2303,8 +3287,10 @@ export interface FallbackDeepgramTranscriber {
     | "sv-SE"
     | "ta"
     | "taq"
+    | "te"
     | "th"
     | "th-TH"
+    | "tl"
     | "tr"
     | "tt"
     | "uk"
@@ -2340,6 +3326,29 @@ export interface FallbackDeepgramTranscriber {
    */
   numerals?: boolean;
   /**
+   * If set to true, Deepgram will replace profanity in transcripts with surrounding asterisks, e.g. "f***".
+   *
+   * @default false
+   * @example false
+   */
+  profanityFilter?: boolean;
+  /**
+   * Enables redaction of sensitive information from transcripts.
+   *
+   * Options include:
+   * - "pci": Redacts credit card numbers, expiration dates, and CVV.
+   * - "pii": Redacts personally identifiable information (names, locations, identifying numbers, etc.).
+   * - "phi": Redacts protected health information (medical conditions, drugs, injuries, etc.).
+   * - "numbers": Redacts numerical and identifying entities (dates, account numbers, SSNs, etc.).
+   *
+   * Multiple values can be provided to redact different categories simultaneously.
+   * Redacted content is replaced with entity labels like [CREDIT_CARD_1], [SSN_1], etc.
+   *
+   * See https://developers.deepgram.com/docs/redaction for details.
+   * @example ["pci","phi"]
+   */
+  redaction?: "pci" | "pii" | "phi" | "numbers";
+  /**
    * Transcripts below this confidence threshold will be discarded.
    *
    * @default 0.4
@@ -2348,13 +3357,6 @@ export interface FallbackDeepgramTranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
-  /**
-   * Eager end-of-turn confidence required to fire a eager end-of-turn event. Setting a value here will enable EagerEndOfTurn and SpeechResumed events. It is disabled by default. Only used with Flux models.
-   * @min 0
-   * @max 1
-   * @example 0.3
-   */
-  eagerEotThreshold?: number;
   /**
    * End-of-turn confidence required to finish a turn. Only used with Flux models.
    *
@@ -2373,6 +3375,13 @@ export interface FallbackDeepgramTranscriber {
    * @example 5000
    */
   eotTimeoutMs?: number;
+  /**
+   * Language hints to bias Flux Multilingual (`flux-general-multi`) toward specific languages.
+   * Provide BCP-47 language codes (e.g. "en", "es", "fr"). Multiple hints can be given for
+   * multilingual or code-switching scenarios. Omit for auto-detection. Only used with `flux-general-multi`.
+   * @example ["en","es"]
+   */
+  languages?: string[];
   /** These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here. */
   keywords?: string[];
   /** Keyterm Prompting allows you improve Keyword Recall Rate (KRR) for important keyterms or phrases up to 90%. */
@@ -2396,7 +3405,8 @@ export interface FallbackElevenLabsTranscriber {
   /** This is the transcription provider that will be used. */
   provider: "11labs";
   /** This is the model that will be used for the transcription. */
-  model?: "scribe_v1";
+  model?: "scribe_v1" | "scribe_v2" | "scribe_v2_realtime";
+  /** This is the language that will be used for the transcription. */
   language?:
     | "aa"
     | "ab"
@@ -2583,6 +3593,34 @@ export interface FallbackElevenLabsTranscriber {
     | "za"
     | "zh"
     | "zu";
+  /**
+   * This is the number of seconds of silence before VAD commits (0.3-3.0).
+   * @min 0.3
+   * @max 3
+   * @example 1.5
+   */
+  silenceThresholdSeconds?: number;
+  /**
+   * This is the VAD sensitivity (0.1-0.9, lower indicates more sensitive).
+   * @min 0.1
+   * @max 0.9
+   * @example 0.4
+   */
+  confidenceThreshold?: number;
+  /**
+   * This is the minimum speech duration for VAD (50-2000ms).
+   * @min 50
+   * @max 2000
+   * @example 100
+   */
+  minSpeechDurationMs?: number;
+  /**
+   * This is the minimum silence duration for VAD (50-2000ms).
+   * @min 50
+   * @max 2000
+   * @example 100
+   */
+  minSilenceDurationMs?: number;
 }
 
 export interface GladiaVocabularyItemDTO {
@@ -2712,7 +3750,7 @@ export interface FallbackGladiaTranscriber {
     | "yi"
     | "yo";
   /** Defines the languages to use for the transcription. Required when languageBehaviour is 'manual'. */
-  languages?:
+  languages?: (
     | "af"
     | "sq"
     | "am"
@@ -2811,7 +3849,8 @@ export interface FallbackGladiaTranscriber {
     | "vi"
     | "cy"
     | "yi"
-    | "yo";
+    | "yo"
+  )[];
   /**
    * Provides a custom vocabulary to the model to improve accuracy of transcribing context specific words, technical terms, names, etc. If empty, this argument is ignored.
    * ⚠️ Warning ⚠️: Please be aware that the transcription_hint field has a character limit of 600. If you provide a transcription_hint longer than 600 characters, it will be automatically truncated to meet this limit.
@@ -2871,6 +3910,402 @@ export interface FallbackGladiaTranscriber {
   receivePartialTranscripts?: boolean;
 }
 
+export interface FallbackSonioxTranscriber {
+  provider: "soniox";
+  /** The Soniox model to use for transcription. */
+  model?: "stt-rt-v4" | "stt-rt-v5";
+  /** Single language for transcription as an ISO 639-1 code (e.g., `en`, `es`). For multi-language hints or to enable Soniox auto-detect, use `languages` instead — when `languages` is set (including to an empty array), this field is ignored when building the Soniox request. Defaults to `en` if neither this nor `languages` is set. */
+  language?:
+    | "aa"
+    | "ab"
+    | "ae"
+    | "af"
+    | "ak"
+    | "am"
+    | "an"
+    | "ar"
+    | "as"
+    | "av"
+    | "ay"
+    | "az"
+    | "ba"
+    | "be"
+    | "bg"
+    | "bh"
+    | "bi"
+    | "bm"
+    | "bn"
+    | "bo"
+    | "br"
+    | "bs"
+    | "ca"
+    | "ce"
+    | "ch"
+    | "co"
+    | "cr"
+    | "cs"
+    | "cu"
+    | "cv"
+    | "cy"
+    | "da"
+    | "de"
+    | "dv"
+    | "dz"
+    | "ee"
+    | "el"
+    | "en"
+    | "eo"
+    | "es"
+    | "et"
+    | "eu"
+    | "fa"
+    | "ff"
+    | "fi"
+    | "fj"
+    | "fo"
+    | "fr"
+    | "fy"
+    | "ga"
+    | "gd"
+    | "gl"
+    | "gn"
+    | "gu"
+    | "gv"
+    | "ha"
+    | "he"
+    | "hi"
+    | "ho"
+    | "hr"
+    | "ht"
+    | "hu"
+    | "hy"
+    | "hz"
+    | "ia"
+    | "id"
+    | "ie"
+    | "ig"
+    | "ii"
+    | "ik"
+    | "io"
+    | "is"
+    | "it"
+    | "iu"
+    | "ja"
+    | "jv"
+    | "ka"
+    | "kg"
+    | "ki"
+    | "kj"
+    | "kk"
+    | "kl"
+    | "km"
+    | "kn"
+    | "ko"
+    | "kr"
+    | "ks"
+    | "ku"
+    | "kv"
+    | "kw"
+    | "ky"
+    | "la"
+    | "lb"
+    | "lg"
+    | "li"
+    | "ln"
+    | "lo"
+    | "lt"
+    | "lu"
+    | "lv"
+    | "mg"
+    | "mh"
+    | "mi"
+    | "mk"
+    | "ml"
+    | "mn"
+    | "mr"
+    | "ms"
+    | "mt"
+    | "my"
+    | "na"
+    | "nb"
+    | "nd"
+    | "ne"
+    | "ng"
+    | "nl"
+    | "nn"
+    | "no"
+    | "nr"
+    | "nv"
+    | "ny"
+    | "oc"
+    | "oj"
+    | "om"
+    | "or"
+    | "os"
+    | "pa"
+    | "pi"
+    | "pl"
+    | "ps"
+    | "pt"
+    | "qu"
+    | "rm"
+    | "rn"
+    | "ro"
+    | "ru"
+    | "rw"
+    | "sa"
+    | "sc"
+    | "sd"
+    | "se"
+    | "sg"
+    | "si"
+    | "sk"
+    | "sl"
+    | "sm"
+    | "sn"
+    | "so"
+    | "sq"
+    | "sr"
+    | "ss"
+    | "st"
+    | "su"
+    | "sv"
+    | "sw"
+    | "ta"
+    | "te"
+    | "tg"
+    | "th"
+    | "ti"
+    | "tk"
+    | "tl"
+    | "tn"
+    | "to"
+    | "tr"
+    | "ts"
+    | "tt"
+    | "tw"
+    | "ty"
+    | "ug"
+    | "uk"
+    | "ur"
+    | "uz"
+    | "ve"
+    | "vi"
+    | "vo"
+    | "wa"
+    | "wo"
+    | "xh"
+    | "yi"
+    | "yue"
+    | "yo"
+    | "za"
+    | "zh"
+    | "zu";
+  /** Language hints sent to Soniox as `language_hints`. Provide `[lang1, lang2, ...]` (ISO 639-1 codes) to bias recognition toward specific languages, or provide an explicit empty array `[]` to enable Soniox auto-detect across all 60+ supported languages. When set (including the empty array), this field takes precedence over the singular `language` field. When omitted, falls back to the singular `language` (which defaults to `en` if also unset). Best accuracy is achieved with a single language. */
+  languages?: (
+    | "aa"
+    | "ab"
+    | "ae"
+    | "af"
+    | "ak"
+    | "am"
+    | "an"
+    | "ar"
+    | "as"
+    | "av"
+    | "ay"
+    | "az"
+    | "ba"
+    | "be"
+    | "bg"
+    | "bh"
+    | "bi"
+    | "bm"
+    | "bn"
+    | "bo"
+    | "br"
+    | "bs"
+    | "ca"
+    | "ce"
+    | "ch"
+    | "co"
+    | "cr"
+    | "cs"
+    | "cu"
+    | "cv"
+    | "cy"
+    | "da"
+    | "de"
+    | "dv"
+    | "dz"
+    | "ee"
+    | "el"
+    | "en"
+    | "eo"
+    | "es"
+    | "et"
+    | "eu"
+    | "fa"
+    | "ff"
+    | "fi"
+    | "fj"
+    | "fo"
+    | "fr"
+    | "fy"
+    | "ga"
+    | "gd"
+    | "gl"
+    | "gn"
+    | "gu"
+    | "gv"
+    | "ha"
+    | "he"
+    | "hi"
+    | "ho"
+    | "hr"
+    | "ht"
+    | "hu"
+    | "hy"
+    | "hz"
+    | "ia"
+    | "id"
+    | "ie"
+    | "ig"
+    | "ii"
+    | "ik"
+    | "io"
+    | "is"
+    | "it"
+    | "iu"
+    | "ja"
+    | "jv"
+    | "ka"
+    | "kg"
+    | "ki"
+    | "kj"
+    | "kk"
+    | "kl"
+    | "km"
+    | "kn"
+    | "ko"
+    | "kr"
+    | "ks"
+    | "ku"
+    | "kv"
+    | "kw"
+    | "ky"
+    | "la"
+    | "lb"
+    | "lg"
+    | "li"
+    | "ln"
+    | "lo"
+    | "lt"
+    | "lu"
+    | "lv"
+    | "mg"
+    | "mh"
+    | "mi"
+    | "mk"
+    | "ml"
+    | "mn"
+    | "mr"
+    | "ms"
+    | "mt"
+    | "my"
+    | "na"
+    | "nb"
+    | "nd"
+    | "ne"
+    | "ng"
+    | "nl"
+    | "nn"
+    | "no"
+    | "nr"
+    | "nv"
+    | "ny"
+    | "oc"
+    | "oj"
+    | "om"
+    | "or"
+    | "os"
+    | "pa"
+    | "pi"
+    | "pl"
+    | "ps"
+    | "pt"
+    | "qu"
+    | "rm"
+    | "rn"
+    | "ro"
+    | "ru"
+    | "rw"
+    | "sa"
+    | "sc"
+    | "sd"
+    | "se"
+    | "sg"
+    | "si"
+    | "sk"
+    | "sl"
+    | "sm"
+    | "sn"
+    | "so"
+    | "sq"
+    | "sr"
+    | "ss"
+    | "st"
+    | "su"
+    | "sv"
+    | "sw"
+    | "ta"
+    | "te"
+    | "tg"
+    | "th"
+    | "ti"
+    | "tk"
+    | "tl"
+    | "tn"
+    | "to"
+    | "tr"
+    | "ts"
+    | "tt"
+    | "tw"
+    | "ty"
+    | "ug"
+    | "uk"
+    | "ur"
+    | "uz"
+    | "ve"
+    | "vi"
+    | "vo"
+    | "wa"
+    | "wo"
+    | "xh"
+    | "yi"
+    | "yue"
+    | "yo"
+    | "za"
+    | "zh"
+    | "zu"
+  )[];
+  /** When `true`, Soniox strictly restricts transcription to the languages in `languages` (or the singular `language` if `languages` is unset). When `false`, Soniox biases toward those languages but still allows transcription in other languages. Has no effect when no language hints are sent (e.g., `languages: []` for auto-detect). Defaults to `true` (strict mode). */
+  languageHintsStrict?: boolean;
+  /**
+   * Maximum delay in milliseconds between when the speaker stops and when the endpoint is detected. Lower values mean faster turn-taking but more false endpoints. Range: 500-3000. Default: 500.
+   * @min 500
+   * @max 3000
+   */
+  maxEndpointDelayMs?: number;
+  /** Custom vocabulary terms to boost recognition accuracy. Useful for brand names, product names, and domain-specific terminology. Maps to Soniox context.terms. */
+  customVocabulary?: string[];
+  /**
+   * General context key-value pairs that guide the AI model during transcription. Helps adapt vocabulary to the correct domain, improving accuracy. Recommended: 10 or fewer pairs. Maps to Soniox context.general.
+   * @example [{"key":"domain","value":"Healthcare"},{"key":"topic","value":"Diabetes management consultation"}]
+   */
+  contextGeneral?: SonioxContextGeneralItem[];
+}
+
 export interface FallbackSpeechmaticsTranscriber {
   /** This is the transcription provider that will be used. */
   provider: "speechmatics";
@@ -2879,6 +4314,7 @@ export interface FallbackSpeechmaticsTranscriber {
   language?:
     | "auto"
     | "ar"
+    | "ar_en"
     | "ba"
     | "eu"
     | "be"
@@ -2910,8 +4346,10 @@ export interface FallbackSpeechmaticsTranscriber {
     | "lv"
     | "lt"
     | "ms"
+    | "en_ms"
     | "mt"
     | "cmn"
+    | "cmn_en"
     | "mr"
     | "mn"
     | "no"
@@ -2923,9 +4361,12 @@ export interface FallbackSpeechmaticsTranscriber {
     | "sk"
     | "sl"
     | "es"
+    | "en_es"
     | "sw"
     | "sv"
+    | "tl"
     | "ta"
+    | "en_ta"
     | "th"
     | "tr"
     | "uk"
@@ -2958,29 +4399,6 @@ export interface FallbackSpeechmaticsTranscriber {
    */
   enableDiarization?: boolean;
   /**
-   * This sets the maximum number of speakers to detect when diarization is enabled. Only used when enableDiarization is true.
-   *
-   * @default 2
-   * @min 2
-   * @max 50
-   * @default 2
-   * @example 4
-   */
-  maxSpeakers?: number;
-  /**
-   * Provides friendly speaker labels that map to diarization indices (Speaker 1 -> labels[0]).
-   * @example ["Agent","Customer"]
-   */
-  speakerLabels?: string[];
-  /**
-   * This enables partial transcripts during speech recognition. When false, only final transcripts are returned.
-   *
-   * @default true
-   * @default true
-   * @example false
-   */
-  enablePartials?: boolean;
-  /**
    * This sets the maximum delay in milliseconds for partial transcripts. Balances latency and accuracy.
    *
    * @default 3000
@@ -2993,37 +4411,13 @@ export interface FallbackSpeechmaticsTranscriber {
   /** @example [{"content":"Speechmatics","soundsLike":["speech mattix"]}] */
   customVocabulary: SpeechmaticsCustomVocabularyItem[];
   /**
-   * This controls how numbers are formatted in the transcription output.
+   * This controls how numbers, dates, currencies, and other entities are formatted in the transcription output.
    *
    * @default 'written'
    * @default "written"
    * @example "spoken"
    */
   numeralStyle?: "written" | "spoken";
-  /**
-   * This enables detection of non-speech audio events like music, applause, and laughter.
-   *
-   * @default false
-   * @default false
-   * @example true
-   */
-  enableEntities?: boolean;
-  /**
-   * This enables automatic punctuation in the transcription output.
-   *
-   * @default true
-   * @default true
-   * @example false
-   */
-  enablePunctuation?: boolean;
-  /**
-   * This enables automatic capitalization in the transcription output.
-   *
-   * @default true
-   * @default true
-   * @example false
-   */
-  enableCapitalization?: boolean;
   /**
    * This is the sensitivity level for end-of-turn detection, which determines when a speaker has finished talking. Higher values are more sensitive.
    *
@@ -3036,6 +4430,8 @@ export interface FallbackSpeechmaticsTranscriber {
   endOfTurnSensitivity?: number;
   /**
    * This enables removal of disfluencies (um, uh) from the transcript to create cleaner, more professional output.
+   *
+   * This is only supported for the English language transcriber.
    *
    * @default false
    * @default false
@@ -3168,6 +4564,9 @@ export interface FallbackGoogleTranscriber {
   provider: "google";
   /** This is the model that will be used for the transcription. */
   model?:
+    | "gemini-3.5-flash"
+    | "gemini-3.1-flash-lite"
+    | "gemini-3-flash-preview"
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
@@ -3291,8 +4690,62 @@ export interface FallbackOpenAITranscriber {
     | "cy";
 }
 
+export interface FallbackXaiTranscriber {
+  provider: "xai";
+  /** The xAI speech-to-text model to use. xAI currently exposes a single STT model — placeholder for future model selection. */
+  model?: "default";
+  /** Single language for transcription as an ISO 639-1 code (e.g., `en`, `es`). Defaults to `en` if not set. xAI auto-detects when omitted via the API but Vapi defaults to English for deterministic behavior. */
+  language?:
+    | "ar"
+    | "cs"
+    | "da"
+    | "nl"
+    | "en"
+    | "fil"
+    | "fr"
+    | "de"
+    | "hi"
+    | "id"
+    | "it"
+    | "ja"
+    | "ko"
+    | "mk"
+    | "ms"
+    | "fa"
+    | "pl"
+    | "pt"
+    | "ro"
+    | "ru"
+    | "es"
+    | "sv"
+    | "th"
+    | "tr"
+    | "vi";
+}
+
 export interface LangfuseObservabilityPlan {
   provider: "langfuse";
+  /** The name of a Langfuse prompt to link generations to. This enables tracking which prompt version was used for each generation. https://langfuse.com/docs/prompt-management/features/link-to-traces */
+  promptName?: string;
+  /**
+   * The version number of the Langfuse prompt to link generations to. Used together with promptName to identify the exact prompt version. https://langfuse.com/docs/prompt-management/features/link-to-traces
+   * @min 1
+   */
+  promptVersion?: number;
+  /**
+   * Custom name for the Langfuse trace. Supports Liquid templates.
+   *
+   * Available variables:
+   * - {{ call.id }} - Call UUID
+   * - {{ call.type }} - 'inboundPhoneCall', 'outboundPhoneCall', 'webCall'
+   * - {{ assistant.name }} - Assistant name
+   * - {{ assistant.id }} - Assistant ID
+   *
+   * Example: "{{ assistant.name }} - {{ call.type }}"
+   *
+   * Defaults to call ID if not provided.
+   */
+  traceName?: string;
   /** This is an array of tags to be added to the Langfuse trace. Tags allow you to categorize and filter traces. https://langfuse.com/docs/tracing-features/tags */
   tags: string[];
   /**
@@ -3524,6 +4977,8 @@ export interface ToolMessageStart {
    *
    * This message is never triggered for async tools.
    *
+   * Multiple request-start messages are variants. One eligible variant is selected each time the tool starts.
+   *
    * If this message is not provided, one of the default filler messages "Hold on a sec", "One moment", "Just a sec", "Give me a moment" or "This'll just take a sec" will be used.
    */
   type: "request-start";
@@ -3625,7 +5080,25 @@ export interface ToolMessageFailed {
    */
   type: "request-failed";
   /**
+   * This is optional and defaults to "assistant".
+   *
+   * When role=assistant, `content` is said out loud when the tool call fails.
+   *
+   * When role=system, `content` is passed to the model as a system message
+   * along with the failure result, and the model's generated response is
+   * spoken. Example:
+   *     assistant: tool called
+   *     tool: error from your server
+   *     <--- system prompt as hint
+   *     ---> model generates response which is spoken
+   * This is useful when you want the model to generate an error-aware
+   * response instead of speaking a fixed failure message.
+   */
+  role?: "assistant" | "system";
+  /**
    * This is an optional boolean that if true, the call will end after the message is spoken. Default is false.
+   *
+   * This is ignored if `role` is set to `system`.
    *
    * @default false
    * @example false
@@ -3651,18 +5124,10 @@ export interface ToolMessageDelayed {
    * This will override the `content` property.
    */
   contents?: TextContent[];
-  /**
-   * This message is triggered when the tool call is delayed.
-   *
-   * There are the two things that can trigger this message:
-   * 1. The user talks with the assistant while your server is processing the request. Default is "Sorry, a few more seconds."
-   * 2. The server doesn't respond within `timingMilliseconds`.
-   *
-   * This message is never triggered for async tool calls.
-   */
+  /** This message is triggered when the tool call is delayed. Same timing means variants; different timings mean staged updates. */
   type: "request-response-delayed";
   /**
-   * The number of milliseconds to wait for the server response before saying this message.
+   * The number of milliseconds to wait for the server response before saying this delayed message.
    * @min 100
    * @max 120000
    * @example 1000
@@ -3786,11 +5251,7 @@ export interface ToolRejectionPlan {
 }
 
 export interface CreateDtmfToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -3799,6 +5260,11 @@ export interface CreateDtmfToolDTO {
   )[];
   /** The type of tool. "dtmf" for DTMF tool. */
   type: "dtmf";
+  /**
+   * This enables sending DTMF tones via SIP INFO messages instead of RFC 2833 (RTP events). When enabled, DTMF digits will be sent using the SIP INFO method, which can be more reliable in some network configurations. Only relevant when using the `vapi.sip` transport.
+   * @default false
+   */
+  sipInfoDtmfEnabled?: boolean;
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -3883,11 +5349,7 @@ export interface CreateDtmfToolDTO {
 }
 
 export interface CreateEndCallToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -3980,11 +5442,7 @@ export interface CreateEndCallToolDTO {
 }
 
 export interface CreateVoicemailToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -4097,18 +5555,10 @@ export interface JsonSchema {
    * For `object`, you can define the properties of the object using the `properties` property.
    */
   type: "string" | "number" | "integer" | "boolean" | "array" | "object";
-  /**
-   * This is required if the type is "array". This is the schema of the items in the array.
-   *
-   * This is of type JsonSchema. However, Swagger doesn't support circular references.
-   */
-  items?: object;
-  /**
-   * This is required if the type is "object". This specifies the properties of the object.
-   *
-   * This is a map of string to JsonSchema. However, Swagger doesn't support circular references.
-   */
-  properties?: object;
+  /** This is required if the type is "array". This is the schema of the items in the array. This is a recursive reference to JsonSchema. */
+  items?: JsonSchema;
+  /** This is required if the type is "object". This specifies the properties of the object. This is a map of property names to JsonSchema objects. */
+  properties?: Record<string, JsonSchema>;
   /** This is the description to help the model understand what it needs to output. */
   description?: string;
   /**
@@ -4144,6 +5594,163 @@ export interface JsonSchema {
   title?: string;
 }
 
+export interface VariableExtractionAlias {
+  /**
+   * This is the key of the variable.
+   *
+   * This variable will be accessible during the call as `{{key}}` and stored in `call.artifact.variableValues` after the call.
+   *
+   * Rules:
+   * - Must start with a letter (a-z, A-Z).
+   * - Subsequent characters can be letters, numbers, or underscores.
+   * - Minimum length of 1 and maximum length of 40.
+   * @minLength 1
+   * @maxLength 40
+   * @pattern /^[a-zA-Z][a-zA-Z0-9_]*$/
+   */
+  key: string;
+  /**
+   * This is the value of the variable.
+   *
+   * This can reference existing variables, use filters, and perform transformations.
+   *
+   * Examples: "{{name}}", "{{customer.email}}", "Hello {{name | upcase}}"
+   * @maxLength 10000
+   */
+  value: string;
+}
+
+export interface VariableExtractionPlan {
+  /**
+   * This is the schema to extract.
+   *
+   * Examples:
+   * 1. To extract object properties, you can use the following schema:
+   * ```json
+   * {
+   *   "type": "object",
+   *   "properties": {
+   *     "name": {
+   *       "type": "string"
+   *     },
+   *     "age": {
+   *       "type": "number"
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * These will be extracted as `{{ name }}` and `{{ age }}` respectively. To emphasize, object properties are extracted as direct global variables.
+   *
+   * 2. To extract nested properties, you can use the following schema:
+   * ```json
+   * {
+   *   "type": "object",
+   *   "properties": {
+   *     "name": {
+   *       "type": "object",
+   *       "properties": {
+   *         "first": {
+   *           "type": "string"
+   *         },
+   *         "last": {
+   *           "type": "string"
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * These will be extracted as `{{ name }}`. And, `{{ name.first }}` and `{{ name.last }}` will be accessible.
+   *
+   * 3. To extract array items, you can use the following schema:
+   * ```json
+   * {
+   *   "type": "array",
+   *   "title": "zipCodes",
+   *   "items": {
+   *     "type": "string"
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ zipCodes }}`. To access the array items, you can use `{{ zipCodes[0] }}` and `{{ zipCodes[1] }}`.
+   *
+   * 4. To extract array of objects, you can use the following schema:
+   *
+   * ```json
+   * {
+   *   "type": "array",
+   *   "name": "people",
+   *   "items": {
+   *     "type": "object",
+   *     "properties": {
+   *       "name": {
+   *         "type": "string"
+   *       },
+   *       "age": {
+   *         "type": "number"
+   *       },
+   *       "zipCodes": {
+   *         "type": "array",
+   *         "items": {
+   *           "type": "string"
+   *         }
+   *       }
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * This will be extracted as `{{ people }}`. To access the array items, you can use `{{ people[n].name }}`, `{{ people[n].age }}`, `{{ people[n].zipCodes }}`, `{{ people[n].zipCodes[0] }}` and `{{ people[n].zipCodes[1] }}`.
+   */
+  schema?: JsonSchema;
+  /**
+   * These are additional variables to create.
+   *
+   * These will be accessible during the call as `{{key}}` and stored in `call.artifact.variableValues` after the call.
+   *
+   * Example:
+   * ```json
+   * {
+   *   "aliases": [
+   *     {
+   *       "key": "customerName",
+   *       "value": "{{name}}"
+   *     },
+   *     {
+   *       "key": "fullName",
+   *       "value": "{{firstName}} {{lastName}}"
+   *     },
+   *     {
+   *       "key": "greeting",
+   *       "value": "Hello {{name}}, welcome to {{company}}!"
+   *     },
+   *     {
+   *       "key": "customerCity",
+   *       "value": "{{addresses[0].city}}"
+   *     },
+   *     {
+   *       "key": "something",
+   *       "value": "{{any liquid}}"
+   *     }
+   *   ]
+   * }
+   * ```
+   *
+   * This will create variables `customerName`, `fullName`, `greeting`, `customerCity`, and `something`. To access these variables, you can reference them as `{{customerName}}`, `{{fullName}}`, `{{greeting}}`, `{{customerCity}}`, and `{{something}}`.
+   */
+  aliases?: VariableExtractionAlias[];
+}
+
+export interface ToolParameter {
+  /** This is the key of the parameter. */
+  key: string;
+  /** The value of the parameter. Any JSON type. String values support Liquid templates. */
+  value: string | number | boolean | object | any[];
+}
+
 export interface OpenAIFunctionParameters {
   /** This must be set to 'object'. It instructs the model to return a JSON object containing the function call properties. */
   type: "object";
@@ -4159,13 +5766,6 @@ export interface OpenAIFunctionParameters {
 
 export interface OpenAIFunction {
   /**
-   * This is a boolean that controls whether to enable strict schema adherence when generating the function call. If set to true, the model will follow the exact schema defined in the parameters field. Only a subset of JSON Schema is supported when strict is true. Learn more about Structured Outputs in the [OpenAI guide](https://openai.com/index/introducing-structured-outputs-in-the-api/).
-   *
-   * @default false
-   * @default false
-   */
-  strict?: boolean;
-  /**
    * This is the the name of the function to be called.
    *
    * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
@@ -4173,6 +5773,13 @@ export interface OpenAIFunction {
    * @pattern /^[a-zA-Z0-9_-]{1,64}$/
    */
   name: string;
+  /**
+   * This is a boolean that controls whether to enable strict schema adherence when generating the function call. If set to true, the model will follow the exact schema defined in the parameters field. Only a subset of JSON Schema is supported when strict is true. Learn more about Structured Outputs in the [OpenAI guide](https://openai.com/index/introducing-structured-outputs-in-the-api/).
+   *
+   * @default false
+   * @default false
+   */
+  strict?: boolean;
   /** This is the description of what the function does, used by the AI to choose when and how to call the function. */
   description?: string;
   /**
@@ -4186,11 +5793,7 @@ export interface OpenAIFunction {
 }
 
 export interface CreateFunctionToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -4222,6 +5825,10 @@ export interface CreateFunctionToolDTO {
    *   - Webhook expects a response with tool call result.
    */
   server?: Server;
+  /** Plan to extract variables from the tool response */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /** Static key-value pairs merged into the request body. Values support Liquid templates. */
+  parameters?: ToolParameter[];
   /** This is the function definition of the tool. */
   function?: OpenAIFunction;
   /**
@@ -4313,11 +5920,7 @@ export interface GhlToolMetadata {
 }
 
 export interface CreateGhlToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -4416,11 +6019,7 @@ export interface MakeToolMetadata {
 }
 
 export interface CreateMakeToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -5020,6 +6619,76 @@ export interface StartSpeakingPlan {
   transcriptionEndpointingPlan?: TranscriptionEndpointingPlan;
 }
 
+export interface SmartDenoisingPlan {
+  /**
+   * Whether smart denoising using Krisp is enabled.
+   * @default true
+   */
+  enabled?: boolean;
+}
+
+export interface FourierDenoisingPlan {
+  /**
+   * Whether Fourier denoising is enabled. Note that this is experimental and may not work as expected.
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * Whether automatic media detection is enabled. When enabled, the filter will automatically
+   * detect consistent background TV/music/radio and switch to more aggressive filtering settings.
+   * Only applies when enabled is true.
+   * @default true
+   * @example true
+   */
+  mediaDetectionEnabled?: boolean;
+  /**
+   * Static threshold in dB used as fallback when no baseline is established.
+   * @min -80
+   * @max 0
+   * @default -35
+   * @example -35
+   */
+  staticThreshold?: number;
+  /**
+   * How far below the rolling baseline to filter audio, in dB.
+   * Lower values (e.g., -10) are more aggressive, higher values (e.g., -20) are more conservative.
+   * @min -30
+   * @max -5
+   * @default -15
+   * @example -15
+   */
+  baselineOffsetDb?: number;
+  /**
+   * Rolling window size in milliseconds for calculating the audio baseline.
+   * Larger windows adapt more slowly but are more stable.
+   * @min 1000
+   * @max 30000
+   * @default 3000
+   * @example 3000
+   */
+  windowSizeMs?: number;
+  /**
+   * Percentile to use for baseline calculation (1-99).
+   * Higher percentiles (e.g., 85) focus on louder speech, lower percentiles (e.g., 50) include quieter speech.
+   * @min 1
+   * @max 99
+   * @default 85
+   * @example 85
+   */
+  baselinePercentile?: number;
+}
+
+export interface BackgroundSpeechDenoisingPlan {
+  /** Whether smart denoising using Krisp is enabled. */
+  smartDenoisingPlan?: SmartDenoisingPlan;
+  /**
+   * Whether Fourier denoising is enabled. Note that this is experimental and may not work as expected.
+   *
+   * This can be combined with smart denoising, and will be run afterwards.
+   */
+  fourierDenoisingPlan?: FourierDenoisingPlan;
+}
+
 export interface TransferAssistant {
   /**
    * Optional name for the transfer assistant
@@ -5042,13 +6711,16 @@ export interface TransferAssistant {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
   /** These are the options for the transfer assistant's transcriber. */
   transcriber?:
     | AssemblyAITranscriber
@@ -5061,7 +6733,10 @@ export interface TransferAssistant {
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
     | OpenAITranscriber
-    | CartesiaTranscriber;
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
   /**
    * This is the first message that the transfer assistant will say.
    * This can also be a URL to a custom audio file.
@@ -5108,21 +6783,31 @@ export interface TransferAssistant {
    */
   maxDurationSeconds?: number;
   /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
+  /**
    * This is the number of seconds of silence to wait before ending the call. Defaults to 30.
    *
    * @default 30
-   * @min 10
+   * @min 5
    * @max 3600
    */
   silenceTimeoutSeconds?: number;
 }
 
 export interface TransferCancelToolUserEditable {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -5215,11 +6900,7 @@ export interface TransferCancelToolUserEditable {
 }
 
 export interface TransferSuccessfulToolUserEditable {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -5488,8 +7169,10 @@ export interface TransferPlan {
    * This configures the fallback plan when the transfer fails (destination unreachable, busy, or not human).
    *
    * Usage:
-   * - Used only when `mode` is `warm-transfer-experimental`.
-   * - If not provided when using `warm-transfer-experimental`, a default message will be used.
+   * - Used when `mode` is `warm-transfer-experimental`. If not provided, a default message will be used.
+   * - Used for SIP cold transfers (`blind-transfer` modes) when transfer outcome detection and fallback
+   *   are enabled for the organization: on a failed transfer, the assistant speaks `message`, then ends
+   *   the call or continues with the customer per `endCallEnabled`.
    */
   fallbackPlan?: TransferFallbackPlan;
 }
@@ -5535,7 +7218,9 @@ export interface TransferDestinationNumber {
    * This is the caller ID to use when transferring the call to the `number`.
    *
    * Usage:
-   * - If not provided, the caller ID will be the number the call is coming from. Example, +14151111111 calls in to and the assistant transfers out to +16470000000. +16470000000 will see +14151111111 as the caller.
+   * - If not provided, the caller ID will be the number the call is coming **from**.
+   *   Example: a customer with number +14151111111 calls in to and the assistant transfers out to +16470000000. +16470000000 will see +14151111111 as the caller.
+   *   For inbound calls, the caller ID is the customer's number. For outbound calls, the caller ID is the phone number of the assistant.
    * - To change this behavior, provide a `callerId`.
    * - Set to '{{customer.number}}' to always use the customer's number as the caller ID.
    * - Set to '{{phoneNumber.number}}' to always use the phone number of the assistant as the caller ID.
@@ -5570,6 +7255,19 @@ export interface TransferDestinationSip {
   /** This is the SIP URI to transfer the call to. */
   sipUri: string;
   /**
+   * This is the caller ID to use when transferring the call to the `sipUri`.
+   *
+   * Usage:
+   * - If not provided, the caller ID will be determined by the SIP infrastructure.
+   * - Set to '{{customer.number}}' to always use the customer's number as the caller ID.
+   * - Set to '{{phoneNumber.number}}' to always use the phone number of the assistant as the caller ID.
+   * - Set to any E164 number to always use that number as the caller ID.
+   *
+   * Only applicable when `transferPlan.sipVerb='dial'`. Not applicable for SIP REFER.
+   * @maxLength 40
+   */
+  callerId?: string;
+  /**
    * This configures how transfer is executed and the experience of the destination party receiving the call. Defaults to `blind-transfer`.
    *
    * @default `transferPlan.mode='blind-transfer'`
@@ -5582,11 +7280,7 @@ export interface TransferDestinationSip {
 }
 
 export interface CreateTransferCallToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -5700,154 +7394,12 @@ export interface ContextEngineeringPlanAll {
   type: "all";
 }
 
-export interface VariableExtractionAlias {
-  /**
-   * This is the key of the variable.
-   *
-   * This variable will be accessible during the call as `{{key}}` and stored in `call.artifact.variableValues` after the call.
-   *
-   * Rules:
-   * - Must start with a letter (a-z, A-Z).
-   * - Subsequent characters can be letters, numbers, or underscores.
-   * - Minimum length of 1 and maximum length of 40.
-   * @minLength 1
-   * @maxLength 40
-   * @pattern /^[a-zA-Z][a-zA-Z0-9_]*$/
-   */
-  key: string;
-  /**
-   * This is the value of the variable.
-   *
-   * This can reference existing variables, use filters, and perform transformations.
-   *
-   * Examples: "{{name}}", "{{customer.email}}", "Hello {{name | upcase}}"
-   * @maxLength 10000
-   */
-  value: string;
+export interface ContextEngineeringPlanUserAndAssistantMessages {
+  type: "userAndAssistantMessages";
 }
 
-export interface VariableExtractionPlan {
-  /**
-   * This is the schema to extract.
-   *
-   * Examples:
-   * 1. To extract object properties, you can use the following schema:
-   * ```json
-   * {
-   *   "type": "object",
-   *   "properties": {
-   *     "name": {
-   *       "type": "string"
-   *     },
-   *     "age": {
-   *       "type": "number"
-   *     }
-   *   }
-   * }
-   * ```
-   *
-   * These will be extracted as `{{ name }}` and `{{ age }}` respectively. To emphasize, object properties are extracted as direct global variables.
-   *
-   * 2. To extract nested properties, you can use the following schema:
-   * ```json
-   * {
-   *   "type": "object",
-   *   "properties": {
-   *     "name": {
-   *       "type": "object",
-   *       "properties": {
-   *         "first": {
-   *           "type": "string"
-   *         },
-   *         "last": {
-   *           "type": "string"
-   *         }
-   *       }
-   *     }
-   *   }
-   * }
-   * ```
-   *
-   * These will be extracted as `{{ name }}`. And, `{{ name.first }}` and `{{ name.last }}` will be accessible.
-   *
-   * 3. To extract array items, you can use the following schema:
-   * ```json
-   * {
-   *   "type": "array",
-   *   "title": "zipCodes",
-   *   "items": {
-   *     "type": "string"
-   *   }
-   * }
-   * ```
-   *
-   * This will be extracted as `{{ zipCodes }}`. To access the array items, you can use `{{ zipCodes[0] }}` and `{{ zipCodes[1] }}`.
-   *
-   * 4. To extract array of objects, you can use the following schema:
-   *
-   * ```json
-   * {
-   *   "type": "array",
-   *   "name": "people",
-   *   "items": {
-   *     "type": "object",
-   *     "properties": {
-   *       "name": {
-   *         "type": "string"
-   *       },
-   *       "age": {
-   *         "type": "number"
-   *       },
-   *       "zipCodes": {
-   *         "type": "array",
-   *         "items": {
-   *           "type": "string"
-   *         }
-   *       }
-   *     }
-   *   }
-   * }
-   * ```
-   *
-   * This will be extracted as `{{ people }}`. To access the array items, you can use `{{ people[n].name }}`, `{{ people[n].age }}`, `{{ people[n].zipCodes }}`, `{{ people[n].zipCodes[0] }}` and `{{ people[n].zipCodes[1] }}`.
-   */
-  schema?: JsonSchema;
-  /**
-   * These are additional variables to create.
-   *
-   * These will be accessible during the call as `{{key}}` and stored in `call.artifact.variableValues` after the call.
-   *
-   * Example:
-   * ```json
-   * {
-   *   "aliases": [
-   *     {
-   *       "key": "customerName",
-   *       "value": "{{name}}"
-   *     },
-   *     {
-   *       "key": "fullName",
-   *       "value": "{{firstName}} {{lastName}}"
-   *     },
-   *     {
-   *       "key": "greeting",
-   *       "value": "Hello {{name}}, welcome to {{company}}!"
-   *     },
-   *     {
-   *       "key": "customerCity",
-   *       "value": "{{addresses[0].city}}"
-   *     },
-   *     {
-   *       "key": "something",
-   *       "value": "{{any liquid}}"
-   *     }
-   *   ]
-   * }
-   * ```
-   *
-   * This will create variables `customerName`, `fullName`, `greeting`, `customerCity`, and `something`. To access these variables, you can reference them as `{{customerName}}`, `{{fullName}}`, `{{greeting}}`, `{{customerCity}}`, and `{{something}}`.
-   */
-  aliases?: VariableExtractionAlias[];
+export interface ContextEngineeringPlanPreviousAssistantMessages {
+  type: "previousAssistantMessages";
 }
 
 export interface HandoffDestinationAssistant {
@@ -5856,7 +7408,9 @@ export interface HandoffDestinationAssistant {
   contextEngineeringPlan?:
     | ContextEngineeringPlanLastNMessages
     | ContextEngineeringPlanNone
-    | ContextEngineeringPlanAll;
+    | ContextEngineeringPlanAll
+    | ContextEngineeringPlanUserAndAssistantMessages
+    | ContextEngineeringPlanPreviousAssistantMessages;
   /** This is the assistant to transfer the call to. You must provide either assistantName or assistantId. */
   assistantName?: string;
   /** This is the assistant id to transfer the call to. You must provide either assistantName or assistantId. */
@@ -5888,12 +7442,73 @@ export interface HandoffDestinationDynamic {
   description?: string;
 }
 
-export interface CreateHandoffToolDTO {
+export interface SquadMemberDTO {
   /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   * This is the assistant version (e.g. `v3`) to pin for this squad member. When set, the call uses
+   * the snapshot from `assistant_version` (by `(assistantId, version)`) instead of the latest. Valid
+   * only with `assistantId`; rejected with inline `assistant`. Omit to follow the latest version.
    */
+  assistantVersion?: string | null;
+  assistantDestinations?: (
+    | TransferDestinationAssistant
+    | HandoffDestinationAssistant
+  )[];
+  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
+  assistantId?: string | null;
+  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
+  /** This can be used to override the assistant's settings and provide values for it's template variables. */
+  assistantOverrides?: AssistantOverrides;
+}
+
+export interface CreateSquadDTO {
+  /** This is the name of the squad. */
+  name?: string;
+  /**
+   * This is the list of assistants that make up the squad.
+   *
+   * The call will start with the first assistant in the list.
+   */
+  members: SquadMemberDTO[];
+  /**
+   * This can be used to override all the assistants' settings and provide values for their template variables.
+   *
+   * Both `membersOverrides` and `members[n].assistantOverrides` can be used together. First, `members[n].assistantOverrides` is applied. Then, `membersOverrides` is applied as a global override.
+   */
+  membersOverrides?: AssistantOverrides;
+}
+
+export interface HandoffDestinationSquad {
+  type: "squad";
+  /** This is the plan for manipulating the message context before handing off the call to the squad. */
+  contextEngineeringPlan?:
+    | ContextEngineeringPlanLastNMessages
+    | ContextEngineeringPlanNone
+    | ContextEngineeringPlanAll
+    | ContextEngineeringPlanUserAndAssistantMessages
+    | ContextEngineeringPlanPreviousAssistantMessages;
+  /** This is the squad id to transfer the call to. */
+  squadId?: string;
+  /** This is a transient squad to transfer the call to. */
+  squad?: CreateSquadDTO;
+  /**
+   * This is the name of the entry assistant to start with when handing off to the squad.
+   * If not provided, the first member of the squad will be used.
+   */
+  entryAssistantName?: string;
+  /** This is the variable extraction plan for the handoff tool. */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /**
+   * These are the overrides to apply to the squad configuration.
+   * Maps to squad-level membersOverrides.
+   */
+  squadOverrides?: AssistantOverrides;
+  /** This is the description of the destination, used by the AI to choose when and how to transfer the call. */
+  description?: string;
+}
+
+export interface CreateHandoffToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -5914,6 +7529,8 @@ export interface CreateHandoffToolDTO {
    * ---
    */
   type: "handoff";
+  /** This is the default local tool result message used when no runtime handoff result override is returned. */
+  defaultResult?: string;
   /**
    * These are the destinations that the call can be handed off to.
    *
@@ -6083,7 +7700,11 @@ export interface CreateHandoffToolDTO {
    *
    * The properties `customerAreaCode`, `customerIntent`, and `customerSentiment` will be passed to the server in the webhook request body.
    */
-  destinations?: (HandoffDestinationAssistant | HandoffDestinationDynamic)[];
+  destinations?: (
+    | HandoffDestinationAssistant
+    | HandoffDestinationDynamic
+    | HandoffDestinationSquad
+  )[];
   /**
    * This is the optional function definition that will be passed to the LLM.
    * If this is not defined, we will construct this based on the other properties.
@@ -6329,6 +7950,9 @@ export interface KnowledgeBase {
   provider: "google";
   /** The model to use for the knowledge base */
   model?:
+    | "gemini-3.5-flash"
+    | "gemini-3.1-flash-lite"
+    | "gemini-3-flash-preview"
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
@@ -6350,11 +7974,7 @@ export interface KnowledgeBase {
 }
 
 export interface CreateQueryToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -6449,11 +8069,7 @@ export interface CreateQueryToolDTO {
 }
 
 export interface CreateGoogleCalendarCreateEventToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -6546,11 +8162,7 @@ export interface CreateGoogleCalendarCreateEventToolDTO {
 }
 
 export interface CreateGoogleSheetsRowAppendToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -6643,11 +8255,7 @@ export interface CreateGoogleSheetsRowAppendToolDTO {
 }
 
 export interface CreateGoogleCalendarCheckAvailabilityToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -6740,11 +8348,7 @@ export interface CreateGoogleCalendarCheckAvailabilityToolDTO {
 }
 
 export interface CreateSlackSendMessageToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -6836,17 +8440,25 @@ export interface CreateSlackSendMessageToolDTO {
   rejectionPlan?: ToolRejectionPlan;
 }
 
+export interface McpToolMessages {
+  /** The name of the tool from the MCP server. */
+  name: string;
+  /** Custom messages for this specific tool. Set to an empty array to suppress all messages for this tool. If not provided, the tool will use the default messages from the parent MCP tool configuration. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+}
+
 export interface McpToolMetadata {
   /** This is the protocol used for MCP communication. Defaults to Streamable HTTP. */
   protocol?: "sse" | "shttp";
 }
 
 export interface CreateMcpToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -6867,6 +8479,8 @@ export interface CreateMcpToolDTO {
    *   - Webhook expects a response with tool call result.
    */
   server?: Server;
+  /** Per-tool message overrides for individual tools loaded from the MCP server. Set messages to an empty array to suppress messages for a specific tool. Tools not listed here will use the default messages from the parent tool. */
+  toolMessages?: McpToolMessages[];
   metadata?: McpToolMetadata;
   /**
    * This is the plan to reject a tool call based on the conversation state.
@@ -6952,11 +8566,7 @@ export interface CreateMcpToolDTO {
 }
 
 export interface CreateGoHighLevelCalendarAvailabilityToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -7049,11 +8659,7 @@ export interface CreateGoHighLevelCalendarAvailabilityToolDTO {
 }
 
 export interface CreateGoHighLevelCalendarEventCreateToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -7146,11 +8752,7 @@ export interface CreateGoHighLevelCalendarEventCreateToolDTO {
 }
 
 export interface CreateGoHighLevelContactCreateToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -7243,11 +8845,7 @@ export interface CreateGoHighLevelContactCreateToolDTO {
 }
 
 export interface CreateGoHighLevelContactGetToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -7345,6 +8943,16 @@ export interface OpenAIMessage {
   role: "assistant" | "function" | "user" | "system" | "tool";
 }
 
+export interface ToolRef {
+  /**
+   * This is the unique identifier of the tool whose version is being pinned.
+   * @format uuid
+   */
+  toolId: string;
+  /** Public version label of the tool, e.g. "v3" */
+  version: string;
+}
+
 export interface AnyscaleModel {
   /** This is the starting state for the conversation. */
   messages?: OpenAIMessage[];
@@ -7356,6 +8964,7 @@ export interface AnyscaleModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -7374,6 +8983,8 @@ export interface AnyscaleModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -7381,13 +8992,20 @@ export interface AnyscaleModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   provider: "anyscale";
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -7439,6 +9057,7 @@ export interface AnthropicModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -7457,6 +9076,8 @@ export interface AnthropicModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -7464,6 +9085,13 @@ export interface AnthropicModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   /** The specific Anthropic/Claude model that will be used. */
@@ -7477,8 +9105,11 @@ export interface AnthropicModel {
     | "claude-3-7-sonnet-20250219"
     | "claude-opus-4-20250514"
     | "claude-opus-4-5-20251101"
+    | "claude-opus-4-6"
     | "claude-sonnet-4-20250514"
     | "claude-sonnet-4-5-20250929"
+    | "claude-sonnet-4-6"
+    | "claude-sonnet-5"
     | "claude-haiku-4-5-20251001";
   /** The provider identifier for Anthropic. */
   provider: "anthropic";
@@ -7489,7 +9120,111 @@ export interface AnthropicModel {
    */
   thinking?: AnthropicThinkingConfig;
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 10000
+   */
+  maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   *
+   * @default false
+   */
+  emotionRecognitionEnabled?: boolean;
+  /**
+   * This sets how many turns at the start of the conversation to use a smaller, faster model from the same provider before switching to the primary model. Example, gpt-3.5-turbo if provider is openai.
+   *
+   * Default is 0.
+   *
+   * @default 0
+   * @min 0
+   */
+  numFastTurns?: number;
+}
+
+export interface AnthropicBedrockModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateCodeToolDTO
+    | CreateComputerToolDTO
+    | CreateDtmfToolDTO
+    | CreateEndCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateHandoffToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: CreateCustomKnowledgeBaseDTO;
+  /** The provider identifier for Anthropic via AWS Bedrock. */
+  provider: "anthropic-bedrock";
+  /** The specific Anthropic/Claude model that will be used via Bedrock. */
+  model:
+    | "claude-3-opus-20240229"
+    | "claude-3-sonnet-20240229"
+    | "claude-3-haiku-20240307"
+    | "claude-3-5-sonnet-20240620"
+    | "claude-3-5-sonnet-20241022"
+    | "claude-3-5-haiku-20241022"
+    | "claude-3-7-sonnet-20250219"
+    | "claude-opus-4-20250514"
+    | "claude-opus-4-5-20251101"
+    | "claude-opus-4-6"
+    | "claude-sonnet-4-20250514"
+    | "claude-sonnet-4-5-20250929"
+    | "claude-sonnet-4-6"
+    | "claude-haiku-4-5-20251001"
+    | "global.anthropic.claude-haiku-4-5-20251001-v1:0";
+  /**
+   * Optional configuration for Anthropic's thinking feature.
+   * Only applicable for claude-3-7-sonnet-20250219 model.
+   * If provided, maxTokens must be greater than thinking.budgetTokens.
+   */
+  thinking?: AnthropicThinkingConfig;
+  /**
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -7530,6 +9265,7 @@ export interface CerebrasModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -7548,6 +9284,8 @@ export interface CerebrasModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -7555,13 +9293,20 @@ export interface CerebrasModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: "llama3.1-8b" | "llama-3.3-70b";
   provider: "cerebras";
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -7602,6 +9347,7 @@ export interface CustomLLMModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -7620,6 +9366,8 @@ export interface CustomLLMModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -7627,6 +9375,13 @@ export interface CustomLLMModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   /** This is the provider that will be used for the model. Any service, including your own server, that is compatible with the OpenAI API can be used. */
@@ -7664,7 +9419,7 @@ export interface CustomLLMModel {
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -7705,6 +9460,7 @@ export interface DeepInfraModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -7723,6 +9479,8 @@ export interface DeepInfraModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -7730,13 +9488,20 @@ export interface DeepInfraModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   provider: "deepinfra";
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -7777,6 +9542,7 @@ export interface DeepSeekModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -7795,6 +9561,8 @@ export interface DeepSeekModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -7802,13 +9570,20 @@ export interface DeepSeekModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: "deepseek-chat" | "deepseek-reasoner";
   provider: "deep-seek";
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -7889,6 +9664,7 @@ export interface GoogleModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -7907,6 +9683,8 @@ export interface GoogleModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -7914,10 +9692,20 @@ export interface GoogleModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   /** This is the Google model that will be used. */
   model:
+    | "gemini-3.5-flash"
+    | "gemini-3.1-flash-lite"
+    | "gemini-3-flash-preview"
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
@@ -7939,7 +9727,7 @@ export interface GoogleModel {
    */
   realtimeConfig?: GoogleRealtimeConfig;
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -7980,6 +9768,7 @@ export interface GroqModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -7998,6 +9787,8 @@ export interface GroqModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -8005,6 +9796,13 @@ export interface GroqModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
@@ -8019,14 +9817,13 @@ export interface GroqModel {
     | "llama3-70b-8192"
     | "gemma2-9b-it"
     | "moonshotai/kimi-k2-instruct-0905"
-    | "meta-llama/llama-4-maverick-17b-128e-instruct"
     | "meta-llama/llama-4-scout-17b-16e-instruct"
     | "mistral-saba-24b"
     | "compound-beta"
     | "compound-beta-mini";
   provider: "groq";
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -8067,6 +9864,7 @@ export interface InflectionAIModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -8085,6 +9883,8 @@ export interface InflectionAIModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -8092,13 +9892,102 @@ export interface InflectionAIModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: "inflection_3_pi";
   provider: "inflection-ai";
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /**
+   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
+   * @min 50
+   * @max 10000
+   */
+  maxTokens?: number;
+  /**
+   * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
+   *
+   * Default `false` because the model is usually are good at understanding the user's emotion from text.
+   *
+   * @default false
+   */
+  emotionRecognitionEnabled?: boolean;
+  /**
+   * This sets how many turns at the start of the conversation to use a smaller, faster model from the same provider before switching to the primary model. Example, gpt-3.5-turbo if provider is openai.
+   *
+   * Default is 0.
+   *
+   * @default 0
+   * @min 0
+   */
+  numFastTurns?: number;
+}
+
+export interface MinimaxLLMModel {
+  /** This is the starting state for the conversation. */
+  messages?: OpenAIMessage[];
+  /**
+   * These are the tools that the assistant can use during the call. To use existing tools, use `toolIds`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  tools?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateCodeToolDTO
+    | CreateComputerToolDTO
+    | CreateDtmfToolDTO
+    | CreateEndCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateHandoffToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
+  )[];
+  /**
+   * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
+   *
+   * Both `tools` and `toolIds` can be used together.
+   */
+  toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
+  /** These are the options for the knowledge base. */
+  knowledgeBase?: CreateCustomKnowledgeBaseDTO;
+  provider: "minimax";
+  /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
+  model: "MiniMax-M2.7";
+  /**
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -8139,6 +10028,7 @@ export interface OpenAIModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -8157,6 +10047,8 @@ export interface OpenAIModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -8164,6 +10056,13 @@ export interface OpenAIModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   /** This is the provider that will be used for the model. */
@@ -8177,9 +10076,20 @@ export interface OpenAIModel {
    * @default undefined
    */
   model:
+    | "gpt-5.6-sol"
+    | "gpt-5.6-terra"
+    | "gpt-5.6-luna"
+    | "gpt-5.5"
+    | "chat-latest"
+    | "gpt-5.4"
+    | "gpt-5.4-mini"
+    | "gpt-5.4-nano"
+    | "gpt-5.2"
+    | "gpt-5.2-chat-latest"
     | "gpt-5.1"
     | "gpt-5.1-chat-latest"
     | "gpt-5"
+    | "gpt-5-chat-latest"
     | "gpt-5-mini"
     | "gpt-5-nano"
     | "gpt-4.1-2025-04-14"
@@ -8198,6 +10108,8 @@ export interface OpenAIModel {
     | "gpt-4o-realtime-preview-2024-12-17"
     | "gpt-4o-mini-realtime-preview-2024-12-17"
     | "gpt-realtime-2025-08-28"
+    | "gpt-realtime-mini-2025-12-15"
+    | "gpt-realtime-2"
     | "gpt-4o-mini-2024-07-18"
     | "gpt-4o-mini"
     | "gpt-4o"
@@ -8216,18 +10128,55 @@ export interface OpenAIModel {
     | "gpt-3.5-turbo-1106"
     | "gpt-3.5-turbo-16k"
     | "gpt-3.5-turbo-0613"
+    | "gpt-5.6-luna:westus3"
+    | "gpt-5.6-terra:westus3"
+    | "gpt-5.6-sol:westus3"
+    | "gpt-5.4:eastus2"
+    | "gpt-5.4:swedencentral"
+    | "gpt-5.4-mini:eastus2"
+    | "gpt-5.4-mini:swedencentral"
+    | "gpt-5.4-nano:eastus2"
+    | "gpt-5.4-nano:swedencentral"
+    | "gpt-5.2:eastus2"
+    | "gpt-5.2:swedencentral"
+    | "gpt-5.1:eastus2"
+    | "gpt-5.1:swedencentral"
+    | "gpt-5:eastus2"
+    | "gpt-5:swedencentral"
+    | "gpt-5:canadaeast"
+    | "gpt-5:eastus"
+    | "gpt-5:westeurope"
+    | "gpt-5:germanywestcentral"
+    | "gpt-5:polandcentral"
+    | "gpt-5:spaincentral"
+    | "gpt-5-mini:eastus2"
+    | "gpt-5-mini:swedencentral"
+    | "gpt-5-mini:westeurope"
+    | "gpt-5-mini:germanywestcentral"
+    | "gpt-5-mini:polandcentral"
+    | "gpt-5-mini:spaincentral"
+    | "gpt-5-nano:eastus2"
+    | "gpt-5-nano:swedencentral"
     | "gpt-4.1-2025-04-14:westus"
     | "gpt-4.1-2025-04-14:eastus2"
     | "gpt-4.1-2025-04-14:eastus"
     | "gpt-4.1-2025-04-14:westus3"
     | "gpt-4.1-2025-04-14:northcentralus"
     | "gpt-4.1-2025-04-14:southcentralus"
+    | "gpt-4.1-2025-04-14:westeurope"
+    | "gpt-4.1-2025-04-14:germanywestcentral"
+    | "gpt-4.1-2025-04-14:polandcentral"
+    | "gpt-4.1-2025-04-14:spaincentral"
     | "gpt-4.1-mini-2025-04-14:westus"
     | "gpt-4.1-mini-2025-04-14:eastus2"
     | "gpt-4.1-mini-2025-04-14:eastus"
     | "gpt-4.1-mini-2025-04-14:westus3"
     | "gpt-4.1-mini-2025-04-14:northcentralus"
     | "gpt-4.1-mini-2025-04-14:southcentralus"
+    | "gpt-4.1-mini-2025-04-14:westeurope"
+    | "gpt-4.1-mini-2025-04-14:germanywestcentral"
+    | "gpt-4.1-mini-2025-04-14:polandcentral"
+    | "gpt-4.1-mini-2025-04-14:spaincentral"
     | "gpt-4.1-nano-2025-04-14:westus"
     | "gpt-4.1-nano-2025-04-14:eastus2"
     | "gpt-4.1-nano-2025-04-14:westus3"
@@ -8239,6 +10188,10 @@ export interface OpenAIModel {
     | "gpt-4o-2024-11-20:eastus"
     | "gpt-4o-2024-11-20:westus3"
     | "gpt-4o-2024-11-20:southcentralus"
+    | "gpt-4o-2024-11-20:westeurope"
+    | "gpt-4o-2024-11-20:germanywestcentral"
+    | "gpt-4o-2024-11-20:polandcentral"
+    | "gpt-4o-2024-11-20:spaincentral"
     | "gpt-4o-2024-08-06:westus"
     | "gpt-4o-2024-08-06:westus3"
     | "gpt-4o-2024-08-06:eastus"
@@ -8261,7 +10214,7 @@ export interface OpenAIModel {
     | "gpt-4-0125-preview:eastus"
     | "gpt-4-0125-preview:northcentralus"
     | "gpt-4-0125-preview:southcentralus"
-    | "gpt-4-1106-preview:australia"
+    | "gpt-4-1106-preview:australiaeast"
     | "gpt-4-1106-preview:canadaeast"
     | "gpt-4-1106-preview:france"
     | "gpt-4-1106-preview:india"
@@ -8275,15 +10228,29 @@ export interface OpenAIModel {
     | "gpt-3.5-turbo-0125:northcentralus"
     | "gpt-3.5-turbo-0125:southcentralus"
     | "gpt-3.5-turbo-1106:canadaeast"
-    | "gpt-3.5-turbo-1106:westus";
+    | "gpt-3.5-turbo-1106:westus"
+    | "gpt-4.1:australiaeast"
+    | "gpt-4o:australiaeast"
+    | "gpt-5.4-mini:australiaeast";
   /**
    * These are the fallback models that will be used if the primary model fails. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest fallbacks that make sense.
    * @example ["gpt-4-0125-preview","gpt-4-0613"]
    */
-  fallbackModels?:
+  fallbackModels?: (
+    | "gpt-5.6-sol"
+    | "gpt-5.6-terra"
+    | "gpt-5.6-luna"
+    | "gpt-5.5"
+    | "chat-latest"
+    | "gpt-5.4"
+    | "gpt-5.4-mini"
+    | "gpt-5.4-nano"
+    | "gpt-5.2"
+    | "gpt-5.2-chat-latest"
     | "gpt-5.1"
     | "gpt-5.1-chat-latest"
     | "gpt-5"
+    | "gpt-5-chat-latest"
     | "gpt-5-mini"
     | "gpt-5-nano"
     | "gpt-4.1-2025-04-14"
@@ -8302,6 +10269,8 @@ export interface OpenAIModel {
     | "gpt-4o-realtime-preview-2024-12-17"
     | "gpt-4o-mini-realtime-preview-2024-12-17"
     | "gpt-realtime-2025-08-28"
+    | "gpt-realtime-mini-2025-12-15"
+    | "gpt-realtime-2"
     | "gpt-4o-mini-2024-07-18"
     | "gpt-4o-mini"
     | "gpt-4o"
@@ -8320,18 +10289,55 @@ export interface OpenAIModel {
     | "gpt-3.5-turbo-1106"
     | "gpt-3.5-turbo-16k"
     | "gpt-3.5-turbo-0613"
+    | "gpt-5.6-luna:westus3"
+    | "gpt-5.6-terra:westus3"
+    | "gpt-5.6-sol:westus3"
+    | "gpt-5.4:eastus2"
+    | "gpt-5.4:swedencentral"
+    | "gpt-5.4-mini:eastus2"
+    | "gpt-5.4-mini:swedencentral"
+    | "gpt-5.4-nano:eastus2"
+    | "gpt-5.4-nano:swedencentral"
+    | "gpt-5.2:eastus2"
+    | "gpt-5.2:swedencentral"
+    | "gpt-5.1:eastus2"
+    | "gpt-5.1:swedencentral"
+    | "gpt-5:eastus2"
+    | "gpt-5:swedencentral"
+    | "gpt-5:canadaeast"
+    | "gpt-5:eastus"
+    | "gpt-5:westeurope"
+    | "gpt-5:germanywestcentral"
+    | "gpt-5:polandcentral"
+    | "gpt-5:spaincentral"
+    | "gpt-5-mini:eastus2"
+    | "gpt-5-mini:swedencentral"
+    | "gpt-5-mini:westeurope"
+    | "gpt-5-mini:germanywestcentral"
+    | "gpt-5-mini:polandcentral"
+    | "gpt-5-mini:spaincentral"
+    | "gpt-5-nano:eastus2"
+    | "gpt-5-nano:swedencentral"
     | "gpt-4.1-2025-04-14:westus"
     | "gpt-4.1-2025-04-14:eastus2"
     | "gpt-4.1-2025-04-14:eastus"
     | "gpt-4.1-2025-04-14:westus3"
     | "gpt-4.1-2025-04-14:northcentralus"
     | "gpt-4.1-2025-04-14:southcentralus"
+    | "gpt-4.1-2025-04-14:westeurope"
+    | "gpt-4.1-2025-04-14:germanywestcentral"
+    | "gpt-4.1-2025-04-14:polandcentral"
+    | "gpt-4.1-2025-04-14:spaincentral"
     | "gpt-4.1-mini-2025-04-14:westus"
     | "gpt-4.1-mini-2025-04-14:eastus2"
     | "gpt-4.1-mini-2025-04-14:eastus"
     | "gpt-4.1-mini-2025-04-14:westus3"
     | "gpt-4.1-mini-2025-04-14:northcentralus"
     | "gpt-4.1-mini-2025-04-14:southcentralus"
+    | "gpt-4.1-mini-2025-04-14:westeurope"
+    | "gpt-4.1-mini-2025-04-14:germanywestcentral"
+    | "gpt-4.1-mini-2025-04-14:polandcentral"
+    | "gpt-4.1-mini-2025-04-14:spaincentral"
     | "gpt-4.1-nano-2025-04-14:westus"
     | "gpt-4.1-nano-2025-04-14:eastus2"
     | "gpt-4.1-nano-2025-04-14:westus3"
@@ -8343,6 +10349,10 @@ export interface OpenAIModel {
     | "gpt-4o-2024-11-20:eastus"
     | "gpt-4o-2024-11-20:westus3"
     | "gpt-4o-2024-11-20:southcentralus"
+    | "gpt-4o-2024-11-20:westeurope"
+    | "gpt-4o-2024-11-20:germanywestcentral"
+    | "gpt-4o-2024-11-20:polandcentral"
+    | "gpt-4o-2024-11-20:spaincentral"
     | "gpt-4o-2024-08-06:westus"
     | "gpt-4o-2024-08-06:westus3"
     | "gpt-4o-2024-08-06:eastus"
@@ -8365,7 +10375,7 @@ export interface OpenAIModel {
     | "gpt-4-0125-preview:eastus"
     | "gpt-4-0125-preview:northcentralus"
     | "gpt-4-0125-preview:southcentralus"
-    | "gpt-4-1106-preview:australia"
+    | "gpt-4-1106-preview:australiaeast"
     | "gpt-4-1106-preview:canadaeast"
     | "gpt-4-1106-preview:france"
     | "gpt-4-1106-preview:india"
@@ -8379,7 +10389,11 @@ export interface OpenAIModel {
     | "gpt-3.5-turbo-0125:northcentralus"
     | "gpt-3.5-turbo-0125:southcentralus"
     | "gpt-3.5-turbo-1106:canadaeast"
-    | "gpt-3.5-turbo-1106:westus";
+    | "gpt-3.5-turbo-1106:westus"
+    | "gpt-4.1:australiaeast"
+    | "gpt-4o:australiaeast"
+    | "gpt-5.4-mini:australiaeast"
+  )[];
   /**
    * Azure OpenAI doesn't support `maxLength` right now https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/structured-outputs?tabs=python-secure%2Cdotnet-entra-id&pivots=programming-language-csharp#unsupported-type-specific-keywords. Need to strip.
    *
@@ -8392,7 +10406,34 @@ export interface OpenAIModel {
     | "strip-parameters-with-unsupported-validation"
     | "strip-unsupported-validation";
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This controls the prompt cache retention policy for models that support extended caching (GPT-4.1, GPT-5 series).
+   *
+   * - `in_memory`: Default behavior, cache retained in GPU memory only
+   * - `24h`: Extended caching, keeps cached prefixes active for up to 24 hours by offloading to GPU-local storage
+   *
+   * Only applies to models: gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, gpt-5.5, chat-latest, gpt-5.4, gpt-5.4-mini, gpt-5.4-nano, gpt-5.2, gpt-5.1, gpt-5.1-codex, gpt-5.1-codex-mini, gpt-5.1-chat-latest, gpt-5, gpt-5-codex, gpt-4.1
+   *
+   * @default undefined (uses API default which is 'in_memory')
+   */
+  promptCacheRetention?: "in_memory" | "24h";
+  /**
+   * This is the prompt cache key for models that support extended caching (GPT-4.1, GPT-5 series).
+   *
+   * Providing a cache key allows you to share cached prefixes across requests.
+   *
+   * @default undefined
+   * @maxLength 64
+   */
+  promptCacheKey?: string;
+  /**
+   * Reasoning effort for reasoning-capable OpenAI models.
+   * For `gpt-realtime-2`: forwarded to V2 stream's session.update as `reasoning.effort`.
+   * For non-realtime OpenAI models, model-aware validation limits newly public
+   * values while preserving the existing four-value storage contract.
+   */
+  reasoningEffort?: "minimal" | "none" | "low" | "medium" | "high" | "xhigh";
+  /**
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -8433,6 +10474,7 @@ export interface OpenRouterModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -8451,6 +10493,8 @@ export interface OpenRouterModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -8458,13 +10502,20 @@ export interface OpenRouterModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   provider: "openrouter";
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -8505,6 +10556,7 @@ export interface PerplexityAIModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -8523,6 +10575,8 @@ export interface PerplexityAIModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -8530,13 +10584,20 @@ export interface PerplexityAIModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   provider: "perplexity-ai";
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -8577,6 +10638,7 @@ export interface TogetherAIModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -8595,6 +10657,8 @@ export interface TogetherAIModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -8602,13 +10666,20 @@ export interface TogetherAIModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   provider: "together-ai";
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
   model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -8649,6 +10720,19 @@ export interface HangupNode {
 }
 
 export interface WorkflowOpenAIModel {
+  /**
+   * These are the messages used to customize the prompt used for structured output extraction.
+   *
+   * When provided, these messages replace the default prompts. Message contents support LiquidJS templating with the following variables:
+   * - `{{transcript}}` or `{{messages}}` to reference the conversation (one is required)
+   * - `{{structuredOutput.name}}`, `{{structuredOutput.description}}`, or `{{structuredOutput.schema}}` to reference the structured output definition (one is required)
+   * - `{{systemPrompt}}`, `{{callEndedReason}}`, `{{duration}}`, `{{startedAt}}`, `{{endedAt}}`, and any `assistantOverrides.variableValues`
+   *
+   * `{{messages}}` is the full message history including tool calls; `{{transcript}}` is the spoken text only, which uses significantly fewer tokens.
+   *
+   * If not provided, default system and user prompts are used.
+   */
+  messages?: OpenAIMessage[];
   /** This is the provider of the model (`openai`). */
   provider: "openai";
   /**
@@ -8659,9 +10743,20 @@ export interface WorkflowOpenAIModel {
    * @maxLength 100
    */
   model:
+    | "gpt-5.6-sol"
+    | "gpt-5.6-terra"
+    | "gpt-5.6-luna"
+    | "gpt-5.5"
+    | "chat-latest"
+    | "gpt-5.4"
+    | "gpt-5.4-mini"
+    | "gpt-5.4-nano"
+    | "gpt-5.2"
+    | "gpt-5.2-chat-latest"
     | "gpt-5.1"
     | "gpt-5.1-chat-latest"
     | "gpt-5"
+    | "gpt-5-chat-latest"
     | "gpt-5-mini"
     | "gpt-5-nano"
     | "gpt-4.1-2025-04-14"
@@ -8694,18 +10789,55 @@ export interface WorkflowOpenAIModel {
     | "gpt-3.5-turbo-1106"
     | "gpt-3.5-turbo-16k"
     | "gpt-3.5-turbo-0613"
+    | "gpt-5.6-luna:westus3"
+    | "gpt-5.6-terra:westus3"
+    | "gpt-5.6-sol:westus3"
+    | "gpt-5.4:eastus2"
+    | "gpt-5.4:swedencentral"
+    | "gpt-5.4-mini:eastus2"
+    | "gpt-5.4-mini:swedencentral"
+    | "gpt-5.4-nano:eastus2"
+    | "gpt-5.4-nano:swedencentral"
+    | "gpt-5.2:eastus2"
+    | "gpt-5.2:swedencentral"
+    | "gpt-5.1:eastus2"
+    | "gpt-5.1:swedencentral"
+    | "gpt-5:eastus2"
+    | "gpt-5:swedencentral"
+    | "gpt-5:canadaeast"
+    | "gpt-5:eastus"
+    | "gpt-5:westeurope"
+    | "gpt-5:germanywestcentral"
+    | "gpt-5:polandcentral"
+    | "gpt-5:spaincentral"
+    | "gpt-5-mini:eastus2"
+    | "gpt-5-mini:swedencentral"
+    | "gpt-5-mini:westeurope"
+    | "gpt-5-mini:germanywestcentral"
+    | "gpt-5-mini:polandcentral"
+    | "gpt-5-mini:spaincentral"
+    | "gpt-5-nano:eastus2"
+    | "gpt-5-nano:swedencentral"
     | "gpt-4.1-2025-04-14:westus"
     | "gpt-4.1-2025-04-14:eastus2"
     | "gpt-4.1-2025-04-14:eastus"
     | "gpt-4.1-2025-04-14:westus3"
     | "gpt-4.1-2025-04-14:northcentralus"
     | "gpt-4.1-2025-04-14:southcentralus"
+    | "gpt-4.1-2025-04-14:westeurope"
+    | "gpt-4.1-2025-04-14:germanywestcentral"
+    | "gpt-4.1-2025-04-14:polandcentral"
+    | "gpt-4.1-2025-04-14:spaincentral"
     | "gpt-4.1-mini-2025-04-14:westus"
     | "gpt-4.1-mini-2025-04-14:eastus2"
     | "gpt-4.1-mini-2025-04-14:eastus"
     | "gpt-4.1-mini-2025-04-14:westus3"
     | "gpt-4.1-mini-2025-04-14:northcentralus"
     | "gpt-4.1-mini-2025-04-14:southcentralus"
+    | "gpt-4.1-mini-2025-04-14:westeurope"
+    | "gpt-4.1-mini-2025-04-14:germanywestcentral"
+    | "gpt-4.1-mini-2025-04-14:polandcentral"
+    | "gpt-4.1-mini-2025-04-14:spaincentral"
     | "gpt-4.1-nano-2025-04-14:westus"
     | "gpt-4.1-nano-2025-04-14:eastus2"
     | "gpt-4.1-nano-2025-04-14:westus3"
@@ -8717,6 +10849,10 @@ export interface WorkflowOpenAIModel {
     | "gpt-4o-2024-11-20:eastus"
     | "gpt-4o-2024-11-20:westus3"
     | "gpt-4o-2024-11-20:southcentralus"
+    | "gpt-4o-2024-11-20:westeurope"
+    | "gpt-4o-2024-11-20:germanywestcentral"
+    | "gpt-4o-2024-11-20:polandcentral"
+    | "gpt-4o-2024-11-20:spaincentral"
     | "gpt-4o-2024-08-06:westus"
     | "gpt-4o-2024-08-06:westus3"
     | "gpt-4o-2024-08-06:eastus"
@@ -8739,7 +10875,7 @@ export interface WorkflowOpenAIModel {
     | "gpt-4-0125-preview:eastus"
     | "gpt-4-0125-preview:northcentralus"
     | "gpt-4-0125-preview:southcentralus"
-    | "gpt-4-1106-preview:australia"
+    | "gpt-4-1106-preview:australiaeast"
     | "gpt-4-1106-preview:canadaeast"
     | "gpt-4-1106-preview:france"
     | "gpt-4-1106-preview:india"
@@ -8753,7 +10889,10 @@ export interface WorkflowOpenAIModel {
     | "gpt-3.5-turbo-0125:northcentralus"
     | "gpt-3.5-turbo-0125:southcentralus"
     | "gpt-3.5-turbo-1106:canadaeast"
-    | "gpt-3.5-turbo-1106:westus";
+    | "gpt-3.5-turbo-1106:westus"
+    | "gpt-4.1:australiaeast"
+    | "gpt-4o:australiaeast"
+    | "gpt-5.4-mini:australiaeast";
   /**
    * This is the temperature of the model.
    * @min 0
@@ -8769,6 +10908,19 @@ export interface WorkflowOpenAIModel {
 }
 
 export interface WorkflowAnthropicModel {
+  /**
+   * These are the messages used to customize the prompt used for structured output extraction.
+   *
+   * When provided, these messages replace the default prompts. Message contents support LiquidJS templating with the following variables:
+   * - `{{transcript}}` or `{{messages}}` to reference the conversation (one is required)
+   * - `{{structuredOutput.name}}`, `{{structuredOutput.description}}`, or `{{structuredOutput.schema}}` to reference the structured output definition (one is required)
+   * - `{{systemPrompt}}`, `{{callEndedReason}}`, `{{duration}}`, `{{startedAt}}`, `{{endedAt}}`, and any `assistantOverrides.variableValues`
+   *
+   * `{{messages}}` is the full message history including tool calls; `{{transcript}}` is the spoken text only, which uses significantly fewer tokens.
+   *
+   * If not provided, default system and user prompts are used.
+   */
+  messages?: OpenAIMessage[];
   /** This is the provider of the model (`anthropic`). */
   provider: "anthropic";
   /**
@@ -8785,8 +10937,11 @@ export interface WorkflowAnthropicModel {
     | "claude-3-7-sonnet-20250219"
     | "claude-opus-4-20250514"
     | "claude-opus-4-5-20251101"
+    | "claude-opus-4-6"
     | "claude-sonnet-4-20250514"
     | "claude-sonnet-4-5-20250929"
+    | "claude-sonnet-4-6"
+    | "claude-sonnet-5"
     | "claude-haiku-4-5-20251001";
   /**
    * This is the optional configuration for Anthropic's thinking feature.
@@ -8808,7 +10963,76 @@ export interface WorkflowAnthropicModel {
   maxTokens?: number;
 }
 
+export interface WorkflowAnthropicBedrockModel {
+  /**
+   * These are the messages used to customize the prompt used for structured output extraction.
+   *
+   * When provided, these messages replace the default prompts. Message contents support LiquidJS templating with the following variables:
+   * - `{{transcript}}` or `{{messages}}` to reference the conversation (one is required)
+   * - `{{structuredOutput.name}}`, `{{structuredOutput.description}}`, or `{{structuredOutput.schema}}` to reference the structured output definition (one is required)
+   * - `{{systemPrompt}}`, `{{callEndedReason}}`, `{{duration}}`, `{{startedAt}}`, `{{endedAt}}`, and any `assistantOverrides.variableValues`
+   *
+   * `{{messages}}` is the full message history including tool calls; `{{transcript}}` is the spoken text only, which uses significantly fewer tokens.
+   *
+   * If not provided, default system and user prompts are used.
+   */
+  messages?: OpenAIMessage[];
+  /** This is the provider of the model (`anthropic-bedrock`). */
+  provider: "anthropic-bedrock";
+  /**
+   * This is the specific model that will be used.
+   * @maxLength 100
+   */
+  model:
+    | "claude-3-opus-20240229"
+    | "claude-3-sonnet-20240229"
+    | "claude-3-haiku-20240307"
+    | "claude-3-5-sonnet-20240620"
+    | "claude-3-5-sonnet-20241022"
+    | "claude-3-5-haiku-20241022"
+    | "claude-3-7-sonnet-20250219"
+    | "claude-opus-4-20250514"
+    | "claude-opus-4-5-20251101"
+    | "claude-opus-4-6"
+    | "claude-sonnet-4-20250514"
+    | "claude-sonnet-4-5-20250929"
+    | "claude-sonnet-4-6"
+    | "claude-haiku-4-5-20251001"
+    | "global.anthropic.claude-haiku-4-5-20251001-v1:0";
+  /**
+   * This is the optional configuration for Anthropic's thinking feature.
+   *
+   * - If provided, `maxTokens` must be greater than `thinking.budgetTokens`.
+   */
+  thinking?: AnthropicThinkingConfig;
+  /**
+   * This is the temperature of the model.
+   * @min 0
+   * @max 2
+   */
+  temperature?: number;
+  /**
+   * This is the max tokens of the model.
+   * @min 50
+   * @max 10000
+   */
+  maxTokens?: number;
+}
+
 export interface WorkflowGoogleModel {
+  /**
+   * These are the messages used to customize the prompt used for structured output extraction.
+   *
+   * When provided, these messages replace the default prompts. Message contents support LiquidJS templating with the following variables:
+   * - `{{transcript}}` or `{{messages}}` to reference the conversation (one is required)
+   * - `{{structuredOutput.name}}`, `{{structuredOutput.description}}`, or `{{structuredOutput.schema}}` to reference the structured output definition (one is required)
+   * - `{{systemPrompt}}`, `{{callEndedReason}}`, `{{duration}}`, `{{startedAt}}`, `{{endedAt}}`, and any `assistantOverrides.variableValues`
+   *
+   * `{{messages}}` is the full message history including tool calls; `{{transcript}}` is the spoken text only, which uses significantly fewer tokens.
+   *
+   * If not provided, default system and user prompts are used.
+   */
+  messages?: OpenAIMessage[];
   /** This is the provider of the model (`google`). */
   provider: "google";
   /**
@@ -8816,6 +11040,9 @@ export interface WorkflowGoogleModel {
    * @maxLength 100
    */
   model:
+    | "gemini-3.5-flash"
+    | "gemini-3.1-flash-lite"
+    | "gemini-3-flash-preview"
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
@@ -8845,6 +11072,19 @@ export interface WorkflowGoogleModel {
 }
 
 export interface WorkflowCustomModel {
+  /**
+   * These are the messages used to customize the prompt used for structured output extraction.
+   *
+   * When provided, these messages replace the default prompts. Message contents support LiquidJS templating with the following variables:
+   * - `{{transcript}}` or `{{messages}}` to reference the conversation (one is required)
+   * - `{{structuredOutput.name}}`, `{{structuredOutput.description}}`, or `{{structuredOutput.schema}}` to reference the structured output definition (one is required)
+   * - `{{systemPrompt}}`, `{{callEndedReason}}`, `{{duration}}`, `{{startedAt}}`, `{{endedAt}}`, and any `assistantOverrides.variableValues`
+   *
+   * `{{messages}}` is the full message history including tool calls; `{{transcript}}` is the spoken text only, which uses significantly fewer tokens.
+   *
+   * If not provided, default system and user prompts are used.
+   */
+  messages?: OpenAIMessage[];
   /** This is the provider of the model (`custom-llm`). */
   provider: "custom-llm";
   /**
@@ -8926,6 +11166,7 @@ export interface ConversationNode {
   model?:
     | WorkflowOpenAIModel
     | WorkflowAnthropicModel
+    | WorkflowAnthropicBedrockModel
     | WorkflowGoogleModel
     | WorkflowCustomModel;
   /**
@@ -8944,7 +11185,10 @@ export interface ConversationNode {
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
     | OpenAITranscriber
-    | CartesiaTranscriber;
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
   /**
    * This is the voice for the node.
    *
@@ -8961,13 +11205,16 @@ export interface ConversationNode {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
   /**
    * These are the tools that the conversation node can use during the call. To use existing tools, use `toolIds`.
    *
@@ -8976,6 +11223,7 @@ export interface ConversationNode {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -8994,6 +11242,8 @@ export interface ConversationNode {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the conversation node can use during the call. To use transient tools, use `tools`.
@@ -9079,6 +11329,7 @@ export interface ToolNode {
   tool?:
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -9096,7 +11347,9 @@ export interface ToolNode {
     | CreateSlackSendMessageToolDTO
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
-    | CreateTransferCallToolDTO;
+    | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO;
   /** This is the tool to call. To use a transient tool, send `tool` instead. */
   toolId?: string;
   /** @maxLength 80 */
@@ -9307,11 +11560,7 @@ export interface TransferHookAction {
 }
 
 export interface FunctionCallHookAction {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -9343,6 +11592,10 @@ export interface FunctionCallHookAction {
    *   - Webhook expects a response with tool call result.
    */
   server?: Server;
+  /** Plan to extract variables from the tool response */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /** Static key-value pairs merged into the request body. Values support Liquid templates. */
+  parameters?: ToolParameter[];
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -9431,6 +11684,8 @@ export interface FunctionCallHookAction {
 export interface SayHookAction {
   /** This is the type of action - must be "say" */
   type: "say";
+  /** This is the exact message to say. When a string array is provided, one is randomly selected. */
+  exact?: string | string[];
   /**
    * This is the prompt for the assistant to generate a response based on existing conversation.
    * Can be a string or an array of chat messages.
@@ -9444,8 +11699,21 @@ export interface SayHookAction {
         | ToolMessage
         | DeveloperMessage
       )[];
-  /** This is the message to say */
-  exact?: object;
+}
+
+export interface MessageAddHookAction {
+  /** This is the type of action - must be "message.add" */
+  type: "message.add";
+  /**
+   * The message to add to the conversation in OpenAI format
+   * @example {"role":"system","content":"Context update from hook"}
+   */
+  message: OpenAIMessage;
+  /**
+   * Whether to trigger an assistant response after adding the message
+   * @default true
+   */
+  triggerResponseEnabled?: boolean;
 }
 
 export interface CallHookFilter {
@@ -9470,7 +11738,7 @@ export interface CallHookCallEnding {
    */
   on: "call.ending";
   /** This is the set of actions to perform when the hook triggers */
-  do: ToolCallHookAction[];
+  do: (ToolCallHookAction | MessageAddHookAction)[];
   /** This is the set of filters that must match for the hook to trigger */
   filters?: CallHookFilter[];
 }
@@ -9482,7 +11750,7 @@ export interface CallHookAssistantSpeechInterrupted {
    */
   on: "assistant.speech.interrupted";
   /** This is the set of actions to perform when the hook triggers */
-  do: (SayHookAction | ToolCallHookAction)[];
+  do: (SayHookAction | ToolCallHookAction | MessageAddHookAction)[];
 }
 
 export interface CallHookCustomerSpeechInterrupted {
@@ -9492,7 +11760,7 @@ export interface CallHookCustomerSpeechInterrupted {
    */
   on: "customer.speech.interrupted";
   /** This is the set of actions to perform when the hook triggers */
-  do: (SayHookAction | ToolCallHookAction)[];
+  do: (SayHookAction | ToolCallHookAction | MessageAddHookAction)[];
 }
 
 export interface ToolCallHookAction {
@@ -9502,6 +11770,7 @@ export interface ToolCallHookAction {
   tool?:
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -9519,17 +11788,27 @@ export interface ToolCallHookAction {
     | CreateSlackSendMessageToolDTO
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
-    | CreateTransferCallToolDTO;
+    | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO;
   /** This is the tool to call. To use a transient tool, send `tool` instead. */
   toolId?: string;
 }
 
 export interface CustomerSpeechTimeoutOptions {
   /**
+   * This is whether the counter for hook trigger resets the user speaks.
+   *
+   * @default never
+   */
+  triggerResetMode?: "onUserSpeech" | "never";
+  /**
    * This is the timeout in seconds before action is triggered.
    * The clock starts when the assistant finishes speaking and remains active until the user speaks.
    *
    * @default 7.5
+   * @minimum 2
+   * @maximum 1000
    * @min 1
    * @max 1000
    */
@@ -9542,12 +11821,6 @@ export interface CustomerSpeechTimeoutOptions {
    * @max 10
    */
   triggerMaxCount?: number;
-  /**
-   * This is whether the counter for hook trigger resets the user speaks.
-   *
-   * @default never
-   */
-  triggerResetMode?: object;
 }
 
 export interface CallHookCustomerSpeechTimeout {
@@ -9557,7 +11830,7 @@ export interface CallHookCustomerSpeechTimeout {
    */
   on: string;
   /** This is the set of actions to perform when the hook triggers */
-  do: (SayHookAction | ToolCallHookAction)[];
+  do: (SayHookAction | ToolCallHookAction | MessageAddHookAction)[];
   /** This is the set of filters that must match for the hook to trigger */
   options?: CustomerSpeechTimeoutOptions;
   /**
@@ -9577,7 +11850,7 @@ export interface CallHookModelResponseTimeout {
    */
   on: "model.response.timeout";
   /** This is the set of actions to perform when the hook triggers */
-  do: (SayHookAction | ToolCallHookAction)[];
+  do: (SayHookAction | ToolCallHookAction | MessageAddHookAction)[];
 }
 
 export interface AIEdgeCondition {
@@ -9622,13 +11895,32 @@ export interface RecordingConsentPlanStayOnLine {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
+  /**
+   * This controls whether the consent assistant speaks first or waits for the caller to speak first.
+   *
+   * Use:
+   * - `assistant-speaks-first` (default) to have the consent assistant play the consent message as soon as the call is answered.
+   * - `assistant-waits-for-user` to have the consent assistant wait for the caller to speak before playing the consent message.
+   *
+   * We strongly recommend `assistant-waits-for-user` for outbound calls. Some telephony providers signal "answered" while the line is still ringing, which can cause the consent message to play into a ringing line and be missed by the caller. Waiting for the caller to speak first guarantees they hear the full consent message.
+   *
+   * Note: when combined with `type: 'stay-on-line'`, silence only counts toward consent after the caller has spoken at least once.
+   *
+   * @default 'assistant-speaks-first'
+   * @default "assistant-speaks-first"
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?: "assistant-speaks-first" | "assistant-waits-for-user";
   /**
    * This is the type of recording consent plan. This type assumes consent is granted if the user stays on the line.
    * @example "stay-on-line"
@@ -9667,13 +11959,32 @@ export interface RecordingConsentPlanVerbal {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
+  /**
+   * This controls whether the consent assistant speaks first or waits for the caller to speak first.
+   *
+   * Use:
+   * - `assistant-speaks-first` (default) to have the consent assistant play the consent message as soon as the call is answered.
+   * - `assistant-waits-for-user` to have the consent assistant wait for the caller to speak before playing the consent message.
+   *
+   * We strongly recommend `assistant-waits-for-user` for outbound calls. Some telephony providers signal "answered" while the line is still ringing, which can cause the consent message to play into a ringing line and be missed by the caller. Waiting for the caller to speak first guarantees they hear the full consent message.
+   *
+   * Note: when combined with `type: 'stay-on-line'`, silence only counts toward consent after the caller has spoken at least once.
+   *
+   * @default 'assistant-speaks-first'
+   * @default "assistant-speaks-first"
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?: "assistant-speaks-first" | "assistant-waits-for-user";
   /**
    * This is the type of recording consent plan. This type assumes consent is granted if the user verbally consents or declines.
    * @example "verbal"
@@ -9718,11 +12029,7 @@ export interface SecurityFilterPlan {
 }
 
 export interface CompliancePlan {
-  /**
-   * When this is enabled, no logs, recordings, or transcriptions will be stored.
-   * At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-   * @example {"hipaaEnabled":false}
-   */
+  /** When this is enabled, logs, recordings, and transcriptions will be stored in HIPAA-compliant storage. Defaults to false. Only HIPAA-compliant providers will be available for LLM, Voice, and Transcriber respectively. This setting is only honored if the organization is on an Enterprise subscription or has purchased the HIPAA add-on. */
   hipaaEnabled?: boolean;
   /**
    * When this is enabled, the user will be restricted to use PCI-compliant providers, and no logs or transcripts are stored.
@@ -9874,21 +12181,36 @@ export interface AnalysisPlan {
   /**
    * The minimum number of messages required to run the analysis plan.
    * If the number of messages is less than this, analysis will be skipped.
+   *
    * @default 2
+   * @deprecated
    * @min 0
    */
   minMessagesThreshold?: number;
-  /** This is the plan for generating the summary of the call. This outputs to `call.analysis.summary`. */
+  /**
+   * This is the plan for generating the summary of the call. This outputs to `call.analysis.summary`.
+   * @deprecated
+   */
   summaryPlan?: SummaryPlan;
-  /** This is the plan for generating the structured data from the call. This outputs to `call.analysis.structuredData`. */
+  /**
+   * This is the plan for generating the structured data from the call. This outputs to `call.analysis.structuredData`.
+   * @deprecated
+   */
   structuredDataPlan?: StructuredDataPlan;
-  /** This is an array of structured data plan catalogs. Each entry includes a `key` and a `plan` for generating the structured data from the call. This outputs to `call.analysis.structuredDataMulti`. */
+  /**
+   * This is an array of structured data plan catalogs. Each entry includes a `key` and a `plan` for generating the structured data from the call. This outputs to `call.analysis.structuredDataMulti`.
+   * @deprecated
+   */
   structuredDataMultiPlan?: StructuredDataMultiPlan[];
-  /** This is the plan for generating the success evaluation of the call. This outputs to `call.analysis.successEvaluation`. */
+  /**
+   * This is the plan for generating the success evaluation of the call. This outputs to `call.analysis.successEvaluation`.
+   * @deprecated
+   */
   successEvaluationPlan?: SuccessEvaluationPlan;
   /**
    * This is an array of outcome UUIDs to be calculated during analysis.
    * The outcomes will be calculated and stored in `call.analysis.outcomes`.
+   * @deprecated
    */
   outcomeIds?: string[];
 }
@@ -9933,19 +12255,229 @@ export interface TranscriptPlan {
   userName?: string;
 }
 
-export interface ScorecardMetric {
+export interface MinMessagesCondition {
   /**
-   * This is the unique identifier for the structured output that will be used to evaluate the scorecard.
-   * The structured output must be of type number or boolean only for now.
+   * This is the type discriminator for the minMessages condition.
+   * @example "minMessages"
    */
-  structuredOutputId: string;
+  type: "minMessages";
+  /**
+   * This is the minimum number of conversation messages required for the
+   * structured output to run.
+   *
+   * A count of 0 removes the runtime default minimum, so the structured output
+   * runs regardless of how few messages the conversation has.
+   * @min 0
+   * @example 4
+   */
+  count: number;
+}
+
+export interface MinCallDurationCondition {
+  /**
+   * This is the type discriminator for the minCallDuration condition.
+   * @example "minCallDuration"
+   */
+  type: "minCallDuration";
+  /**
+   * This is the minimum call duration in seconds required for the structured
+   * output to run.
+   *
+   * When timestamps are unavailable (for example, chat sessions have no call
+   * timestamps), this check passes and does not block the structured output.
+   * @min 0
+   * @example 10
+   */
+  seconds: number;
+}
+
+export interface EndedReasonCondition {
+  /**
+   * This is the type discriminator for the endedReason condition.
+   * @example "endedReason"
+   */
+  type: "endedReason";
+  /**
+   * This is the membership operator applied against `values`.
+   *
+   * - 'oneOf': the structured output runs only if the call's ended reason is in `values`.
+   * - 'notOneOf': the structured output runs only if the call's ended reason is NOT in `values`.
+   * @example "oneOf"
+   */
+  operator: "oneOf" | "notOneOf";
+  /**
+   * These are the ended reasons compared against the call's ended reason.
+   *
+   * Any string is accepted so configurations never break when new ended
+   * reasons are introduced. Must contain at least one value.
+   * @example ["customer-ended-call"]
+   */
+  values: string[];
+}
+
+export interface ComplianceOverride {
+  /**
+   * Force storage for this output under HIPAA. Only enable if output contains no sensitive data.
+   * @example false
+   */
+  forceStoreOnHipaaEnabled?: boolean;
+}
+
+export interface CreateStructuredOutputDTO {
+  /**
+   * This is the type of structured output.
+   *
+   * - 'ai': Uses an LLM to extract structured data from the conversation (default).
+   * - 'regex': Uses a regex pattern to extract data from the transcript without an LLM.
+   *
+   * Defaults to 'ai' if not specified.
+   * @default "ai"
+   */
+  type?: "ai" | "regex";
+  /**
+   * This is the regex pattern to match against the transcript.
+   *
+   * Only used when type is 'regex'. Supports both raw patterns (e.g. '\d+') and
+   * regex literal format (e.g. '/\d+/gi'). Uses RE2 syntax for safety.
+   *
+   * The result depends on the schema type:
+   * - boolean: true if the pattern matches, false otherwise
+   * - string: the first match or first capture group
+   * - number/integer: the first match parsed as a number
+   * - array: all matches
+   * @minLength 1
+   * @maxLength 1000
+   */
+  regex?: string;
+  /**
+   * This is the model that will be used to extract the structured output.
+   *
+   * To provide your own custom system and user prompts for structured output extraction, populate the messages array with your system and user messages. You can specify liquid templating in your system and user messages.
+   * Between the system or user messages, you must reference either 'transcript' or 'messages' with the `{{}}` syntax to access the conversation history.
+   * Between the system or user messages, you must reference a variation of the structured output with the `{{}}` syntax to access the structured output definition.
+   * i.e.:
+   * `{{structuredOutput}}`
+   * `{{structuredOutput.name}}`
+   * `{{structuredOutput.description}}`
+   * `{{structuredOutput.schema}}`
+   *
+   * If model is not specified, GPT-4.1 will be used by default for extraction, utilizing default system and user prompts.
+   * If messages or required fields are not specified, the default system and user prompts will be used.
+   */
+  model?:
+    | WorkflowOpenAIModel
+    | WorkflowAnthropicModel
+    | WorkflowAnthropicBedrockModel
+    | WorkflowGoogleModel
+    | WorkflowCustomModel;
+  /**
+   * Compliance configuration for this output. Only enable overrides if no sensitive data will be stored.
+   * @example {"forceStoreOnHipaaEnabled":false}
+   */
+  compliancePlan?: ComplianceOverride;
+  /**
+   * These are the conditions that gate the execution of this structured output. Every condition must pass for the structured output to run (AND semantics). When omitted or empty, no user-defined conditions gate this output. Send null to clear a previously saved gate.
+   * @example [{"type":"minMessages","count":4},{"type":"minCallDuration","seconds":10}]
+   */
+  conditions?:
+    | (MinMessagesCondition | MinCallDurationCondition | EndedReasonCondition)[]
+    | null;
+  /**
+   * This is the name of the structured output.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name: string;
+  /**
+   * This is the JSON Schema definition for the structured output.
+   *
+   * This is required when creating a structured output. Defines the structure and validation rules for the data that will be extracted. Supports all JSON Schema features including:
+   * - Objects and nested properties
+   * - Arrays and array validation
+   * - String, number, boolean, and null types
+   * - Enums and const values
+   * - Validation constraints (min/max, patterns, etc.)
+   * - Composition with allOf, anyOf, oneOf
+   */
+  schema: JsonSchema;
+  /**
+   * This is the description of what the structured output extracts.
+   *
+   * Use this to provide context about what data will be extracted and how it will be used.
+   */
+  description?: string;
+  /**
+   * These are the assistant IDs that this structured output is linked to.
+   *
+   * When linked to assistants, this structured output will be available for extraction during those assistant's calls.
+   */
+  assistantIds?: string[];
+  /**
+   * These are the workflow IDs that this structured output is linked to.
+   *
+   * When linked to workflows, this structured output will be available for extraction during those workflow's execution.
+   */
+  workflowIds?: string[];
+}
+
+export interface NumberComparatorScorecardMetricCondition {
+  /** This is the type of the condition. Currently only 'comparator' is supported. */
+  type: "comparator";
+  /**
+   * This is the comparator that will be used to compare the result of the structured output with the value specified.
+   * Only '=', '!=', '>', '<', '>=', and '<=' are supported for number conditions
+   * Only '=' is supported for boolean conditions.
+   */
+  comparator: "=" | "!=" | ">" | "<" | ">=" | "<=";
+  /**
+   * This is the value that will be used to compare the result of the structured output with the comparator.
+   * If the result of the comparison is true, the points will be added to the overall score.
+   */
+  value: number;
+  /**
+   * These are the points that will be added to the overall score if the condition is met.
+   * The points must be between 0 and 100.
+   * @min 0
+   * @max 100
+   */
+  points: number;
+}
+
+export interface BooleanComparatorScorecardMetricCondition {
+  /** This is the type of the condition. Currently only 'comparator' is supported. */
+  type: "comparator";
+  /** The comparator can only be '=' for boolean conditions. */
+  comparator: "=";
+  /**
+   * This is the value that will be used to compare the result of the structured output with the comparator.
+   * If the result of the comparison is true, the points will be added to the overall score.
+   */
+  value: boolean;
+  /**
+   * These are the points that will be added to the overall score if the condition is met.
+   * The points must be between 0 and 100.
+   * @min 0
+   * @max 100
+   */
+  points: number;
+}
+
+export interface ScorecardMetric {
   /**
    * These are the conditions that will be used to evaluate the scorecard.
    * Each condition will have a comparator, value, and points that will be used to calculate the final score.
    * The points will be added to the overall score if the condition is met.
    * The overall score will be normalized to a 100 point scale to ensure uniformity across different scorecards.
    */
-  conditions: object[];
+  conditions: (
+    | NumberComparatorScorecardMetricCondition
+    | BooleanComparatorScorecardMetricCondition
+  )[];
+  /**
+   * This is the unique identifier for the structured output that will be used to evaluate the scorecard.
+   * The structured output must be of type number or boolean only for now.
+   */
+  structuredOutputId: string;
 }
 
 export interface CreateScorecardDTO {
@@ -10000,6 +12532,8 @@ export interface ArtifactPlan {
    * - Set to false if you have custom storage configured but want to store recordings on Vapi's storage for this assistant.
    * - Set to true (or leave unset) to use your custom storage for recordings when available.
    *
+   * If your organization has ZDR (zero data retention) or PCI enabled, recordings are never written to Vapi storage. In that case, false means "do not use my custom storage", so nothing is stored at all.
+   *
    * @default true
    * @example true
    */
@@ -10049,6 +12583,8 @@ export interface ArtifactPlan {
    * - Set to false if you have custom storage configured but want to store packet captures on Vapi's storage for this assistant.
    * - Set to true (or leave unset) to use your custom storage for packet captures when available.
    *
+   * If your organization has ZDR (zero data retention) or PCI enabled, packet captures are never written to Vapi storage. In that case, false means "do not use my custom storage", so nothing is stored at all.
+   *
    * @default true
    * @example true
    */
@@ -10068,6 +12604,8 @@ export interface ArtifactPlan {
    * Usage:
    * - Set to false if you have custom storage configured but want to store logs on Vapi's storage for this assistant.
    * - Set to true (or leave unset) to use your custom storage for logs when available.
+   *
+   * If your organization has ZDR (zero data retention) or PCI enabled, logs are never written to Vapi storage. In that case, false means "do not use my custom storage", so nothing is stored at all.
    *
    * @default true
    * @example true
@@ -10092,6 +12630,12 @@ export interface ArtifactPlan {
    * The outputs will be extracted and stored in `call.artifact.structuredOutputs` after the call is ended.
    */
   structuredOutputIds?: string[];
+  /**
+   * This is an array of transient structured outputs to be calculated during the call.
+   * The outputs will be extracted and stored in `call.artifact.structuredOutputs` after the call is ended.
+   * Use this to provide inline structured output configurations instead of referencing existing ones via structuredOutputIds.
+   */
+  structuredOutputs?: CreateStructuredOutputDTO[];
   /**
    * This is an array of scorecard IDs that will be evaluated based on the structured outputs extracted during the call.
    * The scorecards will be evaluated and the results will be stored in `call.artifact.scorecards` after the call has ended.
@@ -10217,76 +12761,15 @@ export interface MonitorPlan {
    * @example false
    */
   controlAuthenticationEnabled?: boolean;
-}
-
-export interface SmartDenoisingPlan {
   /**
-   * Whether smart denoising using Krisp is enabled.
-   * @default false
-   */
-  enabled?: boolean;
-}
-
-export interface FourierDenoisingPlan {
-  /**
-   * Whether Fourier denoising is enabled. Note that this is experimental and may not work as expected.
-   * @default false
-   */
-  enabled?: boolean;
-  /**
-   * Whether automatic media detection is enabled. When enabled, the filter will automatically
-   * detect consistent background TV/music/radio and switch to more aggressive filtering settings.
-   * Only applies when enabled is true.
-   * @default true
-   * @example true
-   */
-  mediaDetectionEnabled?: boolean;
-  /**
-   * Static threshold in dB used as fallback when no baseline is established.
-   * @min -80
-   * @max 0
-   * @default -35
-   * @example -35
-   */
-  staticThreshold?: number;
-  /**
-   * How far below the rolling baseline to filter audio, in dB.
-   * Lower values (e.g., -10) are more aggressive, higher values (e.g., -20) are more conservative.
-   * @min -30
-   * @max -5
-   * @default -15
-   * @example -15
-   */
-  baselineOffsetDb?: number;
-  /**
-   * Rolling window size in milliseconds for calculating the audio baseline.
-   * Larger windows adapt more slowly but are more stable.
-   * @min 1000
-   * @max 30000
-   * @default 3000
-   * @example 3000
-   */
-  windowSizeMs?: number;
-  /**
-   * Percentile to use for baseline calculation (1-99).
-   * Higher percentiles (e.g., 85) focus on louder speech, lower percentiles (e.g., 50) include quieter speech.
-   * @min 1
-   * @max 99
-   * @default 85
-   * @example 85
-   */
-  baselinePercentile?: number;
-}
-
-export interface BackgroundSpeechDenoisingPlan {
-  /** Whether smart denoising using Krisp is enabled. */
-  smartDenoisingPlan?: SmartDenoisingPlan;
-  /**
-   * Whether Fourier denoising is enabled. Note that this is experimental and may not work as expected.
+   * This the set of monitor ids that are attached to the assistant.
+   * The source of truth for the monitor ids is the assistant_monitor join table.
+   * This field can be used for transient assistants and to update assistants with new monitor ids.
    *
-   * This can be combined with smart denoising, and will be run afterwards.
+   * @default []
+   * @example ["123e4567-e89b-12d3-a456-426614174000"]
    */
-  fourierDenoisingPlan?: FourierDenoisingPlan;
+  monitorIds?: string[];
 }
 
 export interface KeypadInputPlan {
@@ -10324,6 +12807,7 @@ export interface WorkflowUserEditable {
   model?:
     | WorkflowOpenAIModel
     | WorkflowAnthropicModel
+    | WorkflowAnthropicBedrockModel
     | WorkflowGoogleModel
     | WorkflowCustomModel;
   /**
@@ -10342,7 +12826,10 @@ export interface WorkflowUserEditable {
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
     | OpenAITranscriber
-    | CartesiaTranscriber;
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
   /**
    * This is the voice for the workflow.
    *
@@ -10359,13 +12846,16 @@ export interface WorkflowUserEditable {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
   /**
    * This is the plan for observability of workflow's calls.
    *
@@ -10393,6 +12883,9 @@ export interface WorkflowUserEditable {
     | ({
         provider: "anthropic";
       } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
     | ({
         provider: "anyscale";
       } & CreateAnyscaleCredentialDTO)
@@ -10478,6 +12971,9 @@ export interface WorkflowUserEditable {
         provider: "s3";
       } & CreateS3CredentialDTO)
     | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
         provider: "supabase";
       } & CreateSupabaseCredentialDTO)
     | ({
@@ -10505,6 +13001,9 @@ export interface WorkflowUserEditable {
         provider: "xai";
       } & CreateXAiCredentialDTO)
     | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
         provider: "neuphonic";
       } & CreateNeuphonicCredentialDTO)
     | ({
@@ -10517,8 +13016,8 @@ export interface WorkflowUserEditable {
         provider: "speechmatics";
       } & CreateSpeechmaticsCredentialDTO)
     | ({
-        provider: "trieve";
-      } & CreateTrieveCredentialDTO)
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
     | ({
         provider: "google.calendar.oauth2-client";
       } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
@@ -10540,6 +13039,15 @@ export interface WorkflowUserEditable {
     | ({
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
   )[];
   /** This is the voicemail detection plan for the workflow. */
   voicemailDetection?:
@@ -10645,6 +13153,7 @@ export interface VapiModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -10663,6 +13172,8 @@ export interface VapiModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -10670,27 +13181,42 @@ export interface VapiModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
+  /**
+   * White-label Vapi models are selected by `version`, not a model name, so
+   * `model` is optional here (the runtime already accepts a version-only Vapi
+   * payload). Overriding the required `ModelBase.model`: the declared type stays
+   * `string` to match the base (avoids TS2416) and the `= undefined!` initializer
+   * satisfies TS2612 for the field override, while `@IsOptional` +
+   * `@ApiPropertyOptional` make validation and the generated OpenAPI schema treat
+   * it as optional (so `VapiModel.required` is `['provider']`).
+   */
+  model?: string;
+  /**
+   * Vapi-managed model version (update channel). When set, this is a Vapi-managed
+   * LLM routed by the registry; when absent, this is the legacy workflow form
+   * below (`steps` / `workflow`).
+   */
+  version?: "latest" | "1";
   provider: "vapi";
   /** This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead. */
   workflowId?: string;
   /** This is the workflow that will be used for the call. To use an existing workflow, use `workflowId` instead. */
   workflow?: WorkflowUserEditable;
-  /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
-  model: string;
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
   temperature?: number;
-  /**
-   * This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
-   * @min 50
-   * @max 10000
-   */
-  maxTokens?: number;
   /**
    * This determines whether we detect user's emotion while they speak and send it as an additional info to model.
    *
@@ -10721,6 +13247,7 @@ export interface XaiModel {
   tools?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -10739,6 +13266,8 @@ export interface XaiModel {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are the tools that the assistant can use during the call. To use transient tools, use `tools`.
@@ -10746,6 +13275,13 @@ export interface XaiModel {
    * Both `tools` and `toolIds` can be used together.
    */
   toolIds?: string[];
+  /**
+   * These are version-pinned references to tools. Each entry pins a specific
+   * version of a tool by `(toolId, version)`. When the same `toolId` appears
+   * in both `toolIds` and `toolRefs[]`, the `toolRefs` pin wins (the
+   * `toolIds` entry is dropped at write time).
+   */
+  toolRefs?: ToolRef[];
   /** These are the options for the knowledge base. */
   knowledgeBase?: CreateCustomKnowledgeBaseDTO;
   /** This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b */
@@ -10754,10 +13290,13 @@ export interface XaiModel {
     | "grok-2"
     | "grok-3"
     | "grok-4-fast-reasoning"
-    | "grok-4-fast-non-reasoning";
+    | "grok-4-fast-non-reasoning"
+    | "grok-4.20-0309-reasoning"
+    | "grok-4.20-0309-non-reasoning"
+    | "grok-4.3";
   provider: "xai";
   /**
-   * This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
+   * This is the temperature that will be used for calls. Default is 0.5.
    * @min 0
    * @max 2
    */
@@ -10986,12 +13525,15 @@ export interface FallbackPlan {
     | FallbackLMNTVoice
     | FallbackOpenAIVoice
     | FallbackPlayHTVoice
+    | FallbackWellSaidVoice
     | FallbackRimeAIVoice
     | FallbackSmallestAIVoice
     | FallbackTavusVoice
     | FallbackNeuphonicVoice
     | FallbackSesameVoice
     | FallbackInworldVoice
+    | FallbackXaiVoice
+    | FallbackMicrosoftVoice
   )[];
 }
 
@@ -11092,8 +13634,13 @@ export interface CartesiaVoice {
    * @example "sonic-english"
    */
   model?:
+    | "sonic-3.5"
+    | "sonic-3.5-2026-05-04"
     | "sonic-3"
+    | "sonic-3-2026-01-12"
+    | "sonic-3-2025-10-27"
     | "sonic-2"
+    | "sonic-2-2025-06-11"
     | "sonic-english"
     | "sonic-multilingual"
     | "sonic-preview"
@@ -11169,6 +13716,8 @@ export interface CustomVoice {
   cachingEnabled?: boolean;
   /** This is the voice provider that will be used. Use `custom-voice` for providers that are not natively supported. */
   provider: "custom-voice";
+  /** This is the provider-specific ID that will be used. This is passed in the voice request payload to identify the voice to use. */
+  voiceId?: string;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /**
@@ -11268,7 +13817,14 @@ export interface DeepgramVoice {
     | "diana"
     | "aquila"
     | "selena"
-    | "javier";
+    | "javier"
+    | "viktoria"
+    | "kara"
+    | "fabian"
+    | "julius"
+    | "lara"
+    | "elara"
+    | "aurelia";
   /**
    * This is the model that will be used. Defaults to 'aura-2' when not specified.
    * @example "aura-2"
@@ -11299,8 +13855,10 @@ export interface ElevenLabsPronunciationDictionaryLocator {
   /**
    * This is the ElevenLabs Pronunciation Dictionary Version ID
    * This is the version ID of the pronunciation dictionary to use.
+   *
+   * Omit to use the dictionary's latest version.
    */
-  versionId: string;
+  versionId?: string;
 }
 
 export interface ElevenLabsVoice {
@@ -11392,13 +13950,37 @@ export interface ElevenLabsVoice {
     | "eleven_turbo_v2_5"
     | "eleven_flash_v2"
     | "eleven_flash_v2_5"
-    | "eleven_monolingual_v1";
+    | "eleven_monolingual_v1"
+    | "eleven_v3";
   /** This is the language (ISO 639-1) that is enforced for the model. Currently only Turbo v2.5 supports language enforcement. For other models, an error will be returned if language code is provided. */
   language?: string;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the pronunciation dictionary locators to use. */
   pronunciationDictionaryLocators?: ElevenLabsPronunciationDictionaryLocator[];
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackPlan;
+}
+
+export interface WellSaidVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: "wellsaid";
+  /** The WellSaid speaker ID to synthesize. */
+  voiceId: string;
+  /** This is the model that will be used. */
+  model?: "caruso" | "legacy";
+  /** Enables limited SSML translation for input text. */
+  enableSsml?: boolean;
+  /** Array of library IDs to use for voice synthesis. */
+  libraryIds?: string[];
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
   fallbackPlan?: FallbackPlan;
 }
@@ -11905,97 +14487,56 @@ export interface RimeAIVoice {
   provider: "rime-ai";
   /** This is the provider-specific ID that will be used. */
   voiceId:
-    | "abbie"
-    | "allison"
-    | "ally"
-    | "alona"
-    | "amber"
-    | "ana"
-    | "antoine"
-    | "armon"
-    | "brenda"
-    | "brittany"
-    | "carol"
-    | "colin"
-    | "courtney"
-    | "elena"
-    | "elliot"
-    | "eva"
-    | "geoff"
-    | "gerald"
-    | "hank"
-    | "helen"
-    | "hera"
-    | "jen"
-    | "joe"
-    | "joy"
-    | "juan"
-    | "kendra"
-    | "kendrick"
-    | "kenneth"
-    | "kevin"
-    | "kris"
-    | "linda"
-    | "madison"
-    | "marge"
-    | "marina"
-    | "marissa"
-    | "marta"
-    | "maya"
-    | "nicholas"
-    | "nyles"
-    | "phil"
-    | "reba"
-    | "rex"
-    | "rick"
-    | "ritu"
-    | "rob"
-    | "rodney"
-    | "rohan"
-    | "rosco"
-    | "samantha"
-    | "sandy"
-    | "selena"
-    | "seth"
-    | "sharon"
-    | "stan"
-    | "tamra"
-    | "tanya"
-    | "tibur"
-    | "tj"
-    | "tyler"
-    | "viv"
-    | "yadira"
-    | "marsh"
-    | "bayou"
-    | "creek"
-    | "brook"
-    | "flower"
-    | "spore"
-    | "glacier"
-    | "gulch"
-    | "alpine"
     | "cove"
-    | "lagoon"
-    | "tundra"
-    | "steppe"
-    | "mesa"
-    | "grove"
-    | "rainforest"
-    | "moraine"
+    | "moon"
     | "wildflower"
+    | "eva"
+    | "amber"
+    | "maya"
+    | "lagoon"
+    | "breeze"
+    | "helen"
+    | "joy"
+    | "marsh"
+    | "creek"
+    | "cedar"
+    | "alpine"
+    | "summit"
+    | "nicholas"
+    | "tyler"
+    | "colin"
+    | "hank"
+    | "thunder"
+    | "astra"
+    | "eucalyptus"
+    | "moraine"
     | "peak"
-    | "boulder"
-    | "gypsum"
-    | "zest"
+    | "tundra"
+    | "mesa_extra"
+    | "talon"
+    | "marlu"
+    | "glacier"
+    | "falcon"
     | "luna"
     | "celeste"
-    | "orion"
-    | "ursa"
-    | "astra"
-    | "esther"
     | "estelle"
     | "andromeda"
+    | "esther"
+    | "lyra"
+    | "lintel"
+    | "oculus"
+    | "vespera"
+    | "transom"
+    | "bond"
+    | "arcade"
+    | "atrium"
+    | "cupola"
+    | "fern"
+    | "sirius"
+    | "orion"
+    | "masonry"
+    | "albion"
+    | "parapet"
     | string;
   /**
    * This is the model that will be used. Defaults to 'arcana' when not specified.
@@ -12028,6 +14569,22 @@ export interface RimeAIVoice {
    * @example null
    */
   inlineSpeedAlpha?: string;
+  /**
+   * Language for speech synthesis. Uses ISO 639 codes. Supported: en, es, de, fr, ar, hi, ja, he, pt, ta, si.
+   * @example "en"
+   */
+  language?:
+    | "en"
+    | "es"
+    | "de"
+    | "fr"
+    | "ar"
+    | "hi"
+    | "ja"
+    | "he"
+    | "pt"
+    | "ta"
+    | "si";
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -12176,6 +14733,24 @@ export interface TavusVoice {
   fallbackPlan?: FallbackPlan;
 }
 
+export interface VapiPronunciationDictionaryLocator {
+  /**
+   * The pronunciation dictionary ID
+   * @example "pdict_abc123"
+   */
+  pronunciationDictId: string;
+  /**
+   * Version ID (only used by ElevenLabs, ignored for Cartesia)
+   * @example "ver_abc123"
+   */
+  versionId?: string;
+  /**
+   * Provider that hosts this pronunciation dictionary
+   * @example "11labs"
+   */
+  provider?: "cartesia" | "11labs";
+}
+
 export interface VapiVoice {
   /**
    * This is the flag to toggle voice caching for the assistant.
@@ -12185,21 +14760,13 @@ export interface VapiVoice {
   cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: "vapi";
-  /** The voices provided by Vapi */
-  voiceId:
-    | "Elliot"
-    | "Kylie"
-    | "Rohan"
-    | "Lily"
-    | "Savannah"
-    | "Hana"
-    | "Neha"
-    | "Cole"
-    | "Harry"
-    | "Paige"
-    | "Spencer"
-    | "Leah"
-    | "Tara";
+  /**
+   * The voice to use: a built-in Vapi voice name, or a cloned voice id (used with version 2).
+   * @example "Clara"
+   */
+  voiceId: string;
+  /** The Vapi voice routing generation. `latest` auto-updates to the newest generation; version 1 uses legacy mappings; version 2 can use xAI-backed voices when available. When omitted, Version 1 is used. Accepts the string channel ('latest', '1', '2'); legacy numeric values (1, 2) are also accepted and coerced to their string form. */
+  version?: "1" | "2" | "latest";
   /**
    * This is the speed multiplier that will be used.
    *
@@ -12209,10 +14776,69 @@ export interface VapiVoice {
    * @default 1
    */
   speed?: number;
+  /** Language for Vapi voice synthesis. For Version 2, omit this field or set `auto` for automatic language detection. Version 1 supports legacy Vapi language values. */
+  language?:
+    | "en-US"
+    | "en-GB"
+    | "en-AU"
+    | "en-CA"
+    | "ja"
+    | "zh"
+    | "de"
+    | "hi"
+    | "fr-FR"
+    | "fr-CA"
+    | "ko"
+    | "pt-BR"
+    | "pt-PT"
+    | "it"
+    | "es-ES"
+    | "es-MX"
+    | "id"
+    | "nl"
+    | "tr"
+    | "fil"
+    | "pl"
+    | "sv"
+    | "bg"
+    | "ro"
+    | "ar-SA"
+    | "ar-AE"
+    | "cs"
+    | "el"
+    | "fi"
+    | "hr"
+    | "ms"
+    | "sk"
+    | "da"
+    | "ta"
+    | "uk"
+    | "ru"
+    | "hu"
+    | "no"
+    | "vi"
+    | "auto"
+    | "en"
+    | "ar"
+    | "ar-EG"
+    | "bn"
+    | "es"
+    | "fr"
+    | "gu"
+    | "he"
+    | "ka"
+    | "kn"
+    | "ml"
+    | "mr"
+    | "pa"
+    | "pt"
+    | "te"
+    | "th"
+    | "tl";
+  /** List of pronunciation dictionary locators for custom word pronunciations. */
+  pronunciationDictionary?: VapiPronunciationDictionaryLocator[];
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
-  fallbackPlan?: FallbackPlan;
 }
 
 export interface InworldVoice {
@@ -12227,7 +14853,7 @@ export interface InworldVoice {
   /**
    * Inworld Voice ID
    * Available voices by language:
-   * • en: Alex, Ashley, Craig, Deborah, Dennis, Edward, Elizabeth, Hades, Julia, Pixie, Mark, Olivia, Priya, Ronald, Sarah, Shaun, Theodore, Timothy, Wendy, Dominus
+   * • en: Alex, Ashley, Craig, Deborah, Dennis, Edward, Elizabeth, Hades, Julia, Pixie, Mark, Olivia, Priya, Ronald, Sarah, Shaun, Theodore, Timothy, Wendy, Dominus, Hana, Clive, Carter, Blake, Luna
    * • zh: Yichen, Xiaoyin, Xinyi, Jing
    * • nl: Erik, Katrien, Lennart, Lore
    * • fr: Alain, Hélène, Mathieu, Étienne
@@ -12238,6 +14864,10 @@ export interface InworldVoice {
    * • pl: Szymon, Wojciech
    * • pt: Heitor, Maitê
    * • es: Diego, Lupita, Miguel, Rafael
+   * • ru: Svetlana, Elena, Dmitry, Nikolai
+   * • hi: Riya, Manoj
+   * • he: Yael, Oren
+   * • ar: Nour, Omar
    * @maxLength 120
    * @example "Alex"
    */
@@ -12262,6 +14892,11 @@ export interface InworldVoice {
     | "Timothy"
     | "Wendy"
     | "Dominus"
+    | "Hana"
+    | "Clive"
+    | "Carter"
+    | "Blake"
+    | "Luna"
     | "Yichen"
     | "Xiaoyin"
     | "Xinyi"
@@ -12291,7 +14926,17 @@ export interface InworldVoice {
     | "Diego"
     | "Lupita"
     | "Miguel"
-    | "Rafael";
+    | "Rafael"
+    | "Svetlana"
+    | "Elena"
+    | "Dmitry"
+    | "Nikolai"
+    | "Riya"
+    | "Manoj"
+    | "Yael"
+    | "Oren"
+    | "Nour"
+    | "Omar";
   /**
    * This is the model that will be used.
    * @default "inworld-tts-1"
@@ -12312,7 +14957,31 @@ export interface InworldVoice {
     | "de"
     | "it"
     | "pl"
-    | "pt";
+    | "pt"
+    | "ru"
+    | "hi"
+    | "he"
+    | "ar";
+  /**
+   * A floating point number between 0, exclusive, and 2, inclusive. If equal to null or not provided, the model's default temperature of 1.1 will be used. The temperature parameter controls variance.
+   * Higher values will make the output more random and can lead to more expressive results. Lower values will make it more deterministic.
+   * See https://docs.inworld.ai/docs/tts/capabilities/generating-audio#additional-configurations for more details.
+   * @min 0.1
+   * @max 2
+   * @default 1.1
+   * @example null
+   */
+  temperature?: number;
+  /**
+   * A floating point number between 0.5, inclusive, and 1.5, inclusive. If equal to null or not provided, the model's default speaking speed of 1.0 will be used.
+   * Values above 0.8 are recommended for higher quality.
+   * See https://docs.inworld.ai/docs/tts/capabilities/generating-audio#additional-configurations for more details.
+   * @min 0.5
+   * @max 1.5
+   * @default 1
+   * @example null
+   */
+  speakingRate?: number;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
@@ -12349,6 +15018,15 @@ export interface MinimaxVoice {
    * @example "happy"
    */
   emotion?: string;
+  /**
+   * Controls the granularity of subtitle/timing data returned by Minimax
+   * during synthesis. Set to 'word' to receive per-word timestamps in
+   * assistant.speechStarted events for karaoke-style caption rendering.
+   *
+   * @default "sentence"
+   * @default "sentence"
+   */
+  subtitleType?: "word" | "sentence";
   /**
    * Voice pitch adjustment. Range from -12 to 12 semitones.
    * @default 0
@@ -12435,6 +15113,331 @@ export interface MinimaxVoice {
   fallbackPlan?: FallbackPlan;
 }
 
+export interface FallbackMinimaxVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: "minimax";
+  /**
+   * This is the Minimax Voice ID
+   * This is the provider-specific ID that will be used. Use a voice from MINIMAX_PREDEFINED_VOICES or a custom cloned voice ID.
+   */
+  voiceId: string;
+  /**
+   * This is the model that will be used. Options are 'speech-02-hd' and 'speech-02-turbo'.
+   * speech-02-hd is optimized for high-fidelity applications like voiceovers and audiobooks.
+   * speech-02-turbo is designed for real-time applications with low latency.
+   *
+   * @default "speech-02-turbo"
+   * @default "speech-02-turbo"
+   * @example "speech-02-turbo"
+   */
+  model?: "speech-02-hd" | "speech-02-turbo" | "speech-2.5-turbo-preview";
+  /**
+   * The emotion to use for the voice. If not provided, will use auto-detect mode.
+   * Options include: 'happy', 'sad', 'angry', 'fearful', 'surprised', 'disgusted', 'neutral'
+   * @example "happy"
+   */
+  emotion?: string;
+  /**
+   * Controls the granularity of subtitle/timing data returned by Minimax
+   * during synthesis. Set to 'word' to receive per-word timestamps in
+   * assistant.speechStarted events for karaoke-style caption rendering.
+   *
+   * @default "sentence"
+   * @default "sentence"
+   */
+  subtitleType?: "word" | "sentence";
+  /**
+   * Voice pitch adjustment. Range from -12 to 12 semitones.
+   * @default 0
+   * @min -12
+   * @max 12
+   * @default 0
+   * @example 0
+   */
+  pitch?: number;
+  /**
+   * Voice speed adjustment. Range from 0.5 to 2.0.
+   * @default 1.0
+   * @min 0.5
+   * @max 2
+   * @default 1
+   * @example 1
+   */
+  speed?: number;
+  /**
+   * Voice volume adjustment. Range from 0.5 to 2.0.
+   * @default 1.0
+   * @min 0.5
+   * @max 2
+   * @default 1
+   * @example 1
+   */
+  volume?: number;
+  /**
+   * The region for Minimax API. Defaults to "worldwide".
+   * @default "worldwide"
+   */
+  region?: "worldwide" | "china";
+  /** Language hint for MiniMax T2A. Example: yue (Cantonese), zh (Chinese), en (English). */
+  languageBoost?:
+    | "Chinese"
+    | "Chinese,Yue"
+    | "English"
+    | "Arabic"
+    | "Russian"
+    | "Spanish"
+    | "French"
+    | "Portuguese"
+    | "German"
+    | "Turkish"
+    | "Dutch"
+    | "Ukrainian"
+    | "Vietnamese"
+    | "Indonesian"
+    | "Japanese"
+    | "Italian"
+    | "Korean"
+    | "Thai"
+    | "Polish"
+    | "Romanian"
+    | "Greek"
+    | "Czech"
+    | "Finnish"
+    | "Hindi"
+    | "Bulgarian"
+    | "Danish"
+    | "Hebrew"
+    | "Malay"
+    | "Persian"
+    | "Slovak"
+    | "Swedish"
+    | "Croatian"
+    | "Filipino"
+    | "Hungarian"
+    | "Norwegian"
+    | "Slovenian"
+    | "Catalan"
+    | "Nynorsk"
+    | "Tamil"
+    | "Afrikaans"
+    | "auto";
+  /**
+   * Enable MiniMax text normalization to improve number reading and formatting.
+   * @default true
+   */
+  textNormalizationEnabled?: boolean;
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
+}
+
+export interface FallbackWellSaidVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: "wellsaid";
+  /** The WellSaid speaker ID to synthesize. */
+  voiceId: string;
+  /** This is the model that will be used. */
+  model?: "caruso" | "legacy";
+  /** Enables limited SSML translation for input text. */
+  enableSsml?: boolean;
+  /** Array of library IDs to use for voice synthesis. */
+  libraryIds?: string[];
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
+}
+
+export interface XaiVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: "xai";
+  /**
+   * xAI Voice ID
+   * Built-in voices: eve, ara, rex, sal, leo. Cloned voice IDs are also accepted.
+   * @maxLength 120
+   * @example "eve"
+   */
+  voiceId: "eve" | "ara" | "rex" | "sal" | "leo";
+  /**
+   * BCP-47 language code for xAI TTS synthesis.
+   * @default "en"
+   */
+  language?:
+    | "auto"
+    | "en"
+    | "ar-EG"
+    | "ar-SA"
+    | "ar-AE"
+    | "bn"
+    | "zh"
+    | "fr"
+    | "de"
+    | "hi"
+    | "id"
+    | "it"
+    | "ja"
+    | "ko"
+    | "pt-BR"
+    | "pt-PT"
+    | "ru"
+    | "es-MX"
+    | "es-ES"
+    | "tr"
+    | "vi";
+  /**
+   * Speed multiplier for xAI TTS synthesis.
+   * @min 0.7
+   * @max 1.5
+   * @default 1.1
+   */
+  speed?: number;
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackPlan;
+}
+
+export interface MicrosoftVoice {
+  /**
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: "microsoft";
+  /**
+   * MAI-Voice-2 voice ID. Built-in voices listed in enum.
+   * @example "en-US-Ethan:MAI-Voice-2"
+   */
+  voiceId:
+    | "de-DE-Klaus:MAI-Voice-2"
+    | "de-DE-Mia:MAI-Voice-2"
+    | "en-AU-Lisa:MAI-Voice-2"
+    | "en-US-Ethan:MAI-Voice-2"
+    | "en-US-Grant:MAI-Voice-2"
+    | "en-US-Harper:MAI-Voice-2"
+    | "en-US-Iris:MAI-Voice-2"
+    | "en-US-Jasper:MAI-Voice-2"
+    | "en-US-Olivia:MAI-Voice-2"
+    | "es-ES-Marta:MAI-Voice-2"
+    | "es-MX-Alejo:MAI-Voice-2"
+    | "es-MX-Valeria:MAI-Voice-2"
+    | "fr-FR-Marc:MAI-Voice-2"
+    | "fr-FR-Soleil:MAI-Voice-2"
+    | "hi-IN-Arjun:MAI-Voice-2"
+    | "hi-IN-Dhruv:MAI-Voice-2"
+    | "hi-IN-Kavya:MAI-Voice-2"
+    | "hi-IN-Priya:MAI-Voice-2"
+    | "hu-HU-Bence:MAI-Voice-2"
+    | "hu-HU-Levente:MAI-Voice-2"
+    | "hu-HU-Lilla:MAI-Voice-2"
+    | "hu-HU-Réka:MAI-Voice-2"
+    | "it-IT-Luca:MAI-Voice-2"
+    | "it-IT-Rosa:MAI-Voice-2"
+    | "ko-KR-Hana:MAI-Voice-2"
+    | "ko-KR-Junho:MAI-Voice-2"
+    | "nl-NL-Fleur:MAI-Voice-2"
+    | "nl-NL-Sander:MAI-Voice-2"
+    | "pt-BR-Caio:MAI-Voice-2"
+    | "pt-BR-Luana:MAI-Voice-2"
+    | "pt-BR-Pedro:MAI-Voice-2"
+    | "pt-BR-Rafael:MAI-Voice-2"
+    | "pt-PT-Rui:MAI-Voice-2"
+    | "ro-RO-Andrei:MAI-Voice-2"
+    | "ro-RO-Elena:MAI-Voice-2"
+    | "ro-RO-Ioana:MAI-Voice-2"
+    | "ro-RO-Radu:MAI-Voice-2"
+    | "ru-RU-Lev:MAI-Voice-2"
+    | "ru-RU-Masha:MAI-Voice-2"
+    | "th-TH-Krit:MAI-Voice-2"
+    | "th-TH-Nattapong:MAI-Voice-2"
+    | "tr-TR-Aydin:MAI-Voice-2"
+    | "tr-TR-Elif:MAI-Voice-2"
+    | "zh-CN-Bo:MAI-Voice-2"
+    | "zh-CN-Lan:MAI-Voice-2"
+    | "zh-CN-Mei:MAI-Voice-2";
+  /**
+   * Speaking style applied via mstts:express-as on every request. Unknown styles are ignored by Azure and fall back to neutral.
+   * @example "happy"
+   */
+  style?:
+    | "adventurous"
+    | "angry"
+    | "caring"
+    | "cheerful"
+    | "confused"
+    | "curious"
+    | "determined"
+    | "disappointed"
+    | "disgusted"
+    | "embarrassed"
+    | "empathy"
+    | "encouraging"
+    | "excited"
+    | "fearful"
+    | "friendly"
+    | "happy"
+    | "hopeful"
+    | "jealous"
+    | "joyful"
+    | "nostalgic"
+    | "reflective"
+    | "regretful"
+    | "relieved"
+    | "sad"
+    | "serious"
+    | "shouting"
+    | "softvoice"
+    | "surprised"
+    | "whispering";
+  /**
+   * Style intensity (0.01–2). Default 1 = the predefined style strength. Only applies when `style` is set.
+   * @min 0.01
+   * @max 2
+   * @default 1
+   */
+  styleDegree?: number;
+  /**
+   * Role-play (age/gender imitation). Requires `style` to be set; ignored otherwise.
+   * @example "YoungAdultFemale"
+   */
+  role?:
+    | "Girl"
+    | "Boy"
+    | "YoungAdultFemale"
+    | "YoungAdultMale"
+    | "OlderAdultFemale"
+    | "OlderAdultMale"
+    | "SeniorFemale"
+    | "SeniorMale";
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
+  /**
+   * This is the speed multiplier that will be used.
+   * @min 0.5
+   * @max 2
+   */
+  speed?: number;
+  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
+  fallbackPlan?: FallbackPlan;
+}
+
 export interface FallbackAzureVoice {
   /**
    * This is the flag to toggle voice caching for the assistant.
@@ -12472,8 +15475,13 @@ export interface FallbackCartesiaVoice {
    * @example "sonic-english"
    */
   model?:
+    | "sonic-3.5"
+    | "sonic-3.5-2026-05-04"
     | "sonic-3"
+    | "sonic-3-2026-01-12"
+    | "sonic-3-2025-10-27"
     | "sonic-2"
+    | "sonic-2-2025-06-11"
     | "sonic-english"
     | "sonic-multilingual"
     | "sonic-preview"
@@ -12547,6 +15555,8 @@ export interface FallbackCustomVoice {
   cachingEnabled?: boolean;
   /** This is the voice provider that will be used. Use `custom-voice` for providers that are not natively supported. */
   provider: "custom-voice";
+  /** This is the provider-specific ID that will be used. This is passed in the voice request payload to identify the voice to use. */
+  voiceId?: string;
   /**
    * This is where the voice request will be sent.
    *
@@ -12644,7 +15654,14 @@ export interface FallbackDeepgramVoice {
     | "diana"
     | "aquila"
     | "selena"
-    | "javier";
+    | "javier"
+    | "viktoria"
+    | "kara"
+    | "fabian"
+    | "julius"
+    | "lara"
+    | "elara"
+    | "aurelia";
   /**
    * This is the model that will be used. Defaults to 'aura-2' when not specified.
    * @example "aura-2"
@@ -12753,7 +15770,8 @@ export interface FallbackElevenLabsVoice {
     | "eleven_turbo_v2_5"
     | "eleven_flash_v2"
     | "eleven_flash_v2_5"
-    | "eleven_monolingual_v1";
+    | "eleven_monolingual_v1"
+    | "eleven_v3";
   /** This is the language (ISO 639-1) that is enforced for the model. Currently only Turbo v2.5 supports language enforcement. For other models, an error will be returned if language code is provided. */
   language?: string;
   /** This is the pronunciation dictionary locators to use. */
@@ -13254,97 +16272,56 @@ export interface FallbackRimeAIVoice {
   provider: "rime-ai";
   /** This is the provider-specific ID that will be used. */
   voiceId:
-    | "abbie"
-    | "allison"
-    | "ally"
-    | "alona"
-    | "amber"
-    | "ana"
-    | "antoine"
-    | "armon"
-    | "brenda"
-    | "brittany"
-    | "carol"
-    | "colin"
-    | "courtney"
-    | "elena"
-    | "elliot"
-    | "eva"
-    | "geoff"
-    | "gerald"
-    | "hank"
-    | "helen"
-    | "hera"
-    | "jen"
-    | "joe"
-    | "joy"
-    | "juan"
-    | "kendra"
-    | "kendrick"
-    | "kenneth"
-    | "kevin"
-    | "kris"
-    | "linda"
-    | "madison"
-    | "marge"
-    | "marina"
-    | "marissa"
-    | "marta"
-    | "maya"
-    | "nicholas"
-    | "nyles"
-    | "phil"
-    | "reba"
-    | "rex"
-    | "rick"
-    | "ritu"
-    | "rob"
-    | "rodney"
-    | "rohan"
-    | "rosco"
-    | "samantha"
-    | "sandy"
-    | "selena"
-    | "seth"
-    | "sharon"
-    | "stan"
-    | "tamra"
-    | "tanya"
-    | "tibur"
-    | "tj"
-    | "tyler"
-    | "viv"
-    | "yadira"
-    | "marsh"
-    | "bayou"
-    | "creek"
-    | "brook"
-    | "flower"
-    | "spore"
-    | "glacier"
-    | "gulch"
-    | "alpine"
     | "cove"
-    | "lagoon"
-    | "tundra"
-    | "steppe"
-    | "mesa"
-    | "grove"
-    | "rainforest"
-    | "moraine"
+    | "moon"
     | "wildflower"
+    | "eva"
+    | "amber"
+    | "maya"
+    | "lagoon"
+    | "breeze"
+    | "helen"
+    | "joy"
+    | "marsh"
+    | "creek"
+    | "cedar"
+    | "alpine"
+    | "summit"
+    | "nicholas"
+    | "tyler"
+    | "colin"
+    | "hank"
+    | "thunder"
+    | "astra"
+    | "eucalyptus"
+    | "moraine"
     | "peak"
-    | "boulder"
-    | "gypsum"
-    | "zest"
+    | "tundra"
+    | "mesa_extra"
+    | "talon"
+    | "marlu"
+    | "glacier"
+    | "falcon"
     | "luna"
     | "celeste"
-    | "orion"
-    | "ursa"
-    | "astra"
-    | "esther"
     | "estelle"
     | "andromeda"
+    | "esther"
+    | "lyra"
+    | "lintel"
+    | "oculus"
+    | "vespera"
+    | "transom"
+    | "bond"
+    | "arcade"
+    | "atrium"
+    | "cupola"
+    | "fern"
+    | "sirius"
+    | "orion"
+    | "masonry"
+    | "albion"
+    | "parapet"
     | string;
   /**
    * This is the model that will be used. Defaults to 'arcana' when not specified.
@@ -13377,6 +16354,22 @@ export interface FallbackRimeAIVoice {
    * @example null
    */
   inlineSpeedAlpha?: string;
+  /**
+   * Language for speech synthesis. Uses ISO 639 codes. Supported: en, es, de, fr, ar, hi, ja, he, pt, ta, si.
+   * @example "en"
+   */
+  language?:
+    | "en"
+    | "es"
+    | "de"
+    | "fr"
+    | "ar"
+    | "hi"
+    | "ja"
+    | "he"
+    | "pt"
+    | "ta"
+    | "si";
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -13485,21 +16478,13 @@ export interface FallbackVapiVoice {
   cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
   provider: "vapi";
-  /** The voices provided by Vapi */
-  voiceId:
-    | "Elliot"
-    | "Kylie"
-    | "Rohan"
-    | "Lily"
-    | "Savannah"
-    | "Hana"
-    | "Neha"
-    | "Cole"
-    | "Harry"
-    | "Paige"
-    | "Spencer"
-    | "Leah"
-    | "Tara";
+  /**
+   * The voice to use: a built-in Vapi voice name, or a cloned voice id (used with version 2).
+   * @example "Clara"
+   */
+  voiceId: string;
+  /** The Vapi voice routing generation. `latest` auto-updates to the newest generation; version 1 uses legacy mappings; version 2 can use xAI-backed voices when available. When omitted, Version 1 is used. Accepts the string channel ('latest', '1', '2'); legacy numeric values (1, 2) are also accepted and coerced to their string form. */
+  version?: "1" | "2" | "latest";
   /**
    * This is the speed multiplier that will be used.
    *
@@ -13509,6 +16494,67 @@ export interface FallbackVapiVoice {
    * @default 1
    */
   speed?: number;
+  /** Language for Vapi voice synthesis. For Version 2, omit this field or set `auto` for automatic language detection. Version 1 supports legacy Vapi language values. */
+  language?:
+    | "en-US"
+    | "en-GB"
+    | "en-AU"
+    | "en-CA"
+    | "ja"
+    | "zh"
+    | "de"
+    | "hi"
+    | "fr-FR"
+    | "fr-CA"
+    | "ko"
+    | "pt-BR"
+    | "pt-PT"
+    | "it"
+    | "es-ES"
+    | "es-MX"
+    | "id"
+    | "nl"
+    | "tr"
+    | "fil"
+    | "pl"
+    | "sv"
+    | "bg"
+    | "ro"
+    | "ar-SA"
+    | "ar-AE"
+    | "cs"
+    | "el"
+    | "fi"
+    | "hr"
+    | "ms"
+    | "sk"
+    | "da"
+    | "ta"
+    | "uk"
+    | "ru"
+    | "hu"
+    | "no"
+    | "vi"
+    | "auto"
+    | "en"
+    | "ar"
+    | "ar-EG"
+    | "bn"
+    | "es"
+    | "fr"
+    | "gu"
+    | "he"
+    | "ka"
+    | "kn"
+    | "ml"
+    | "mr"
+    | "pa"
+    | "pt"
+    | "te"
+    | "th"
+    | "tl";
+  /** List of pronunciation dictionary locators for custom word pronunciations. */
+  pronunciationDictionary?: VapiPronunciationDictionaryLocator[];
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -13525,7 +16571,7 @@ export interface FallbackInworldVoice {
   /**
    * Inworld Voice ID
    * Available voices by language:
-   * • en: Alex, Ashley, Craig, Deborah, Dennis, Edward, Elizabeth, Hades, Julia, Pixie, Mark, Olivia, Priya, Ronald, Sarah, Shaun, Theodore, Timothy, Wendy, Dominus
+   * • en: Alex, Ashley, Craig, Deborah, Dennis, Edward, Elizabeth, Hades, Julia, Pixie, Mark, Olivia, Priya, Ronald, Sarah, Shaun, Theodore, Timothy, Wendy, Dominus, Hana, Clive, Carter, Blake, Luna
    * • zh: Yichen, Xiaoyin, Xinyi, Jing
    * • nl: Erik, Katrien, Lennart, Lore
    * • fr: Alain, Hélène, Mathieu, Étienne
@@ -13536,6 +16582,10 @@ export interface FallbackInworldVoice {
    * • pl: Szymon, Wojciech
    * • pt: Heitor, Maitê
    * • es: Diego, Lupita, Miguel, Rafael
+   * • ru: Svetlana, Elena, Dmitry, Nikolai
+   * • hi: Riya, Manoj
+   * • he: Yael, Oren
+   * • ar: Nour, Omar
    * @maxLength 120
    * @example "Alex"
    */
@@ -13560,6 +16610,11 @@ export interface FallbackInworldVoice {
     | "Timothy"
     | "Wendy"
     | "Dominus"
+    | "Hana"
+    | "Clive"
+    | "Carter"
+    | "Blake"
+    | "Luna"
     | "Yichen"
     | "Xiaoyin"
     | "Xinyi"
@@ -13589,7 +16644,17 @@ export interface FallbackInworldVoice {
     | "Diego"
     | "Lupita"
     | "Miguel"
-    | "Rafael";
+    | "Rafael"
+    | "Svetlana"
+    | "Elena"
+    | "Dmitry"
+    | "Nikolai"
+    | "Riya"
+    | "Manoj"
+    | "Yael"
+    | "Oren"
+    | "Nour"
+    | "Omar";
   /**
    * This is the model that will be used.
    * @default "inworld-tts-1"
@@ -13610,12 +16675,36 @@ export interface FallbackInworldVoice {
     | "de"
     | "it"
     | "pl"
-    | "pt";
+    | "pt"
+    | "ru"
+    | "hi"
+    | "he"
+    | "ar";
+  /**
+   * A floating point number between 0, exclusive, and 2, inclusive. If equal to null or not provided, the model's default temperature of 1.1 will be used. The temperature parameter controls variance.
+   * Higher values will make the output more random and can lead to more expressive results. Lower values will make it more deterministic.
+   * See https://docs.inworld.ai/docs/tts/capabilities/generating-audio#additional-configurations for more details.
+   * @min 0.1
+   * @max 2
+   * @default 1.1
+   * @example null
+   */
+  temperature?: number;
+  /**
+   * A floating point number between 0.5, inclusive, and 1.5, inclusive. If equal to null or not provided, the model's default speaking speed of 1.0 will be used.
+   * Values above 0.8 are recommended for higher quality.
+   * See https://docs.inworld.ai/docs/tts/capabilities/generating-audio#additional-configurations for more details.
+   * @min 0.5
+   * @max 1.5
+   * @default 1
+   * @example null
+   */
+  speakingRate?: number;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
 
-export interface FallbackMinimaxVoice {
+export interface FallbackXaiVoice {
   /**
    * This is the flag to toggle voice caching for the assistant.
    * @default true
@@ -13623,108 +16712,171 @@ export interface FallbackMinimaxVoice {
    */
   cachingEnabled?: boolean;
   /** This is the voice provider that will be used. */
-  provider: "minimax";
+  provider: "xai";
   /**
-   * This is the Minimax Voice ID
-   * This is the provider-specific ID that will be used. Use a voice from MINIMAX_PREDEFINED_VOICES or a custom cloned voice ID.
+   * xAI Voice ID
+   * Built-in voices: eve, ara, rex, sal, leo. Cloned voice IDs are also accepted.
+   * @maxLength 120
+   * @example "eve"
    */
-  voiceId: string;
+  voiceId: "eve" | "ara" | "rex" | "sal" | "leo";
   /**
-   * This is the model that will be used. Options are 'speech-02-hd' and 'speech-02-turbo'.
-   * speech-02-hd is optimized for high-fidelity applications like voiceovers and audiobooks.
-   * speech-02-turbo is designed for real-time applications with low latency.
-   *
-   * @default "speech-02-turbo"
-   * @default "speech-02-turbo"
-   * @example "speech-02-turbo"
+   * BCP-47 language code for xAI TTS synthesis.
+   * @default "en"
    */
-  model?: "speech-02-hd" | "speech-02-turbo" | "speech-2.5-turbo-preview";
+  language?:
+    | "auto"
+    | "en"
+    | "ar-EG"
+    | "ar-SA"
+    | "ar-AE"
+    | "bn"
+    | "zh"
+    | "fr"
+    | "de"
+    | "hi"
+    | "id"
+    | "it"
+    | "ja"
+    | "ko"
+    | "pt-BR"
+    | "pt-PT"
+    | "ru"
+    | "es-MX"
+    | "es-ES"
+    | "tr"
+    | "vi";
   /**
-   * The emotion to use for the voice. If not provided, will use auto-detect mode.
-   * Options include: 'happy', 'sad', 'angry', 'fearful', 'surprised', 'disgusted', 'neutral'
-   * @example "happy"
-   */
-  emotion?: string;
-  /**
-   * Voice pitch adjustment. Range from -12 to 12 semitones.
-   * @default 0
-   * @min -12
-   * @max 12
-   * @default 0
-   * @example 0
-   */
-  pitch?: number;
-  /**
-   * Voice speed adjustment. Range from 0.5 to 2.0.
-   * @default 1.0
-   * @min 0.5
-   * @max 2
-   * @default 1
-   * @example 1
+   * Speed multiplier for xAI TTS synthesis.
+   * @min 0.7
+   * @max 1.5
+   * @default 1.1
    */
   speed?: number;
+  /** This is the plan for chunking the model output before it is sent to the voice provider. */
+  chunkPlan?: ChunkPlan;
+}
+
+export interface FallbackMicrosoftVoice {
   /**
-   * Voice volume adjustment. Range from 0.5 to 2.0.
-   * @default 1.0
-   * @min 0.5
+   * This is the flag to toggle voice caching for the assistant.
+   * @default true
+   * @example true
+   */
+  cachingEnabled?: boolean;
+  /** This is the voice provider that will be used. */
+  provider: "microsoft";
+  /**
+   * MAI-Voice-2 voice ID. Built-in voices listed in enum.
+   * @example "en-US-Ethan:MAI-Voice-2"
+   */
+  voiceId:
+    | "de-DE-Klaus:MAI-Voice-2"
+    | "de-DE-Mia:MAI-Voice-2"
+    | "en-AU-Lisa:MAI-Voice-2"
+    | "en-US-Ethan:MAI-Voice-2"
+    | "en-US-Grant:MAI-Voice-2"
+    | "en-US-Harper:MAI-Voice-2"
+    | "en-US-Iris:MAI-Voice-2"
+    | "en-US-Jasper:MAI-Voice-2"
+    | "en-US-Olivia:MAI-Voice-2"
+    | "es-ES-Marta:MAI-Voice-2"
+    | "es-MX-Alejo:MAI-Voice-2"
+    | "es-MX-Valeria:MAI-Voice-2"
+    | "fr-FR-Marc:MAI-Voice-2"
+    | "fr-FR-Soleil:MAI-Voice-2"
+    | "hi-IN-Arjun:MAI-Voice-2"
+    | "hi-IN-Dhruv:MAI-Voice-2"
+    | "hi-IN-Kavya:MAI-Voice-2"
+    | "hi-IN-Priya:MAI-Voice-2"
+    | "hu-HU-Bence:MAI-Voice-2"
+    | "hu-HU-Levente:MAI-Voice-2"
+    | "hu-HU-Lilla:MAI-Voice-2"
+    | "hu-HU-Réka:MAI-Voice-2"
+    | "it-IT-Luca:MAI-Voice-2"
+    | "it-IT-Rosa:MAI-Voice-2"
+    | "ko-KR-Hana:MAI-Voice-2"
+    | "ko-KR-Junho:MAI-Voice-2"
+    | "nl-NL-Fleur:MAI-Voice-2"
+    | "nl-NL-Sander:MAI-Voice-2"
+    | "pt-BR-Caio:MAI-Voice-2"
+    | "pt-BR-Luana:MAI-Voice-2"
+    | "pt-BR-Pedro:MAI-Voice-2"
+    | "pt-BR-Rafael:MAI-Voice-2"
+    | "pt-PT-Rui:MAI-Voice-2"
+    | "ro-RO-Andrei:MAI-Voice-2"
+    | "ro-RO-Elena:MAI-Voice-2"
+    | "ro-RO-Ioana:MAI-Voice-2"
+    | "ro-RO-Radu:MAI-Voice-2"
+    | "ru-RU-Lev:MAI-Voice-2"
+    | "ru-RU-Masha:MAI-Voice-2"
+    | "th-TH-Krit:MAI-Voice-2"
+    | "th-TH-Nattapong:MAI-Voice-2"
+    | "tr-TR-Aydin:MAI-Voice-2"
+    | "tr-TR-Elif:MAI-Voice-2"
+    | "zh-CN-Bo:MAI-Voice-2"
+    | "zh-CN-Lan:MAI-Voice-2"
+    | "zh-CN-Mei:MAI-Voice-2";
+  /**
+   * Speaking style applied via mstts:express-as on every request. Unknown styles are ignored by Azure and fall back to neutral.
+   * @example "happy"
+   */
+  style?:
+    | "adventurous"
+    | "angry"
+    | "caring"
+    | "cheerful"
+    | "confused"
+    | "curious"
+    | "determined"
+    | "disappointed"
+    | "disgusted"
+    | "embarrassed"
+    | "empathy"
+    | "encouraging"
+    | "excited"
+    | "fearful"
+    | "friendly"
+    | "happy"
+    | "hopeful"
+    | "jealous"
+    | "joyful"
+    | "nostalgic"
+    | "reflective"
+    | "regretful"
+    | "relieved"
+    | "sad"
+    | "serious"
+    | "shouting"
+    | "softvoice"
+    | "surprised"
+    | "whispering";
+  /**
+   * Style intensity (0.01–2). Default 1 = the predefined style strength. Only applies when `style` is set.
+   * @min 0.01
    * @max 2
    * @default 1
-   * @example 1
    */
-  volume?: number;
+  styleDegree?: number;
   /**
-   * The region for Minimax API. Defaults to "worldwide".
-   * @default "worldwide"
+   * Role-play (age/gender imitation). Requires `style` to be set; ignored otherwise.
+   * @example "YoungAdultFemale"
    */
-  region?: "worldwide" | "china";
-  /** Language hint for MiniMax T2A. Example: yue (Cantonese), zh (Chinese), en (English). */
-  languageBoost?:
-    | "Chinese"
-    | "Chinese,Yue"
-    | "English"
-    | "Arabic"
-    | "Russian"
-    | "Spanish"
-    | "French"
-    | "Portuguese"
-    | "German"
-    | "Turkish"
-    | "Dutch"
-    | "Ukrainian"
-    | "Vietnamese"
-    | "Indonesian"
-    | "Japanese"
-    | "Italian"
-    | "Korean"
-    | "Thai"
-    | "Polish"
-    | "Romanian"
-    | "Greek"
-    | "Czech"
-    | "Finnish"
-    | "Hindi"
-    | "Bulgarian"
-    | "Danish"
-    | "Hebrew"
-    | "Malay"
-    | "Persian"
-    | "Slovak"
-    | "Swedish"
-    | "Croatian"
-    | "Filipino"
-    | "Hungarian"
-    | "Norwegian"
-    | "Slovenian"
-    | "Catalan"
-    | "Nynorsk"
-    | "Tamil"
-    | "Afrikaans"
-    | "auto";
+  role?:
+    | "Girl"
+    | "Boy"
+    | "YoungAdultFemale"
+    | "YoungAdultMale"
+    | "OlderAdultFemale"
+    | "OlderAdultMale"
+    | "SeniorFemale"
+    | "SeniorMale";
   /**
-   * Enable MiniMax text normalization to improve number reading and formatting.
-   * @default true
+   * This is the speed multiplier that will be used.
+   * @min 0.5
+   * @max 2
    */
-  textNormalizationEnabled?: boolean;
+  speed?: number;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -13774,6 +16926,29 @@ export interface CreateAnthropicCredentialDTO {
    * @maxLength 10000
    */
   apiKey: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateAnthropicBedrockCredentialDTO {
+  provider: "anthropic-bedrock";
+  /** AWS region where Bedrock is configured. */
+  region:
+    | "us-east-1"
+    | "us-west-2"
+    | "eu-central-1"
+    | "eu-west-1"
+    | "eu-west-3"
+    | "ap-northeast-1"
+    | "ap-southeast-2";
+  /** Authentication method - either direct IAM credentials or cross-account role assumption. */
+  authenticationPlan:
+    | AWSIAMCredentialsAuthenticationPlan
+    | AWSStsAuthenticationPlan;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -13835,22 +17010,29 @@ export interface CreateAzureCredentialDTO {
   service: "speech" | "blob_storage";
   /** This is the region of the Azure resource. */
   region?:
-    | "australia"
+    | "australiaeast"
     | "canadaeast"
     | "canadacentral"
+    | "centralus"
     | "eastus2"
     | "eastus"
     | "france"
+    | "germanywestcentral"
     | "india"
     | "japaneast"
     | "japanwest"
-    | "uaenorth"
     | "northcentralus"
     | "norway"
+    | "polandcentral"
     | "southcentralus"
+    | "spaincentral"
     | "swedencentral"
     | "switzerland"
+    | "switzerlandnorth"
+    | "switzerlandwest"
+    | "uaenorth"
     | "uk"
+    | "westeurope"
     | "westus"
     | "westus3";
   /**
@@ -13876,26 +17058,43 @@ export interface CreateAzureCredentialDTO {
 export interface CreateAzureOpenAICredentialDTO {
   provider: "azure-openai";
   region:
-    | "australia"
+    | "australiaeast"
     | "canadaeast"
     | "canadacentral"
+    | "centralus"
     | "eastus2"
     | "eastus"
     | "france"
+    | "germanywestcentral"
     | "india"
     | "japaneast"
     | "japanwest"
-    | "uaenorth"
     | "northcentralus"
     | "norway"
+    | "polandcentral"
     | "southcentralus"
+    | "spaincentral"
     | "swedencentral"
     | "switzerland"
+    | "switzerlandnorth"
+    | "switzerlandwest"
+    | "uaenorth"
     | "uk"
+    | "westeurope"
     | "westus"
     | "westus3";
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models:
+    | "gpt-5.6-luna-2026-07-09"
+    | "gpt-5.6-terra-2026-07-09"
+    | "gpt-5.6-sol-2026-07-09"
+    | "gpt-5.4"
+    | "gpt-5.4-mini"
+    | "gpt-5.4-nano"
+    | "gpt-5.2"
+    | "gpt-5.2-chat"
+    | "gpt-5.1"
+    | "gpt-5.1-chat"
     | "gpt-5"
     | "gpt-5-mini"
     | "gpt-5-nano"
@@ -13911,7 +17110,10 @@ export interface CreateAzureOpenAICredentialDTO {
     | "gpt-4-1106-preview"
     | "gpt-4-0613"
     | "gpt-35-turbo-0125"
-    | "gpt-35-turbo-1106";
+    | "gpt-35-turbo-1106"
+    | "gpt-4o"
+    | "gpt-4.1"
+    | "gpt-5.4-mini-2026-03-17";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -13930,7 +17132,7 @@ export interface CreateAzureOpenAICredentialDTO {
 }
 
 export interface SipTrunkGateway {
-  /** This is the address of the gateway. It can be an IPv4 address like 1.1.1.1 or a fully qualified domain name like my-sip-trunk.pstn.twilio.com. */
+  /** This is the address of the gateway. Inbound gateways require an IPv4 address like 1.1.1.1. Outbound-only gateways can also use a fully qualified domain name like my-sip-trunk.pstn.twilio.com. */
   ip: string;
   /**
    * This is the port number of the gateway. Default is 5060.
@@ -13992,8 +17194,6 @@ export interface SipTrunkOutboundAuthenticationPlan {
   sipRegisterPlan?: SipTrunkOutboundSipRegisterPlan;
 }
 
-export type SbcConfiguration = object;
-
 export interface CreateByoSipTrunkCredentialDTO {
   /** This can be used to bring your own SIP trunks or to connect to a Carrier. */
   provider?: "byo-sip-trunk";
@@ -14020,8 +17220,6 @@ export interface CreateByoSipTrunkCredentialDTO {
    * @maxLength 10000
    */
   sipDiversionHeader?: string;
-  /** This is an advanced configuration for enterprise deployments. This uses the onprem SBC to trunk into the SIP trunk's `gateways`, rather than the managed SBC provided by Vapi. */
-  sbcConfiguration?: SbcConfiguration;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -14034,6 +17232,8 @@ export interface CreateCartesiaCredentialDTO {
   provider: "cartesia";
   /** This is not returned in the API. */
   apiKey: string;
+  /** This can be used to point to an onprem Cartesia instance. Defaults to api.cartesia.ai. */
+  apiUrl?: string;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -14164,6 +17364,11 @@ export interface CreateElevenLabsCredentialDTO {
    * @maxLength 10000
    */
   apiKey: string;
+  /** ElevenLabs-only API environment for this key: the global endpoint or the EU data residency endpoint. In EU deployments, new credentials must explicitly use the EU data residency endpoint; existing credentials may omit this field on update to retain their saved endpoint. Outside EU deployments, Vapi detects an omitted endpoint automatically and null on update clears and re-detects the endpoint. */
+  apiUrl?:
+    | "https://api.elevenlabs.io"
+    | "https://api.eu.residency.elevenlabs.io"
+    | null;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -14684,6 +17889,57 @@ export interface CreateMinimaxCredentialDTO {
   name?: string;
 }
 
+export interface EndpointedSpeechLowConfidenceOptions {
+  /**
+   * This is the minimum confidence threshold.
+   * Transcripts with confidence below this value will be discarded.
+   *
+   * @default confidenceMax - 0.2
+   * @min 0
+   * @max 1
+   */
+  confidenceMin?: number;
+  /**
+   * This is the maximum confidence threshold.
+   * Transcripts with confidence at or above this value will be processed normally.
+   *
+   * @default transcriber's confidenceThreshold
+   * @min 0
+   * @max 1
+   */
+  confidenceMax?: number;
+}
+
+export interface CallHookTranscriberEndpointedSpeechLowConfidence {
+  /** This is the set of actions to perform when the hook triggers */
+  do: (SayHookAction | ToolCallHookAction | MessageAddHookAction)[];
+  /**
+   * This is the event that triggers this hook
+   * @maxLength 1000
+   */
+  on: string;
+  /** This is the options for the hook including confidence thresholds */
+  options?: EndpointedSpeechLowConfidenceOptions;
+}
+
+export interface SessionCreatedHook {
+  /**
+   * This is the event that triggers this hook
+   * @maxLength 1000
+   */
+  on: "session.created";
+  /** This is the set of actions to perform when the hook triggers. */
+  do: ToolCallHookAction[];
+  /**
+   * Optional name for this hook instance.
+   * If no name is provided, the hook will be auto generated as UUID.
+   *
+   * @default UUID
+   * @maxLength 1000
+   */
+  name?: string;
+}
+
 export interface SQLInjectionSecurityFilter {
   /** The type of security threat to filter. */
   type: "sql-injection";
@@ -14732,10 +17988,14 @@ export interface AssistantOverrides {
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
     | OpenAITranscriber
-    | CartesiaTranscriber;
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnthropicModel
+    | AnthropicBedrockModel
     | AnyscaleModel
     | CerebrasModel
     | CustomLLMModel
@@ -14744,11 +18004,13 @@ export interface AssistantOverrides {
     | GoogleModel
     | GroqModel
     | InflectionAIModel
+    | MinimaxLLMModel
     | OpenAIModel
     | OpenRouterModel
     | PerplexityAIModel
     | TogetherAIModel
-    | XaiModel;
+    | XaiModel
+    | VapiModel;
   /** These are the options for the assistant's voice. */
   voice?:
     | AzureVoice
@@ -14761,13 +18023,16 @@ export interface AssistantOverrides {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -14808,6 +18073,7 @@ export interface AssistantOverrides {
    */
   clientMessages?:
     | "conversation-update"
+    | "assistant.speechStarted"
     | "function-call"
     | "function-call-result"
     | "hang"
@@ -14831,6 +18097,7 @@ export interface AssistantOverrides {
    */
   serverMessages?:
     | "assistant.started"
+    | "assistant.speechStarted"
     | "conversation-update"
     | "end-of-call-report"
     | "function-call"
@@ -14855,7 +18122,8 @@ export interface AssistantOverrides {
     | "session.updated"
     | "session.deleted"
     | "call.deleted"
-    | "call.delete.failed";
+    | "call.delete.failed"
+    | "call.artifact.upload";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -14872,8 +18140,6 @@ export interface AssistantOverrides {
   backgroundSound?: "off" | "office" | string;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
-   *
-   * Default `false` while in beta.
    *
    * @default false
    * @example false
@@ -14895,6 +18161,9 @@ export interface AssistantOverrides {
     | ({
         provider: "anthropic";
       } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
     | ({
         provider: "anyscale";
       } & CreateAnyscaleCredentialDTO)
@@ -14980,6 +18249,9 @@ export interface AssistantOverrides {
         provider: "s3";
       } & CreateS3CredentialDTO)
     | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
         provider: "supabase";
       } & CreateSupabaseCredentialDTO)
     | ({
@@ -15007,6 +18279,9 @@ export interface AssistantOverrides {
         provider: "xai";
       } & CreateXAiCredentialDTO)
     | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
         provider: "neuphonic";
       } & CreateNeuphonicCredentialDTO)
     | ({
@@ -15019,8 +18294,8 @@ export interface AssistantOverrides {
         provider: "speechmatics";
       } & CreateSpeechmaticsCredentialDTO)
     | ({
-        provider: "trieve";
-      } & CreateTrieveCredentialDTO)
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
     | ({
         provider: "google.calendar.oauth2-client";
       } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
@@ -15042,6 +18317,15 @@ export interface AssistantOverrides {
     | ({
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
   hooks?: (
@@ -15049,10 +18333,12 @@ export interface AssistantOverrides {
     | CallHookAssistantSpeechInterrupted
     | CallHookCustomerSpeechInterrupted
     | CallHookCustomerSpeechTimeout
+    | SessionCreatedHook
   )[];
   "tools:append"?: (
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -15071,6 +18357,8 @@ export interface AssistantOverrides {
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
     | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
   )[];
   /**
    * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
@@ -15122,7 +18410,10 @@ export interface AssistantOverrides {
    * - Fourier denoising
    */
   backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
-  /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
+  /**
+   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+   * @deprecated
+   */
   analysisPlan?: AnalysisPlan;
   /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
   artifactPlan?: ArtifactPlan;
@@ -15152,6 +18443,7 @@ export interface AssistantOverrides {
    * Usage:
    * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
    * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
    */
   monitorPlan?: MonitorPlan;
   /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
@@ -15182,10 +18474,14 @@ export interface CreateAssistantDTO {
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
     | OpenAITranscriber
-    | CartesiaTranscriber;
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnthropicModel
+    | AnthropicBedrockModel
     | AnyscaleModel
     | CerebrasModel
     | CustomLLMModel
@@ -15194,11 +18490,13 @@ export interface CreateAssistantDTO {
     | GoogleModel
     | GroqModel
     | InflectionAIModel
+    | MinimaxLLMModel
     | OpenAIModel
     | OpenRouterModel
     | PerplexityAIModel
     | TogetherAIModel
-    | XaiModel;
+    | XaiModel
+    | VapiModel;
   /** These are the options for the assistant's voice. */
   voice?:
     | AzureVoice
@@ -15211,13 +18509,16 @@ export interface CreateAssistantDTO {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -15258,6 +18559,7 @@ export interface CreateAssistantDTO {
    */
   clientMessages?:
     | "conversation-update"
+    | "assistant.speechStarted"
     | "function-call"
     | "function-call-result"
     | "hang"
@@ -15281,6 +18583,7 @@ export interface CreateAssistantDTO {
    */
   serverMessages?:
     | "assistant.started"
+    | "assistant.speechStarted"
     | "conversation-update"
     | "end-of-call-report"
     | "function-call"
@@ -15305,7 +18608,8 @@ export interface CreateAssistantDTO {
     | "session.updated"
     | "session.deleted"
     | "call.deleted"
-    | "call.delete.failed";
+    | "call.delete.failed"
+    | "call.artifact.upload";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -15322,8 +18626,6 @@ export interface CreateAssistantDTO {
   backgroundSound?: "off" | "office" | string;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
-   *
-   * Default `false` while in beta.
    *
    * @default false
    * @example false
@@ -15345,6 +18647,9 @@ export interface CreateAssistantDTO {
     | ({
         provider: "anthropic";
       } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
     | ({
         provider: "anyscale";
       } & CreateAnyscaleCredentialDTO)
@@ -15430,6 +18735,9 @@ export interface CreateAssistantDTO {
         provider: "s3";
       } & CreateS3CredentialDTO)
     | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
         provider: "supabase";
       } & CreateSupabaseCredentialDTO)
     | ({
@@ -15457,6 +18765,9 @@ export interface CreateAssistantDTO {
         provider: "xai";
       } & CreateXAiCredentialDTO)
     | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
         provider: "neuphonic";
       } & CreateNeuphonicCredentialDTO)
     | ({
@@ -15469,8 +18780,8 @@ export interface CreateAssistantDTO {
         provider: "speechmatics";
       } & CreateSpeechmaticsCredentialDTO)
     | ({
-        provider: "trieve";
-      } & CreateTrieveCredentialDTO)
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
     | ({
         provider: "google.calendar.oauth2-client";
       } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
@@ -15492,6 +18803,15 @@ export interface CreateAssistantDTO {
     | ({
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
   hooks?: (
@@ -15499,6 +18819,7 @@ export interface CreateAssistantDTO {
     | CallHookAssistantSpeechInterrupted
     | CallHookCustomerSpeechInterrupted
     | CallHookCustomerSpeechTimeout
+    | SessionCreatedHook
   )[];
   /**
    * This is the name of the assistant.
@@ -15540,7 +18861,10 @@ export interface CreateAssistantDTO {
    * - Fourier denoising
    */
   backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
-  /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
+  /**
+   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+   * @deprecated
+   */
   analysisPlan?: AnalysisPlan;
   /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
   artifactPlan?: ArtifactPlan;
@@ -15570,6 +18894,7 @@ export interface CreateAssistantDTO {
    * Usage:
    * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
    * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
    */
   monitorPlan?: MonitorPlan;
   /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
@@ -15600,10 +18925,14 @@ export interface Assistant {
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
     | OpenAITranscriber
-    | CartesiaTranscriber;
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnthropicModel
+    | AnthropicBedrockModel
     | AnyscaleModel
     | CerebrasModel
     | CustomLLMModel
@@ -15612,11 +18941,13 @@ export interface Assistant {
     | GoogleModel
     | GroqModel
     | InflectionAIModel
+    | MinimaxLLMModel
     | OpenAIModel
     | OpenRouterModel
     | PerplexityAIModel
     | TogetherAIModel
-    | XaiModel;
+    | XaiModel
+    | VapiModel;
   /** These are the options for the assistant's voice. */
   voice?:
     | AzureVoice
@@ -15629,13 +18960,16 @@ export interface Assistant {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -15676,6 +19010,7 @@ export interface Assistant {
    */
   clientMessages?:
     | "conversation-update"
+    | "assistant.speechStarted"
     | "function-call"
     | "function-call-result"
     | "hang"
@@ -15699,6 +19034,7 @@ export interface Assistant {
    */
   serverMessages?:
     | "assistant.started"
+    | "assistant.speechStarted"
     | "conversation-update"
     | "end-of-call-report"
     | "function-call"
@@ -15723,7 +19059,8 @@ export interface Assistant {
     | "session.updated"
     | "session.deleted"
     | "call.deleted"
-    | "call.delete.failed";
+    | "call.delete.failed"
+    | "call.artifact.upload";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -15740,8 +19077,6 @@ export interface Assistant {
   backgroundSound?: "off" | "office" | string;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
-   *
-   * Default `false` while in beta.
    *
    * @default false
    * @example false
@@ -15763,6 +19098,9 @@ export interface Assistant {
     | ({
         provider: "anthropic";
       } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
     | ({
         provider: "anyscale";
       } & CreateAnyscaleCredentialDTO)
@@ -15848,6 +19186,9 @@ export interface Assistant {
         provider: "s3";
       } & CreateS3CredentialDTO)
     | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
         provider: "supabase";
       } & CreateSupabaseCredentialDTO)
     | ({
@@ -15875,6 +19216,9 @@ export interface Assistant {
         provider: "xai";
       } & CreateXAiCredentialDTO)
     | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
         provider: "neuphonic";
       } & CreateNeuphonicCredentialDTO)
     | ({
@@ -15887,8 +19231,8 @@ export interface Assistant {
         provider: "speechmatics";
       } & CreateSpeechmaticsCredentialDTO)
     | ({
-        provider: "trieve";
-      } & CreateTrieveCredentialDTO)
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
     | ({
         provider: "google.calendar.oauth2-client";
       } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
@@ -15910,6 +19254,15 @@ export interface Assistant {
     | ({
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
   hooks?: (
@@ -15917,7 +19270,15 @@ export interface Assistant {
     | CallHookAssistantSpeechInterrupted
     | CallHookCustomerSpeechInterrupted
     | CallHookCustomerSpeechTimeout
+    | SessionCreatedHook
   )[];
+  /**
+   * This is the latest version label (e.g. `v3`) of the assistant in the
+   * version history. `null` while the org is not yet
+   * onboarded to versioning, or for assistants that have not yet been
+   * published under it.
+   */
+  latestVersion?: string | null;
   /**
    * This is the name of the assistant.
    *
@@ -15958,7 +19319,10 @@ export interface Assistant {
    * - Fourier denoising
    */
   backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
-  /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
+  /**
+   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+   * @deprecated
+   */
   analysisPlan?: AnalysisPlan;
   /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
   artifactPlan?: ArtifactPlan;
@@ -15988,6 +19352,7 @@ export interface Assistant {
    * Usage:
    * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
    * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
    */
   monitorPlan?: MonitorPlan;
   /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
@@ -16023,6 +19388,15 @@ export interface PaginationMeta {
   itemsPerPage: number;
   totalItems: number;
   currentPage: number;
+  totalPages?: number;
+  hasNextPage?: boolean;
+  /**
+   * Opaque cursor for the next page under keyset pagination (PRO-3163). Pass it
+   * back as the `cursor` query param to fetch the next page without an OFFSET
+   * scan. Present only when a further page likely exists.
+   */
+  nextCursor?: string;
+  sortOrder?: "ASC" | "DESC";
   itemsBeyondRetention?: boolean;
   /** @format date-time */
   createdAtLe?: string;
@@ -16035,13 +19409,7 @@ export interface AssistantPaginatedResponse {
   metadata: PaginationMeta;
 }
 
-export interface AssistantVersionPaginatedResponse {
-  results: any[];
-  metadata: PaginationMeta;
-  nextPageState?: string;
-}
-
-export interface UpdateAssistantDTO {
+export interface AssistantDraft {
   /** These are the options for the assistant's transcriber. */
   transcriber?:
     | AssemblyAITranscriber
@@ -16054,10 +19422,14 @@ export interface UpdateAssistantDTO {
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
     | OpenAITranscriber
-    | CartesiaTranscriber;
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
   /** These are the options for the assistant's LLM. */
   model?:
     | AnthropicModel
+    | AnthropicBedrockModel
     | AnyscaleModel
     | CerebrasModel
     | CustomLLMModel
@@ -16066,11 +19438,13 @@ export interface UpdateAssistantDTO {
     | GoogleModel
     | GroqModel
     | InflectionAIModel
+    | MinimaxLLMModel
     | OpenAIModel
     | OpenRouterModel
     | PerplexityAIModel
     | TogetherAIModel
-    | XaiModel;
+    | XaiModel
+    | VapiModel;
   /** These are the options for the assistant's voice. */
   voice?:
     | AzureVoice
@@ -16083,13 +19457,16 @@ export interface UpdateAssistantDTO {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
   /**
    * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
    *
@@ -16130,6 +19507,7 @@ export interface UpdateAssistantDTO {
    */
   clientMessages?:
     | "conversation-update"
+    | "assistant.speechStarted"
     | "function-call"
     | "function-call-result"
     | "hang"
@@ -16153,6 +19531,7 @@ export interface UpdateAssistantDTO {
    */
   serverMessages?:
     | "assistant.started"
+    | "assistant.speechStarted"
     | "conversation-update"
     | "end-of-call-report"
     | "function-call"
@@ -16177,7 +19556,8 @@ export interface UpdateAssistantDTO {
     | "session.updated"
     | "session.deleted"
     | "call.deleted"
-    | "call.delete.failed";
+    | "call.delete.failed"
+    | "call.artifact.upload";
   /**
    * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
    *
@@ -16194,8 +19574,6 @@ export interface UpdateAssistantDTO {
   backgroundSound?: "off" | "office" | string;
   /**
    * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
-   *
-   * Default `false` while in beta.
    *
    * @default false
    * @example false
@@ -16217,6 +19595,9 @@ export interface UpdateAssistantDTO {
     | ({
         provider: "anthropic";
       } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
     | ({
         provider: "anyscale";
       } & CreateAnyscaleCredentialDTO)
@@ -16302,6 +19683,9 @@ export interface UpdateAssistantDTO {
         provider: "s3";
       } & CreateS3CredentialDTO)
     | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
         provider: "supabase";
       } & CreateSupabaseCredentialDTO)
     | ({
@@ -16329,6 +19713,9 @@ export interface UpdateAssistantDTO {
         provider: "xai";
       } & CreateXAiCredentialDTO)
     | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
         provider: "neuphonic";
       } & CreateNeuphonicCredentialDTO)
     | ({
@@ -16341,8 +19728,8 @@ export interface UpdateAssistantDTO {
         provider: "speechmatics";
       } & CreateSpeechmaticsCredentialDTO)
     | ({
-        provider: "trieve";
-      } & CreateTrieveCredentialDTO)
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
     | ({
         provider: "google.calendar.oauth2-client";
       } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
@@ -16364,6 +19751,15 @@ export interface UpdateAssistantDTO {
     | ({
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
   )[];
   /** This is a set of actions that will be performed on certain events. */
   hooks?: (
@@ -16371,6 +19767,7 @@ export interface UpdateAssistantDTO {
     | CallHookAssistantSpeechInterrupted
     | CallHookCustomerSpeechInterrupted
     | CallHookCustomerSpeechTimeout
+    | SessionCreatedHook
   )[];
   /**
    * This is the name of the assistant.
@@ -16412,7 +19809,10 @@ export interface UpdateAssistantDTO {
    * - Fourier denoising
    */
   backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
-  /** This is the plan for analysis of assistant's calls. Stored in `call.analysis`. */
+  /**
+   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+   * @deprecated
+   */
   analysisPlan?: AnalysisPlan;
   /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
   artifactPlan?: ArtifactPlan;
@@ -16442,6 +19842,547 @@ export interface UpdateAssistantDTO {
    * Usage:
    * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
    * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
+   */
+  monitorPlan?: MonitorPlan;
+  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
+  credentialIds?: string[];
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. assistant.server.url
+   * 2. phoneNumber.serverUrl
+   * 3. org.serverUrl
+   */
+  server?: Server;
+  keypadInputPlan?: KeypadInputPlan;
+  /** Server-resolved baseVersion (always set after POST). */
+  baseVersion: string;
+  /** Surrogate key used as `draftId` in URLs. */
+  id: string;
+  /** Org this draft belongs to. */
+  orgId: string;
+  /** Parent assistant the draft was forked from. FK to assistant.id ON DELETE CASCADE. */
+  assistantId: string;
+  /** Email when JWT, null when API or external JWT. Set on POST, never rewritten on PATCH. */
+  createdBy?: string | null;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+}
+
+export interface AssistantDraftPaginatedMetadata {
+  nextCursor: string | null;
+  hasNextPage: boolean;
+  limit: number;
+}
+
+export interface AssistantDraftPaginatedResponse {
+  results: AssistantDraft[];
+  metadata: AssistantDraftPaginatedMetadata;
+}
+
+export interface LegacyAssistantVersion {
+  id: string;
+  assistantId: string;
+  orgId: string;
+  data?: string;
+  /** @format date-time */
+  createdAt: string;
+}
+
+export interface LegacyAssistantVersionPaginatedResponse {
+  results: LegacyAssistantVersion[];
+  metadata: PaginationMeta;
+  nextPageState?: string;
+}
+
+export interface AssistantVersion {
+  /** These are the options for the assistant's transcriber. */
+  transcriber?:
+    | AssemblyAITranscriber
+    | AzureSpeechTranscriber
+    | CustomTranscriber
+    | DeepgramTranscriber
+    | ElevenLabsTranscriber
+    | GladiaTranscriber
+    | GoogleTranscriber
+    | SpeechmaticsTranscriber
+    | TalkscriberTranscriber
+    | OpenAITranscriber
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | AnthropicModel
+    | AnthropicBedrockModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | MinimaxLLMModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel
+    | VapiModel;
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | WellSaidVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | TavusVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
+  /**
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
+   *
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
+   * @example "Hello! How can I help you today?"
+   */
+  firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Use:
+   * - 'assistant-speaks-first' to have the assistant speak first.
+   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
+   *
+   * @default 'assistant-speaks-first'
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?:
+    | "assistant-speaks-first"
+    | "assistant-speaks-first-with-model-generated-message"
+    | "assistant-waits-for-user";
+  /**
+   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+   * By default, voicemail detection is disabled.
+   */
+  voicemailDetection?:
+    | "off"
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
+   */
+  clientMessages?:
+    | "conversation-update"
+    | "assistant.speechStarted"
+    | "function-call"
+    | "function-call-result"
+    | "hang"
+    | "language-changed"
+    | "metadata"
+    | "model-output"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "tool-calls"
+    | "tool-calls-result"
+    | "tool.completed"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "workflow.node.started"
+    | "assistant.started";
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
+   */
+  serverMessages?:
+    | "assistant.started"
+    | "assistant.speechStarted"
+    | "conversation-update"
+    | "end-of-call-report"
+    | "function-call"
+    | "hang"
+    | "language-changed"
+    | "language-change-detected"
+    | "model-output"
+    | "phone-call-control"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "transcript[transcriptType='final']"
+    | "tool-calls"
+    | "transfer-destination-request"
+    | "handoff-destination-request"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted"
+    | "call.deleted"
+    | "call.delete.failed"
+    | "call.artifact.upload";
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   *
+   * @default 600 (10 minutes)
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /**
+   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
+   *
+   * @default false
+   * @example false
+   */
+  modelOutputInMessagesEnabled?: boolean;
+  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
+  transportConfigurations?: TransportConfigurationTwilio[];
+  /**
+   * This is the plan for observability of assistant's calls.
+   *
+   * Currently, only Langfuse is supported.
+   */
+  observabilityPlan?: LangfuseObservabilityPlan;
+  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
+  credentials?: (
+    | ({
+        provider: "11labs";
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: "anthropic";
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
+    | ({
+        provider: "anyscale";
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: "assembly-ai";
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: "azure-openai";
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: "azure";
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: "byo-sip-trunk";
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: "cartesia";
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: "cerebras";
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: "cloudflare";
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: "custom-llm";
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: "deepgram";
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: "deepinfra";
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: "deep-seek";
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: "gcp";
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: "gladia";
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: "gohighlevel";
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: "google";
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: "groq";
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: "inflection-ai";
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: "langfuse";
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: "lmnt";
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: "make";
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: "openai";
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: "openrouter";
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: "perplexity-ai";
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: "playht";
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: "rime-ai";
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: "runpod";
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: "s3";
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
+        provider: "supabase";
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: "smallest-ai";
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: "tavus";
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: "together-ai";
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: "twilio";
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: "vonage";
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: "webhook";
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: "custom-credential";
+      } & CreateCustomCredentialDTO)
+    | ({
+        provider: "xai";
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
+        provider: "neuphonic";
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: "hume";
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: "mistral";
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: "speechmatics";
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-client";
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-authorization";
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "google.sheets.oauth2-authorization";
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "slack.oauth2-authorization";
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "ghl.oauth2-authorization";
+      } & CreateGoHighLevelMCPCredentialDTO)
+    | ({
+        provider: "inworld";
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
+  )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+    | SessionCreatedHook
+  )[];
+  /**
+   * Optional human-readable label for this version. Pass `null` to clear.
+   * @maxLength 80
+   */
+  versionName?: string | null;
+  /**
+   * Optional description for this version. Pass `null` to clear.
+   * @maxLength 500
+   */
+  versionDescription?: string | null;
+  /**
+   * This is the unique identifier for the version row.
+   * @format uuid
+   */
+  id: string;
+  /**
+   * This is the unique identifier for the org that owns this version.
+   * @format uuid
+   */
+  orgId: string;
+  /**
+   * This is the unique identifier for the assistant this version was snapshotted from.
+   * @format uuid
+   */
+  assistantId: string;
+  /**
+   * This is the public monotonic version label, e.g. "v1".
+   * System-owned and incremented per assistant; never user-supplied.
+   * @example "v1"
+   */
+  version: string;
+  /** This is the SHA-256 hex of the snapshotted content used for no-op detection. */
+  configHash: string;
+  /** This is the prior version label (vN-1). Null on v1 or for branch roots. */
+  parentVersion?: string | null;
+  /** The version this version was restored from. Null when it was not restored. */
+  restoredFromVersion?: string | null;
+  /** This is the actor that wrote this version. Email when created via JWT, null when created via API. */
+  createdBy?: string | null;
+  /**
+   * This is the soft-delete timestamp. Null when active.
+   * @format date-time
+   */
+  deletedAt?: string | null;
+  /**
+   * This is the ISO 8601 date-time string of when the version was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the name of the assistant.
+   *
+   * This is required when you want to transfer between assistants in a call.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 1000
+   */
+  endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
+  compliancePlan?: CompliancePlan;
+  /** This is for metadata you want to store on the assistant. */
+  metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
+  /**
+   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+   * @deprecated
+   */
+  analysisPlan?: AnalysisPlan;
+  /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
+  artifactPlan?: ArtifactPlan;
+  /**
+   * This is the plan for when the assistant should start talking.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to start talking after the customer is done speaking.
+   * - The assistant is too fast to start talking after the customer is done speaking.
+   * - The assistant is so fast that it's actually interrupting the customer.
+   */
+  startSpeakingPlan?: StartSpeakingPlan;
+  /**
+   * This is the plan for when assistant should stop talking on customer interruption.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to recognize customer's interruption.
+   * - The assistant is too fast to recognize customer's interruption.
+   * - The assistant is getting interrupted by phrases that are just acknowledgments.
+   * - The assistant is getting interrupted by background noises.
+   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+   */
+  stopSpeakingPlan?: StopSpeakingPlan;
+  /**
+   * This is the plan for real-time monitoring of the assistant's calls.
+   *
+   * Usage:
+   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
+   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
    */
   monitorPlan?: MonitorPlan;
   /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
@@ -16459,34 +20400,1419 @@ export interface UpdateAssistantDTO {
   keypadInputPlan?: KeypadInputPlan;
 }
 
-export interface SquadMemberDTO {
-  assistantDestinations?: (
-    | TransferDestinationAssistant
-    | HandoffDestinationAssistant
-  )[];
-  /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
-  assistantId?: string | null;
-  /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
-  assistant?: CreateAssistantDTO;
-  /** This can be used to override the assistant's settings and provide values for it's template variables. */
-  assistantOverrides?: AssistantOverrides;
+export interface AssistantVersionPaginatedMetadata {
+  nextCursor?: string | null;
+  hasNextPage: boolean;
+  limit: number;
 }
 
-export interface CreateSquadDTO {
-  /** This is the name of the squad. */
+export interface AssistantVersionPaginatedResponse {
+  results: AssistantVersion[];
+  metadata: AssistantVersionPaginatedMetadata;
+}
+
+export interface UpdateAssistantVersionMetadataDTO {
+  /**
+   * Optional human-readable label for this version. Pass `null` to clear.
+   * @maxLength 80
+   */
+  versionName?: string | null;
+  /**
+   * Optional description for this version. Pass `null` to clear.
+   * @maxLength 500
+   */
+  versionDescription?: string | null;
+}
+
+export interface VersionPinReference {
+  /** Kind of source row the pin originates from. */
+  sourceType: "assistant_version" | "squad" | "tool_version";
+  /**
+   * UUID of the source row (polymorphic, not FK-enforced).
+   * @format uuid
+   */
+  sourceId: string;
+}
+
+export interface VersionPinConflictResponseDTO {
+  error: "version_pinned";
+  /** Human-readable reason the delete was rejected. */
+  message: string;
+  /** Pins that block the delete. */
+  pinnedBy: VersionPinReference[];
+}
+
+export interface CreateAssistantDraftDTO {
+  /** These are the options for the assistant's transcriber. */
+  transcriber?:
+    | AssemblyAITranscriber
+    | AzureSpeechTranscriber
+    | CustomTranscriber
+    | DeepgramTranscriber
+    | ElevenLabsTranscriber
+    | GladiaTranscriber
+    | GoogleTranscriber
+    | SpeechmaticsTranscriber
+    | TalkscriberTranscriber
+    | OpenAITranscriber
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | AnthropicModel
+    | AnthropicBedrockModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | MinimaxLLMModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel
+    | VapiModel;
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | WellSaidVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | TavusVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
+  /**
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
+   *
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
+   * @example "Hello! How can I help you today?"
+   */
+  firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Use:
+   * - 'assistant-speaks-first' to have the assistant speak first.
+   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
+   *
+   * @default 'assistant-speaks-first'
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?:
+    | "assistant-speaks-first"
+    | "assistant-speaks-first-with-model-generated-message"
+    | "assistant-waits-for-user";
+  /**
+   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+   * By default, voicemail detection is disabled.
+   */
+  voicemailDetection?:
+    | "off"
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
+   */
+  clientMessages?:
+    | "conversation-update"
+    | "assistant.speechStarted"
+    | "function-call"
+    | "function-call-result"
+    | "hang"
+    | "language-changed"
+    | "metadata"
+    | "model-output"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "tool-calls"
+    | "tool-calls-result"
+    | "tool.completed"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "workflow.node.started"
+    | "assistant.started";
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
+   */
+  serverMessages?:
+    | "assistant.started"
+    | "assistant.speechStarted"
+    | "conversation-update"
+    | "end-of-call-report"
+    | "function-call"
+    | "hang"
+    | "language-changed"
+    | "language-change-detected"
+    | "model-output"
+    | "phone-call-control"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "transcript[transcriptType='final']"
+    | "tool-calls"
+    | "transfer-destination-request"
+    | "handoff-destination-request"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted"
+    | "call.deleted"
+    | "call.delete.failed"
+    | "call.artifact.upload";
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   *
+   * @default 600 (10 minutes)
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /**
+   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
+   *
+   * @default false
+   * @example false
+   */
+  modelOutputInMessagesEnabled?: boolean;
+  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
+  transportConfigurations?: TransportConfigurationTwilio[];
+  /**
+   * This is the plan for observability of assistant's calls.
+   *
+   * Currently, only Langfuse is supported.
+   */
+  observabilityPlan?: LangfuseObservabilityPlan;
+  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
+  credentials?: (
+    | ({
+        provider: "11labs";
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: "anthropic";
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
+    | ({
+        provider: "anyscale";
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: "assembly-ai";
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: "azure-openai";
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: "azure";
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: "byo-sip-trunk";
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: "cartesia";
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: "cerebras";
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: "cloudflare";
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: "custom-llm";
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: "deepgram";
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: "deepinfra";
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: "deep-seek";
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: "gcp";
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: "gladia";
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: "gohighlevel";
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: "google";
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: "groq";
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: "inflection-ai";
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: "langfuse";
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: "lmnt";
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: "make";
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: "openai";
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: "openrouter";
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: "perplexity-ai";
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: "playht";
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: "rime-ai";
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: "runpod";
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: "s3";
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
+        provider: "supabase";
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: "smallest-ai";
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: "tavus";
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: "together-ai";
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: "twilio";
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: "vonage";
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: "webhook";
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: "custom-credential";
+      } & CreateCustomCredentialDTO)
+    | ({
+        provider: "xai";
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
+        provider: "neuphonic";
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: "hume";
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: "mistral";
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: "speechmatics";
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-client";
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-authorization";
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "google.sheets.oauth2-authorization";
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "slack.oauth2-authorization";
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "ghl.oauth2-authorization";
+      } & CreateGoHighLevelMCPCredentialDTO)
+    | ({
+        provider: "inworld";
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
+  )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+    | SessionCreatedHook
+  )[];
+  /**
+   * This is the name of the assistant.
+   *
+   * This is required when you want to transfer between assistants in a call.
+   * @maxLength 40
+   */
   name?: string;
   /**
-   * This is the list of assistants that make up the squad.
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
    *
-   * The call will start with the first assistant in the list.
+   * If unspecified, it will hang up.
+   * @maxLength 1000
    */
-  members: SquadMemberDTO[];
+  voicemailMessage?: string;
   /**
-   * This can be used to override all the assistants' settings and provide values for their template variables.
+   * This is the message that the assistant will say if it ends the call.
    *
-   * Both `membersOverrides` and `members[n].assistantOverrides` can be used together. First, `members[n].assistantOverrides` is applied. Then, `membersOverrides` is applied as a global override.
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 1000
    */
-  membersOverrides?: AssistantOverrides;
+  endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
+  compliancePlan?: CompliancePlan;
+  /** This is for metadata you want to store on the assistant. */
+  metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
+  /**
+   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+   * @deprecated
+   */
+  analysisPlan?: AnalysisPlan;
+  /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
+  artifactPlan?: ArtifactPlan;
+  /**
+   * This is the plan for when the assistant should start talking.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to start talking after the customer is done speaking.
+   * - The assistant is too fast to start talking after the customer is done speaking.
+   * - The assistant is so fast that it's actually interrupting the customer.
+   */
+  startSpeakingPlan?: StartSpeakingPlan;
+  /**
+   * This is the plan for when assistant should stop talking on customer interruption.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to recognize customer's interruption.
+   * - The assistant is too fast to recognize customer's interruption.
+   * - The assistant is getting interrupted by phrases that are just acknowledgments.
+   * - The assistant is getting interrupted by background noises.
+   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+   */
+  stopSpeakingPlan?: StopSpeakingPlan;
+  /**
+   * This is the plan for real-time monitoring of the assistant's calls.
+   *
+   * Usage:
+   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
+   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
+   */
+  monitorPlan?: MonitorPlan;
+  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
+  credentialIds?: string[];
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. assistant.server.url
+   * 2. phoneNumber.serverUrl
+   * 3. org.serverUrl
+   */
+  server?: Server;
+  keypadInputPlan?: KeypadInputPlan;
+  /**
+   * Optional pointer to the published version this draft was forked from.
+   * When omitted on `POST /assistant/:id/draft`, defaults server-side to the
+   * parent assistant's current `latestVersion` (which is lazy-created via
+   * `assistantBaselineVersionEnsureInTx` if the parent has never been
+   * versioned). Immutable for the lifetime of the draft.
+   */
+  baseVersion?: string;
+}
+
+export interface AssistantDraftConflictResponseDTO {
+  existingDraftId: string | null;
+  error: string;
+  message: string;
+}
+
+export interface UpdateAssistantDraftDTO {
+  /** These are the options for the assistant's transcriber. */
+  transcriber?:
+    | AssemblyAITranscriber
+    | AzureSpeechTranscriber
+    | CustomTranscriber
+    | DeepgramTranscriber
+    | ElevenLabsTranscriber
+    | GladiaTranscriber
+    | GoogleTranscriber
+    | SpeechmaticsTranscriber
+    | TalkscriberTranscriber
+    | OpenAITranscriber
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | AnthropicModel
+    | AnthropicBedrockModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | MinimaxLLMModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel
+    | VapiModel;
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | WellSaidVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | TavusVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
+  /**
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
+   *
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
+   * @example "Hello! How can I help you today?"
+   */
+  firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Use:
+   * - 'assistant-speaks-first' to have the assistant speak first.
+   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
+   *
+   * @default 'assistant-speaks-first'
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?:
+    | "assistant-speaks-first"
+    | "assistant-speaks-first-with-model-generated-message"
+    | "assistant-waits-for-user";
+  /**
+   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+   * By default, voicemail detection is disabled.
+   */
+  voicemailDetection?:
+    | "off"
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
+   */
+  clientMessages?:
+    | "conversation-update"
+    | "assistant.speechStarted"
+    | "function-call"
+    | "function-call-result"
+    | "hang"
+    | "language-changed"
+    | "metadata"
+    | "model-output"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "tool-calls"
+    | "tool-calls-result"
+    | "tool.completed"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "workflow.node.started"
+    | "assistant.started";
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
+   */
+  serverMessages?:
+    | "assistant.started"
+    | "assistant.speechStarted"
+    | "conversation-update"
+    | "end-of-call-report"
+    | "function-call"
+    | "hang"
+    | "language-changed"
+    | "language-change-detected"
+    | "model-output"
+    | "phone-call-control"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "transcript[transcriptType='final']"
+    | "tool-calls"
+    | "transfer-destination-request"
+    | "handoff-destination-request"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted"
+    | "call.deleted"
+    | "call.delete.failed"
+    | "call.artifact.upload";
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   *
+   * @default 600 (10 minutes)
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /**
+   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
+   *
+   * @default false
+   * @example false
+   */
+  modelOutputInMessagesEnabled?: boolean;
+  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
+  transportConfigurations?: TransportConfigurationTwilio[];
+  /**
+   * This is the plan for observability of assistant's calls.
+   *
+   * Currently, only Langfuse is supported.
+   */
+  observabilityPlan?: LangfuseObservabilityPlan;
+  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
+  credentials?: (
+    | ({
+        provider: "11labs";
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: "anthropic";
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
+    | ({
+        provider: "anyscale";
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: "assembly-ai";
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: "azure-openai";
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: "azure";
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: "byo-sip-trunk";
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: "cartesia";
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: "cerebras";
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: "cloudflare";
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: "custom-llm";
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: "deepgram";
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: "deepinfra";
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: "deep-seek";
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: "gcp";
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: "gladia";
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: "gohighlevel";
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: "google";
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: "groq";
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: "inflection-ai";
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: "langfuse";
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: "lmnt";
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: "make";
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: "openai";
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: "openrouter";
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: "perplexity-ai";
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: "playht";
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: "rime-ai";
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: "runpod";
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: "s3";
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
+        provider: "supabase";
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: "smallest-ai";
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: "tavus";
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: "together-ai";
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: "twilio";
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: "vonage";
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: "webhook";
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: "custom-credential";
+      } & CreateCustomCredentialDTO)
+    | ({
+        provider: "xai";
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
+        provider: "neuphonic";
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: "hume";
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: "mistral";
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: "speechmatics";
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-client";
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-authorization";
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "google.sheets.oauth2-authorization";
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "slack.oauth2-authorization";
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "ghl.oauth2-authorization";
+      } & CreateGoHighLevelMCPCredentialDTO)
+    | ({
+        provider: "inworld";
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
+  )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+    | SessionCreatedHook
+  )[];
+  /**
+   * This is the name of the assistant.
+   *
+   * This is required when you want to transfer between assistants in a call.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 1000
+   */
+  endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
+  compliancePlan?: CompliancePlan;
+  /** This is for metadata you want to store on the assistant. */
+  metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
+  /**
+   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+   * @deprecated
+   */
+  analysisPlan?: AnalysisPlan;
+  /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
+  artifactPlan?: ArtifactPlan;
+  /**
+   * This is the plan for when the assistant should start talking.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to start talking after the customer is done speaking.
+   * - The assistant is too fast to start talking after the customer is done speaking.
+   * - The assistant is so fast that it's actually interrupting the customer.
+   */
+  startSpeakingPlan?: StartSpeakingPlan;
+  /**
+   * This is the plan for when assistant should stop talking on customer interruption.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to recognize customer's interruption.
+   * - The assistant is too fast to recognize customer's interruption.
+   * - The assistant is getting interrupted by phrases that are just acknowledgments.
+   * - The assistant is getting interrupted by background noises.
+   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+   */
+  stopSpeakingPlan?: StopSpeakingPlan;
+  /**
+   * This is the plan for real-time monitoring of the assistant's calls.
+   *
+   * Usage:
+   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
+   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
+   */
+  monitorPlan?: MonitorPlan;
+  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
+  credentialIds?: string[];
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. assistant.server.url
+   * 2. phoneNumber.serverUrl
+   * 3. org.serverUrl
+   */
+  server?: Server;
+  keypadInputPlan?: KeypadInputPlan;
+}
+
+export interface UpdateAssistantDTO {
+  /** These are the options for the assistant's transcriber. */
+  transcriber?:
+    | AssemblyAITranscriber
+    | AzureSpeechTranscriber
+    | CustomTranscriber
+    | DeepgramTranscriber
+    | ElevenLabsTranscriber
+    | GladiaTranscriber
+    | GoogleTranscriber
+    | SpeechmaticsTranscriber
+    | TalkscriberTranscriber
+    | OpenAITranscriber
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | AnthropicModel
+    | AnthropicBedrockModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | MinimaxLLMModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel
+    | VapiModel;
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | WellSaidVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | TavusVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
+  /**
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
+   *
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
+   * @example "Hello! How can I help you today?"
+   */
+  firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Use:
+   * - 'assistant-speaks-first' to have the assistant speak first.
+   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
+   *
+   * @default 'assistant-speaks-first'
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?:
+    | "assistant-speaks-first"
+    | "assistant-speaks-first-with-model-generated-message"
+    | "assistant-waits-for-user";
+  /**
+   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+   * By default, voicemail detection is disabled.
+   */
+  voicemailDetection?:
+    | "off"
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
+   */
+  clientMessages?:
+    | "conversation-update"
+    | "assistant.speechStarted"
+    | "function-call"
+    | "function-call-result"
+    | "hang"
+    | "language-changed"
+    | "metadata"
+    | "model-output"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "tool-calls"
+    | "tool-calls-result"
+    | "tool.completed"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "workflow.node.started"
+    | "assistant.started";
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
+   */
+  serverMessages?:
+    | "assistant.started"
+    | "assistant.speechStarted"
+    | "conversation-update"
+    | "end-of-call-report"
+    | "function-call"
+    | "hang"
+    | "language-changed"
+    | "language-change-detected"
+    | "model-output"
+    | "phone-call-control"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "transcript[transcriptType='final']"
+    | "tool-calls"
+    | "transfer-destination-request"
+    | "handoff-destination-request"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted"
+    | "call.deleted"
+    | "call.delete.failed"
+    | "call.artifact.upload";
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   *
+   * @default 600 (10 minutes)
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /**
+   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
+   *
+   * @default false
+   * @example false
+   */
+  modelOutputInMessagesEnabled?: boolean;
+  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
+  transportConfigurations?: TransportConfigurationTwilio[];
+  /**
+   * This is the plan for observability of assistant's calls.
+   *
+   * Currently, only Langfuse is supported.
+   */
+  observabilityPlan?: LangfuseObservabilityPlan;
+  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
+  credentials?: (
+    | ({
+        provider: "11labs";
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: "anthropic";
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
+    | ({
+        provider: "anyscale";
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: "assembly-ai";
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: "azure-openai";
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: "azure";
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: "byo-sip-trunk";
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: "cartesia";
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: "cerebras";
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: "cloudflare";
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: "custom-llm";
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: "deepgram";
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: "deepinfra";
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: "deep-seek";
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: "gcp";
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: "gladia";
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: "gohighlevel";
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: "google";
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: "groq";
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: "inflection-ai";
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: "langfuse";
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: "lmnt";
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: "make";
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: "openai";
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: "openrouter";
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: "perplexity-ai";
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: "playht";
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: "rime-ai";
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: "runpod";
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: "s3";
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
+        provider: "supabase";
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: "smallest-ai";
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: "tavus";
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: "together-ai";
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: "twilio";
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: "vonage";
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: "webhook";
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: "custom-credential";
+      } & CreateCustomCredentialDTO)
+    | ({
+        provider: "xai";
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
+        provider: "neuphonic";
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: "hume";
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: "mistral";
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: "speechmatics";
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-client";
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-authorization";
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "google.sheets.oauth2-authorization";
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "slack.oauth2-authorization";
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "ghl.oauth2-authorization";
+      } & CreateGoHighLevelMCPCredentialDTO)
+    | ({
+        provider: "inworld";
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
+  )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+    | SessionCreatedHook
+  )[];
+  /**
+   * This is the name of the assistant.
+   *
+   * This is required when you want to transfer between assistants in a call.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 1000
+   */
+  endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
+  compliancePlan?: CompliancePlan;
+  /** This is for metadata you want to store on the assistant. */
+  metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
+  /**
+   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+   * @deprecated
+   */
+  analysisPlan?: AnalysisPlan;
+  /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
+  artifactPlan?: ArtifactPlan;
+  /**
+   * This is the plan for when the assistant should start talking.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to start talking after the customer is done speaking.
+   * - The assistant is too fast to start talking after the customer is done speaking.
+   * - The assistant is so fast that it's actually interrupting the customer.
+   */
+  startSpeakingPlan?: StartSpeakingPlan;
+  /**
+   * This is the plan for when assistant should stop talking on customer interruption.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to recognize customer's interruption.
+   * - The assistant is too fast to recognize customer's interruption.
+   * - The assistant is getting interrupted by phrases that are just acknowledgments.
+   * - The assistant is getting interrupted by background noises.
+   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+   */
+  stopSpeakingPlan?: StopSpeakingPlan;
+  /**
+   * This is the plan for real-time monitoring of the assistant's calls.
+   *
+   * Usage:
+   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
+   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
+   */
+  monitorPlan?: MonitorPlan;
+  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
+  credentialIds?: string[];
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. assistant.server.url
+   * 2. phoneNumber.serverUrl
+   * 3. org.serverUrl
+   */
+  server?: Server;
+  keypadInputPlan?: KeypadInputPlan;
+}
+
+export interface AssistantPinnedConflictResponseDTO {
+  error: "assistant_pinned";
+  /** Human-readable reason the parent-assistant delete was rejected. */
+  message: string;
 }
 
 export interface Squad {
@@ -16547,6 +21873,7 @@ export interface Workflow {
   model?:
     | WorkflowOpenAIModel
     | WorkflowAnthropicModel
+    | WorkflowAnthropicBedrockModel
     | WorkflowGoogleModel
     | WorkflowCustomModel;
   /**
@@ -16565,7 +21892,10 @@ export interface Workflow {
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
     | OpenAITranscriber
-    | CartesiaTranscriber;
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
   /**
    * This is the voice for the workflow.
    *
@@ -16582,13 +21912,16 @@ export interface Workflow {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
   /**
    * This is the plan for observability of workflow's calls.
    *
@@ -16616,6 +21949,9 @@ export interface Workflow {
     | ({
         provider: "anthropic";
       } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
     | ({
         provider: "anyscale";
       } & CreateAnyscaleCredentialDTO)
@@ -16701,6 +22037,9 @@ export interface Workflow {
         provider: "s3";
       } & CreateS3CredentialDTO)
     | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
         provider: "supabase";
       } & CreateSupabaseCredentialDTO)
     | ({
@@ -16728,6 +22067,9 @@ export interface Workflow {
         provider: "xai";
       } & CreateXAiCredentialDTO)
     | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
         provider: "neuphonic";
       } & CreateNeuphonicCredentialDTO)
     | ({
@@ -16740,8 +22082,8 @@ export interface Workflow {
         provider: "speechmatics";
       } & CreateSpeechmaticsCredentialDTO)
     | ({
-        provider: "trieve";
-      } & CreateTrieveCredentialDTO)
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
     | ({
         provider: "google.calendar.oauth2-client";
       } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
@@ -16763,6 +22105,15 @@ export interface Workflow {
     | ({
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
   )[];
   /** This is the voicemail detection plan for the workflow. */
   voicemailDetection?:
@@ -16873,6 +22224,7 @@ export interface CreateWorkflowDTO {
   model?:
     | WorkflowOpenAIModel
     | WorkflowAnthropicModel
+    | WorkflowAnthropicBedrockModel
     | WorkflowGoogleModel
     | WorkflowCustomModel;
   /**
@@ -16891,7 +22243,10 @@ export interface CreateWorkflowDTO {
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
     | OpenAITranscriber
-    | CartesiaTranscriber;
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
   /**
    * This is the voice for the workflow.
    *
@@ -16908,13 +22263,16 @@ export interface CreateWorkflowDTO {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
   /**
    * This is the plan for observability of workflow's calls.
    *
@@ -16942,6 +22300,9 @@ export interface CreateWorkflowDTO {
     | ({
         provider: "anthropic";
       } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
     | ({
         provider: "anyscale";
       } & CreateAnyscaleCredentialDTO)
@@ -17027,6 +22388,9 @@ export interface CreateWorkflowDTO {
         provider: "s3";
       } & CreateS3CredentialDTO)
     | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
         provider: "supabase";
       } & CreateSupabaseCredentialDTO)
     | ({
@@ -17054,6 +22418,9 @@ export interface CreateWorkflowDTO {
         provider: "xai";
       } & CreateXAiCredentialDTO)
     | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
         provider: "neuphonic";
       } & CreateNeuphonicCredentialDTO)
     | ({
@@ -17066,8 +22433,8 @@ export interface CreateWorkflowDTO {
         provider: "speechmatics";
       } & CreateSpeechmaticsCredentialDTO)
     | ({
-        provider: "trieve";
-      } & CreateTrieveCredentialDTO)
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
     | ({
         provider: "google.calendar.oauth2-client";
       } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
@@ -17089,6 +22456,15 @@ export interface CreateWorkflowDTO {
     | ({
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
   )[];
   /** This is the voicemail detection plan for the workflow. */
   voicemailDetection?:
@@ -17193,6 +22569,7 @@ export interface UpdateWorkflowDTO {
   model?:
     | WorkflowOpenAIModel
     | WorkflowAnthropicModel
+    | WorkflowAnthropicBedrockModel
     | WorkflowGoogleModel
     | WorkflowCustomModel;
   /**
@@ -17211,7 +22588,10 @@ export interface UpdateWorkflowDTO {
     | SpeechmaticsTranscriber
     | TalkscriberTranscriber
     | OpenAITranscriber
-    | CartesiaTranscriber;
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
   /**
    * This is the voice for the workflow.
    *
@@ -17228,13 +22608,16 @@ export interface UpdateWorkflowDTO {
     | NeuphonicVoice
     | OpenAIVoice
     | PlayHTVoice
+    | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
     | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
-    | MinimaxVoice;
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
   /**
    * This is the plan for observability of workflow's calls.
    *
@@ -17262,6 +22645,9 @@ export interface UpdateWorkflowDTO {
     | ({
         provider: "anthropic";
       } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
     | ({
         provider: "anyscale";
       } & CreateAnyscaleCredentialDTO)
@@ -17347,6 +22733,9 @@ export interface UpdateWorkflowDTO {
         provider: "s3";
       } & CreateS3CredentialDTO)
     | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
         provider: "supabase";
       } & CreateSupabaseCredentialDTO)
     | ({
@@ -17374,6 +22763,9 @@ export interface UpdateWorkflowDTO {
         provider: "xai";
       } & CreateXAiCredentialDTO)
     | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
         provider: "neuphonic";
       } & CreateNeuphonicCredentialDTO)
     | ({
@@ -17386,8 +22778,8 @@ export interface UpdateWorkflowDTO {
         provider: "speechmatics";
       } & CreateSpeechmaticsCredentialDTO)
     | ({
-        provider: "trieve";
-      } & CreateTrieveCredentialDTO)
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
     | ({
         provider: "google.calendar.oauth2-client";
       } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
@@ -17409,6 +22801,15 @@ export interface UpdateWorkflowDTO {
     | ({
         provider: "minimax";
       } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
   )[];
   /** This is the voicemail detection plan for the workflow. */
   voicemailDetection?:
@@ -17515,6 +22916,422 @@ export interface SubscriptionLimits {
   remainingConcurrentCalls?: number;
 }
 
+export interface UserMessage {
+  /** The role of the user in the conversation. */
+  role: string;
+  /** The message content from the user. */
+  message: string;
+  /** The timestamp when the message was sent. */
+  time: number;
+  /** The timestamp when the message ended. */
+  endTime: number;
+  /** The number of seconds from the start of the conversation. */
+  secondsFromStart: number;
+  /** The duration of the message in seconds. */
+  duration?: number;
+  /** Indicates if the message was filtered for security reasons. */
+  isFiltered?: boolean;
+  /** List of detected security threats if the message was filtered. */
+  detectedThreats?: string[];
+  /** The original message before filtering (only included if content was filtered). */
+  originalMessage?: string;
+  /** The metadata associated with the message. Currently used to store the transcriber's word level confidence. */
+  metadata?: object;
+  /** Stable speaker label for diarized user speakers (e.g., "Speaker 1"). */
+  speakerLabel?: string;
+}
+
+export interface SystemMessage {
+  /** The role of the system in the conversation. */
+  role: string;
+  /** The message content from the system. */
+  message: string;
+  /** The timestamp when the message was sent. */
+  time: number;
+  /** The number of seconds from the start of the conversation. */
+  secondsFromStart: number;
+}
+
+export interface BotMessage {
+  /** The role of the bot in the conversation. */
+  role: string;
+  /** The message content from the bot. */
+  message: string;
+  /** The timestamp when the message was sent. */
+  time: number;
+  /** The timestamp when the message ended. */
+  endTime: number;
+  /** The number of seconds from the start of the conversation. */
+  secondsFromStart: number;
+  /** The source of the message. */
+  source?: string;
+  /** The duration of the message in seconds. */
+  duration?: number;
+  /**
+   * The name of the assistant that produced this message. In a squad or
+   * handoff call this is the specific sub-agent active when the message was
+   * spoken, letting the transcript label each message by speaker.
+   */
+  assistantName?: string;
+  /**
+   * The ID of the assistant that produced this message. Stable reference for
+   * the assistant named in `assistantName`.
+   */
+  assistantId?: string;
+}
+
+export interface ToolCallMessage {
+  /** The role of the tool call in the conversation. */
+  role: string;
+  /** The list of tool calls made during the conversation. */
+  toolCalls: object[];
+  /** The message content for the tool call. */
+  message: string;
+  /** The timestamp when the message was sent. */
+  time: number;
+  /** The number of seconds from the start of the conversation. */
+  secondsFromStart: number;
+}
+
+export interface ToolCallResultMessageWarning {
+  /**
+   * The kind of warning. Currently:
+   * - `oversized-tool-response`: the tool's serialized response exceeded the
+   *   recommended size and is likely to bloat the model context, increasing
+   *   latency and risking truncation of earlier instructions.
+   */
+  type: "oversized-tool-response";
+  /** The estimated number of tokens in the serialized tool response. */
+  tokenCount: number;
+  /** The threshold (in tokens) above which the warning is raised. */
+  threshold: number;
+}
+
+export interface ToolCallResultMessage {
+  /** The role of the tool call result in the conversation. */
+  role: string;
+  /** The ID of the tool call. */
+  toolCallId: string;
+  /** The name of the tool that returned the result. */
+  name: string;
+  /** The result of the tool call in JSON format. */
+  result: string;
+  /** The timestamp when the message was sent. */
+  time: number;
+  /** The number of seconds from the start of the conversation. */
+  secondsFromStart: number;
+  /** The metadata for the tool call result. */
+  metadata?: object;
+  /**
+   * Warnings raised for this tool call result, e.g. when the response is
+   * larger than recommended for voice AI context windows.
+   */
+  warnings?: ToolCallResultMessageWarning[];
+}
+
+export interface TransportCost {
+  /** This is the type of cost, always 'transport' for this class. */
+  type: "transport";
+  provider?:
+    | "daily"
+    | "vapi.websocket"
+    | "twilio"
+    | "vonage"
+    | "telnyx"
+    | "vapi.sip";
+  /** This is the minutes of `transport` usage. This should match `call.endedAt` - `call.startedAt`. */
+  minutes: number;
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface TranscriberCost {
+  /** This is the type of cost, always 'transcriber' for this class. */
+  type: "transcriber";
+  /**
+   * This is the transcriber that was used during the call.
+   *
+   * This matches one of the below:
+   * - `call.assistant.transcriber`,
+   * - `call.assistantId->transcriber`,
+   * - `call.squad[n].assistant.transcriber`,
+   * - `call.squad[n].assistantId->transcriber`,
+   * - `call.squadId->[n].assistant.transcriber`,
+   * - `call.squadId->[n].assistantId->transcriber`.
+   */
+  transcriber: object;
+  /** This is the minutes of `transcriber` usage. This should match `call.endedAt` - `call.startedAt` for single assistant calls, while squad calls will have multiple transcriber costs one for each assistant that was used. */
+  minutes: number;
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface ModelCost {
+  /** This is the type of cost, always 'model' for this class. */
+  type: "model";
+  /**
+   * This is the model that was used during the call.
+   *
+   * This matches one of the following:
+   * - `call.assistant.model`,
+   * - `call.assistantId->model`,
+   * - `call.squad[n].assistant.model`,
+   * - `call.squad[n].assistantId->model`,
+   * - `call.squadId->[n].assistant.model`,
+   * - `call.squadId->[n].assistantId->model`.
+   */
+  model: object;
+  /** This is the number of prompt tokens used in the call. These should be total prompt tokens used in the call for single assistant calls, while squad calls will have multiple model costs one for each assistant that was used. */
+  promptTokens: number;
+  /** This is the number of completion tokens generated in the call. These should be total completion tokens used in the call for single assistant calls, while squad calls will have multiple model costs one for each assistant that was used. */
+  completionTokens: number;
+  /** This is the number of cached prompt tokens used in the call. This is only applicable to certain providers (e.g., OpenAI, Azure OpenAI) that support prompt caching. Cached tokens are billed at a discounted rate. */
+  cachedPromptTokens?: number;
+  /**
+   * This is the number of reasoning tokens generated in the call. This is only applicable to reasoning models (e.g., OpenAI o-series, GPT-5) on providers that report them.
+   *
+   * This is a **subset of `completionTokens`**, not an addition to it: reasoning tokens are already counted in `completionTokens` and are already billed at the output-token rate. It is reported separately for visibility only and does not affect `cost`.
+   */
+  reasoningTokens?: number;
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface VoiceCost {
+  /** This is the type of cost, always 'voice' for this class. */
+  type: "voice";
+  /**
+   * This is the voice that was used during the call.
+   *
+   * This matches one of the following:
+   * - `call.assistant.voice`,
+   * - `call.assistantId->voice`,
+   * - `call.squad[n].assistant.voice`,
+   * - `call.squad[n].assistantId->voice`,
+   * - `call.squadId->[n].assistant.voice`,
+   * - `call.squadId->[n].assistantId->voice`.
+   */
+  voice: object;
+  /** This is the number of characters that were generated during the call. These should be total characters used in the call for single assistant calls, while squad calls will have multiple voice costs one for each assistant that was used. */
+  characters: number;
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface ChatCost {
+  /** This is the type of cost, always 'chat' for this class. */
+  type: "chat";
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface VapiCost {
+  /** This is the type of cost, always 'vapi' for this class. */
+  type: "vapi";
+  /** This is the sub type of the cost. */
+  subType: "normal" | "overage";
+  /** This is the minutes of Vapi usage. This should match `call.endedAt` - `call.startedAt`. */
+  minutes: number;
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface VoicemailDetectionCost {
+  /** This is the type of cost, always 'voicemail-detection' for this class. */
+  type: "voicemail-detection";
+  /** This is the model that was used to perform the analysis. */
+  model: object;
+  /** This is the provider that was used to detect the voicemail. */
+  provider: "twilio" | "google" | "openai" | "vapi";
+  /** This is the number of prompt text tokens used in the voicemail detection. */
+  promptTextTokens: number;
+  /** This is the number of prompt audio tokens used in the voicemail detection. */
+  promptAudioTokens: number;
+  /** This is the number of completion text tokens used in the voicemail detection. */
+  completionTextTokens: number;
+  /** This is the number of completion audio tokens used in the voicemail detection. */
+  completionAudioTokens: number;
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface StructuredOutputCostBreakdown {
+  /** This is the unique identifier of the structured output that produced this cost. */
+  structuredOutputId: string;
+  /** This is the name of the structured output, so this breakdown is readable without looking the id up. */
+  name: string;
+  /** This is the cost in USD of evaluating this structured output. */
+  cost: number;
+  /** This is the number of prompt tokens used to evaluate this structured output. */
+  promptTokens: number;
+  /** This is the number of completion tokens generated for this structured output. */
+  completionTokens: number;
+  /** This is the number of cached prompt tokens used to evaluate this structured output. This is a subset of `promptTokens`, not an addition to it. */
+  cachedPromptTokens?: number;
+}
+
+export interface AnalysisCost {
+  /** This is the type of cost, always 'analysis' for this class. */
+  type: "analysis";
+  /** This is the type of analysis performed. */
+  analysisType:
+    | "summary"
+    | "structuredData"
+    | "successEvaluation"
+    | "structuredOutput";
+  /** This is the model that was used to perform the analysis. */
+  model: object;
+  /** This is the number of prompt tokens used in the analysis. */
+  promptTokens: number;
+  /** This is the number of completion tokens generated in the analysis. */
+  completionTokens: number;
+  /** This is the number of cached prompt tokens used in the analysis. This is only applicable to certain providers (e.g., OpenAI, Azure OpenAI) that support prompt caching. Cached tokens are billed at a discounted rate. */
+  cachedPromptTokens?: number;
+  /**
+   * This is the per-structured-output breakdown of this cost. The `cost`, `promptTokens`, `completionTokens` and `cachedPromptTokens` above are the sums of these rows.
+   *
+   * This is only set when `analysisType` is `structuredOutput`, and it is omitted entirely rather than partially populated, so when it is present the rows always reconcile to the totals above.
+   *
+   * A structured output that was skipped, or that extracts via regex, makes no LLM call and so has no row here — this is not a complete list of the call's configured structured outputs. There is one row per evaluation, so a `structuredOutputId` can appear more than once if it was evaluated more than once; sum the rows rather than indexing them by id.
+   */
+  structuredOutputBreakdown?: StructuredOutputCostBreakdown[];
+  /** This is the cost of the component in USD. */
+  cost: number;
+}
+
+export interface AudioFormat {
+  /**
+   * This is the sample rate of the call.
+   *
+   * @default 16000
+   * @min 0
+   * @max 192000
+   */
+  sampleRate: number;
+  /**
+   * This is the audio format of the call.
+   *
+   * @default 'pcm_s16le'
+   */
+  format: "pcm_s16le" | "mulaw";
+  /**
+   * This is the container format of the call.
+   *
+   * @default 'raw'
+   */
+  container?: "raw";
+}
+
+export interface VapiWebsocketTransport {
+  /**
+   * This is the conversation type of the call (ie, voice or chat).
+   * @default "voice"
+   */
+  conversationType?: "voice";
+  /** Vapi websocket transport provider */
+  provider: "vapi.websocket";
+  /** This is the audio format of the call. Defaults to 16KHz raw pcm_s16le */
+  audioFormat?: AudioFormat;
+}
+
+export interface VapiWebCallTransport {
+  /**
+   * This is the conversation type of the call (ie, voice or chat).
+   * @default "voice"
+   */
+  conversationType?: "voice";
+  /** Vapi web call transport provider */
+  provider: "daily";
+  /**
+   * This determines whether the daily room will be deleted and all participants will be kicked once the user leaves the room.
+   * If set to `false`, the room will be kept alive even after the user leaves, allowing clients to reconnect to the same room.
+   * If set to `true`, the room will be deleted and reconnection will not be allowed.
+   *
+   * Defaults to `true`.
+   * @default true
+   * @example true
+   */
+  roomDeleteOnUserLeaveEnabled?: boolean;
+  /** This is the URL of the web call. */
+  callUrl?: string;
+  /** This is the SIP URI of the web call. */
+  callSipUri?: string;
+}
+
+export interface TwilioTransport {
+  /**
+   * This is the conversation type of the call (ie, voice or chat).
+   * @default "voice"
+   */
+  conversationType?: "voice";
+  /** Twilio transport provider */
+  provider: "twilio";
+  /** This is the account SID of the Twilio account. */
+  accountSid?: string;
+  /** This is the call SID of the Twilio call. */
+  callSid?: string;
+  /** This is the call token of the Twilio call. */
+  callToken?: string;
+  /**
+   * This is the phone number from which the call was forwarded.
+   * Undefined if the call was not forwarded.
+   */
+  forwardedFrom?: string;
+}
+
+export interface TelnyxTransport {
+  /**
+   * This is the conversation type of the call (ie, voice or chat).
+   * @default "voice"
+   */
+  conversationType?: "voice";
+  /** Telnyx transport provider */
+  provider: "telnyx";
+  /** This is the call control ID of the Telnyx call. */
+  callControlId?: string;
+  /** This is the call leg ID of the Telnyx call. */
+  callLegId?: string;
+  /** This is the call session ID of the Telnyx call. */
+  callSessionId?: string;
+}
+
+export interface VapiSipTransport {
+  /**
+   * This is the conversation type of the call (ie, voice or chat).
+   * @default "voice"
+   */
+  conversationType?: "voice";
+  /** Vapi SIP transport provider */
+  provider: "vapi.sip";
+  /**
+   * This sets the timeout for outbound dial operations in seconds. This is the duration the call will ring before timing out.
+   *
+   * @default 60
+   * @min 1
+   * @max 600
+   * @default 60
+   */
+  dialTimeout?: number;
+  /** This is the call SID of the Vapi SIP call. */
+  sbcCallSid?: string;
+  /** This is the call ID of the Vapi SIP call. */
+  callSid?: string;
+}
+
+export interface VonageTransport {
+  /**
+   * This is the conversation type of the call (ie, voice or chat).
+   * @default "voice"
+   */
+  conversationType?: "voice";
+  /** Vonage transport provider */
+  provider: "vonage";
+  /** This is the conversation UUID of the Vonage call. */
+  conversationUUID?: string;
+  /** This is the call ID of the Vonage call. */
+  callUUID?: string;
+}
+
 export interface AnalysisCostBreakdown {
   /** This is the cost to summarize the call. */
   summary?: number;
@@ -17522,24 +23339,32 @@ export interface AnalysisCostBreakdown {
   summaryPromptTokens?: number;
   /** This is the number of completion tokens used to summarize the call. */
   summaryCompletionTokens?: number;
+  /** This is the number of cached prompt tokens used to summarize the call. */
+  summaryCachedPromptTokens?: number;
   /** This is the cost to extract structured data from the call. */
   structuredData?: number;
   /** This is the number of prompt tokens used to extract structured data from the call. */
   structuredDataPromptTokens?: number;
   /** This is the number of completion tokens used to extract structured data from the call. */
   structuredDataCompletionTokens?: number;
+  /** This is the number of cached prompt tokens used to extract structured data from the call. */
+  structuredDataCachedPromptTokens?: number;
   /** This is the cost to evaluate if the call was successful. */
   successEvaluation?: number;
   /** This is the number of prompt tokens used to evaluate if the call was successful. */
   successEvaluationPromptTokens?: number;
   /** This is the number of completion tokens used to evaluate if the call was successful. */
   successEvaluationCompletionTokens?: number;
+  /** This is the number of cached prompt tokens used to evaluate if the call was successful. */
+  successEvaluationCachedPromptTokens?: number;
   /** This is the cost to evaluate structuredOutputs from the call. */
   structuredOutput?: number;
   /** This is the number of prompt tokens used to evaluate structuredOutputs from the call. */
   structuredOutputPromptTokens?: number;
   /** This is the number of completion tokens used to evaluate structuredOutputs from the call. */
   structuredOutputCompletionTokens?: number;
+  /** This is the number of cached prompt tokens used to evaluate structuredOutputs from the call. */
+  structuredOutputCachedPromptTokens?: number;
 }
 
 export interface CostBreakdown {
@@ -17561,6 +23386,8 @@ export interface CostBreakdown {
   llmPromptTokens?: number;
   /** This is the LLM completion tokens used for the call. */
   llmCompletionTokens?: number;
+  /** This is the LLM cached prompt tokens used for the call. */
+  llmCachedPromptTokens?: number;
   /** This is the TTS characters used for the call. */
   ttsCharacters?: number;
   /** This is the cost of the analysis. */
@@ -17578,11 +23405,67 @@ export interface Analysis {
   successEvaluation?: string;
 }
 
+export interface MonitorResult {
+  monitorId: string;
+  filterPassed: boolean;
+}
+
 export interface Monitor {
+  monitors?: MonitorResult[];
   /** This is the URL where the assistant's calls can be listened to in real-time. To enable, set `assistant.monitorPlan.listenEnabled` to `true`. */
   listenUrl?: string;
   /** This is the URL where the assistant's calls can be controlled in real-time. To enable, set `assistant.monitorPlan.controlEnabled` to `true`. */
   controlUrl?: string;
+}
+
+export interface SkippedStructuredOutput {
+  /** This is the name of the structured output that was skipped. */
+  name: string;
+  /**
+   * This is the first condition that was not met. Conditions use AND semantics, so
+   * evaluation stops as soon as one condition does not pass.
+   */
+  unmetCondition:
+    | MinMessagesCondition
+    | MinCallDurationCondition
+    | EndedReasonCondition;
+}
+
+export interface TransferArtifact {
+  /** The transfer destination (phone number or SIP URI). */
+  destination: TransferDestinationNumber | TransferDestinationSip;
+  /** The transfer mode (e.g. warm-transfer-experimental, blind-transfer). */
+  mode?:
+    | "blind-transfer"
+    | "blind-transfer-add-summary-to-sip-header"
+    | "warm-transfer-say-message"
+    | "warm-transfer-say-summary"
+    | "warm-transfer-twiml"
+    | "warm-transfer-wait-for-operator-to-speak-first-and-then-say-message"
+    | "warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary"
+    | "warm-transfer-experimental";
+  /** Flat-text transcript / announcement preview of the transfer. */
+  transcript?: string;
+  /** The terminal status of the transfer, rendered as the status line. */
+  status?:
+    | "connected"
+    | "no-answer"
+    | "busy"
+    | "voicemail"
+    | "failed"
+    | "completed"
+    | "cancelled";
+  /**
+   * The agent↔operator conversation captured during a
+   * warm-transfer-experimental, rendered as bubbles.
+   */
+  messages?: (
+    | UserMessage
+    | SystemMessage
+    | BotMessage
+    | ToolCallMessage
+    | ToolCallResultMessage
+  )[];
 }
 
 export interface Mono {
@@ -17618,6 +23501,20 @@ export interface NodeArtifact {
   nodeName?: string;
   /** These are the variable values that were extracted from the node. */
   variableValues?: object;
+}
+
+export interface AssistantActivation {
+  /**
+   * This is the version label (e.g. `v3`) of the assistant active when
+   * the activation row was recorded. `null` for inline assistants,
+   * orgs not on assistant versioning, and parent assistants that have
+   * not yet been published under it.
+   */
+  assistantVersion?: string | null;
+  /** This is the name of the assistant that was active during the call. */
+  assistantName: string;
+  /** This is the ID of the assistant that was active during the call. */
+  assistantId?: string;
 }
 
 export interface TurnLatency {
@@ -17667,6 +23564,13 @@ export interface Artifact {
   )[];
   /** These are the messages that were spoken during the call, formatted for OpenAI. */
   messagesOpenAIFormatted?: OpenAIMessage[];
+  /** Structured outputs skipped because their conditions were not met, keyed by saved or runtime output ID. */
+  skippedStructuredOutputs?: Record<string, SkippedStructuredOutput>;
+  /**
+   * These are the transfer records for the call's transfer attempts (warm and blind), including
+   * destination, mode, and status. Warm transfer records also include transcripts and messages.
+   */
+  transfers?: TransferArtifact[];
   /**
    * This is the recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
    * @deprecated
@@ -17697,6 +23601,8 @@ export interface Artifact {
   logUrl?: string;
   /** This is the history of workflow nodes that were executed during the call. */
   nodes?: NodeArtifact[];
+  /** Ordered list of assistants that were active during the call, including after transfers and handoffs. */
+  assistantActivations?: AssistantActivation[];
   /** These are the variable values at the end of the workflow execution. */
   variableValues?: object;
   /** This is the performance metrics for the call. It contains the turn latency, broken down by component. */
@@ -17711,18 +23617,62 @@ export interface Artifact {
    * To enable, set `assistant.artifactPlan.scorecardIds` or `assistant.artifactPlan.scorecards` with the IDs or objects of the scorecards you want to evaluate.
    */
   scorecards?: object;
-  /** These are the transfer records from warm transfers, including destinations, transcripts, and status. */
-  transfers?: string[];
   /**
    * This is when the structured outputs were last updated
    * @format date-time
    */
   structuredOutputsLastUpdatedAt?: string;
+  /**
+   * This is a presigned URL to download the mono recording without
+   * authentication. Populated on API responses and server messages; never
+   * stored. Expires at `presignedUrlsExpiresAt` — after that, use
+   * `GET /call/{id}/mono-recording`.
+   */
+  presignedMonoUrl?: string;
+  /**
+   * This is a presigned URL to download the stereo recording without
+   * authentication. Expires at `presignedUrlsExpiresAt` — after that, use
+   * `GET /call/{id}/stereo-recording`.
+   */
+  presignedStereoUrl?: string;
+  /**
+   * This is a presigned URL to download the video recording without
+   * authentication. Expires at `presignedUrlsExpiresAt` — after that, use
+   * `GET /call/{id}/video-recording`.
+   */
+  presignedVideoUrl?: string;
+  /**
+   * This is a presigned URL to download the assistant-channel mono recording
+   * without authentication. Expires at `presignedUrlsExpiresAt`.
+   */
+  presignedAssistantUrl?: string;
+  /**
+   * This is a presigned URL to download the customer-channel mono recording
+   * without authentication. Expires at `presignedUrlsExpiresAt`.
+   */
+  presignedCustomerUrl?: string;
+  /**
+   * This is a presigned URL to download the packet capture without
+   * authentication. Expires at `presignedUrlsExpiresAt`.
+   */
+  presignedPcapUrl?: string;
+  /**
+   * This is a presigned URL to download the call logs without
+   * authentication. Expires at `presignedUrlsExpiresAt`.
+   */
+  presignedLogUrl?: string;
+  /**
+   * This is when the presigned URLs above expire, as an ISO 8601 timestamp.
+   * The raw `*Url` fields remain the stable identifiers and do not expire.
+   * Presigned URLs are regenerated per response and per webhook delivery, so
+   * values differ across retries.
+   */
+  presignedUrlsExpiresAt?: string;
 }
 
 export interface RecordingConsent {
   /** This is the type of recording consent. */
-  type: object;
+  type: "stay-on-line" | "verbal";
   /**
    * This is the date and time the recording consent was granted.
    * If not specified, it means the recording consent was not granted.
@@ -17766,12 +23716,33 @@ export interface SayPhoneNumberHookAction {
   exact: string;
 }
 
+export interface PhoneNumberCallRingingHookFilter {
+  /**
+   * This is the type of filter - matches when the specified field starts with any of the given prefixes
+   * @maxLength 1000
+   */
+  type: "startsWith";
+  /**
+   * The field to check. Currently only "number" (the caller's phone number) is supported.
+   * @maxLength 1000
+   */
+  key: "number";
+  /**
+   * Array of prefixes to match. Do not include the + prefix. Inbound calls from numbers starting with any of these prefixes will trigger the hook actions.
+   * @maxLength 20
+   * @example ["91","86","7"]
+   */
+  startsWith: string[];
+}
+
 export interface PhoneNumberHookCallRinging {
   /**
    * This is the event to trigger the hook on
    * @maxLength 1000
    */
   on: "call.ringing";
+  /** Optional filters to decide when to trigger the hook. Currently supports filtering by caller country code. */
+  filters?: PhoneNumberCallRingingHookFilter[];
   /** Only the first action will be executed. Additional actions will be ignored. */
   do: (TransferPhoneNumberHookAction | SayPhoneNumberHookAction)[];
 }
@@ -17905,6 +23876,12 @@ export interface CreateCustomerDTO {
    */
   assistantOverrides?: AssistantOverrides;
   /**
+   * These are the overrides applied when the call targets a `squadId`. Mirrors
+   * the call-level `squadOverrides` — use this instead of `assistantOverrides`
+   * when the campaign or call is squad-based.
+   */
+  squadOverrides?: AssistantOverrides;
+  /**
    * This is the number of the customer.
    * @minLength 3
    * @maxLength 40
@@ -18018,6 +23995,7 @@ export interface Call {
     | "call.start.error-subscription-upgrade-failed"
     | "call.start.error-subscription-concurrency-limit-reached"
     | "call.start.error-enterprise-feature-not-available-recording-consent"
+    | "call.start.assistant-version-error-validation"
     | "assistant-not-valid"
     | "call.start.error-vapifault-database-error"
     | "assistant-not-found"
@@ -18036,6 +24014,10 @@ export interface Call {
     | "pipeline-error-sesame-voice-failed"
     | "pipeline-error-inworld-voice-failed"
     | "pipeline-error-minimax-voice-failed"
+    | "pipeline-error-wellsaid-voice-failed"
+    | "pipeline-error-xai-voice-failed"
+    | "pipeline-error-microsoft-voice-failed"
+    | "pipeline-error-microsoft-voice-request-canceled"
     | "pipeline-error-tavus-video-failed"
     | "call.in-progress.error-vapifault-openai-voice-failed"
     | "call.in-progress.error-vapifault-cartesia-voice-failed"
@@ -18052,6 +24034,9 @@ export interface Call {
     | "call.in-progress.error-vapifault-sesame-voice-failed"
     | "call.in-progress.error-vapifault-inworld-voice-failed"
     | "call.in-progress.error-vapifault-minimax-voice-failed"
+    | "call.in-progress.error-vapifault-wellsaid-voice-failed"
+    | "call.in-progress.error-vapifault-xai-voice-failed"
+    | "call.in-progress.error-vapifault-microsoft-voice-failed"
     | "call.in-progress.error-vapifault-tavus-video-failed"
     | "pipeline-error-vapi-llm-failed"
     | "pipeline-error-vapi-400-bad-request-validation-failed"
@@ -18061,12 +24046,17 @@ export interface Call {
     | "pipeline-error-vapi-500-server-error"
     | "pipeline-error-vapi-503-server-overloaded-error"
     | "call.in-progress.error-providerfault-vapi-llm-failed"
+    | "call.in-progress.error-vapifault-vapi-llm-failed"
     | "call.in-progress.error-vapifault-vapi-400-bad-request-validation-failed"
     | "call.in-progress.error-vapifault-vapi-401-unauthorized"
     | "call.in-progress.error-vapifault-vapi-403-model-access-denied"
     | "call.in-progress.error-vapifault-vapi-429-exceeded-quota"
     | "call.in-progress.error-providerfault-vapi-500-server-error"
     | "call.in-progress.error-providerfault-vapi-503-server-overloaded-error"
+    | "pipeline-error-vapi-transcriber-failed"
+    | "call.in-progress.error-vapifault-vapi-transcriber-failed"
+    | "call.in-progress.error-providerfault-vapi-transcriber-failed"
+    | "call.in-progress.error-providerfault-vapi-voice-failed"
     | "pipeline-error-deepgram-transcriber-failed"
     | "pipeline-error-deepgram-transcriber-api-key-missing"
     | "call.in-progress.error-vapifault-deepgram-transcriber-failed"
@@ -18090,6 +24080,34 @@ export interface Call {
     | "call.in-progress.error-vapifault-talkscriber-transcriber-failed"
     | "pipeline-error-azure-speech-transcriber-failed"
     | "call.in-progress.error-vapifault-azure-speech-transcriber-failed"
+    | "pipeline-error-eleven-labs-transcriber-failed"
+    | "call.in-progress.error-vapifault-eleven-labs-transcriber-failed"
+    | "pipeline-error-google-transcriber-failed"
+    | "call.in-progress.error-vapifault-google-transcriber-failed"
+    | "pipeline-error-openai-transcriber-failed"
+    | "call.in-progress.error-vapifault-openai-transcriber-failed"
+    | "pipeline-error-soniox-transcriber-auth-failed"
+    | "pipeline-error-soniox-transcriber-rate-limited"
+    | "pipeline-error-soniox-transcriber-invalid-config"
+    | "pipeline-error-soniox-transcriber-server-error"
+    | "pipeline-error-soniox-transcriber-failed"
+    | "call.in-progress.error-vapifault-soniox-transcriber-auth-failed"
+    | "call.in-progress.error-vapifault-soniox-transcriber-rate-limited"
+    | "call.in-progress.error-vapifault-soniox-transcriber-invalid-config"
+    | "call.in-progress.error-vapifault-soniox-transcriber-server-error"
+    | "call.in-progress.error-vapifault-soniox-transcriber-failed"
+    | "pipeline-error-xai-transcriber-auth-failed"
+    | "pipeline-error-xai-transcriber-rate-limited"
+    | "pipeline-error-xai-transcriber-invalid-config"
+    | "pipeline-error-xai-transcriber-server-error"
+    | "pipeline-error-xai-transcriber-failed"
+    | "call.in-progress.error-vapifault-xai-transcriber-auth-failed"
+    | "call.in-progress.error-vapifault-xai-transcriber-rate-limited"
+    | "call.in-progress.error-vapifault-xai-transcriber-invalid-config"
+    | "call.in-progress.error-vapifault-xai-transcriber-server-error"
+    | "call.in-progress.error-vapifault-xai-transcriber-failed"
+    | "pipeline-error-cartesia-transcriber-failed"
+    | "call.in-progress.error-vapifault-cartesia-transcriber-failed"
     | "call.in-progress.error-pipeline-no-available-llm-model"
     | "worker-shutdown"
     | "vonage-disconnected"
@@ -18104,15 +24122,21 @@ export interface Call {
     | "call.in-progress.error-vapifault-worker-died"
     | "call.in-progress.twilio-completed-call"
     | "call.in-progress.sip-completed-call"
+    | "call.in-progress.error-sip-inbound-call-failed-to-connect"
+    | "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable"
+    | "call.in-progress.error-sip-outbound-call-failed-to-connect"
+    | "call.ringing.error-sip-inbound-call-failed-to-connect"
     | "call.in-progress.error-providerfault-openai-llm-failed"
     | "call.in-progress.error-providerfault-azure-openai-llm-failed"
     | "call.in-progress.error-providerfault-groq-llm-failed"
     | "call.in-progress.error-providerfault-google-llm-failed"
     | "call.in-progress.error-providerfault-xai-llm-failed"
     | "call.in-progress.error-providerfault-mistral-llm-failed"
+    | "call.in-progress.error-providerfault-minimax-llm-failed"
     | "call.in-progress.error-providerfault-inflection-ai-llm-failed"
     | "call.in-progress.error-providerfault-cerebras-llm-failed"
     | "call.in-progress.error-providerfault-deep-seek-llm-failed"
+    | "call.in-progress.error-providerfault-baseten-llm-failed"
     | "call.in-progress.error-vapifault-chat-pipeline-failed-to-start"
     | "pipeline-error-openai-400-bad-request-validation-failed"
     | "pipeline-error-openai-401-unauthorized"
@@ -18172,6 +24196,19 @@ export interface Call {
     | "call.in-progress.error-vapifault-xai-429-exceeded-quota"
     | "call.in-progress.error-providerfault-xai-500-server-error"
     | "call.in-progress.error-providerfault-xai-503-server-overloaded-error"
+    | "pipeline-error-baseten-400-bad-request-validation-failed"
+    | "pipeline-error-baseten-401-unauthorized"
+    | "pipeline-error-baseten-403-model-access-denied"
+    | "pipeline-error-baseten-429-exceeded-quota"
+    | "pipeline-error-baseten-500-server-error"
+    | "pipeline-error-baseten-503-server-overloaded-error"
+    | "pipeline-error-baseten-llm-failed"
+    | "call.in-progress.error-vapifault-baseten-400-bad-request-validation-failed"
+    | "call.in-progress.error-vapifault-baseten-401-unauthorized"
+    | "call.in-progress.error-vapifault-baseten-403-model-access-denied"
+    | "call.in-progress.error-vapifault-baseten-429-exceeded-quota"
+    | "call.in-progress.error-providerfault-baseten-500-server-error"
+    | "call.in-progress.error-providerfault-baseten-503-server-overloaded-error"
     | "pipeline-error-mistral-400-bad-request-validation-failed"
     | "pipeline-error-mistral-401-unauthorized"
     | "pipeline-error-mistral-403-model-access-denied"
@@ -18185,6 +24222,19 @@ export interface Call {
     | "call.in-progress.error-vapifault-mistral-429-exceeded-quota"
     | "call.in-progress.error-providerfault-mistral-500-server-error"
     | "call.in-progress.error-providerfault-mistral-503-server-overloaded-error"
+    | "pipeline-error-minimax-400-bad-request-validation-failed"
+    | "pipeline-error-minimax-401-unauthorized"
+    | "pipeline-error-minimax-403-model-access-denied"
+    | "pipeline-error-minimax-429-exceeded-quota"
+    | "pipeline-error-minimax-500-server-error"
+    | "pipeline-error-minimax-503-server-overloaded-error"
+    | "pipeline-error-minimax-llm-failed"
+    | "call.in-progress.error-vapifault-minimax-400-bad-request-validation-failed"
+    | "call.in-progress.error-vapifault-minimax-401-unauthorized"
+    | "call.in-progress.error-vapifault-minimax-403-model-access-denied"
+    | "call.in-progress.error-vapifault-minimax-429-exceeded-quota"
+    | "call.in-progress.error-providerfault-minimax-500-server-error"
+    | "call.in-progress.error-providerfault-minimax-503-server-overloaded-error"
     | "pipeline-error-inflection-ai-400-bad-request-validation-failed"
     | "pipeline-error-inflection-ai-401-unauthorized"
     | "pipeline-error-inflection-ai-403-model-access-denied"
@@ -18462,8 +24512,6 @@ export interface Call {
     | "call.in-progress.error-providerfault-playht-504-gateway-error"
     | "pipeline-error-custom-transcriber-failed"
     | "call.in-progress.error-vapifault-custom-transcriber-failed"
-    | "pipeline-error-eleven-labs-transcriber-failed"
-    | "call.in-progress.error-vapifault-eleven-labs-transcriber-failed"
     | "pipeline-error-deepgram-returning-400-no-such-model-language-tier-combination"
     | "pipeline-error-deepgram-returning-401-invalid-credentials"
     | "pipeline-error-deepgram-returning-403-model-access-denied"
@@ -18479,10 +24527,6 @@ export interface Call {
     | "call.in-progress.error-providerfault-deepgram-returning-500-invalid-json"
     | "call.in-progress.error-providerfault-deepgram-returning-502-network-error"
     | "call.in-progress.error-providerfault-deepgram-returning-502-bad-gateway-ehostunreach"
-    | "pipeline-error-google-transcriber-failed"
-    | "call.in-progress.error-vapifault-google-transcriber-failed"
-    | "pipeline-error-openai-transcriber-failed"
-    | "call.in-progress.error-vapifault-openai-transcriber-failed"
     | "call.in-progress.error-warm-transfer-max-duration"
     | "call.in-progress.error-warm-transfer-assistant-cancelled"
     | "call.in-progress.error-warm-transfer-silence-timeout"
@@ -18499,32 +24543,46 @@ export interface Call {
     | "customer-ended-call"
     | "customer-ended-call-before-warm-transfer"
     | "customer-ended-call-after-warm-transfer-attempt"
+    | "customer-ended-call-during-transfer"
     | "customer-did-not-answer"
     | "customer-did-not-give-microphone-permission"
     | "exceeded-max-duration"
     | "manually-canceled"
     | "phone-call-provider-closed-websocket"
     | "call.forwarding.operator-busy"
+    | "call.forwarding.no-answer"
     | "silence-timed-out"
-    | "call.in-progress.error-sip-inbound-call-failed-to-connect"
     | "call.in-progress.error-providerfault-outbound-sip-403-forbidden"
     | "call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required"
-    | "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable"
+    | "call.in-progress.error-providerfault-outbound-sip-408-request-timeout"
     | "call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable"
-    | "call.in-progress.error-sip-outbound-call-failed-to-connect"
     | "call.ringing.hook-executed-say"
     | "call.ringing.hook-executed-transfer"
     | "call.ending.hook-executed-say"
     | "call.ending.hook-executed-transfer"
     | "call.ringing.sip-inbound-caller-hungup-before-call-connect"
-    | "call.ringing.error-sip-inbound-call-failed-to-connect"
     | "twilio-failed-to-connect-call"
     | "twilio-reported-customer-misdialed"
     | "vonage-rejected"
     | "voicemail"
     | "call-deleted";
+  /** This is the message that adds more context to the ended reason. It can be used to provide potential error messages or warnings. */
+  endedMessage?: string;
   /** This is the destination where the call ended up being transferred to. If the call was not transferred, this will be empty. */
   destination?: TransferDestinationNumber | TransferDestinationSip;
+  /**
+   * This is the assistant version to use for this call. Supported only with
+   * direct `assistantId`. Omit to follow the latest version.
+   */
+  assistantVersion?: string | null;
+  /** This is the transport of the call. */
+  transport?:
+    | VapiWebsocketTransport
+    | VonageTransport
+    | TwilioTransport
+    | VapiSipTransport
+    | TelnyxTransport
+    | VapiWebCallTransport;
   /** This is the unique identifier for the call. */
   id: string;
   /** This is the unique identifier for the org that this call belongs to. */
@@ -18666,8 +24724,6 @@ export interface Call {
   name?: string;
   /** This is the schedule plan of the call. */
   schedulePlan?: SchedulePlan;
-  /** This is the transport of the call. */
-  transport?: object;
 }
 
 export interface CallBatchError {
@@ -18684,7 +24740,88 @@ export interface CallBatchResponse {
   errors: CallBatchError[];
 }
 
+export interface AssistantSpeechWordAlignmentTiming {
+  /** Discriminator for exact per-word timing (e.g. ElevenLabs alignment). */
+  type: "word-alignment";
+  /** The individual words in this audio segment. */
+  words: string[];
+  /** Start time in milliseconds for each word (parallel to `words`). */
+  wordsStartTimesMs: number[];
+  /** End time in milliseconds for each word (parallel to `words`). */
+  wordsEndTimesMs: number[];
+}
+
+export interface AssistantSpeechWordTimestamp {
+  /** The full word text (syllables aggregated into complete words). */
+  word: string;
+  /** Start time in milliseconds relative to the segment start. */
+  startMs: number;
+  /** End time in milliseconds relative to the segment start. */
+  endMs: number;
+}
+
+export interface AssistantSpeechWordProgressTiming {
+  /** Discriminator for cursor-based word progress (e.g. Minimax subtitle data). */
+  type: "word-progress";
+  /** Number of words spoken so far in this turn. */
+  wordsSpoken: number;
+  /**
+   * Total number of words sent to the TTS provider for this turn.
+   *
+   * **Important**: this value grows across events within a single turn because
+   * Minimax synthesizes audio incrementally as the LLM streams tokens. Treat
+   * it as "best known total so far" — it will stabilize once synthesis is
+   * complete.
+   *
+   * A value of `0` is a valid sentinel meaning "not yet known". This can occur
+   * on the very first `assistant-speech` event of a turn if audio begins
+   * playing before the TTS provider has confirmed word-count data. Clients
+   * **must** guard against divide-by-zero when computing a progress fraction:
+   *
+   * ```ts
+   * const pct = totalWords > 0 ? wordsSpoken / totalWords : 0;
+   * ```
+   */
+  totalWords: number;
+  /**
+   * The text of the latest spoken segment (sentence or clause). Use this
+   * for caption display — it corresponds to the chunk just confirmed by
+   * the TTS provider, unlike `text` on the parent message which carries
+   * the full turn text.
+   */
+  segment?: string;
+  /**
+   * Audio duration in milliseconds for the latest spoken segment. Pair
+   * with `segment` to animate karaoke-style word reveals — divide the
+   * segment text across this duration for approximate per-word timing.
+   */
+  segmentDurationMs?: number;
+  /**
+   * Per-word timestamps for the latest spoken segment. Available when the
+   * TTS provider supports word-level timing (e.g. Minimax with
+   * subtitle_type: "word"). Syllables from the provider are aggregated
+   * into whole words with start/end times relative to the segment start.
+   *
+   * Use these for precise karaoke-style highlighting instead of
+   * interpolating from segmentDurationMs.
+   */
+  words?: AssistantSpeechWordTimestamp[];
+}
+
 export interface CreateCallDTO {
+  /**
+   * This is the assistant version to use for this call. Supported only with
+   * direct `assistantId`. Omit to follow the latest version.
+   */
+  assistantVersion?: string | null;
+  /** This is the transport of the call. */
+  transport?:
+    | VapiWebsocketTransport
+    | VonageTransport
+    | TwilioTransport
+    | VapiSipTransport
+    | TelnyxTransport
+    | VapiWebCallTransport;
   /**
    * This is used to issue batch calls to multiple customers.
    *
@@ -18698,8 +24835,6 @@ export interface CreateCallDTO {
   name?: string;
   /** This is the schedule plan of the call. */
   schedulePlan?: SchedulePlan;
-  /** This is the transport of the call. */
-  transport?: object;
   /**
    * This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
    *
@@ -18815,6 +24950,19 @@ export interface CallPaginatedResponse {
 
 export interface CreateOutboundCallDTO {
   /**
+   * This is the assistant version to use for this call. Supported only with
+   * direct `assistantId`. Omit to follow the latest version.
+   */
+  assistantVersion?: string | null;
+  /** This is the transport of the call. */
+  transport?:
+    | VapiWebsocketTransport
+    | VonageTransport
+    | TwilioTransport
+    | VapiSipTransport
+    | TelnyxTransport
+    | VapiWebCallTransport;
+  /**
    * This is used to issue batch calls to multiple customers.
    *
    * Only relevant for `outboundPhoneCall`. To call a single customer, use `customer` instead.
@@ -18827,8 +24975,6 @@ export interface CreateOutboundCallDTO {
   name?: string;
   /** This is the schedule plan of the call. */
   schedulePlan?: SchedulePlan;
-  /** This is the transport of the call. */
-  transport?: object;
   /**
    * This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
    *
@@ -18919,6 +25065,11 @@ export interface CreateOutboundCallDTO {
 }
 
 export interface CreateWebCallDTO {
+  /**
+   * This is the assistant version to use for this call. Supported only with
+   * direct `assistantId`. Omit to follow the latest version.
+   */
+  assistantVersion?: string | null;
   /** @default true */
   roomDeleteOnUserLeaveEnabled?: boolean;
   /**
@@ -19021,40 +25172,6 @@ export interface DeveloperMessage {
    */
   name?: string;
   /** This is an optional metadata for the message */
-  metadata?: object;
-}
-
-export interface SystemMessage {
-  /** The role of the system in the conversation. */
-  role: string;
-  /** The message content from the system. */
-  message: string;
-  /** The timestamp when the message was sent. */
-  time: number;
-  /** The number of seconds from the start of the conversation. */
-  secondsFromStart: number;
-}
-
-export interface UserMessage {
-  /** The role of the user in the conversation. */
-  role: string;
-  /** The message content from the user. */
-  message: string;
-  /** The timestamp when the message was sent. */
-  time: number;
-  /** The timestamp when the message ended. */
-  endTime: number;
-  /** The number of seconds from the start of the conversation. */
-  secondsFromStart: number;
-  /** The duration of the message in seconds. */
-  duration?: number;
-  /** Indicates if the message was filtered for security reasons. */
-  isFiltered?: boolean;
-  /** List of detected security threats if the message was filtered. */
-  detectedThreats?: string[];
-  /** The original message before filtering (only included if content was filtered). */
-  originalMessage?: string;
-  /** The metadata associated with the message. Currently used to store the transcriber's word level confidence. */
   metadata?: object;
 }
 
@@ -19241,6 +25358,8 @@ export interface TwilioSMSChatTransport {
    * If provided, will create a new session. If not provided, uses existing session's customer.
    */
   customer?: CreateCustomerDTO;
+  /** This is the customerId of the customer who will receive the SMS. */
+  customerId?: string;
   /**
    * Whether to use LLM-generated messages for outbound SMS.
    * When true (default), input is processed by the assistant for a response.
@@ -19316,14 +25435,23 @@ export interface CreateChatDTO {
 }
 
 export interface GetChatPaginatedDTO {
+  /** This is the unique identifier for the chat to filter by. */
+  id?: string;
   /** This is the unique identifier for the assistant that will be used for the chat. */
   assistantId?: string;
+  /**
+   * Filter by multiple assistant IDs. Provide as comma-separated values.
+   * @example "assistant-1,assistant-2,assistant-3"
+   */
+  assistantIdAny?: string;
   /** This is the unique identifier for the squad that will be used for the chat. */
   squadId?: string;
   /** This is the unique identifier for the session that will be used for the chat. */
   sessionId?: string;
   /** This is the unique identifier for the previous chat to filter by. */
   previousChatId?: string;
+  /** Filter by multiple chat IDs. Provide as comma-separated values. */
+  idAny?: string;
   /**
    * This is the page number to return. Defaults to 1.
    * @min 1
@@ -19331,6 +25459,8 @@ export interface GetChatPaginatedDTO {
   page?: number;
   /** This is the sort order for pagination. Defaults to 'DESC'. */
   sortOrder?: "ASC" | "DESC";
+  /** This is the column to sort by. Defaults to 'createdAt'. */
+  sortBy?: "createdAt" | "duration" | "cost";
   /**
    * This is the maximum number of items to return. Defaults to 100.
    * @min 0
@@ -19521,8 +25651,10 @@ export interface CreateWebCustomerDTO {
 }
 
 export interface CreateWebChatDTO {
-  /** The assistant ID to use for this chat */
-  assistantId: string;
+  /** This is the assistant ID to use for this chat. To use a transient assistant, use `assistant` instead. */
+  assistantId?: string;
+  /** This is the transient assistant configuration for this chat. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
   /**
    * This is the ID of the session that will be used for the chat.
    * If provided, the conversation will continue from the previous state.
@@ -19590,8 +25722,10 @@ export interface WebChat {
 }
 
 export interface OpenAIWebChatRequest {
-  /** The assistant ID to use for this chat */
-  assistantId: string;
+  /** This is the assistant ID to use for this chat. To use a transient assistant, use `assistant` instead. */
+  assistantId?: string;
+  /** This is the transient assistant configuration for this chat. To use an existing assistant, use `assistantId` instead. */
+  assistant?: CreateAssistantDTO;
   /**
    * This is the ID of the session that will be used for the chat.
    * If provided, the conversation will continue from the previous state.
@@ -19640,6 +25774,108 @@ export interface OpenAIWebChatRequest {
    * @default false
    */
   sessionEnd?: boolean;
+}
+
+export interface ExportChatDTO {
+  /** This is the unique identifier for the chat to filter by. */
+  id?: string;
+  /** This is the unique identifier for the assistant that will be used for the chat. */
+  assistantId?: string;
+  /**
+   * Filter by multiple assistant IDs. Provide as comma-separated values.
+   * @example "assistant-1,assistant-2,assistant-3"
+   */
+  assistantIdAny?: string;
+  /** This is the unique identifier for the squad that will be used for the chat. */
+  squadId?: string;
+  /** This is the unique identifier for the session that will be used for the chat. */
+  sessionId?: string;
+  /** This is the unique identifier for the previous chat to filter by. */
+  previousChatId?: string;
+  /** Filter by multiple chat IDs. Provide as comma-separated values. */
+  idAny?: string;
+  /**
+   * Columns to include in the CSV export
+   * @default ["id","assistantId","squadId","sessionId","previousChatId","cost","messages","output","createdAt","updatedAt"]
+   */
+  columns?:
+    | "id"
+    | "assistantId"
+    | "squadId"
+    | "sessionId"
+    | "previousChatId"
+    | "cost"
+    | "messages"
+    | "output"
+    | "createdAt"
+    | "updatedAt";
+  /**
+   * This is the email address to send the export to.
+   * Required if userId is not available in the request context.
+   */
+  email?: string;
+  /**
+   * This is the format of the export.
+   *
+   * @default csv
+   * @default "csv"
+   */
+  format?: "csv" | "json";
+  /**
+   * This is the page number to return. Defaults to 1.
+   * @min 1
+   */
+  page?: number;
+  /** This is the sort order for pagination. Defaults to 'DESC'. */
+  sortOrder?: "ASC" | "DESC";
+  /** This is the column to sort by. Defaults to 'createdAt'. */
+  sortBy?: "createdAt" | "duration" | "cost";
+  /**
+   * This is the maximum number of items to return. Defaults to 100.
+   * @min 0
+   * @max 1000
+   */
+  limit?: number;
+  /**
+   * This will return items where the createdAt is greater than the specified value.
+   * @format date-time
+   */
+  createdAtGt?: string;
+  /**
+   * This will return items where the createdAt is less than the specified value.
+   * @format date-time
+   */
+  createdAtLt?: string;
+  /**
+   * This will return items where the createdAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtGe?: string;
+  /**
+   * This will return items where the createdAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtLe?: string;
+  /**
+   * This will return items where the updatedAt is greater than the specified value.
+   * @format date-time
+   */
+  updatedAtGt?: string;
+  /**
+   * This will return items where the updatedAt is less than the specified value.
+   * @format date-time
+   */
+  updatedAtLt?: string;
+  /**
+   * This will return items where the updatedAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtGe?: string;
+  /**
+   * This will return items where the updatedAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtLe?: string;
 }
 
 export interface ResponseOutputText {
@@ -19764,27 +26000,74 @@ export interface ResponseErrorEvent {
   sequence_number: number;
 }
 
+export interface DialPlanEntry {
+  /** The phone number ID to use for calling the customers in this entry. */
+  phoneNumberId: string;
+  /** The list of customers to call using this phone number. */
+  customers: CreateCustomerDTO[];
+}
+
+export interface CampaignPredialPlan {
+  /** Whether the pre-dial eligibility webhook is active. Defaults to true when `predialPlan` is set. Set to false to keep the plan without running the webhook (useful when duplicating a campaign). */
+  enabled?: boolean;
+}
+
 export interface CreateCampaignDTO {
   /**
    * This is the name of the campaign. This is just for your own reference.
    * @example "Q2 Sales Campaign"
    */
   name: string;
-  /** This is the assistant ID that will be used for the campaign calls. Note: Either assistantId or workflowId can be used, but not both. */
+  /** This is the assistant ID that will be used for the campaign calls. Note: Only one of assistantId, workflowId, or squadId can be used. */
   assistantId?: string;
-  /** This is the workflow ID that will be used for the campaign calls. Note: Either assistantId or workflowId can be used, but not both. */
+  /** This is the workflow ID that will be used for the campaign calls. Note: Only one of assistantId, workflowId, or squadId can be used. */
   workflowId?: string;
-  /** This is the phone number ID that will be used for the campaign calls. */
-  phoneNumberId: string;
+  /** This is the squad ID that will be used for the campaign calls. Note: Only one of assistantId, workflowId, or squadId can be used. */
+  squadId?: string;
+  /** This is the phone number ID that will be used for the campaign calls. Required if dialPlan is not provided. Note: phoneNumberId and dialPlan are mutually exclusive. */
+  phoneNumberId?: string;
+  /** This is a list of dial entries, each specifying a phone number and the customers to call using that number. Use this when you want different phone numbers to call different sets of customers. Note: phoneNumberId and dialPlan are mutually exclusive. */
+  dialPlan?: DialPlanEntry[];
   /** This is the schedule plan for the campaign. Calls will start at startedAt and continue until your organization’s concurrency limit is reached. Any remaining calls will be retried for up to one hour as capacity becomes available. After that hour or after latestAt, whichever comes first, any calls that couldn’t be placed won’t be retried. */
   schedulePlan?: SchedulePlan;
-  /** These are the customers that will be called in the campaign. */
-  customers: CreateCustomerDTO[];
+  /** These are the customers that will be called in the campaign. Required if dialPlan is not provided. Maximum of 10000 customers per campaign. */
+  customers?: CreateCustomerDTO[];
+  /**
+   * This is the maximum number of concurrent calls that will be made for the campaign. Defaults to 10.
+   * @min 1
+   */
+  maxConcurrency?: number;
+  /** These are the overrides for the assistant's settings and template variables for the campaign. Use this when the campaign targets an `assistantId`. */
+  assistantOverrides?: AssistantOverrides;
+  /** These are the overrides for the squad and template variables for the campaign. Use this when the campaign targets a `squadId`. Per-contact `squadOverrides` are deep-merged on top of this at dispatch time. */
+  squadOverrides?: AssistantOverrides;
+  /** This is the server (URL, auth headers, timeout, etc.) for the campaign webhooks. */
+  server?: Server;
+  /**
+   * These are the messages that will be sent to your Server URL.
+   * @example ["campaign.started","contact.dispatched"]
+   */
+  serverMessages?:
+    | "campaign.started"
+    | "campaign.cancelled"
+    | "campaign.ended"
+    | "campaign.archived"
+    | "campaign.unarchived"
+    | "contact.dispatched"
+    | "contact.completed"
+    | "contact.failed"
+    | "contact.skipped"
+    | "contact.predial-failed"
+    | "campaign.job.continued";
+  /** This opts the campaign into the blocking `campaign.predial` eligibility webhook. When set, every contact triggers a `campaign.predial` POST to the Server URL before dialing, and the response `{ eligible: boolean }` decides whether the call is placed. Requires `server`. When unset, no pre-dial webhook is sent. */
+  predialPlan?: CampaignPredialPlan;
+  /** Optional campaign ID to duplicate config from. Provided fields in the request override the source. If `customers` is omitted, contacts are copied from the source. */
+  duplicateFromCampaignId?: string;
 }
 
 export interface Campaign {
   /** This is the status of the campaign. */
-  status: "scheduled" | "in-progress" | "ended";
+  status: "scheduled" | "in-progress" | "ended" | "cancelled" | "archived";
   /** This is the explanation for how the campaign ended. */
   endedReason?:
     | "campaign.scheduled.ended-by-user"
@@ -19795,16 +26078,49 @@ export interface Campaign {
    * @example "Q2 Sales Campaign"
    */
   name: string;
-  /** This is the assistant ID that will be used for the campaign calls. Note: Either assistantId or workflowId can be used, but not both. */
+  /** This is the assistant ID that will be used for the campaign calls. Note: Only one of assistantId, workflowId, or squadId can be used. */
   assistantId?: string;
-  /** This is the workflow ID that will be used for the campaign calls. Note: Either assistantId or workflowId can be used, but not both. */
+  /** This is the workflow ID that will be used for the campaign calls. Note: Only one of assistantId, workflowId, or squadId can be used. */
   workflowId?: string;
-  /** This is the phone number ID that will be used for the campaign calls. */
-  phoneNumberId: string;
+  /** This is the squad ID that will be used for the campaign calls. Note: Only one of assistantId, workflowId, or squadId can be used. */
+  squadId?: string;
+  /** This is the phone number ID that will be used for the campaign calls. Required if dialPlan is not provided. Note: phoneNumberId and dialPlan are mutually exclusive. */
+  phoneNumberId?: string;
+  /** This is a list of dial entries, each specifying a phone number and the customers to call using that number. Use this when you want different phone numbers to call different sets of customers. Note: phoneNumberId and dialPlan are mutually exclusive. */
+  dialPlan?: DialPlanEntry[];
   /** This is the schedule plan for the campaign. Calls will start at startedAt and continue until your organization’s concurrency limit is reached. Any remaining calls will be retried for up to one hour as capacity becomes available. After that hour or after latestAt, whichever comes first, any calls that couldn’t be placed won’t be retried. */
   schedulePlan?: SchedulePlan;
-  /** These are the customers that will be called in the campaign. */
-  customers: CreateCustomerDTO[];
+  /** These are the customers that will be called in the campaign. Required if dialPlan is not provided. Maximum of 10000 customers per campaign. */
+  customers?: CreateCustomerDTO[];
+  /**
+   * This is the maximum number of concurrent calls that will be made for the campaign. Defaults to 10.
+   * @min 1
+   */
+  maxConcurrency?: number;
+  /** These are the overrides for the assistant's settings and template variables for the campaign. Use this when the campaign targets an `assistantId`. */
+  assistantOverrides?: AssistantOverrides;
+  /** These are the overrides for the squad and template variables for the campaign. Use this when the campaign targets a `squadId`. Per-contact `squadOverrides` are deep-merged on top of this at dispatch time. */
+  squadOverrides?: AssistantOverrides;
+  /** This is the server (URL, auth headers, timeout, etc.) for the campaign webhooks. */
+  server?: Server;
+  /**
+   * These are the messages that will be sent to your Server URL.
+   * @example ["campaign.started","contact.dispatched"]
+   */
+  serverMessages?:
+    | "campaign.started"
+    | "campaign.cancelled"
+    | "campaign.ended"
+    | "campaign.archived"
+    | "campaign.unarchived"
+    | "contact.dispatched"
+    | "contact.completed"
+    | "contact.failed"
+    | "contact.skipped"
+    | "contact.predial-failed"
+    | "campaign.job.continued";
+  /** This opts the campaign into the blocking `campaign.predial` eligibility webhook. When set, every contact triggers a `campaign.predial` POST to the Server URL before dialing, and the response `{ eligible: boolean }` decides whether the call is placed. Requires `server`. When unset, no pre-dial webhook is sent. */
+  predialPlan?: CampaignPredialPlan;
   /** This is the unique identifier for the campaign. */
   id: string;
   /** This is the unique identifier for the org that this campaign belongs to. */
@@ -19838,6 +26154,111 @@ export interface CampaignPaginatedResponse {
   metadata: PaginationMeta;
 }
 
+export interface CampaignContactCounters {
+  pending: number;
+  dispatched: number;
+  completed: number;
+  failed: number;
+  skipped: number;
+  predialFailed: number;
+}
+
+export interface CampaignCallMetrics {
+  /**
+   * This is the number of contacts a call was actually placed for. Contacts
+   * that were skipped, rejected before dialing, or failed to dispatch are not
+   * counted — no call existed, so there was nothing to answer.
+   */
+  dialed: number;
+  /**
+   * This is the number of those calls a human picked up. Voicemail does not
+   * count. Divide by `dialed` for the pick-up rate.
+   */
+  connected: number;
+}
+
+export interface CampaignSummary {
+  /** This is the status of the campaign. */
+  status: "scheduled" | "in-progress" | "ended" | "cancelled" | "archived";
+  /** This is the explanation for how the campaign ended. */
+  endedReason?:
+    | "campaign.scheduled.ended-by-user"
+    | "campaign.in-progress.ended-by-user"
+    | "campaign.ended.success";
+  /**
+   * This is the name of the campaign. This is just for your own reference.
+   * @example "Q2 Sales Campaign"
+   */
+  name: string;
+  /** This is the assistant ID that will be used for the campaign calls. Note: Only one of assistantId, workflowId, or squadId can be used. */
+  assistantId?: string;
+  /** This is the squad ID that will be used for the campaign calls. Note: Only one of assistantId, workflowId, or squadId can be used. */
+  squadId?: string;
+  /** This is the phone number ID that will be used for the campaign calls. Required if dialPlan is not provided. Note: phoneNumberId and dialPlan are mutually exclusive. */
+  phoneNumberId?: string;
+  /** This is the schedule plan for the campaign. Calls will start at startedAt and continue until your organization’s concurrency limit is reached. Any remaining calls will be retried for up to one hour as capacity becomes available. After that hour or after latestAt, whichever comes first, any calls that couldn’t be placed won’t be retried. */
+  schedulePlan?: SchedulePlan;
+  /**
+   * This is the maximum number of concurrent calls that will be made for the campaign. Defaults to 10.
+   * @min 1
+   */
+  maxConcurrency?: number;
+  /** These are the overrides for the assistant's settings and template variables for the campaign. Use this when the campaign targets an `assistantId`. */
+  assistantOverrides?: AssistantOverrides;
+  /** These are the overrides for the squad and template variables for the campaign. Use this when the campaign targets a `squadId`. Per-contact `squadOverrides` are deep-merged on top of this at dispatch time. */
+  squadOverrides?: AssistantOverrides;
+  /** This is the server (URL, auth headers, timeout, etc.) for the campaign webhooks. */
+  server?: Server;
+  /**
+   * These are the messages that will be sent to your Server URL.
+   * @example ["campaign.started","contact.dispatched"]
+   */
+  serverMessages?:
+    | "campaign.started"
+    | "campaign.cancelled"
+    | "campaign.ended"
+    | "campaign.archived"
+    | "campaign.unarchived"
+    | "contact.dispatched"
+    | "contact.completed"
+    | "contact.failed"
+    | "contact.skipped"
+    | "contact.predial-failed"
+    | "campaign.job.continued";
+  /** This opts the campaign into the blocking `campaign.predial` eligibility webhook. When set, every contact triggers a `campaign.predial` POST to the Server URL before dialing, and the response `{ eligible: boolean }` decides whether the call is placed. Requires `server`. When unset, no pre-dial webhook is sent. */
+  predialPlan?: CampaignPredialPlan;
+  /**
+   * These are the per-status contact counts for this campaign. Sum them for the
+   * campaign's total audience; `pending` plus `dispatched` is what is left to
+   * complete.
+   */
+  contactCounters?: CampaignContactCounters;
+  /**
+   * These are the call-level outcomes for this campaign — how many contacts
+   * were actually dialed, and how many of those a human picked up.
+   */
+  callMetrics?: CampaignCallMetrics;
+  /** This is the unique identifier for the campaign. */
+  id: string;
+  /** This is the unique identifier for the org that this campaign belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the campaign was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the campaign was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+}
+
+export interface CampaignSummaryPaginatedResponse {
+  results: CampaignSummary[];
+  metadata: PaginationMeta;
+}
+
 export interface UpdateCampaignDTO {
   /** This is the name of the campaign. This is just for your own reference. */
   name?: string;
@@ -19852,21 +26273,111 @@ export interface UpdateCampaignDTO {
    */
   workflowId?: string;
   /**
-   * This is the phone number ID that will be used for the campaign calls.
+   * This is the squad ID that will be used for the campaign calls.
    * Can only be updated if campaign is not in progress or has ended.
    */
+  squadId?: string;
+  /**
+   * This is the phone number ID that will be used for the campaign calls.
+   * Can only be updated if campaign is not in progress or has ended.
+   * Note: `phoneNumberId` and `dialPlan` are mutually exclusive.
+   */
   phoneNumberId?: string;
+  /** This is a list of dial entries, each specifying a phone number and the customers to call using that number. Can only be updated if campaign is not in progress or has ended. Note: phoneNumberId and dialPlan are mutually exclusive. */
+  dialPlan?: DialPlanEntry[];
   /**
    * This is the schedule plan for the campaign.
    * Can only be updated if campaign is not in progress or has ended.
    */
   schedulePlan?: SchedulePlan;
   /**
-   * This is the status of the campaign.
-   * Can only be updated to 'ended' if you want to end the campaign.
-   * When set to 'ended', it will delete all scheduled calls. Calls in progress will be allowed to complete.
+   * Set to 'cancelled' to stop the campaign ('ended' is a V1 alias). Scheduled
+   * calls are deleted; in-progress calls are allowed to finish.
    */
-  status?: "ended";
+  status?: "ended" | "cancelled";
+}
+
+export interface CampaignContactWithOutcome {
+  id: string;
+  number: string;
+  name?: string;
+  status:
+    | "contact.pending"
+    | "contact.dispatched"
+    | "contact.completed"
+    | "contact.failed"
+    | "contact.skipped"
+    | "contact.predial-failed";
+  callId?: string;
+  /** @format date-time */
+  dispatchedAt?: string;
+  endedReason?: string;
+}
+
+export interface CampaignContactPaginatedResponse {
+  results: CampaignContactWithOutcome[];
+  metadata: PaginationMeta;
+}
+
+export interface RelayTargetAssistant {
+  /** The type of relay target */
+  type: "assistant";
+  /** The unique identifier of the assistant */
+  assistantId?: string;
+  /** The name of the assistant */
+  assistantName?: string;
+}
+
+export interface RelayTargetSquad {
+  /** The type of relay target */
+  type: "squad";
+  /** The unique identifier of the squad */
+  squadId?: string;
+  /** The name of the squad */
+  squadName?: string;
+}
+
+export interface RelayTargetOptions {
+  type: "assistant" | "squad";
+}
+
+export interface RelayCommandSay {
+  /** The type of relay command */
+  type: "say";
+  /** The content for the assistant to speak */
+  content: string;
+}
+
+export interface RelayCommandNote {
+  /** The type of relay command */
+  type: "message.add";
+  /** The note content to add to the conversation */
+  content: string;
+}
+
+export interface RelayCommandOptions {
+  type: "say" | "message.add";
+}
+
+export interface RelayRequest {
+  /** The source identifier of the relay request */
+  source: string;
+  /** The target assistant or squad to relay the commands to */
+  target: RelayTargetAssistant | RelayTargetSquad;
+  /** The unique identifier of the customer */
+  customerId: string;
+  /** The list of commands to relay to the target */
+  commands: (RelayCommandSay | RelayCommandNote)[];
+}
+
+export interface RelayResponse {
+  /** The status of the relay request */
+  status: "deliveredLive" | "deliveredHeadless" | "failed";
+  /** The unique identifier of the call, if delivered to a live call */
+  callId?: string;
+  /** The unique identifier of the session, if delivered to a headless session */
+  sessionId?: string;
+  chatId?: string;
 }
 
 export interface Session {
@@ -19909,6 +26420,12 @@ export interface Session {
    * If assistantId is provided, this will be ignored.
    */
   assistant?: CreateAssistantDTO;
+  /**
+   * These are the overrides for the assistant configuration.
+   * Use this to provide variable values and other overrides when using assistantId.
+   * Variable substitution will be applied to the assistant's messages and other text-based fields.
+   */
+  assistantOverrides?: AssistantOverrides;
   /** This is the squad ID associated with this session. Use this when referencing an existing squad. */
   squadId?: string;
   /**
@@ -19926,6 +26443,8 @@ export interface Session {
   )[];
   /** This is the customer information associated with this session. */
   customer?: CreateCustomerDTO;
+  /** This is the customerId of the customer associated with this session. */
+  customerId?: string;
   /** This is the ID of the phone number associated with this session. */
   phoneNumberId?: string;
   /** This is the phone number configuration for this session. */
@@ -19962,6 +26481,12 @@ export interface CreateSessionDTO {
    * If assistantId is provided, this will be ignored.
    */
   assistant?: CreateAssistantDTO;
+  /**
+   * These are the overrides for the assistant configuration.
+   * Use this to provide variable values and other overrides when using assistantId.
+   * Variable substitution will be applied to the assistant's messages and other text-based fields.
+   */
+  assistantOverrides?: AssistantOverrides;
   /** This is the squad ID associated with this session. Use this when referencing an existing squad. */
   squadId?: string;
   /**
@@ -19979,6 +26504,8 @@ export interface CreateSessionDTO {
   )[];
   /** This is the customer information associated with this session. */
   customer?: CreateCustomerDTO;
+  /** This is the customerId of the customer associated with this session. */
+  customerId?: string;
   /** This is the ID of the phone number associated with this session. */
   phoneNumberId?: string;
   /** This is the phone number configuration for this session. */
@@ -20011,10 +26538,17 @@ export interface UpdateSessionDTO {
 }
 
 export interface GetSessionPaginatedDTO {
+  /** This is the unique identifier for the session to filter by. */
+  id?: string;
   /** This is the name of the session to filter by. */
   name?: string;
   /** This is the ID of the assistant to filter sessions by. */
   assistantId?: string;
+  /**
+   * Filter by multiple assistant IDs. Provide as comma-separated values.
+   * @example "assistant-1,assistant-2,assistant-3"
+   */
+  assistantIdAny?: string;
   /** This is the ID of the squad to filter sessions by. */
   squadId?: string;
   /** This is the ID of the workflow to filter sessions by. */
@@ -20022,12 +26556,25 @@ export interface GetSessionPaginatedDTO {
   /** This is the customer information to filter by. */
   customer?: CreateCustomerDTO;
   /**
+   * Filter by any of the specified customer phone numbers (comma-separated).
+   * @example "+1234567890,+0987654321"
+   */
+  customerNumberAny?: string;
+  /** Filter by multiple session IDs. Provide as comma-separated values. */
+  idAny?: string;
+  /** This will return sessions with the specified phoneNumberId. */
+  phoneNumberId?: string;
+  /** This will return sessions with any of the specified phoneNumberIds. */
+  phoneNumberIdAny?: string[];
+  /**
    * This is the page number to return. Defaults to 1.
    * @min 1
    */
   page?: number;
   /** This is the sort order for pagination. Defaults to 'DESC'. */
   sortOrder?: "ASC" | "DESC";
+  /** This is the column to sort by. Defaults to 'createdAt'. */
+  sortBy?: "createdAt" | "duration" | "cost";
   /**
    * This is the maximum number of items to return. Defaults to 100.
    * @min 0
@@ -20079,6 +26626,121 @@ export interface GetSessionPaginatedDTO {
 export interface SessionPaginatedResponse {
   results: Session[];
   metadata: PaginationMeta;
+}
+
+export interface ExportSessionDTO {
+  /** This is the unique identifier for the session to filter by. */
+  id?: string;
+  /** This is the name of the session to filter by. */
+  name?: string;
+  /** This is the ID of the assistant to filter sessions by. */
+  assistantId?: string;
+  /**
+   * Filter by multiple assistant IDs. Provide as comma-separated values.
+   * @example "assistant-1,assistant-2,assistant-3"
+   */
+  assistantIdAny?: string;
+  /** This is the ID of the squad to filter sessions by. */
+  squadId?: string;
+  /** This is the ID of the workflow to filter sessions by. */
+  workflowId?: string;
+  /** This is the customer information to filter by. */
+  customer?: CreateCustomerDTO;
+  /**
+   * Filter by any of the specified customer phone numbers (comma-separated).
+   * @example "+1234567890,+0987654321"
+   */
+  customerNumberAny?: string;
+  /** Filter by multiple session IDs. Provide as comma-separated values. */
+  idAny?: string;
+  /**
+   * Columns to include in the CSV export
+   * @default ["id","name","status","assistantId","squadId","customerName","customerNumber","phoneNumberId","cost","messages","createdAt","updatedAt"]
+   */
+  columns?:
+    | "id"
+    | "name"
+    | "status"
+    | "assistantId"
+    | "squadId"
+    | "customerName"
+    | "customerNumber"
+    | "phoneNumberId"
+    | "cost"
+    | "messages"
+    | "createdAt"
+    | "updatedAt";
+  /**
+   * This is the email address to send the export to.
+   * Required if userId is not available in the request context.
+   */
+  email?: string;
+  /**
+   * This is the format of the export.
+   *
+   * @default csv
+   * @default "csv"
+   */
+  format?: "csv" | "json";
+  /** This will return sessions with the specified phoneNumberId. */
+  phoneNumberId?: string;
+  /** This will return sessions with any of the specified phoneNumberIds. */
+  phoneNumberIdAny?: string[];
+  /**
+   * This is the page number to return. Defaults to 1.
+   * @min 1
+   */
+  page?: number;
+  /** This is the sort order for pagination. Defaults to 'DESC'. */
+  sortOrder?: "ASC" | "DESC";
+  /** This is the column to sort by. Defaults to 'createdAt'. */
+  sortBy?: "createdAt" | "duration" | "cost";
+  /**
+   * This is the maximum number of items to return. Defaults to 100.
+   * @min 0
+   * @max 1000
+   */
+  limit?: number;
+  /**
+   * This will return items where the createdAt is greater than the specified value.
+   * @format date-time
+   */
+  createdAtGt?: string;
+  /**
+   * This will return items where the createdAt is less than the specified value.
+   * @format date-time
+   */
+  createdAtLt?: string;
+  /**
+   * This will return items where the createdAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtGe?: string;
+  /**
+   * This will return items where the createdAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  createdAtLe?: string;
+  /**
+   * This will return items where the updatedAt is greater than the specified value.
+   * @format date-time
+   */
+  updatedAtGt?: string;
+  /**
+   * This will return items where the updatedAt is less than the specified value.
+   * @format date-time
+   */
+  updatedAtLt?: string;
+  /**
+   * This will return items where the updatedAt is greater than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtGe?: string;
+  /**
+   * This will return items where the updatedAt is less than or equal to the specified value.
+   * @format date-time
+   */
+  updatedAtLe?: string;
 }
 
 export interface ByoPhoneNumber {
@@ -20326,7 +26988,7 @@ export interface VonagePhoneNumber {
 }
 
 export interface SipAuthentication {
-  /** This will be expected in the `realm` field of the `authorization` header of the SIP INVITE. Defaults to sip.vapi.ai. */
+  /** This will be expected in the `realm` field of the `authorization` header of the SIP INVITE. Defaults to the SIP realm of the Vapi region serving the request (e.g. `sip.vapi.ai` for US, `sip.eu.vapi.ai` for EU). */
   realm?: string;
   /**
    * This will be expected in the `username` field of the `authorization` header of the SIP INVITE.
@@ -20824,6 +27486,8 @@ export interface UpdateByoPhoneNumberDTO {
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
   /** This is the hooks that will be used for incoming calls to this phone number. */
   hooks?: (PhoneNumberHookCallRinging | PhoneNumberHookCallEnding)[];
+  /** This is to bring your own phone numbers from your own SIP trunks or Carriers. */
+  provider?: "byo-phone-number";
   /**
    * This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
    *
@@ -20896,6 +27560,8 @@ export interface UpdateTwilioPhoneNumberDTO {
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
   /** This is the hooks that will be used for incoming calls to this phone number. */
   hooks?: (PhoneNumberHookCallRinging | PhoneNumberHookCallEnding)[];
+  /** This is to use numbers bought on Twilio. */
+  provider?: "twilio";
   /**
    * Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
    *
@@ -20963,6 +27629,8 @@ export interface UpdateVonagePhoneNumberDTO {
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
   /** This is the hooks that will be used for incoming calls to this phone number. */
   hooks?: (PhoneNumberHookCallRinging | PhoneNumberHookCallEnding)[];
+  /** This is to use numbers bought on Vonage. */
+  provider?: "vonage";
   /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
@@ -21014,6 +27682,7 @@ export interface UpdateVapiPhoneNumberDTO {
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
   /** This is the hooks that will be used for incoming calls to this phone number. */
   hooks?: (PhoneNumberHookCallRinging | PhoneNumberHookCallEnding)[];
+  provider?: "vapi";
   /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
@@ -21073,6 +27742,8 @@ export interface UpdateTelnyxPhoneNumberDTO {
   fallbackDestination?: TransferDestinationNumber | TransferDestinationSip;
   /** This is the hooks that will be used for incoming calls to this phone number. */
   hooks?: (PhoneNumberHookCallRinging | PhoneNumberHookCallEnding)[];
+  /** This is to use numbers bought on Telnyx. */
+  provider?: "telnyx";
   /**
    * This is the name of the phone number. This is just for your own reference.
    * @maxLength 40
@@ -21180,11 +27851,8 @@ export interface PhoneNumberPaginatedResponse {
 }
 
 export interface ApiRequestTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -21193,6 +27861,14 @@ export interface ApiRequestTool {
   )[];
   /** The type of tool. "apiRequest" for API request tool. */
   type: "apiRequest";
+  /**
+   * This is the name of the tool. This will be passed to the model.
+   *
+   * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 40.
+   * @maxLength 40
+   * @pattern /^[a-zA-Z0-9_-]{1,40}$/
+   */
+  name?: string;
   method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE";
   /**
    * This is the timeout in seconds for the request. Defaults to 20 seconds.
@@ -21208,6 +27884,10 @@ export interface ApiRequestTool {
    * @example "550e8400-e29b-41d4-a716-446655440000"
    */
   credentialId?: string;
+  /** This is the paths to encrypt in the request body if credentialId and encryptionPlan are defined. */
+  encryptedPaths?: string[];
+  /** Static key-value pairs merged into the request body. Values support Liquid templates. */
+  parameters?: ToolParameter[];
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -21303,14 +27983,6 @@ export interface ApiRequestTool {
    * ```
    */
   rejectionPlan?: ToolRejectionPlan;
-  /**
-   * This is the name of the tool. This will be passed to the model.
-   *
-   * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 40.
-   * @maxLength 40
-   * @pattern /^[a-zA-Z0-9_-]{1,40}$/
-   */
-  name?: string;
   /** This is the description of the tool. This will be passed to the model. */
   description?: string;
   /** This is where the request will be sent. */
@@ -21483,12 +28155,187 @@ export interface ApiRequestTool {
   variableExtractionPlan?: VariableExtractionPlan;
 }
 
-export interface DtmfTool {
+export interface CodeToolEnvironmentVariable {
   /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   * Name of the environment variable
+   * @maxLength 64
+   * @pattern /^[A-Z][A-Z0-9_]*$/
+   * @example "API_KEY"
    */
+  name: string;
+  /**
+   * Value of the environment variable. Supports Liquid templates.
+   * @maxLength 10000
+   * @example "{{apiKey}}"
+   */
+  value: string;
+}
+
+export interface CodeTool {
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "code" for Code tool. */
+  type: "code";
+  /**
+   * This determines if the tool is async.
+   *
+   *   If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   *   If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   *   Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
+  /**
+   * TypeScript code to execute when the tool is called
+   * @maxLength 50000
+   */
+  code: string;
+  /** Environment variables available in code via `env` object */
+  environmentVariables?: CodeToolEnvironmentVariable[];
+  /**
+   * This is the timeout in seconds for the code execution. Defaults to 10 seconds.
+   * Maximum is 30 seconds to prevent abuse.
+   *
+   * @default 10
+   * @min 1
+   * @max 30
+   * @example 10
+   */
+  timeoutSeconds?: number;
+  /**
+   * Credential ID containing the Val Town API key
+   * @example "550e8400-e29b-41d4-a716-446655440000"
+   */
+  credentialId?: string;
+  /** Plan to extract variables from the tool response */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For the Code tool, this defines the name, description, and parameters that the model
+   * will use to understand when and how to call this tool.
+   */
+  function?: OpenAIFunction;
+}
+
+export interface DtmfTool {
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -21497,6 +28344,11 @@ export interface DtmfTool {
   )[];
   /** The type of tool. "dtmf" for DTMF tool. */
   type: "dtmf";
+  /**
+   * This enables sending DTMF tones via SIP INFO messages instead of RFC 2833 (RTP events). When enabled, DTMF digits will be sent using the SIP INFO method, which can be more reliable in some network configurations. Only relevant when using the `vapi.sip` transport.
+   * @default false
+   */
+  sipInfoDtmfEnabled?: boolean;
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -21595,11 +28447,8 @@ export interface DtmfTool {
 }
 
 export interface EndCallTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -21706,11 +28555,8 @@ export interface EndCallTool {
 }
 
 export interface FunctionTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -21742,6 +28588,10 @@ export interface FunctionTool {
    *   - Webhook expects a response with tool call result.
    */
   server?: Server;
+  /** Plan to extract variables from the tool response */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /** Static key-value pairs merged into the request body. Values support Liquid templates. */
+  parameters?: ToolParameter[];
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -21841,12 +28691,151 @@ export interface FunctionTool {
   function?: OpenAIFunction;
 }
 
-export interface GhlTool {
+export interface KnowledgeBaseToolFunction {
   /**
-   * These are the messages that will be spoken to the user as the tool is running.
+   * This is the the name of the function to be called.
    *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
+   * @maxLength 64
+   * @pattern /^[a-zA-Z0-9_-]{1,64}$/
    */
+  name: string;
+  /**
+   * This is a boolean that controls whether to enable strict schema adherence when generating the function call. If set to true, the model will follow the exact schema defined in the parameters field. Only a subset of JSON Schema is supported when strict is true. Learn more about Structured Outputs in the [OpenAI guide](https://openai.com/index/introducing-structured-outputs-in-the-api/).
+   *
+   * @default false
+   * @default false
+   */
+  strict?: boolean;
+  /** This is the description of what the function does, used by the AI to choose when and how to call the function. */
+  description: string;
+  /**
+   * These are the parameters the functions accepts, described as a JSON Schema object.
+   *
+   * See the [OpenAI guide](https://platform.openai.com/docs/guides/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema) for documentation about the format.
+   *
+   * Omitting parameters defines a function with an empty parameter list.
+   */
+  parameters: OpenAIFunctionParameters;
+}
+
+export interface KnowledgeBaseTool {
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** A Vapi-hosted knowledge base retrieval tool. */
+  type: "knowledgeBase";
+  /**
+   * The knowledge base this tool searches. At most one search tool references a knowledge base. Deleting the base also deletes its generated tool; null references are retained only for backward compatibility and are inert.
+   * @format uuid
+   */
+  knowledgeBaseId: string | null;
+  function: KnowledgeBaseToolFunction;
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface GhlTool {
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -21954,11 +28943,8 @@ export interface GhlTool {
 }
 
 export interface MakeTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -22066,11 +29052,8 @@ export interface MakeTool {
 }
 
 export interface TransferCallTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -22182,11 +29165,8 @@ export interface TransferCallTool {
 }
 
 export interface HandoffTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -22207,6 +29187,8 @@ export interface HandoffTool {
    * ---
    */
   type: "handoff";
+  /** This is the default local tool result message used when no runtime handoff result override is returned. */
+  defaultResult?: string;
   /**
    * These are the destinations that the call can be handed off to.
    *
@@ -22376,7 +29358,11 @@ export interface HandoffTool {
    *
    * The properties `customerAreaCode`, `customerIntent`, and `customerSentiment` will be passed to the server in the webhook request body.
    */
-  destinations?: (HandoffDestinationAssistant | HandoffDestinationDynamic)[];
+  destinations?: (
+    | HandoffDestinationAssistant
+    | HandoffDestinationDynamic
+    | HandoffDestinationSquad
+  )[];
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -22577,11 +29563,8 @@ export interface HandoffTool {
 }
 
 export interface OutputTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -22688,11 +29671,8 @@ export interface OutputTool {
 }
 
 export interface BashTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -22818,11 +29798,8 @@ export interface BashTool {
 }
 
 export interface ComputerTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -22954,11 +29931,8 @@ export interface ComputerTool {
 }
 
 export interface TextEditorTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -23084,11 +30058,8 @@ export interface TextEditorTool {
 }
 
 export interface QueryTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -23197,11 +30168,8 @@ export interface QueryTool {
 }
 
 export interface GoogleCalendarCreateEventTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -23308,11 +30276,8 @@ export interface GoogleCalendarCreateEventTool {
 }
 
 export interface GoogleSheetsRowAppendTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -23419,11 +30384,8 @@ export interface GoogleSheetsRowAppendTool {
 }
 
 export interface GoogleCalendarCheckAvailabilityTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -23530,11 +30492,8 @@ export interface GoogleCalendarCheckAvailabilityTool {
 }
 
 export interface SlackSendMessageTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -23641,11 +30600,8 @@ export interface SlackSendMessageTool {
 }
 
 export interface SmsTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -23752,11 +30708,8 @@ export interface SmsTool {
 }
 
 export interface McpTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -23777,6 +30730,8 @@ export interface McpTool {
    *   - Webhook expects a response with tool call result.
    */
   server?: Server;
+  /** Per-tool message overrides for individual tools loaded from the MCP server. Set messages to an empty array to suppress messages for a specific tool. Tools not listed here will use the default messages from the parent tool. */
+  toolMessages?: McpToolMessages[];
   /** This is the unique identifier for the tool. */
   id: string;
   /** This is the unique identifier for the organization that this tool belongs to. */
@@ -23876,11 +30831,8 @@ export interface McpTool {
 }
 
 export interface GoHighLevelCalendarAvailabilityTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -23987,11 +30939,8 @@ export interface GoHighLevelCalendarAvailabilityTool {
 }
 
 export interface GoHighLevelCalendarEventCreateTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -24098,11 +31047,8 @@ export interface GoHighLevelCalendarEventCreateTool {
 }
 
 export interface GoHighLevelContactCreateTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -24209,11 +31155,8 @@ export interface GoHighLevelContactCreateTool {
 }
 
 export interface GoHighLevelContactGetTool {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -24319,12 +31262,238 @@ export interface GoHighLevelContactGetTool {
   rejectionPlan?: ToolRejectionPlan;
 }
 
-export interface CreateApiRequestToolDTO {
+export interface SipRequestTool {
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "sipRequest" for SIP request tool. */
+  type: "sipRequest";
+  /** The SIP method to send. */
+  verb: "INFO" | "MESSAGE" | "NOTIFY";
+  /** JSON schema for headers the model should populate when sending the SIP request. */
+  headers?: JsonSchema;
+  /** Body to include in the SIP request. Either a literal string body, or a JSON schema describing a structured body that the model should populate. */
+  body?: string | JsonSchema;
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
   /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
    */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface VoicemailTool {
+  latestVersion?: string | null;
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "voicemail" for Voicemail tool. */
+  type: "voicemail";
+  /**
+   * This is the flag that enables beep detection for voicemail detection and applies only for twilio based calls.
+   *
+   * @default false
+   * @default false
+   * @example false
+   */
+  beepDetectionEnabled?: boolean;
+  /** This is the unique identifier for the tool. */
+  id: string;
+  /** This is the unique identifier for the organization that this tool belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the tool was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface CreateApiRequestToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -24333,6 +31502,14 @@ export interface CreateApiRequestToolDTO {
   )[];
   /** The type of tool. "apiRequest" for API request tool. */
   type: "apiRequest";
+  /**
+   * This is the name of the tool. This will be passed to the model.
+   *
+   * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 40.
+   * @maxLength 40
+   * @pattern /^[a-zA-Z0-9_-]{1,40}$/
+   */
+  name?: string;
   method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE";
   /**
    * This is the timeout in seconds for the request. Defaults to 20 seconds.
@@ -24348,14 +31525,10 @@ export interface CreateApiRequestToolDTO {
    * @example "550e8400-e29b-41d4-a716-446655440000"
    */
   credentialId?: string;
-  /**
-   * This is the name of the tool. This will be passed to the model.
-   *
-   * Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 40.
-   * @maxLength 40
-   * @pattern /^[a-zA-Z0-9_-]{1,40}$/
-   */
-  name?: string;
+  /** This is the paths to encrypt in the request body if credentialId and encryptionPlan are defined. */
+  encryptedPaths?: string[];
+  /** Static key-value pairs merged into the request body. Values support Liquid templates. */
+  parameters?: ToolParameter[];
   /** This is the description of the tool. This will be passed to the model. */
   description?: string;
   /** This is where the request will be sent. */
@@ -24609,12 +31782,155 @@ export interface CreateApiRequestToolDTO {
   rejectionPlan?: ToolRejectionPlan;
 }
 
-export interface CreateOutputToolDTO {
+export interface CreateCodeToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "code" for Code tool. */
+  type: "code";
   /**
-   * These are the messages that will be spoken to the user as the tool is running.
+   * This determines if the tool is async.
    *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+   *   If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   *   If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   *   Defaults to synchronous (`false`).
+   * @example false
    */
+  async?: boolean;
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
+  /**
+   * TypeScript code to execute when the tool is called
+   * @maxLength 50000
+   */
+  code: string;
+  /** Environment variables available in code via `env` object */
+  environmentVariables?: CodeToolEnvironmentVariable[];
+  /**
+   * This is the timeout in seconds for the code execution. Defaults to 10 seconds.
+   * Maximum is 30 seconds to prevent abuse.
+   *
+   * @default 10
+   * @min 1
+   * @max 30
+   * @example 10
+   */
+  timeoutSeconds?: number;
+  /**
+   * Credential ID containing the Val Town API key
+   * @example "550e8400-e29b-41d4-a716-446655440000"
+   */
+  credentialId?: string;
+  /** Plan to extract variables from the tool response */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For the Code tool, this defines the name, description, and parameters that the model
+   * will use to understand when and how to call this tool.
+   */
+  function?: OpenAIFunction;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface CreateOutputToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -24707,11 +32023,7 @@ export interface CreateOutputToolDTO {
 }
 
 export interface CreateBashToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -24823,11 +32135,7 @@ export interface CreateBashToolDTO {
 }
 
 export interface CreateComputerToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -24945,11 +32253,7 @@ export interface CreateComputerToolDTO {
 }
 
 export interface CreateTextEditorToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -25061,11 +32365,7 @@ export interface CreateTextEditorToolDTO {
 }
 
 export interface CreateSmsToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -25157,33 +32457,22 @@ export interface CreateSmsToolDTO {
   rejectionPlan?: ToolRejectionPlan;
 }
 
-export interface UpdateApiRequestToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+export interface CreateSipRequestToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
-  method?: "POST" | "GET" | "PUT" | "PATCH" | "DELETE";
-  /**
-   * This is the timeout in seconds for the request. Defaults to 20 seconds.
-   *
-   * @default 20
-   * @min 1
-   * @max 300
-   * @example 20
-   */
-  timeoutSeconds?: number;
-  /**
-   * The credential ID for API request authentication
-   * @example "550e8400-e29b-41d4-a716-446655440000"
-   */
-  credentialId?: string;
+  /** The type of tool. "sipRequest" for SIP request tool. */
+  type: "sipRequest";
+  /** The SIP method to send. */
+  verb: "INFO" | "MESSAGE" | "NOTIFY";
+  /** JSON schema for headers the model should populate when sending the SIP request. */
+  headers?: JsonSchema;
+  /** Body to include in the SIP request. Either a literal string body, or a JSON schema describing a structured body that the model should populate. */
+  body?: string | JsonSchema;
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -25265,6 +32554,18 @@ export interface UpdateApiRequestToolDTO {
    * ```
    */
   rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface UpdateApiRequestToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "apiRequest" for API request tool. */
+  type?: "apiRequest";
   /**
    * This is the name of the tool. This will be passed to the model.
    *
@@ -25273,6 +32574,106 @@ export interface UpdateApiRequestToolDTO {
    * @pattern /^[a-zA-Z0-9_-]{1,40}$/
    */
   name?: string;
+  method?: "POST" | "GET" | "PUT" | "PATCH" | "DELETE";
+  /**
+   * This is the timeout in seconds for the request. Defaults to 20 seconds.
+   *
+   * @default 20
+   * @min 1
+   * @max 300
+   * @example 20
+   */
+  timeoutSeconds?: number;
+  /**
+   * The credential ID for API request authentication
+   * @example "550e8400-e29b-41d4-a716-446655440000"
+   */
+  credentialId?: string;
+  /** This is the paths to encrypt in the request body if credentialId and encryptionPlan are defined. */
+  encryptedPaths?: string[];
+  /** Static key-value pairs merged into the request body. Values support Liquid templates. */
+  parameters?: ToolParameter[];
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
   /** This is the description of the tool. This will be passed to the model. */
   description?: string;
   /** This is where the request will be sent. */
@@ -25445,18 +32846,168 @@ export interface UpdateApiRequestToolDTO {
   variableExtractionPlan?: VariableExtractionPlan;
 }
 
-export interface UpdateDtmfToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+export interface UpdateCodeToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "code" for Code tool. */
+  type?: "code";
+  /**
+   * This determines if the tool is async.
+   *
+   *   If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+   *
+   *   If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+   *
+   *   Defaults to synchronous (`false`).
+   * @example false
+   */
+  async?: boolean;
+  /**
+   *
+   *   This is the server where a `tool-calls` webhook will be sent.
+   *
+   *   Notes:
+   *   - Webhook is sent to this server when a tool call is made.
+   *   - Webhook contains the call, assistant, and phone number objects.
+   *   - Webhook contains the variables set on the assistant.
+   *   - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+   *   - Webhook expects a response with tool call result.
+   */
+  server?: Server;
+  /**
+   * TypeScript code to execute when the tool is called
+   * @maxLength 50000
+   */
+  code?: string;
+  /** Environment variables available in code via `env` object */
+  environmentVariables?: CodeToolEnvironmentVariable[];
+  /**
+   * This is the timeout in seconds for the code execution. Defaults to 10 seconds.
+   * Maximum is 30 seconds to prevent abuse.
+   *
+   * @default 10
+   * @min 1
+   * @max 30
+   * @example 10
+   */
+  timeoutSeconds?: number;
+  /**
+   * Credential ID containing the Val Town API key
+   * @example "550e8400-e29b-41d4-a716-446655440000"
+   */
+  credentialId?: string;
+  /** Plan to extract variables from the tool response */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+  /**
+   * This is the function definition of the tool.
+   *
+   * For the Code tool, this defines the name, description, and parameters that the model
+   * will use to understand when and how to call this tool.
+   */
+  function?: OpenAIFunction;
+}
+
+export interface UpdateDtmfToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "dtmf" for DTMF tool. */
+  type?: "dtmf";
+  /**
+   * This enables sending DTMF tones via SIP INFO messages instead of RFC 2833 (RTP events). When enabled, DTMF digits will be sent using the SIP INFO method, which can be more reliable in some network configurations. Only relevant when using the `vapi.sip` transport.
+   * @default false
+   */
+  sipInfoDtmfEnabled?: boolean;
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -25541,17 +33092,15 @@ export interface UpdateDtmfToolDTO {
 }
 
 export interface UpdateEndCallToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "endCall" for End Call tool. */
+  type?: "endCall";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -25636,17 +33185,15 @@ export interface UpdateEndCallToolDTO {
 }
 
 export interface UpdateFunctionToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "function" for Function tool. */
+  type?: "function";
   /**
    * This determines if the tool is async.
    *
@@ -25670,6 +33217,10 @@ export interface UpdateFunctionToolDTO {
    *   - Webhook expects a response with tool call result.
    */
   server?: Server;
+  /** Plan to extract variables from the tool response */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /** Static key-value pairs merged into the request body. Values support Liquid templates. */
+  parameters?: ToolParameter[];
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -25755,18 +33306,115 @@ export interface UpdateFunctionToolDTO {
   function?: OpenAIFunction;
 }
 
-export interface UpdateGhlToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+export interface UpdateKnowledgeBaseToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** A Vapi-hosted knowledge base retrieval tool. */
+  type?: "knowledgeBase";
+  /**
+   * The knowledge base this tool searches. At most one search tool references a knowledge base. Deleting the base also deletes its generated tool; null references are retained only for backward compatibility and are inert.
+   * @format uuid
+   */
+  knowledgeBaseId?: string | null;
+  function?: KnowledgeBaseToolFunction;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface UpdateGhlToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "ghl" for GHL tool. */
+  type?: "ghl";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -25852,17 +33500,15 @@ export interface UpdateGhlToolDTO {
 }
 
 export interface UpdateMakeToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "make" for Make tool. */
+  type?: "make";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -25948,17 +33594,29 @@ export interface UpdateMakeToolDTO {
 }
 
 export interface UpdateHandoffToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /**
+   * This is the type of the tool.
+   * When you're using handoff tool, we recommend adding this to your system prompt
+   * ---
+   * # System context
+   *
+   * You are part of a multi-agent system designed to make agent coordination and execution easy. Agents uses two primary abstraction: **Agents** and **Handoffs**. An agent encompasses instructions and tools and can hand off a conversation to another agent when appropriate. Handoffs are achieved by calling a handoff function, generally named `handoff_to_<agent_name>`. Handoffs between agents are handled seamlessly in the background; do not mention or draw attention to these handoffs in your conversation with the user.
+   *
+   * # Agent context
+   *
+   * {put your agent system prompt here}
+   * ---
+   */
+  type?: "handoff";
+  /** This is the default local tool result message used when no runtime handoff result override is returned. */
+  defaultResult?: string;
   /**
    * These are the destinations that the call can be handed off to.
    *
@@ -26128,7 +33786,11 @@ export interface UpdateHandoffToolDTO {
    *
    * The properties `customerAreaCode`, `customerIntent`, and `customerSentiment` will be passed to the server in the webhook request body.
    */
-  destinations?: (HandoffDestinationAssistant | HandoffDestinationDynamic)[];
+  destinations?: (
+    | HandoffDestinationAssistant
+    | HandoffDestinationDynamic
+    | HandoffDestinationSquad
+  )[];
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -26315,17 +33977,14 @@ export interface UpdateHandoffToolDTO {
 }
 
 export interface UpdateTransferCallToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  type?: "transferCall";
   /** These are the destinations that the call can be transferred to. If no destinations are provided, server.url will be used to get the transfer destination once the tool is called. */
   destinations?: (
     | TransferDestinationAssistant
@@ -26416,17 +34075,15 @@ export interface UpdateTransferCallToolDTO {
 }
 
 export interface UpdateOutputToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "output" for Output tool. */
+  type?: "output";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -26511,17 +34168,15 @@ export interface UpdateOutputToolDTO {
 }
 
 export interface UpdateBashToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "bash" for Bash tool. */
+  type?: "bash";
   /** The sub type of tool. */
   subType?: "bash_20241022";
   /**
@@ -26625,17 +34280,15 @@ export interface UpdateBashToolDTO {
 }
 
 export interface UpdateComputerToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "computer" for Computer tool. */
+  type?: "computer";
   /** The sub type of tool. */
   subType?: "computer_20241022";
   /**
@@ -26745,17 +34398,15 @@ export interface UpdateComputerToolDTO {
 }
 
 export interface UpdateTextEditorToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "textEditor" for Text Editor tool. */
+  type?: "textEditor";
   /** The sub type of tool. */
   subType?: "text_editor_20241022";
   /**
@@ -26859,17 +34510,15 @@ export interface UpdateTextEditorToolDTO {
 }
 
 export interface UpdateQueryToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "query" for Query tool. */
+  type?: "query";
   /** The knowledge bases to query */
   knowledgeBases?: KnowledgeBase[];
   /**
@@ -26956,17 +34605,15 @@ export interface UpdateQueryToolDTO {
 }
 
 export interface UpdateGoogleCalendarCreateEventToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "google.calendar.event.create" for Google Calendar Create Event tool. */
+  type?: "google.calendar.event.create";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -27051,17 +34698,15 @@ export interface UpdateGoogleCalendarCreateEventToolDTO {
 }
 
 export interface UpdateGoogleSheetsRowAppendToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "google.sheets.row.append" for Google Sheets Row Append tool. */
+  type?: "google.sheets.row.append";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -27146,17 +34791,15 @@ export interface UpdateGoogleSheetsRowAppendToolDTO {
 }
 
 export interface UpdateGoogleCalendarCheckAvailabilityToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "google.calendar.availability.check" for Google Calendar Check Availability tool. */
+  type?: "google.calendar.availability.check";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -27241,17 +34884,15 @@ export interface UpdateGoogleCalendarCheckAvailabilityToolDTO {
 }
 
 export interface UpdateSlackSendMessageToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "slack.message.send" for Slack Send Message tool. */
+  type?: "slack.message.send";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -27336,17 +34977,15 @@ export interface UpdateSlackSendMessageToolDTO {
 }
 
 export interface UpdateSmsToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "sms" for Twilio SMS sending tool. */
+  type?: "sms";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -27431,17 +35070,15 @@ export interface UpdateSmsToolDTO {
 }
 
 export interface UpdateMcpToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "mcp" for MCP tool. */
+  type?: "mcp";
   /**
    *
    *   This is the server where a `tool-calls` webhook will be sent.
@@ -27454,6 +35091,8 @@ export interface UpdateMcpToolDTO {
    *   - Webhook expects a response with tool call result.
    */
   server?: Server;
+  /** Per-tool message overrides for individual tools loaded from the MCP server. Set messages to an empty array to suppress messages for a specific tool. Tools not listed here will use the default messages from the parent tool. */
+  toolMessages?: McpToolMessages[];
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -27539,17 +35178,15 @@ export interface UpdateMcpToolDTO {
 }
 
 export interface UpdateGoHighLevelCalendarAvailabilityToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "gohighlevel.calendar.availability.check" for GoHighLevel Calendar Availability Check tool. */
+  type?: "gohighlevel.calendar.availability.check";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -27634,17 +35271,15 @@ export interface UpdateGoHighLevelCalendarAvailabilityToolDTO {
 }
 
 export interface UpdateGoHighLevelCalendarEventCreateToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "gohighlevel.calendar.event.create" for GoHighLevel Calendar Event Create tool. */
+  type?: "gohighlevel.calendar.event.create";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -27729,17 +35364,15 @@ export interface UpdateGoHighLevelCalendarEventCreateToolDTO {
 }
 
 export interface UpdateGoHighLevelContactCreateToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "gohighlevel.contact.create" for GoHighLevel Contact Create tool. */
+  type?: "gohighlevel.contact.create";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -27824,17 +35457,15 @@ export interface UpdateGoHighLevelContactCreateToolDTO {
 }
 
 export interface UpdateGoHighLevelContactGetToolDTO {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
     | ToolMessageFailed
     | ToolMessageDelayed
   )[];
+  /** The type of tool. "gohighlevel.contact.get" for GoHighLevel Contact Get tool. */
+  type?: "gohighlevel.contact.get";
   /**
    * This is the plan to reject a tool call based on the conversation state.
    *
@@ -27918,12 +35549,970 @@ export interface UpdateGoHighLevelContactGetToolDTO {
   rejectionPlan?: ToolRejectionPlan;
 }
 
+export interface UpdateSipRequestToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "sipRequest" for SIP request tool. */
+  type?: "sipRequest";
+  /** The SIP method to send. */
+  verb?: "INFO" | "MESSAGE" | "NOTIFY";
+  /** JSON schema for headers the model should populate when sending the SIP request. */
+  headers?: JsonSchema;
+  /** Body to include in the SIP request. Either a literal string body, or a JSON schema describing a structured body that the model should populate. */
+  body?: string | JsonSchema;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface UpdateVoicemailToolDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** The type of tool. "voicemail" for Voicemail tool. */
+  type?: "voicemail";
+  /**
+   * This is the flag that enables beep detection for voicemail detection and applies only for twilio based calls.
+   *
+   * @default false
+   * @default false
+   * @example false
+   */
+  beepDetectionEnabled?: boolean;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface ToolVersion {
+  /**
+   * Optional human-readable label for this version. Pass `null` to clear.
+   * @maxLength 80
+   */
+  versionName?: string | null;
+  /**
+   * Optional description for this version. Pass `null` to clear.
+   * @maxLength 500
+   */
+  versionDescription?: string | null;
+  type?: object;
+  function?: object | null;
+  messages?: object[] | null;
+  metadata?: object | null;
+  templateId?: string | null;
+  server?: Server | null;
+  async?: boolean | null;
+  destinations?: object[] | null;
+  name?: string | null;
+  subType?: string | null;
+  displayWidthPx?: number | null;
+  displayHeightPx?: number | null;
+  displayNumber?: number | null;
+  knowledgeBases?: object[] | null;
+  url?: string | null;
+  method?: string | null;
+  headers?: object | null;
+  body?: object;
+  backoffPlan?: object | null;
+  timeoutSeconds?: number | null;
+  description?: string | null;
+  variableExtractionPlan?: object | null;
+  rejectionPlan?: object | null;
+  credentialId?: string | null;
+  extendedDelayWhenPrecededByTextEnabled?: boolean | null;
+  beepDetectionEnabled?: boolean | null;
+  code?: string | null;
+  environmentVariables?: object[] | null;
+  parameters?: object[] | null;
+  encryptedPaths?: string[] | null;
+  sipInfoDtmfEnabled?: boolean | null;
+  verb?: string | null;
+  defaultResult?: string | null;
+  toolMessages?: object[] | null;
+  /** This is the unique identifier for the version row. */
+  id: string;
+  /** This is the unique identifier for the org that owns this version. */
+  orgId: string;
+  /** This is the unique identifier for the tool this version was snapshotted from. */
+  toolId: string;
+  /**
+   * This is the public monotonic version label, e.g. "v1".
+   * System-owned and incremented per tool; never user-supplied.
+   */
+  version: string;
+  /** This is the SHA-256 hex of the snapshotted content used for no-op detection. */
+  configHash: string;
+  /** This is the prior version label (vN-1). Null on v1 or for branch roots. */
+  parentVersion?: string | null;
+  /** This is the actor that wrote this version. Email when created via JWT, null when created via API. */
+  createdBy?: string | null;
+  /**
+   * This is the soft-delete timestamp. Null when active.
+   * @format date-time
+   */
+  deletedAt?: string | null;
+  /**
+   * This is the ISO 8601 date-time string of when the version was created.
+   * @format date-time
+   */
+  createdAt: string;
+}
+
+export interface ToolVersionPaginatedMetadata {
+  nextCursor?: string | null;
+  hasNextPage: boolean;
+  limit: number;
+}
+
+export interface ToolVersionPaginatedResponse {
+  results: ToolVersion[];
+  metadata: ToolVersionPaginatedMetadata;
+}
+
+export interface ToolDraft {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** This is the type of the tool. */
+  type?:
+    | "dtmf"
+    | "endCall"
+    | "knowledgeBase"
+    | "transferCall"
+    | "transferCancel"
+    | "transferSuccessful"
+    | "handoff"
+    | "output"
+    | "voicemail"
+    | "query"
+    | "sms"
+    | "sipRequest"
+    | "function"
+    | "mcp"
+    | "apiRequest"
+    | "code"
+    | "bash"
+    | "computer"
+    | "textEditor"
+    | "google.calendar.event.create"
+    | "google.calendar.availability.check"
+    | "google.sheets.row.append"
+    | "slack.message.send"
+    | "gohighlevel.calendar.event.create"
+    | "gohighlevel.calendar.availability.check"
+    | "gohighlevel.contact.create"
+    | "gohighlevel.contact.get"
+    | "make"
+    | "ghl";
+  /** Key used as `draftId` in URLs. */
+  id: string;
+  /** This is the unique identifier for the org that owns this draft. */
+  orgId: string;
+  /**
+   * This is the unique identifier for the tool this draft was forked from.
+   * Intentionally NOT a FK — `tool_draft` mirrors `tool_version` / `version_pin`'s
+   * no-FK / app-cleanup philosophy, so there is no `ON DELETE CASCADE`. Drafts
+   * must be cleaned up explicitly (`toolDraftDelete({ orgId, toolId })`) on a
+   * parent tool hard-delete; nothing reaps them automatically.
+   */
+  toolId: string;
+  /**
+   * The published version this draft was forked from. Server defaults to
+   * `tool.latestVersion` on POST if omitted. Immutable for the draft's lifetime.
+   */
+  baseVersion: string;
+  /** Email when JWT, null when API or external JWT. Set on POST, never rewritten on PATCH. */
+  createdBy?: string | null;
+  /**
+   * This is the ISO 8601 date-time string of when the draft was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the draft was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+  /** This is the function definition of the tool. */
+  function?: OpenAIFunction;
+  /**
+   * Provider-specific metadata. Polymorphic across tool variants with no shared
+   * discriminator, so it is validated as a plain object (mirrors how
+   * `ToolCallResult.metadata` is typed).
+   */
+  metadata?: object;
+  /** This is the unique identifier for the template this tool was created from. */
+  templateId?: string;
+  server?: Server;
+  async?: boolean;
+  /** These are the destinations that the call can be transferred to. */
+  destinations?: object[];
+  /** This is the name of the tool. This will be passed to the model. */
+  name?: string;
+  /** This is the sub type of the tool (e.g. for computer, bash and text-editor tools). */
+  subType?: string;
+  /** The display width in pixels (computer tool). */
+  displayWidthPx?: number;
+  /** The display height in pixels (computer tool). */
+  displayHeightPx?: number;
+  /** Optional display number (computer tool). */
+  displayNumber?: number;
+  /** The knowledge bases to query (query tool). */
+  knowledgeBases?: KnowledgeBase[];
+  /** This is where the request will be sent (api-request tool). */
+  url?: string;
+  /** This is the HTTP method for the request (api-request tool). */
+  method?: "POST" | "GET" | "PUT" | "PATCH" | "DELETE";
+  /** These are the headers to send with the request (api-request / sip-request tool). */
+  headers?: JsonSchema;
+  /**
+   * This is the body of the request. Either a JSON schema (api-request) or a
+   * literal string / schema (sip-request).
+   */
+  body?: object;
+  /** This is the backoff plan if the request fails. */
+  backoffPlan?: BackoffPlan;
+  /**
+   * This is the timeout in seconds for the request.
+   * @min 1
+   * @max 300
+   */
+  timeoutSeconds?: number;
+  /** This is the description of the tool. This will be passed to the model. */
+  description?: string;
+  /** This is the plan to extract variables from the tool's response. */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /** This is the credential ID that will be used for authorization. */
+  credentialId?: string;
+  extendedDelayWhenPrecededByTextEnabled?: boolean;
+  beepDetectionEnabled?: boolean;
+  /**
+   * This is the TypeScript code that will be executed when the tool is called (code tool).
+   * @maxLength 50000
+   */
+  code?: string;
+  /** These are the environment variables available in the code via the `env` object (code tool). */
+  environmentVariables?: CodeToolEnvironmentVariable[];
+  /** These are the static parameters to merge into the tool's request body. */
+  parameters?: ToolParameter[];
+  /** This is the paths to encrypt in the request body. */
+  encryptedPaths?: string[];
+  /** This enables sending DTMF tones via SIP INFO messages instead of RFC 2833. */
+  sipInfoDtmfEnabled?: boolean;
+  /** This is the SIP method to send (sip-request tool). */
+  verb?: "INFO" | "MESSAGE" | "NOTIFY";
+  /** This is the default local tool result message used when no runtime override is returned (handoff tool). */
+  defaultResult?: string;
+  /** Per-tool message overrides for individual tools loaded from the MCP server (mcp tool). */
+  toolMessages?: McpToolMessages[];
+}
+
+export interface CreateToolDraftDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** This is the type of the tool. */
+  type?:
+    | "dtmf"
+    | "endCall"
+    | "knowledgeBase"
+    | "transferCall"
+    | "transferCancel"
+    | "transferSuccessful"
+    | "handoff"
+    | "output"
+    | "voicemail"
+    | "query"
+    | "sms"
+    | "sipRequest"
+    | "function"
+    | "mcp"
+    | "apiRequest"
+    | "code"
+    | "bash"
+    | "computer"
+    | "textEditor"
+    | "google.calendar.event.create"
+    | "google.calendar.availability.check"
+    | "google.sheets.row.append"
+    | "slack.message.send"
+    | "gohighlevel.calendar.event.create"
+    | "gohighlevel.calendar.availability.check"
+    | "gohighlevel.contact.create"
+    | "gohighlevel.contact.get"
+    | "make"
+    | "ghl";
+  /**
+   * Optional pointer to the published version this draft was forked from.
+   * When omitted, defaults server-side to the parent tool's current
+   * `latestVersion` (lazy-created via `toolBaselineVersionEnsureInTx` if the
+   * tool has never been versioned). Immutable for the lifetime of the draft.
+   */
+  baseVersion?: string;
+  /** This is the function definition of the tool. */
+  function?: OpenAIFunction;
+  /**
+   * Provider-specific metadata. Polymorphic across tool variants with no shared
+   * discriminator, so it is validated as a plain object (mirrors how
+   * `ToolCallResult.metadata` is typed).
+   */
+  metadata?: object;
+  /** This is the unique identifier for the template this tool was created from. */
+  templateId?: string;
+  server?: Server;
+  async?: boolean;
+  /** These are the destinations that the call can be transferred to. */
+  destinations?: object[];
+  /** This is the name of the tool. This will be passed to the model. */
+  name?: string;
+  /** This is the sub type of the tool (e.g. for computer, bash and text-editor tools). */
+  subType?: string;
+  /** The display width in pixels (computer tool). */
+  displayWidthPx?: number;
+  /** The display height in pixels (computer tool). */
+  displayHeightPx?: number;
+  /** Optional display number (computer tool). */
+  displayNumber?: number;
+  /** The knowledge bases to query (query tool). */
+  knowledgeBases?: KnowledgeBase[];
+  /** This is where the request will be sent (api-request tool). */
+  url?: string;
+  /** This is the HTTP method for the request (api-request tool). */
+  method?: "POST" | "GET" | "PUT" | "PATCH" | "DELETE";
+  /** These are the headers to send with the request (api-request / sip-request tool). */
+  headers?: JsonSchema;
+  /**
+   * This is the body of the request. Either a JSON schema (api-request) or a
+   * literal string / schema (sip-request).
+   */
+  body?: object;
+  /** This is the backoff plan if the request fails. */
+  backoffPlan?: BackoffPlan;
+  /**
+   * This is the timeout in seconds for the request.
+   * @min 1
+   * @max 300
+   */
+  timeoutSeconds?: number;
+  /** This is the description of the tool. This will be passed to the model. */
+  description?: string;
+  /** This is the plan to extract variables from the tool's response. */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /** This is the credential ID that will be used for authorization. */
+  credentialId?: string;
+  extendedDelayWhenPrecededByTextEnabled?: boolean;
+  beepDetectionEnabled?: boolean;
+  /**
+   * This is the TypeScript code that will be executed when the tool is called (code tool).
+   * @maxLength 50000
+   */
+  code?: string;
+  /** These are the environment variables available in the code via the `env` object (code tool). */
+  environmentVariables?: CodeToolEnvironmentVariable[];
+  /** These are the static parameters to merge into the tool's request body. */
+  parameters?: ToolParameter[];
+  /** This is the paths to encrypt in the request body. */
+  encryptedPaths?: string[];
+  /** This enables sending DTMF tones via SIP INFO messages instead of RFC 2833. */
+  sipInfoDtmfEnabled?: boolean;
+  /** This is the SIP method to send (sip-request tool). */
+  verb?: "INFO" | "MESSAGE" | "NOTIFY";
+  /** This is the default local tool result message used when no runtime override is returned (handoff tool). */
+  defaultResult?: string;
+  /** Per-tool message overrides for individual tools loaded from the MCP server (mcp tool). */
+  toolMessages?: McpToolMessages[];
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface UpdateToolDraftDTO {
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
+  messages?: (
+    | ToolMessageStart
+    | ToolMessageComplete
+    | ToolMessageFailed
+    | ToolMessageDelayed
+  )[];
+  /** This is the type of the tool. */
+  type?:
+    | "dtmf"
+    | "endCall"
+    | "knowledgeBase"
+    | "transferCall"
+    | "transferCancel"
+    | "transferSuccessful"
+    | "handoff"
+    | "output"
+    | "voicemail"
+    | "query"
+    | "sms"
+    | "sipRequest"
+    | "function"
+    | "mcp"
+    | "apiRequest"
+    | "code"
+    | "bash"
+    | "computer"
+    | "textEditor"
+    | "google.calendar.event.create"
+    | "google.calendar.availability.check"
+    | "google.sheets.row.append"
+    | "slack.message.send"
+    | "gohighlevel.calendar.event.create"
+    | "gohighlevel.calendar.availability.check"
+    | "gohighlevel.contact.create"
+    | "gohighlevel.contact.get"
+    | "make"
+    | "ghl";
+  /** This is the function definition of the tool. */
+  function?: OpenAIFunction;
+  /**
+   * Provider-specific metadata. Polymorphic across tool variants with no shared
+   * discriminator, so it is validated as a plain object (mirrors how
+   * `ToolCallResult.metadata` is typed).
+   */
+  metadata?: object;
+  /** This is the unique identifier for the template this tool was created from. */
+  templateId?: string;
+  server?: Server;
+  async?: boolean;
+  /** These are the destinations that the call can be transferred to. */
+  destinations?: object[];
+  /** This is the name of the tool. This will be passed to the model. */
+  name?: string;
+  /** This is the sub type of the tool (e.g. for computer, bash and text-editor tools). */
+  subType?: string;
+  /** The display width in pixels (computer tool). */
+  displayWidthPx?: number;
+  /** The display height in pixels (computer tool). */
+  displayHeightPx?: number;
+  /** Optional display number (computer tool). */
+  displayNumber?: number;
+  /** The knowledge bases to query (query tool). */
+  knowledgeBases?: KnowledgeBase[];
+  /** This is where the request will be sent (api-request tool). */
+  url?: string;
+  /** This is the HTTP method for the request (api-request tool). */
+  method?: "POST" | "GET" | "PUT" | "PATCH" | "DELETE";
+  /** These are the headers to send with the request (api-request / sip-request tool). */
+  headers?: JsonSchema;
+  /**
+   * This is the body of the request. Either a JSON schema (api-request) or a
+   * literal string / schema (sip-request).
+   */
+  body?: object;
+  /** This is the backoff plan if the request fails. */
+  backoffPlan?: BackoffPlan;
+  /**
+   * This is the timeout in seconds for the request.
+   * @min 1
+   * @max 300
+   */
+  timeoutSeconds?: number;
+  /** This is the description of the tool. This will be passed to the model. */
+  description?: string;
+  /** This is the plan to extract variables from the tool's response. */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /** This is the credential ID that will be used for authorization. */
+  credentialId?: string;
+  extendedDelayWhenPrecededByTextEnabled?: boolean;
+  beepDetectionEnabled?: boolean;
+  /**
+   * This is the TypeScript code that will be executed when the tool is called (code tool).
+   * @maxLength 50000
+   */
+  code?: string;
+  /** These are the environment variables available in the code via the `env` object (code tool). */
+  environmentVariables?: CodeToolEnvironmentVariable[];
+  /** These are the static parameters to merge into the tool's request body. */
+  parameters?: ToolParameter[];
+  /** This is the paths to encrypt in the request body. */
+  encryptedPaths?: string[];
+  /** This enables sending DTMF tones via SIP INFO messages instead of RFC 2833. */
+  sipInfoDtmfEnabled?: boolean;
+  /** This is the SIP method to send (sip-request tool). */
+  verb?: "INFO" | "MESSAGE" | "NOTIFY";
+  /** This is the default local tool result message used when no runtime override is returned (handoff tool). */
+  defaultResult?: string;
+  /** Per-tool message overrides for individual tools loaded from the MCP server (mcp tool). */
+  toolMessages?: McpToolMessages[];
+  /**
+   * This is the plan to reject a tool call based on the conversation state.
+   *
+   * // Example 1: Reject endCall if user didn't say goodbye
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '(?i)\\b(bye|goodbye|farewell|see you later|take care)\\b',
+   *     target: { position: -1, role: 'user' },
+   *     negate: true  // Reject if pattern does NOT match
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 2: Reject transfer if user is actually asking a question
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'regex',
+   *     regex: '\\?',
+   *     target: { position: -1, role: 'user' }
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 3: Reject transfer if user didn't mention transfer recently
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 5 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' %}
+   * {% assign mentioned = false %}
+   * {% for msg in userMessages %}
+   *   {% if msg.content contains 'transfer' or msg.content contains 'connect' or msg.content contains 'speak to' %}
+   *     {% assign mentioned = true %}
+   *     {% break %}
+   *   {% endif %}
+   * {% endfor %}
+   * {% if mentioned %}
+   *   false
+   * {% else %}
+   *   true
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   *
+   * // Example 4: Reject endCall if the bot is looping and trying to exit
+   * ```json
+   * {
+   *   conditions: [{
+   *     type: 'liquid',
+   *     liquid: `{% assign recentMessages = messages | last: 6 %}
+   * {% assign userMessages = recentMessages | where: 'role', 'user' | reverse %}
+   * {% if userMessages.size < 3 %}
+   *   false
+   * {% else %}
+   *   {% assign msg1 = userMessages[0].content | downcase %}
+   *   {% assign msg2 = userMessages[1].content | downcase %}
+   *   {% assign msg3 = userMessages[2].content | downcase %}
+   *   {% comment %} Check for repetitive messages {% endcomment %}
+   *   {% if msg1 == msg2 or msg1 == msg3 or msg2 == msg3 %}
+   *     true
+   *   {% comment %} Check for common loop phrases {% endcomment %}
+   *   {% elsif msg1 contains 'cool thanks' or msg2 contains 'cool thanks' or msg3 contains 'cool thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'okay thanks' or msg2 contains 'okay thanks' or msg3 contains 'okay thanks' %}
+   *     true
+   *   {% elsif msg1 contains 'got it' or msg2 contains 'got it' or msg3 contains 'got it' %}
+   *     true
+   *   {% else %}
+   *     false
+   *   {% endif %}
+   * {% endif %}`
+   *   }]
+   * }
+   * ```
+   */
+  rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface ToolDraftPaginatedMetadata {
+  nextCursor: string | null;
+  hasNextPage: boolean;
+  limit: number;
+}
+
+export interface ToolDraftPaginatedResponse {
+  results: ToolDraft[];
+  metadata: ToolDraftPaginatedMetadata;
+}
+
+export interface ToolDraftConflictResponseDTO {
+  existingDraftId: string | null;
+  error: string;
+  message: string;
+}
+
+export interface GetToolDraftsDTO {
+  /** Opaque base64-encoded keyset cursor. Omit on first page. */
+  cursor?: string;
+  /**
+   * Page size, defaults to 25, capped at 100.
+   * @min 1
+   * @max 100
+   */
+  limit?: number;
+  createdBy?: string;
+}
+
+export interface UpdateToolVersionMetadataDTO {
+  /**
+   * Optional human-readable label for this version. Pass `null` to clear.
+   * @maxLength 80
+   */
+  versionName?: string | null;
+  /**
+   * Optional description for this version. Pass `null` to clear.
+   * @maxLength 500
+   */
+  versionDescription?: string | null;
+}
+
+export interface ToolPinnedConflictResponseDTO {
+  error: "tool_pinned";
+  /** Human-readable reason the parent-tool delete was rejected. */
+  message: string;
+}
+
 export interface CreateFileDTO {
   /**
-   * This is the File you want to upload for use with the Knowledge Base.
+   * The file to upload.
    * @format binary
    */
   file: File;
+  /** Optional product flow that owns the uploaded file. */
+  purpose?: "assistant" | "composer-attachment" | "knowledge-base-v2";
+  /**
+   * Optional JSON-encoded metadata for multipart uploads.
+   * @maxLength 4096
+   */
+  metadata?: string;
 }
 
 export interface File {
@@ -27968,42 +36557,6 @@ export interface UpdateFileDTO {
    * @maxLength 40
    */
   name?: string;
-}
-
-export interface TrieveKnowledgeBaseSearchPlan {
-  /** Specifies the number of top chunks to return. This corresponds to the `page_size` parameter in Trieve. */
-  topK?: number;
-  /** If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. This will preserve queries that are entirely stop words. */
-  removeStopWords?: boolean;
-  /** This is the score threshold to filter out chunks with a score below the threshold for cosine distance metric. For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance. This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold. A threshold of 0 will default to no threshold. */
-  scoreThreshold?: number;
-  /** This is the search method used when searching for relevant chunks from the vector store. */
-  searchType: "fulltext" | "semantic" | "hybrid" | "bm25";
-}
-
-export interface TrieveKnowledgeBase {
-  /**
-   * This knowledge base is provided by Trieve.
-   *
-   * To learn more about Trieve, visit https://trieve.ai.
-   */
-  provider: "trieve";
-  /** This is the name of the knowledge base. */
-  name?: string;
-  /**
-   * This is the searching plan used when searching for relevant chunks from the vector store.
-   *
-   * You should configure this if you're running into these issues:
-   * - Too much unnecessary context is being fed as knowledge base context.
-   * - Not enough relevant context is being fed as knowledge base context.
-   */
-  searchPlan?: TrieveKnowledgeBaseSearchPlan;
-  /** This is the plan if you want us to create/import a new vector store using Trieve. */
-  createPlan?: TrieveKnowledgeBaseImport;
-  /** This is the id of the knowledge base. */
-  id: string;
-  /** This is the org id of the knowledge base. */
-  orgId: string;
 }
 
 export interface CustomKnowledgeBase {
@@ -28057,43 +36610,9 @@ export interface CustomKnowledgeBase {
   orgId: string;
 }
 
-export interface CreateTrieveKnowledgeBaseDTO {
-  /**
-   * This knowledge base is provided by Trieve.
-   *
-   * To learn more about Trieve, visit https://trieve.ai.
-   */
-  provider: "trieve";
-  /** This is the name of the knowledge base. */
-  name?: string;
-  /**
-   * This is the searching plan used when searching for relevant chunks from the vector store.
-   *
-   * You should configure this if you're running into these issues:
-   * - Too much unnecessary context is being fed as knowledge base context.
-   * - Not enough relevant context is being fed as knowledge base context.
-   */
-  searchPlan?: TrieveKnowledgeBaseSearchPlan;
-  /** This is the plan if you want us to create/import a new vector store using Trieve. */
-  createPlan?: TrieveKnowledgeBaseImport;
-}
-
-export interface UpdateTrieveKnowledgeBaseDTO {
-  /** This is the name of the knowledge base. */
-  name?: string;
-  /**
-   * This is the searching plan used when searching for relevant chunks from the vector store.
-   *
-   * You should configure this if you're running into these issues:
-   * - Too much unnecessary context is being fed as knowledge base context.
-   * - Not enough relevant context is being fed as knowledge base context.
-   */
-  searchPlan?: TrieveKnowledgeBaseSearchPlan;
-  /** This is the plan if you want us to create/import a new vector store using Trieve. */
-  createPlan?: TrieveKnowledgeBaseImport;
-}
-
 export interface UpdateCustomKnowledgeBaseDTO {
+  /** This knowledge base is bring your own knowledge base implementation. */
+  provider?: "custom-knowledge-base";
   /**
    * This is where the knowledge base request will be sent.
    *
@@ -28138,53 +36657,136 @@ export interface UpdateCustomKnowledgeBaseDTO {
   server?: Server;
 }
 
-export interface TrieveKnowledgeBaseChunkPlan {
-  /** These are the file ids that will be used to create the vector store. To upload files, use the `POST /files` endpoint. */
-  fileIds?: string[];
-  /** These are the websites that will be used to create the vector store. */
-  websites?: string[];
-  /** This is an optional field which allows you to specify the number of splits you want per chunk. If not specified, the default 20 is used. However, you may want to use a different number. */
-  targetSplitsPerChunk?: number;
-  /** This is an optional field which allows you to specify the delimiters to use when splitting the file before chunking the text. If not specified, the default [.!?\n] are used to split into sentences. However, you may want to use spaces or other delimiters. */
-  splitDelimiters?: string[];
-  /** This is an optional field which allows you to specify whether or not to rebalance the chunks created from the file. If not specified, the default true is used. If true, Trieve will evenly distribute remainder splits across chunks such that 66 splits with a target_splits_per_chunk of 20 will result in 3 chunks with 22 splits each. */
-  rebalanceChunks?: boolean;
-}
-
-export interface TrieveKnowledgeBaseCreate {
-  /** This is to create a new dataset on Trieve. */
-  type: "create";
-  /** These are the chunk plans used to create the dataset. */
-  chunkPlans: TrieveKnowledgeBaseChunkPlan[];
-}
-
-export interface TrieveKnowledgeBaseImport {
-  /** This is to import an existing dataset from Trieve. */
-  type: "import";
-  /** This is the `datasetId` of the dataset on your Trieve account. */
-  providerId: string;
-}
-
-export interface ComplianceOverride {
+export interface CreateKnowledgeBaseV2DTO {
   /**
-   * Force storage for this output under HIPAA. Only enable if output contains no sensitive data.
-   * @example false
+   * @minLength 1
+   * @maxLength 80
    */
-  forceStoreOnHipaaEnabled?: boolean;
+  name: string;
+  /** @maxLength 1000 */
+  description?: string | null;
+}
+
+export interface KnowledgeBaseV2 {
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  name: string;
+  /** @maxLength 1000 */
+  description?: string | null;
+  id: string;
+  orgId: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+}
+
+export interface KnowledgeBaseV2File {
+  id: string;
+  knowledgeBaseV2Id: string;
+  fileId: string;
+  fileName?: string;
+  mimetype?: string;
+  bytes?: number;
+  status: "indexing" | "ready" | "failed";
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+}
+
+export interface AttachKnowledgeBaseV2FileDTO {
+  fileId: string;
+}
+
+export interface UpdateKnowledgeBaseV2DTO {
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  name?: string;
+  /** @maxLength 1000 */
+  description?: string | null;
+}
+
+export interface KnowledgeBaseV2WithFiles {
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  name: string;
+  /** @maxLength 1000 */
+  description?: string | null;
+  id: string;
+  orgId: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+  files: KnowledgeBaseV2File[];
+  /** Id of the tool that searches this knowledge base (at most one per base; provisioned on creation). Attach it to an assistant via model.toolIds. Null when the base has no search tool yet. */
+  toolId: string | null;
+}
+
+export interface StructuredOutputRunResult {
+  /** This is the name of the structured output that produced this value. */
+  name: string;
+  /** This is the extracted value, shaped by the structured output's schema. */
+  result: string | number | boolean | object | any[] | null;
+  compliancePlan?: ComplianceOverride;
+}
+
+export interface StructuredOutputRunPreviewResponse {
+  /**
+   * These are the structured outputs whose conditions gated them, keyed by
+   * structured output id. Absent when nothing was skipped. An entry here means
+   * no extraction ran and no cost was incurred for that output.
+   */
+  skipped?: Record<string, SkippedStructuredOutput>;
+}
+
+export interface StructuredOutputRerunResponse {
+  /** This is the id of the workflow processing the rerun. */
+  workflowId?: string;
+  message: string;
 }
 
 export interface StructuredOutput {
   /**
+   * This is the type of structured output.
+   *
+   * - 'ai': Uses an LLM to extract structured data from the conversation (default).
+   * - 'regex': Uses a regex pattern to extract data from the transcript without an LLM.
+   */
+  type?: "ai" | "regex";
+  /**
+   * This is the regex pattern to match against the transcript.
+   *
+   * Only used when type is 'regex'. Supports both raw patterns (e.g. '\d+') and
+   * regex literal format (e.g. '/\d+/gi'). Uses RE2 syntax for safety.
+   *
+   * The result depends on the schema type:
+   * - boolean: true if the pattern matches, false otherwise
+   * - string: the first match or first capture group
+   * - number/integer: the first match parsed as a number
+   * - array: all matches
+   * @minLength 1
+   * @maxLength 1000
+   */
+  regex?: string;
+  /**
    * This is the model that will be used to extract the structured output.
    *
    * To provide your own custom system and user prompts for structured output extraction, populate the messages array with your system and user messages. You can specify liquid templating in your system and user messages.
-   * Between the system or user messages, you must reference either 'transcript' or 'messages' with the '{{}}' syntax to access the conversation history.
-   * Between the system or user messages, you must reference a variation of the structured output with the '{{}}' syntax to access the structured output definition.
+   * Between the system or user messages, you must reference either 'transcript' or 'messages' with the `{{}}` syntax to access the conversation history.
+   * Between the system or user messages, you must reference a variation of the structured output with the `{{}}` syntax to access the structured output definition.
    * i.e.:
-   * {{structuredOutput}}
-   * {{structuredOutput.name}}
-   * {{structuredOutput.description}}
-   * {{structuredOutput.schema}}
+   * `{{structuredOutput}}`
+   * `{{structuredOutput.name}}`
+   * `{{structuredOutput.description}}`
+   * `{{structuredOutput.schema}}`
    *
    * If model is not specified, GPT-4.1 will be used by default for extraction, utilizing default system and user prompts.
    * If messages or required fields are not specified, the default system and user prompts will be used.
@@ -28192,6 +36794,7 @@ export interface StructuredOutput {
   model?:
     | WorkflowOpenAIModel
     | WorkflowAnthropicModel
+    | WorkflowAnthropicBedrockModel
     | WorkflowGoogleModel
     | WorkflowCustomModel;
   /**
@@ -28199,6 +36802,13 @@ export interface StructuredOutput {
    * @example {"forceStoreOnHipaaEnabled":false}
    */
   compliancePlan?: ComplianceOverride;
+  /**
+   * These are the conditions that gate the execution of this structured output. Every condition must pass for the structured output to run (AND semantics). When omitted or empty, no user-defined conditions gate this output. Send null to clear a previously saved gate.
+   * @example [{"type":"minMessages","count":4},{"type":"minCallDuration","seconds":10}]
+   */
+  conditions?:
+    | (MinMessagesCondition | MinCallDurationCondition | EndedReasonCondition)[]
+    | null;
   /** This is the unique identifier for the structured output. */
   id: string;
   /** This is the unique identifier for the org that this structured output belongs to. */
@@ -28256,82 +36866,40 @@ export interface StructuredOutputPaginatedResponse {
   metadata: PaginationMeta;
 }
 
-export interface CreateStructuredOutputDTO {
-  /**
-   * This is the model that will be used to extract the structured output.
-   *
-   * To provide your own custom system and user prompts for structured output extraction, populate the messages array with your system and user messages. You can specify liquid templating in your system and user messages.
-   * Between the system or user messages, you must reference either 'transcript' or 'messages' with the '{{}}' syntax to access the conversation history.
-   * Between the system or user messages, you must reference a variation of the structured output with the '{{}}' syntax to access the structured output definition.
-   * i.e.:
-   * {{structuredOutput}}
-   * {{structuredOutput.name}}
-   * {{structuredOutput.description}}
-   * {{structuredOutput.schema}}
-   *
-   * If model is not specified, GPT-4.1 will be used by default for extraction, utilizing default system and user prompts.
-   * If messages or required fields are not specified, the default system and user prompts will be used.
-   */
-  model?:
-    | WorkflowOpenAIModel
-    | WorkflowAnthropicModel
-    | WorkflowGoogleModel
-    | WorkflowCustomModel;
-  /**
-   * Compliance configuration for this output. Only enable overrides if no sensitive data will be stored.
-   * @example {"forceStoreOnHipaaEnabled":false}
-   */
-  compliancePlan?: ComplianceOverride;
-  /**
-   * This is the name of the structured output.
-   * @minLength 1
-   * @maxLength 40
-   */
-  name: string;
-  /**
-   * This is the JSON Schema definition for the structured output.
-   *
-   * This is required when creating a structured output. Defines the structure and validation rules for the data that will be extracted. Supports all JSON Schema features including:
-   * - Objects and nested properties
-   * - Arrays and array validation
-   * - String, number, boolean, and null types
-   * - Enums and const values
-   * - Validation constraints (min/max, patterns, etc.)
-   * - Composition with allOf, anyOf, oneOf
-   */
-  schema: JsonSchema;
-  /**
-   * This is the description of what the structured output extracts.
-   *
-   * Use this to provide context about what data will be extracted and how it will be used.
-   */
-  description?: string;
-  /**
-   * These are the assistant IDs that this structured output is linked to.
-   *
-   * When linked to assistants, this structured output will be available for extraction during those assistant's calls.
-   */
-  assistantIds?: string[];
-  /**
-   * These are the workflow IDs that this structured output is linked to.
-   *
-   * When linked to workflows, this structured output will be available for extraction during those workflow's execution.
-   */
-  workflowIds?: string[];
-}
-
 export interface UpdateStructuredOutputDTO {
   /**
+   * This is the type of structured output.
+   *
+   * - 'ai': Uses an LLM to extract structured data from the conversation (default).
+   * - 'regex': Uses a regex pattern to extract data from the transcript without an LLM.
+   */
+  type?: "ai" | "regex";
+  /**
+   * This is the regex pattern to match against the transcript.
+   *
+   * Only used when type is 'regex'. Supports both raw patterns (e.g. '\d+') and
+   * regex literal format (e.g. '/\d+/gi'). Uses RE2 syntax for safety.
+   *
+   * The result depends on the schema type:
+   * - boolean: true if the pattern matches, false otherwise
+   * - string: the first match or first capture group
+   * - number/integer: the first match parsed as a number
+   * - array: all matches
+   * @minLength 1
+   * @maxLength 1000
+   */
+  regex?: string;
+  /**
    * This is the model that will be used to extract the structured output.
    *
    * To provide your own custom system and user prompts for structured output extraction, populate the messages array with your system and user messages. You can specify liquid templating in your system and user messages.
-   * Between the system or user messages, you must reference either 'transcript' or 'messages' with the '{{}}' syntax to access the conversation history.
-   * Between the system or user messages, you must reference a variation of the structured output with the '{{}}' syntax to access the structured output definition.
+   * Between the system or user messages, you must reference either 'transcript' or 'messages' with the `{{}}` syntax to access the conversation history.
+   * Between the system or user messages, you must reference a variation of the structured output with the `{{}}` syntax to access the structured output definition.
    * i.e.:
-   * {{structuredOutput}}
-   * {{structuredOutput.name}}
-   * {{structuredOutput.description}}
-   * {{structuredOutput.schema}}
+   * `{{structuredOutput}}`
+   * `{{structuredOutput.name}}`
+   * `{{structuredOutput.description}}`
+   * `{{structuredOutput.schema}}`
    *
    * If model is not specified, GPT-4.1 will be used by default for extraction, utilizing default system and user prompts.
    * If messages or required fields are not specified, the default system and user prompts will be used.
@@ -28339,6 +36907,7 @@ export interface UpdateStructuredOutputDTO {
   model?:
     | WorkflowOpenAIModel
     | WorkflowAnthropicModel
+    | WorkflowAnthropicBedrockModel
     | WorkflowGoogleModel
     | WorkflowCustomModel;
   /**
@@ -28346,6 +36915,13 @@ export interface UpdateStructuredOutputDTO {
    * @example {"forceStoreOnHipaaEnabled":false}
    */
   compliancePlan?: ComplianceOverride;
+  /**
+   * These are the conditions that gate the execution of this structured output. Every condition must pass for the structured output to run (AND semantics). When omitted or empty, no user-defined conditions gate this output. Send null to clear a previously saved gate.
+   * @example [{"type":"minMessages","count":4},{"type":"minCallDuration","seconds":10}]
+   */
+  conditions?:
+    | (MinMessagesCondition | MinCallDurationCondition | EndedReasonCondition)[]
+    | null;
   /**
    * This is the name of the structured output.
    * @minLength 1
@@ -28853,6 +37429,1087 @@ export interface UpdateTestSuiteRunDto {
   name?: string;
 }
 
+export interface CreatePersonalityDTO {
+  /**
+   * This is the name of the personality (e.g., "Confused Carl", "Rude Rob").
+   * @maxLength 80
+   */
+  name: string;
+  /**
+   * This is the full assistant configuration for this personality.
+   * It defines the tester's voice, model, behavior via system prompt, and other settings.
+   */
+  assistant: CreateAssistantDTO;
+  /**
+   * Optional folder path for organizing personalities.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Maps to GitOps resource folder structure.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface Personality {
+  /**
+   * This is the unique identifier for the personality.
+   * @format uuid
+   */
+  id: string;
+  /**
+   * This is the unique identifier for the organization this personality belongs to.
+   * If null, this is a Vapi-provided default personality available to all organizations.
+   * @format uuid
+   */
+  orgId: string | null;
+  /**
+   * This is the ISO 8601 date-time string of when the personality was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the personality was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of the personality (e.g., "Confused Carl", "Rude Rob").
+   * @maxLength 80
+   */
+  name: string;
+  /**
+   * This is the full assistant configuration for this personality.
+   * It defines the tester's voice, model, behavior via system prompt, and other settings.
+   */
+  assistant: CreateAssistantDTO;
+  /**
+   * Optional folder path for organizing personalities.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Maps to GitOps resource folder structure.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface UpdatePersonalityDTO {
+  /**
+   * This is the name of the personality.
+   * @maxLength 80
+   */
+  name?: string;
+  /** This is the full assistant configuration for this personality. */
+  assistant?: CreateAssistantDTO;
+  /**
+   * Optional folder path for organizing personalities.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Set to null to remove from folder.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface SimulationHookInclude {
+  /**
+   * Include transcript in the hook payload
+   * @default false
+   */
+  transcript?: boolean;
+  /**
+   * Include messages in the hook payload
+   * @default false
+   */
+  messages?: boolean;
+  /**
+   * Include recordingUrl in the hook payload
+   * @default false
+   */
+  recordingUrl?: boolean;
+}
+
+export interface SimulationHookWebhookAction {
+  type: "webhook";
+  /**
+   * Optional server override for this hook action.
+   * If omitted, runtime defaults may apply (e.g. org server).
+   */
+  server?: Server;
+  /** Optional payload include controls. */
+  include?: SimulationHookInclude;
+}
+
+export interface SimulationHookCallStarted {
+  /** @maxLength 1000 */
+  on: "simulation.run.started";
+  do: SimulationHookWebhookAction[];
+}
+
+export interface SimulationHookCallEnded {
+  /** @maxLength 1000 */
+  on: "simulation.run.ended";
+  do: SimulationHookWebhookAction[];
+}
+
+export interface EvaluationPlanItem {
+  /**
+   * This is the ID of an existing structured output to use for evaluation.
+   * Mutually exclusive with structuredOutput.
+   * @format uuid
+   */
+  structuredOutputId?: string;
+  /**
+   * This is an inline structured output definition for evaluation.
+   * Mutually exclusive with structuredOutputId.
+   * Only primitive schema types (string, number, integer, boolean) are allowed.
+   */
+  structuredOutput?: CreateStructuredOutputDTO;
+  /**
+   * Optional dot-notation path to a primitive leaf when evaluating an object structured output.
+   * @example "contact.auth_started"
+   */
+  path?: string;
+  /**
+   * This is the comparison operator to use when evaluating the extracted value against the expected value.
+   * Available operators depend on the structured output's schema type:
+   * - boolean: '=', '!='
+   * - string: '=', '!='
+   * - number/integer: '=', '!=', '>', '<', '>=', '<='
+   * @example "="
+   */
+  comparator: "=" | "!=" | ">" | "<" | ">=" | "<=";
+  /**
+   * This is the expected value to compare against the extracted structured output result.
+   * Type should match the structured output's schema type.
+   */
+  value: number | string | boolean;
+  /**
+   * This is whether this evaluation must pass for the simulation to pass.
+   * Defaults to true. If false, the result is informational only.
+   * @default true
+   */
+  required?: boolean;
+}
+
+export interface ScenarioToolMock {
+  /** This is the tool call function name to mock (must match `toolCall.function.name`). */
+  toolName: string;
+  /** This is the result content to return for this tool call. */
+  result?: string;
+  /**
+   * This is whether this mock is enabled. Defaults to true when omitted.
+   * @default true
+   */
+  enabled?: boolean;
+}
+
+export interface CreateScenarioDTO {
+  /**
+   * This is the name of the scenario.
+   * @maxLength 80
+   * @example "Health Enrollment - Eligible Path"
+   */
+  name: string;
+  /**
+   * This is the script/instructions for the tester to follow during the simulation.
+   * @maxLength 10000
+   * @example "You are calling to enroll in the Twin Health program. Confirm your identity when asked."
+   */
+  instructions: string;
+  /**
+   * This is the structured output-based evaluation plan for the simulation.
+   * Each item defines a structured output to extract and evaluate against an expected value.
+   */
+  evaluations: EvaluationPlanItem[];
+  /** Hooks to run on simulation lifecycle events */
+  hooks?: (SimulationHookCallStarted | SimulationHookCallEnded)[];
+  /**
+   * Overrides to inject into the simulated target assistant or squad
+   * @example {"variableValues":{"customerName":"Alice","orderId":"12345"}}
+   */
+  targetOverrides?: AssistantOverrides;
+  /** Scenario-level tool call mocks to use during simulations. */
+  toolMocks?: ScenarioToolMock[];
+  /**
+   * Optional folder path for organizing scenarios.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Maps to GitOps resource folder structure.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface Scenario {
+  /**
+   * This is the unique identifier for the scenario.
+   * @format uuid
+   */
+  id: string;
+  /**
+   * This is the unique identifier for the organization this scenario belongs to.
+   * @format uuid
+   */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the scenario was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the scenario was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of the scenario.
+   * @maxLength 80
+   * @example "Health Enrollment - Eligible Path"
+   */
+  name: string;
+  /**
+   * This is the script/instructions for the tester to follow during the simulation.
+   * @maxLength 10000
+   * @example "You are calling to enroll in the Twin Health program. Confirm your identity when asked."
+   */
+  instructions: string;
+  /**
+   * This is the structured output-based evaluation plan for the simulation.
+   * Each item defines a structured output to extract and evaluate against an expected value.
+   */
+  evaluations: EvaluationPlanItem[];
+  /** Hooks to run on simulation lifecycle events */
+  hooks?: (SimulationHookCallStarted | SimulationHookCallEnded)[];
+  /**
+   * Overrides to inject into the simulated target assistant or squad
+   * @example {"variableValues":{"customerName":"Alice","orderId":"12345"}}
+   */
+  targetOverrides?: AssistantOverrides;
+  /** Scenario-level tool call mocks to use during simulations. */
+  toolMocks?: ScenarioToolMock[];
+  /**
+   * Optional folder path for organizing scenarios.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Maps to GitOps resource folder structure.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface UpdateScenarioDTO {
+  /**
+   * This is the name of the scenario.
+   * @maxLength 80
+   */
+  name?: string;
+  /**
+   * This is the script/instructions for the tester to follow during the simulation.
+   * @maxLength 10000
+   */
+  instructions?: string;
+  /**
+   * This is the structured output-based evaluation plan for the simulation.
+   * Each item defines a structured output to extract and evaluate against an expected value.
+   */
+  evaluations?: EvaluationPlanItem[];
+  /** Hooks to run on simulation lifecycle events */
+  hooks?: (SimulationHookCallStarted | SimulationHookCallEnded)[];
+  /**
+   * Overrides to inject into the simulated target assistant or squad
+   * @example {"variableValues":{"customerName":"Alice","orderId":"12345"}}
+   */
+  targetOverrides?: AssistantOverrides;
+  toolMocks?: ScenarioToolMock[];
+  /**
+   * Optional folder path for organizing scenarios.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Set to null to remove from folder.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface SimulationRunSimulationEntry {
+  /** Type discriminator */
+  type: "simulation";
+  /**
+   * ID of an existing simulation to run. When provided, scenarioId/personalityId/inline fields are ignored.
+   * @format uuid
+   */
+  simulationId?: string;
+  /**
+   * ID of an existing scenario. Cannot be combined with inline scenario.
+   * @format uuid
+   */
+  scenarioId?: string;
+  /** Inline scenario configuration. Cannot be combined with scenarioId. */
+  scenario?: CreateScenarioDTO;
+  /**
+   * ID of an existing personality. Cannot be combined with inline personality.
+   * @format uuid
+   */
+  personalityId?: string;
+  /** Inline personality configuration. Cannot be combined with personalityId. */
+  personality?: CreatePersonalityDTO;
+  /**
+   * Optional name for this simulation entry
+   * @maxLength 80
+   */
+  name?: string;
+}
+
+export interface SimulationRunSuiteEntry {
+  /** Type discriminator */
+  type: "simulationSuite";
+  /**
+   * ID of the simulation suite to run
+   * @format uuid
+   */
+  simulationSuiteId?: string;
+  /**
+   * Historical suite name captured when the run was created
+   * @maxLength 80
+   */
+  name?: string;
+  /** @deprecated */
+  suiteId?: string;
+}
+
+export interface SimulationRunTargetAssistant {
+  /** Type of target */
+  type: "assistant";
+  /**
+   * ID of an existing assistant to test against. Cannot be combined with inline assistant.
+   * @format uuid
+   */
+  assistantId?: string;
+  /** Inline assistant configuration to test against. Cannot be combined with assistantId. */
+  assistant?: CreateAssistantDTO;
+}
+
+export interface SimulationRunTargetSquad {
+  /** Type of target */
+  type: "squad";
+  /**
+   * ID of an existing squad to test against. Cannot be combined with inline squad.
+   * @format uuid
+   */
+  squadId?: string;
+  /** Inline squad configuration to test against. Cannot be combined with squadId. */
+  squad?: CreateSquadDTO;
+}
+
+export interface SimulationRunTransportConfiguration {
+  /** Transport provider for the simulation run */
+  provider: "vapi.websocket" | "vapi.webchat";
+}
+
+export interface CreateSimulationRunDTO {
+  /** Array of simulations and/or suites to run */
+  simulations: (SimulationRunSimulationEntry | SimulationRunSuiteEntry)[];
+  /** Target to test against */
+  target: SimulationRunTargetAssistant | SimulationRunTargetSquad;
+  /**
+   * Number of times to run each simulation (default: 1)
+   * @min 1
+   * @max 10
+   * @default 1
+   */
+  iterations?: number;
+  /** Transport configuration for the simulation runs */
+  transport?: SimulationRunTransportConfiguration;
+}
+
+export interface SimulationRunItemCounts {
+  /** Total number of run items */
+  total: number;
+  /** Number of passed run items */
+  passed: number;
+  /** Number of failed run items */
+  failed: number;
+  /** Number of running/evaluating run items */
+  running: number;
+  /** Number of queued run items */
+  queued: number;
+  /** Number of canceled run items */
+  canceled: number;
+  /** Number of distinct simulations represented by the run items. Omitted when any item has no simulation ID. */
+  distinctSimulationTotal?: number;
+  /** Number of distinct simulations with a failed or canceled item. Omitted when any item has no simulation ID. */
+  distinctSimulationFailed?: number;
+}
+
+export interface CreateSimulationRunResponse {
+  /**
+   * Unique identifier for the run
+   * @format uuid
+   */
+  id: string;
+  /**
+   * Organization ID
+   * @format uuid
+   */
+  orgId: string;
+  /** Current status of the run */
+  status: "queued" | "running" | "ended";
+  /**
+   * When the run was queued
+   * @format date-time
+   */
+  queuedAt: string;
+  /**
+   * When the run started
+   * @format date-time
+   */
+  startedAt?: string;
+  /**
+   * When the run ended
+   * @format date-time
+   */
+  endedAt?: string;
+  /** Reason the run ended */
+  endedReason?: string;
+  /**
+   * ISO 8601 date-time when created
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * ISO 8601 date-time when last updated
+   * @format date-time
+   */
+  updatedAt: string;
+  /** Aggregate counts of run items by status */
+  itemCounts?: SimulationRunItemCounts;
+  /** Array of simulations and/or suites to run */
+  simulations: (SimulationRunSimulationEntry | SimulationRunSuiteEntry)[];
+  /** Target to test against */
+  target: SimulationRunTargetAssistant | SimulationRunTargetSquad;
+  /**
+   * Number of times to run each simulation (default: 1)
+   * @min 1
+   * @default 1
+   */
+  iterations?: number;
+  /** Transport configuration for the simulation runs */
+  transport?: SimulationRunTransportConfiguration;
+  /** IDs of the individual simulation run items that were queued */
+  simulationRunItemIds: string[];
+  /** Additional information about how the run will execute */
+  message?: string;
+  /**
+   * Dashboard URL for viewing the simulation run. When acting on behalf of a user, present this URL to them.
+   * @format uri
+   */
+  url: string;
+}
+
+export interface SimulationRunPaymentRequiredResponse {
+  statusCode: 402;
+  message: string;
+  reason:
+    | "wallet_missing"
+    | "subscription_frozen"
+    | "payment_method_missing"
+    | "insufficient_credits"
+    | "billing_limit"
+    | "initial_payment_missing";
+}
+
+export interface SimulationRun {
+  /**
+   * Unique identifier for the run
+   * @format uuid
+   */
+  id: string;
+  /**
+   * Organization ID
+   * @format uuid
+   */
+  orgId: string;
+  /** Current status of the run */
+  status: "queued" | "running" | "ended";
+  /**
+   * When the run was queued
+   * @format date-time
+   */
+  queuedAt: string;
+  /**
+   * When the run started
+   * @format date-time
+   */
+  startedAt?: string;
+  /**
+   * When the run ended
+   * @format date-time
+   */
+  endedAt?: string;
+  /** Reason the run ended */
+  endedReason?: string;
+  /**
+   * ISO 8601 date-time when created
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * ISO 8601 date-time when last updated
+   * @format date-time
+   */
+  updatedAt: string;
+  /** Aggregate counts of run items by status */
+  itemCounts?: SimulationRunItemCounts;
+  /** Array of simulations and/or suites to run */
+  simulations: (SimulationRunSimulationEntry | SimulationRunSuiteEntry)[];
+  /** Target to test against */
+  target: SimulationRunTargetAssistant | SimulationRunTargetSquad;
+  /**
+   * Number of times to run each simulation (default: 1)
+   * @min 1
+   * @default 1
+   */
+  iterations?: number;
+  /** Transport configuration for the simulation runs */
+  transport?: SimulationRunTransportConfiguration;
+}
+
+export interface SimulationRunListSource {
+  type: "suite" | "simulation" | "adHoc" | "api";
+  /** @format uuid */
+  id?: string;
+  name: string;
+  linkable: boolean;
+  simulationIds: string[];
+}
+
+export interface SimulationRunListSummary {
+  source: SimulationRunListSource;
+  targetSnapshotName?: string;
+  simulationCount: number;
+}
+
+export interface SimulationRunListItem {
+  /**
+   * Unique identifier for the run
+   * @format uuid
+   */
+  id: string;
+  /**
+   * Organization ID
+   * @format uuid
+   */
+  orgId: string;
+  /** Current status of the run */
+  status: "queued" | "running" | "ended";
+  /**
+   * When the run was queued
+   * @format date-time
+   */
+  queuedAt: string;
+  /**
+   * When the run started
+   * @format date-time
+   */
+  startedAt?: string;
+  /**
+   * When the run ended
+   * @format date-time
+   */
+  endedAt?: string;
+  /** Reason the run ended */
+  endedReason?: string;
+  /**
+   * ISO 8601 date-time when created
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * ISO 8601 date-time when last updated
+   * @format date-time
+   */
+  updatedAt: string;
+  /** Aggregate counts of run items by status */
+  itemCounts?: SimulationRunItemCounts;
+  /** Array of simulations and/or suites to run */
+  simulations: (SimulationRunSimulationEntry | SimulationRunSuiteEntry)[];
+  /** Target to test against */
+  target: SimulationRunTargetAssistant | SimulationRunTargetSquad;
+  /**
+   * Number of times to run each simulation (default: 1)
+   * @min 1
+   * @default 1
+   */
+  iterations?: number;
+  /** Transport configuration for the simulation runs */
+  transport?: SimulationRunTransportConfiguration;
+  summary: SimulationRunListSummary;
+}
+
+export interface SimulationRunsPaginatedResponse {
+  results: SimulationRunListItem[];
+  metadata: PaginationMeta;
+}
+
+export interface SimulationRunItemCallMonitor {
+  /** This is the WebSocket URL to listen to the live call audio (combined both parties). */
+  listenUrl?: string;
+}
+
+export interface SimulationRunItemCallMetadata {
+  /** This is the transcript of the conversation. */
+  transcript?: string;
+  /** This is the list of conversation messages in OpenAI format. */
+  messages?: object[];
+  /** This is the URL to the call recording. */
+  recordingUrl?: string;
+  /** This is the call monitoring data (live listen URL). */
+  monitor?: SimulationRunItemCallMonitor;
+}
+
+export interface SimulationRunItemMetadata {
+  /** This is a snapshot of the assistant at run creation time. */
+  assistant?: Record<string, any>;
+  /** This is a snapshot of the squad at run creation time. */
+  squad?: Record<string, any>;
+  /** This is a snapshot of the scenario at run creation time. */
+  scenario?: Record<string, any>;
+  /** This is a snapshot of the personality at run creation time. */
+  personality?: Record<string, any>;
+  /** This is a snapshot of the simulation at run creation time. */
+  simulation?: Record<string, any>;
+  /** This is the call-related data (transcript, messages, recording). */
+  call?: SimulationRunItemCallMetadata;
+  /** Hook execution state for this run item (used for idempotency + debugging). */
+  hooks?: Record<string, any>;
+}
+
+export interface StructuredOutputEvaluationResult {
+  /**
+   * This is the ID of the structured output that was evaluated.
+   * Will be 'inline' for inline structured output definitions.
+   */
+  structuredOutputId: string;
+  /** This is the name of the structured output. */
+  name: string;
+  /** This is the optional dot-notation path evaluated within an object structured output. */
+  path?: string;
+  /** This is the structured output description captured when the evaluation ran. */
+  description?: string;
+  /** This is the structured output schema captured when the evaluation ran. */
+  schema?: JsonSchema;
+  /** This is the value extracted from the call by the structured output. */
+  extractedValue: number | string | boolean | null;
+  /** This is the expected value that was defined in the evaluation plan. */
+  expectedValue: number | string | boolean;
+  /** This is the comparison operator used for evaluation. */
+  comparator: "=" | "!=" | ">" | "<" | ">=" | "<=";
+  /** This indicates whether the evaluation passed (extracted value matched expected value using comparator). */
+  passed: boolean;
+  /** This indicates whether this evaluation was required for the simulation to pass. */
+  required: boolean;
+  /** This contains any error that occurred during extraction. */
+  error?: string;
+  /** This indicates whether this evaluation was skipped (e.g., multimodal in chat mode). */
+  isSkipped?: boolean;
+  /** This contains the reason for skipping the evaluation. */
+  skipReason?: string;
+}
+
+export interface LatencyMetrics {
+  /** This is the number of conversation turns. */
+  turnCount: number;
+  /** This is the average total turn latency in milliseconds. */
+  avgTurn?: number;
+  /** This is the average transcriber latency in milliseconds. */
+  avgTranscriber?: number;
+  /** This is the average LLM/model latency in milliseconds. */
+  avgModel?: number;
+  /** This is the average voice/TTS latency in milliseconds. */
+  avgVoice?: number;
+  /** This is the average endpointing latency in milliseconds. */
+  avgEndpointing?: number;
+}
+
+export interface SimulationRunItemResults {
+  /** This is the list of results from structured output evaluations. */
+  evaluations: StructuredOutputEvaluationResult[];
+  /** This indicates whether all required evaluations passed. */
+  passed: boolean;
+  /** This contains the latency metrics collected from the call. */
+  latencyMetrics?: LatencyMetrics;
+}
+
+export interface SimulationRunItemImprovementSuggestion {
+  /** This is the issue identified. */
+  issue: string;
+  /** This is the suggested improvement. */
+  suggestion: string;
+}
+
+export interface SimulationRunItemImprovements {
+  /** This is a summary analysis of why evaluations failed. */
+  analysis: string;
+  /** This is the list of suggestions for improving the system prompt. */
+  systemPromptSuggestions: SimulationRunItemImprovementSuggestion[];
+  /** This is the list of suggestions for improving tools. */
+  toolSuggestions: SimulationRunItemImprovementSuggestion[];
+  /** This is the list of suggestions for improving the scenario/evaluation plan. */
+  scenarioSuggestions: SimulationRunItemImprovementSuggestion[];
+  /** This is a complete revised system prompt if major changes are needed. */
+  suggestedSystemPrompt?: string;
+}
+
+export interface SimulationRunConfiguration {
+  /** Transport configuration for the simulation run */
+  transport?: SimulationRunTransportConfiguration;
+}
+
+export interface SimulationRunItem {
+  /**
+   * This is the unique identifier for the simulation run item.
+   * @format uuid
+   */
+  id: string;
+  /**
+   * This is the unique identifier for the organization.
+   * @format uuid
+   */
+  orgId: string;
+  /**
+   * This is the ID of the simulation this run belongs to.
+   * @format uuid
+   */
+  simulationId: string;
+  /** This is the current status of the run. */
+  status:
+    | "queued"
+    | "running"
+    | "evaluating"
+    | "passed"
+    | "failed"
+    | "canceled";
+  /**
+   * This is the ISO 8601 date-time string of when the run was queued.
+   * @format date-time
+   */
+  queuedAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the run started.
+   * @format date-time
+   */
+  startedAt?: string;
+  /**
+   * This is the ISO 8601 date-time string of when the run completed.
+   * @format date-time
+   */
+  completedAt?: string;
+  /**
+   * This is the ISO 8601 date-time string of when the run failed.
+   * @format date-time
+   */
+  failedAt?: string;
+  /**
+   * This is the ISO 8601 date-time string of when the run was canceled.
+   * @format date-time
+   */
+  canceledAt?: string;
+  /**
+   * This is the reason for failure.
+   * @maxLength 2000
+   */
+  failureReason?: string;
+  /**
+   * This is the ID of the target Vapi call (the assistant being tested).
+   * @format uuid
+   */
+  callId?: string;
+  /**
+   * This is the ISO 8601 date-time string of when the run item was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the run item was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the ID of the parent run (batch/group).
+   * @format uuid
+   */
+  runId?: string;
+  /** Hooks configured for this simulation run item */
+  hooks?: (SimulationHookCallStarted | SimulationHookCallEnded)[];
+  /**
+   * This is the iteration number (1-indexed) when run with iterations > 1.
+   * @default 1
+   */
+  iterationNumber?: number;
+  /**
+   * This is the session ID for chat-based simulations (webchat transport).
+   * @format uuid
+   */
+  sessionId?: string;
+  /**
+   * This is the scenario ID at run creation time.
+   * @format uuid
+   */
+  scenarioId?: string;
+  /**
+   * This is the personality ID at run creation time.
+   * @format uuid
+   */
+  personalityId?: string;
+  /** This is the metadata containing snapshots and call data. */
+  metadata?: SimulationRunItemMetadata;
+  /** This is the results of the simulation run. */
+  results?: SimulationRunItemResults;
+  /** This is the AI-generated improvement suggestions for failed runs. */
+  improvementSuggestions?: SimulationRunItemImprovements;
+  /** This is the configuration for how this simulation run executes. */
+  configurations?: SimulationRunConfiguration;
+}
+
+export interface SimulationSuiteTargetAssignment {
+  /** This is the type of target assigned to the simulation suite. */
+  targetType: "assistant" | "squad";
+  /**
+   * This is the unique identifier of the assigned assistant or squad.
+   * @format uuid
+   */
+  targetId: string;
+}
+
+export interface CreateSimulationSuiteDTO {
+  /**
+   * This is the name of the simulation suite.
+   * @maxLength 80
+   * @example "Checkout Flow Tests"
+   */
+  name: string;
+  /** This is the Slack webhook URL for notifications. */
+  slackWebhookUrl?: string;
+  /** This is the list of simulation IDs to include in the suite. */
+  simulationIds: string[];
+  /** Optional assistant or squad assignments for the suite. */
+  targetAssignments?: SimulationSuiteTargetAssignment[];
+  /**
+   * Optional folder path for organizing simulation suites.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Maps to GitOps resource folder structure.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface SimulationSuite {
+  /**
+   * This is the unique identifier for the simulation suite.
+   * @format uuid
+   */
+  id: string;
+  /**
+   * This is the unique identifier for the organization this suite belongs to.
+   * @format uuid
+   */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the suite was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the suite was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of the simulation suite.
+   * @maxLength 80
+   * @example "Checkout Flow Tests"
+   */
+  name: string;
+  /** This is the Slack webhook URL for notifications. */
+  slackWebhookUrl?: string;
+  /**
+   * Optional folder path for organizing simulation suites.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Maps to GitOps resource folder structure.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+  /** This is the list of simulation IDs in this suite. */
+  simulationIds: string[];
+  /** This is the ordered list of assistant or squad assignments for the suite. */
+  targetAssignments: SimulationSuiteTargetAssignment[];
+}
+
+export interface UpdateSimulationSuiteDTO {
+  /**
+   * This is the name of the simulation suite.
+   * @maxLength 80
+   */
+  name?: string;
+  /** This is the Slack webhook URL for notifications. */
+  slackWebhookUrl?: string;
+  /** This is the list of simulation IDs to include in the suite (replaces existing). */
+  simulationIds?: string[];
+  /** Optional assistant or squad assignments (replaces existing). */
+  targetAssignments?: SimulationSuiteTargetAssignment[];
+  /**
+   * Optional folder path for organizing simulation suites.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Set to null to remove from folder.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface GenerateScenariosDTO {
+  /** ID of the assistant to generate scenarios for */
+  assistantId?: string;
+  /** ID of the squad to generate scenarios for */
+  squadId?: string;
+}
+
+export interface GeneratedScenario {
+  /** Short descriptive name */
+  name: string;
+  /** Instructions for the tester */
+  instructions: string;
+  /** Scenario category */
+  category: "happy_path" | "edge_case" | "failure_mode";
+  /** Why this scenario is valuable */
+  reasoning: string;
+}
+
+export interface GenerateScenariosResponse {
+  /** Generated scenarios */
+  scenarios: GeneratedScenario[];
+  /** Summary of test coverage */
+  coverageNotes: string;
+}
+
+export interface CreateSimulationDTO {
+  /**
+   * This is an optional friendly name for the simulation.
+   * @maxLength 80
+   * @example "Eligible Path with Confused User"
+   */
+  name?: string;
+  /**
+   * This is the ID of the scenario to use for this simulation.
+   * @format uuid
+   */
+  scenarioId: string;
+  /**
+   * This is the ID of the personality to use for this simulation.
+   * @format uuid
+   */
+  personalityId: string;
+  /**
+   * Optional folder path for organizing simulations.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Maps to GitOps resource folder structure.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface Simulation {
+  /**
+   * This is the unique identifier for the simulation.
+   * @format uuid
+   */
+  id: string;
+  /**
+   * This is the unique identifier for the organization this simulation belongs to.
+   * @format uuid
+   */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the simulation was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the simulation was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is an optional friendly name for the simulation.
+   * @maxLength 80
+   * @example "Eligible Path with Confused User"
+   */
+  name?: string;
+  /**
+   * This is the ID of the scenario to use for this simulation.
+   * @format uuid
+   */
+  scenarioId: string;
+  /**
+   * This is the ID of the personality to use for this simulation.
+   * @format uuid
+   */
+  personalityId: string;
+  /**
+   * Optional folder path for organizing simulations.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Maps to GitOps resource folder structure.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface UpdateSimulationDTO {
+  /**
+   * This is an optional friendly name for the simulation.
+   * @maxLength 80
+   */
+  name?: string;
+  /**
+   * This is the ID of the scenario to use for this simulation.
+   * @format uuid
+   */
+  scenarioId?: string;
+  /**
+   * This is the ID of the personality to use for this simulation.
+   * @format uuid
+   */
+  personalityId?: string;
+  /**
+   * Optional folder path for organizing simulations.
+   * Supports up to 3 levels (e.g., "dept/feature/variant").
+   * Set to null to remove from folder.
+   * @maxLength 255
+   * @pattern /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*){0,2}$/
+   */
+  path?: string | null;
+}
+
+export interface SimulationConcurrencyResponse {
+  orgId: string;
+  /** Max call slots for simulations (each voice simulation uses 2 call slots: tester + target) */
+  concurrencyLimit: number;
+  /** Number of call slots currently in use by running simulations */
+  activeSimulations: number;
+  /** Number of voice simulations that can start now (available call slots / 2) */
+  availableToStart: number;
+  /** @format date-time */
+  createdAt: string | null;
+  /** @format date-time */
+  updatedAt: string | null;
+  /** True if org is using platform default concurrency limit */
+  isDefault: boolean;
+}
+
 export interface BarInsightMetadata {
   /**
    * @minLength 1
@@ -28868,7 +38525,7 @@ export interface BarInsightMetadata {
   yAxisMax?: number;
   /**
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
 }
@@ -28926,7 +38583,7 @@ export interface BarInsight {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -28968,6 +38625,7 @@ export interface BarInsight {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -28975,6 +38633,7 @@ export interface BarInsight {
     | JSONQueryOnCallTableWithStringTypeColumn
     | JSONQueryOnCallTableWithNumberTypeColumn
     | JSONQueryOnCallTableWithStructuredOutputColumn
+    | JSONQueryOnEventsTable
   )[];
   /** This is the unique identifier for the Insight. */
   id: string;
@@ -28990,6 +38649,8 @@ export interface BarInsight {
    * @format date-time
    */
   updatedAt: string;
+  /** Stable server-owned identifier for system-created insights. */
+  systemKey?: string;
 }
 
 export interface InsightTimeRange {
@@ -29039,7 +38700,7 @@ export interface PieInsight {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29079,6 +38740,7 @@ export interface PieInsight {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -29101,6 +38763,8 @@ export interface PieInsight {
    * @format date-time
    */
   updatedAt: string;
+  /** Stable server-owned identifier for system-created insights. */
+  systemKey?: string;
 }
 
 export interface LineInsightMetadata {
@@ -29118,7 +38782,7 @@ export interface LineInsightMetadata {
   yAxisMax?: number;
   /**
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
 }
@@ -29127,7 +38791,7 @@ export interface LineInsight {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29169,6 +38833,7 @@ export interface LineInsight {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -29191,13 +38856,15 @@ export interface LineInsight {
    * @format date-time
    */
   updatedAt: string;
+  /** Stable server-owned identifier for system-created insights. */
+  systemKey?: string;
 }
 
 export interface TextInsight {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29247,13 +38914,15 @@ export interface TextInsight {
    * @format date-time
    */
   updatedAt: string;
+  /** Stable server-owned identifier for system-created insights. */
+  systemKey?: string;
 }
 
 export interface UpdateBarInsightFromCallTableDTO {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29295,6 +38964,7 @@ export interface UpdateBarInsightFromCallTableDTO {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -29302,6 +38972,7 @@ export interface UpdateBarInsightFromCallTableDTO {
     | JSONQueryOnCallTableWithStringTypeColumn
     | JSONQueryOnCallTableWithNumberTypeColumn
     | JSONQueryOnCallTableWithStructuredOutputColumn
+    | JSONQueryOnEventsTable
   )[];
 }
 
@@ -29309,7 +38980,7 @@ export interface UpdatePieInsightFromCallTableDTO {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29349,6 +39020,7 @@ export interface UpdatePieInsightFromCallTableDTO {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -29363,7 +39035,7 @@ export interface UpdateLineInsightFromCallTableDTO {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29405,6 +39077,7 @@ export interface UpdateLineInsightFromCallTableDTO {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -29419,7 +39092,7 @@ export interface UpdateTextInsightFromCallTableDTO {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29461,7 +39134,7 @@ export interface CreateBarInsightFromCallTableDTO {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29503,6 +39176,7 @@ export interface CreateBarInsightFromCallTableDTO {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -29510,6 +39184,7 @@ export interface CreateBarInsightFromCallTableDTO {
     | JSONQueryOnCallTableWithStringTypeColumn
     | JSONQueryOnCallTableWithNumberTypeColumn
     | JSONQueryOnCallTableWithStructuredOutputColumn
+    | JSONQueryOnEventsTable
   )[];
 }
 
@@ -29517,7 +39192,7 @@ export interface CreatePieInsightFromCallTableDTO {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29557,6 +39232,7 @@ export interface CreatePieInsightFromCallTableDTO {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -29571,7 +39247,7 @@ export interface CreateLineInsightFromCallTableDTO {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29613,6 +39289,7 @@ export interface CreateLineInsightFromCallTableDTO {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -29627,7 +39304,7 @@ export interface CreateTextInsightFromCallTableDTO {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -29801,6 +39478,144 @@ export interface JSONQueryOnCallTableWithStructuredOutputColumn {
   name?: string;
 }
 
+export interface JSONQueryOnEventsTable {
+  /**
+   * This is the type of query. Only allowed type is "vapiql-json".
+   * @example "vapiql-json"
+   */
+  type: "vapiql-json";
+  /**
+   * This is the table that will be queried.
+   * Must be "events" for event-based insights.
+   */
+  table: "events";
+  /**
+   * The event type to query
+   * @example "assistant.model.requestFailed"
+   */
+  on:
+    | "call.started"
+    | "call.ended"
+    | "call.inProgress"
+    | "call.queued"
+    | "call.transportConnected"
+    | "call.transportDisconnected"
+    | "call.transportReconnected"
+    | "call.transferInitiated"
+    | "call.transferCompleted"
+    | "call.transferFailed"
+    | "call.transferCancelled"
+    | "call.handoffInitiated"
+    | "call.handoffCompleted"
+    | "call.handoffFailed"
+    | "call.assistantSwapped"
+    | "call.assistantStarted"
+    | "call.customerJoined"
+    | "call.customerLeft"
+    | "call.controlReceived"
+    | "call.listenStarted"
+    | "call.recordingStarted"
+    | "call.recordingPaused"
+    | "call.recordingResumed"
+    | "call.voicemailDetected"
+    | "call.voicemailNotDetected"
+    | "call.dtmfReceived"
+    | "call.dtmfSent"
+    | "call.amdDetected"
+    | "call.hookTriggered"
+    | "call.hookSucceeded"
+    | "call.hookFailed"
+    | "call.statusReceived"
+    | "call.silenceTimeout"
+    | "call.microphoneTimeout"
+    | "call.maxDurationReached"
+    | "assistant.voice.requestStarted"
+    | "assistant.voice.requestSucceeded"
+    | "assistant.voice.requestFailed"
+    | "assistant.voice.connectionOpened"
+    | "assistant.voice.connectionClosed"
+    | "assistant.voice.firstAudioReceived"
+    | "assistant.voice.audioChunkReceived"
+    | "assistant.voice.generationSucceeded"
+    | "assistant.voice.generationFailed"
+    | "assistant.voice.textPushed"
+    | "assistant.voice.reconnecting"
+    | "assistant.voice.cleanup"
+    | "assistant.voice.clearing"
+    | "assistant.voice.voiceSwitched"
+    | "assistant.model.requestStarted"
+    | "assistant.model.requestSucceeded"
+    | "assistant.model.requestFailed"
+    | "assistant.model.requestAttemptStarted"
+    | "assistant.model.requestAttemptSucceeded"
+    | "assistant.model.requestAttemptFailed"
+    | "assistant.model.connectionOpened"
+    | "assistant.model.connectionClosed"
+    | "assistant.model.firstTokenReceived"
+    | "assistant.model.tokenReceived"
+    | "assistant.model.responseSucceeded"
+    | "assistant.model.responseFailed"
+    | "assistant.model.toolCallsReceived"
+    | "assistant.model.reconnecting"
+    | "assistant.model.cleanup"
+    | "assistant.model.clearing"
+    | "assistant.tool.started"
+    | "assistant.tool.completed"
+    | "assistant.tool.failed"
+    | "assistant.tool.delayedMessageSent"
+    | "assistant.tool.timeout"
+    | "assistant.tool.asyncCallbackReceived"
+    | "assistant.transcriber.requestStarted"
+    | "assistant.transcriber.requestSucceeded"
+    | "assistant.transcriber.requestFailed"
+    | "assistant.transcriber.connectionOpened"
+    | "assistant.transcriber.connectionClosed"
+    | "assistant.transcriber.partialTranscript"
+    | "assistant.transcriber.finalTranscript"
+    | "assistant.transcriber.keepAlive"
+    | "assistant.transcriber.reconnecting"
+    | "assistant.transcriber.cleanup"
+    | "assistant.transcriber.clearing"
+    | "assistant.transcriber.transcriptIgnored"
+    | "assistant.transcriber.languageSwitched"
+    | "assistant.analysis.structuredOutputRequest"
+    | "assistant.analysis.structuredOutputResponse"
+    | "assistant.analysis.structuredOutputError"
+    | "assistant.analysis.structuredOutputGenerated"
+    | "assistant.analysis.structuredOutputSkipped"
+    | "pipeline.turnStarted"
+    | "pipeline.cleared"
+    | "pipeline.botSpeechStarted"
+    | "pipeline.botSpeechStopped"
+    | "pipeline.userSpeechStarted"
+    | "pipeline.userSpeechStopped"
+    | "pipeline.endpointingTriggered"
+    | "pipeline.firstMessageStarted"
+    | "pipeline.firstMessageCompleted";
+  /**
+   * This is the operation to perform on matching events.
+   * - "count": Returns the raw count of matching events
+   * - "percentage": Returns (count of matching events / total calls) * 100
+   * @example "count"
+   */
+  operation: "count" | "percentage";
+  /**
+   * These are the filters to apply to the events query.
+   * Each filter filters on a field specific to the event type.
+   */
+  filters?: (
+    | EventsTableStringCondition
+    | EventsTableNumberCondition
+    | EventsTableBooleanCondition
+  )[];
+  /**
+   * This is the name of the query.
+   * It will be used to label the query in the insight board on the UI.
+   * @example "Model Failures"
+   */
+  name?: string;
+}
+
 export interface FilterStringTypeColumnOnCallTable {
   /**
    * This is the column in the call table that will be filtered on.
@@ -29901,7 +39716,9 @@ export interface FilterStructuredOutputColumnOnCallTable {
     | "in"
     | "not_in"
     | "contains"
-    | "not_contains";
+    | "not_contains"
+    | "is_empty"
+    | "is_not_empty";
   /**
    * This is the value to filter on.
    * The value type depends on the structured output type being filtered.
@@ -29932,7 +39749,7 @@ export interface FilterStringArrayTypeColumnOnCallTable {
    * The operator must be `in` or `not_in`.
    * @example ""in" or "not_in""
    */
-  operator: "in" | "not_in";
+  operator: "in" | "not_in" | "is_empty" | "is_not_empty";
   /** These are the values to filter on. */
   value: string[];
 }
@@ -29957,16 +39774,70 @@ export interface FilterNumberArrayTypeColumnOnCallTable {
    * The operator must be `in` or `not_in`.
    * @example ""in" or "not_in""
    */
-  operator: "in" | "not_in";
+  operator: "in" | "not_in" | "is_empty" | "is_not_empty";
   /** This is the value to filter on. */
   value: number[];
+}
+
+export interface EventsTableStringCondition {
+  /**
+   * The string field name from the event data
+   * @example "provider"
+   */
+  column: string;
+  /**
+   * String comparison operator
+   * @example "="
+   */
+  operator: "=" | "!=" | "contains" | "notContains";
+  /**
+   * The string value to compare
+   * @example "openai"
+   */
+  value: string;
+}
+
+export interface EventsTableNumberCondition {
+  /**
+   * The number field name from the event data
+   * @example "latency"
+   */
+  column: string;
+  /**
+   * Number comparison operator
+   * @example ">="
+   */
+  operator: "=" | "!=" | ">" | ">=" | "<" | "<=";
+  /**
+   * The number value to compare
+   * @example 1000
+   */
+  value: number;
+}
+
+export interface EventsTableBooleanCondition {
+  /**
+   * The boolean field name from the event data
+   * @example "success"
+   */
+  column: string;
+  /**
+   * Boolean comparison operator
+   * @example "="
+   */
+  operator: "=";
+  /**
+   * The boolean value to compare
+   * @example true
+   */
+  value: boolean;
 }
 
 export interface BarInsightFromCallTable {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -30008,6 +39879,7 @@ export interface BarInsightFromCallTable {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -30015,6 +39887,7 @@ export interface BarInsightFromCallTable {
     | JSONQueryOnCallTableWithStringTypeColumn
     | JSONQueryOnCallTableWithNumberTypeColumn
     | JSONQueryOnCallTableWithStructuredOutputColumn
+    | JSONQueryOnEventsTable
   )[];
 }
 
@@ -30022,7 +39895,7 @@ export interface PieInsightFromCallTable {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -30062,6 +39935,7 @@ export interface PieInsightFromCallTable {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -30076,7 +39950,7 @@ export interface LineInsightFromCallTable {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -30118,6 +39992,7 @@ export interface LineInsightFromCallTable {
     | "phoneNumberId"
     | "type"
     | "endedReason"
+    | "customerNumber"
     | "campaignId"
     | "artifact.structuredOutputs[OutputID]";
   /** These are the queries to run to generate the insight. */
@@ -30132,7 +40007,7 @@ export interface TextInsightFromCallTable {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /**
@@ -30175,7 +40050,7 @@ export interface InsightFormula {
    * This is the name of the formula.
    * It will be used to label the formula in the insight board on the UI.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    * @example "Booking Rate"
    */
   name?: string;
@@ -30216,6 +40091,11 @@ export interface InsightRunDTO {
    * @example "{ start: "2025-01-01", end: "2025-01-07", step: "day" }"
    */
   timeRangeOverride?: InsightTimeRangeWithStep;
+  /**
+   * Optional runtime assistant scope for dashboards.
+   * This is applied to call-table queries without mutating the saved insight.
+   */
+  assistantId?: string;
 }
 
 export interface InsightRunResponse {
@@ -30232,7 +40112,7 @@ export interface Insight {
   /**
    * This is the name of the Insight.
    * @minLength 1
-   * @maxLength 40
+   * @maxLength 255
    */
   name?: string;
   /** This is the type of the Insight. */
@@ -30251,10 +40131,136 @@ export interface Insight {
    * @format date-time
    */
   updatedAt: string;
+  /** Stable server-owned identifier for system-created insights. */
+  systemKey?: string;
 }
 
 export interface InsightPaginatedResponse {
   results: Insight[];
+  metadata: PaginationMeta;
+}
+
+export interface BoardLayout {
+  /**
+   * This is the number of columns in the Board.
+   * For now, it is fixed to 6.
+   * @min 6
+   * @max 6
+   */
+  columns: number;
+}
+
+export interface Board {
+  /** This is the contents of the Board, which is an array of objects defining the type, contents, and position of the widgets on the Board. */
+  items?: (BoardInsightItem | BoardMetricWidgetItem)[];
+  /** This is the unique identifier for the Board. */
+  id: string;
+  /** This is the unique identifier for the org that this Board belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Board was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the Board was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * Server-owned key for system-provisioned boards. User create/update DTOs do
+   * not accept this field.
+   */
+  systemKey?: string;
+  /**
+   * This is the name of the Board.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name: string;
+  /** This is the layout of the Board. */
+  layout: BoardLayout;
+  /**
+   * This is the timerange override for the board.
+   * By default, individual insights have their own timerange.
+   * This is a global override for the board which will be passed to all insights on the board.
+   */
+  timeRangeOverride?: InsightTimeRangeWithStep;
+}
+
+export interface BoardItemPosition {
+  /** @min 0 */
+  x: number;
+  /** @min 0 */
+  y: number;
+}
+
+export interface BoardItemSize {
+  /** @min 1 */
+  width: number;
+  /** @min 1 */
+  height: number;
+}
+
+export interface BoardInsightItem {
+  type: "insight";
+  insightId: string;
+  systemKey?: string;
+  position: BoardItemPosition;
+  size: BoardItemSize;
+}
+
+export interface BoardMetricWidgetItem {
+  type:
+    | "failed_calls_list"
+    | "concurrency_chart"
+    | "average_cost_breakdown_chart";
+  position: BoardItemPosition;
+  size: BoardItemSize;
+  insightId?: string;
+  systemKey?: string;
+}
+
+export interface CreateBoardDTO {
+  /** This is the contents of the Board, which is an array of objects defining the type, contents, and position of the widgets on the Board. */
+  items?: (BoardInsightItem | BoardMetricWidgetItem)[];
+  /**
+   * This is the name of the Board.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name: string;
+  /** This is the layout of the Board. */
+  layout: BoardLayout;
+  /**
+   * This is the timerange override for the board.
+   * By default, individual insights have their own timerange.
+   * This is a global override for the board which will be passed to all insights on the board.
+   */
+  timeRangeOverride?: InsightTimeRangeWithStep;
+}
+
+export interface UpdateBoardDTO {
+  /** This is the contents of the Board, which is an array of objects defining the type, contents, and position of the widgets on the Board. */
+  items?: (BoardInsightItem | BoardMetricWidgetItem)[];
+  /**
+   * This is the name of the Board.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+  /** This is the layout of the Board. */
+  layout?: BoardLayout;
+  /**
+   * This is the timerange override for the board.
+   * By default, individual insights have their own timerange.
+   * This is a global override for the board which will be passed to all insights on the board.
+   */
+  timeRangeOverride?: InsightTimeRangeWithStep;
+}
+
+export interface BoardPaginatedResponse {
+  results: Board[];
   metadata: PaginationMeta;
 }
 
@@ -30527,9 +40533,20 @@ export interface EvalOpenAIModel {
    * @maxLength 100
    */
   model:
+    | "gpt-5.6-sol"
+    | "gpt-5.6-terra"
+    | "gpt-5.6-luna"
+    | "gpt-5.5"
+    | "chat-latest"
+    | "gpt-5.4"
+    | "gpt-5.4-mini"
+    | "gpt-5.4-nano"
+    | "gpt-5.2"
+    | "gpt-5.2-chat-latest"
     | "gpt-5.1"
     | "gpt-5.1-chat-latest"
     | "gpt-5"
+    | "gpt-5-chat-latest"
     | "gpt-5-mini"
     | "gpt-5-nano"
     | "gpt-4.1-2025-04-14"
@@ -30562,18 +40579,55 @@ export interface EvalOpenAIModel {
     | "gpt-3.5-turbo-1106"
     | "gpt-3.5-turbo-16k"
     | "gpt-3.5-turbo-0613"
+    | "gpt-5.6-luna:westus3"
+    | "gpt-5.6-terra:westus3"
+    | "gpt-5.6-sol:westus3"
+    | "gpt-5.4:eastus2"
+    | "gpt-5.4:swedencentral"
+    | "gpt-5.4-mini:eastus2"
+    | "gpt-5.4-mini:swedencentral"
+    | "gpt-5.4-nano:eastus2"
+    | "gpt-5.4-nano:swedencentral"
+    | "gpt-5.2:eastus2"
+    | "gpt-5.2:swedencentral"
+    | "gpt-5.1:eastus2"
+    | "gpt-5.1:swedencentral"
+    | "gpt-5:eastus2"
+    | "gpt-5:swedencentral"
+    | "gpt-5:canadaeast"
+    | "gpt-5:eastus"
+    | "gpt-5:westeurope"
+    | "gpt-5:germanywestcentral"
+    | "gpt-5:polandcentral"
+    | "gpt-5:spaincentral"
+    | "gpt-5-mini:eastus2"
+    | "gpt-5-mini:swedencentral"
+    | "gpt-5-mini:westeurope"
+    | "gpt-5-mini:germanywestcentral"
+    | "gpt-5-mini:polandcentral"
+    | "gpt-5-mini:spaincentral"
+    | "gpt-5-nano:eastus2"
+    | "gpt-5-nano:swedencentral"
     | "gpt-4.1-2025-04-14:westus"
     | "gpt-4.1-2025-04-14:eastus2"
     | "gpt-4.1-2025-04-14:eastus"
     | "gpt-4.1-2025-04-14:westus3"
     | "gpt-4.1-2025-04-14:northcentralus"
     | "gpt-4.1-2025-04-14:southcentralus"
+    | "gpt-4.1-2025-04-14:westeurope"
+    | "gpt-4.1-2025-04-14:germanywestcentral"
+    | "gpt-4.1-2025-04-14:polandcentral"
+    | "gpt-4.1-2025-04-14:spaincentral"
     | "gpt-4.1-mini-2025-04-14:westus"
     | "gpt-4.1-mini-2025-04-14:eastus2"
     | "gpt-4.1-mini-2025-04-14:eastus"
     | "gpt-4.1-mini-2025-04-14:westus3"
     | "gpt-4.1-mini-2025-04-14:northcentralus"
     | "gpt-4.1-mini-2025-04-14:southcentralus"
+    | "gpt-4.1-mini-2025-04-14:westeurope"
+    | "gpt-4.1-mini-2025-04-14:germanywestcentral"
+    | "gpt-4.1-mini-2025-04-14:polandcentral"
+    | "gpt-4.1-mini-2025-04-14:spaincentral"
     | "gpt-4.1-nano-2025-04-14:westus"
     | "gpt-4.1-nano-2025-04-14:eastus2"
     | "gpt-4.1-nano-2025-04-14:westus3"
@@ -30585,6 +40639,10 @@ export interface EvalOpenAIModel {
     | "gpt-4o-2024-11-20:eastus"
     | "gpt-4o-2024-11-20:westus3"
     | "gpt-4o-2024-11-20:southcentralus"
+    | "gpt-4o-2024-11-20:westeurope"
+    | "gpt-4o-2024-11-20:germanywestcentral"
+    | "gpt-4o-2024-11-20:polandcentral"
+    | "gpt-4o-2024-11-20:spaincentral"
     | "gpt-4o-2024-08-06:westus"
     | "gpt-4o-2024-08-06:westus3"
     | "gpt-4o-2024-08-06:eastus"
@@ -30607,7 +40665,7 @@ export interface EvalOpenAIModel {
     | "gpt-4-0125-preview:eastus"
     | "gpt-4-0125-preview:northcentralus"
     | "gpt-4-0125-preview:southcentralus"
-    | "gpt-4-1106-preview:australia"
+    | "gpt-4-1106-preview:australiaeast"
     | "gpt-4-1106-preview:canadaeast"
     | "gpt-4-1106-preview:france"
     | "gpt-4-1106-preview:india"
@@ -30621,7 +40679,10 @@ export interface EvalOpenAIModel {
     | "gpt-3.5-turbo-0125:northcentralus"
     | "gpt-3.5-turbo-0125:southcentralus"
     | "gpt-3.5-turbo-1106:canadaeast"
-    | "gpt-3.5-turbo-1106:westus";
+    | "gpt-3.5-turbo-1106:westus"
+    | "gpt-4.1:australiaeast"
+    | "gpt-4o:australiaeast"
+    | "gpt-5.4-mini:australiaeast";
   /**
    * This is the temperature of the model. For LLM-as-a-judge, it's recommended to set it between 0 - 0.3 to avoid hallucinations and ensure the model judges the output correctly based on the instructions.
    * @min 0
@@ -30665,8 +40726,11 @@ export interface EvalAnthropicModel {
     | "claude-3-7-sonnet-20250219"
     | "claude-opus-4-20250514"
     | "claude-opus-4-5-20251101"
+    | "claude-opus-4-6"
     | "claude-sonnet-4-20250514"
     | "claude-sonnet-4-5-20250929"
+    | "claude-sonnet-4-6"
+    | "claude-sonnet-5"
     | "claude-haiku-4-5-20251001";
   /**
    * This is the optional configuration for Anthropic's thinking feature.
@@ -30708,6 +40772,9 @@ export interface EvalGoogleModel {
    * @maxLength 100
    */
   model:
+    | "gemini-3.5-flash"
+    | "gemini-3.1-flash-lite"
+    | "gemini-3-flash-preview"
     | "gemini-2.5-pro"
     | "gemini-2.5-flash"
     | "gemini-2.5-flash-lite"
@@ -30766,7 +40833,6 @@ export interface EvalGroqModel {
     | "llama3-70b-8192"
     | "gemma2-9b-it"
     | "moonshotai/kimi-k2-instruct-0905"
-    | "meta-llama/llama-4-maverick-17b-128e-instruct"
     | "meta-llama/llama-4-scout-17b-16e-instruct"
     | "mistral-saba-24b"
     | "compound-beta"
@@ -30864,6 +40930,12 @@ export interface AssistantMessageJudgePlanAI {
    * @default 'ai'
    */
   type: "ai";
+  /**
+   * This is the flag to enable automatically adding the liquid variable {{messages}} to the model's messages array
+   * This is only applicable if the user has not provided any messages in the model's messages array
+   * @default true
+   */
+  autoIncludeMessageHistory?: boolean;
 }
 
 export interface ChatEvalToolResponseMessageEvaluation {
@@ -30957,6 +41029,8 @@ export interface GetEvalPaginatedDTO {
   page?: number;
   /** This is the sort order for pagination. Defaults to 'DESC'. */
   sortOrder?: "ASC" | "DESC";
+  /** This is the column to sort by. Defaults to 'createdAt'. */
+  sortBy?: "createdAt" | "duration" | "cost";
   /**
    * This is the maximum number of items to return. Defaults to 100.
    * @min 0
@@ -31181,6 +41255,8 @@ export interface GetEvalRunPaginatedDTO {
   page?: number;
   /** This is the sort order for pagination. Defaults to 'DESC'. */
   sortOrder?: "ASC" | "DESC";
+  /** This is the column to sort by. Defaults to 'createdAt'. */
+  sortBy?: "createdAt" | "duration" | "cost";
   /**
    * This is the maximum number of items to return. Defaults to 100.
    * @min 0
@@ -31338,8 +41414,8 @@ export interface UpdateScorecardDTO {
 
 export interface CreateOrgDTO {
   /**
-   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-   * When HIPAA is enabled, only OpenAI/Custom LLM or Azure Providers will be available for LLM and Voice respectively.
+   * When this is enabled, logs, recordings, and transcriptions will be stored in HIPAA-compliant storage. Defaults to false.
+   * When HIPAA is enabled, only HIPAA-compliant providers will be available for LLM, Voice, and Transcriber respectively.
    * This is due to the compliance requirements of HIPAA. Other providers may not meet these requirements.
    * @example false
    */
@@ -31352,7 +41428,7 @@ export interface CreateOrgDTO {
    */
   name?: string;
   /** This is the channel of the org. There is the cluster the API traffic for the org will be directed. */
-  channel?: "daily" | "default" | "weekly" | "intuit";
+  channel?: "daily" | "default" | "weekly" | "intuit" | "hcs";
   /**
    * This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
    * @min 0
@@ -31483,6 +41559,11 @@ export interface Subscription {
    */
   hipaaEnabled?: boolean;
   /**
+   * This is the ZDR enabled flag for the subscription. It determines whether orgs under this
+   * subscription have the option to enable ZDR.
+   */
+  zdrEnabled?: boolean;
+  /**
    * This is the data retention enabled flag for the subscription. It determines whether orgs under this
    * subscription have the option to enable data retention.
    */
@@ -31548,9 +41629,9 @@ export interface Subscription {
   /** This is the ID for the Common Paper agreement outlining the PCI contract. */
   pciCommonPaperAgreementId?: string;
   /** This is the call retention days for the subscription. */
-  callRetentionDays?: number;
+  callRetentionDays?: number | null;
   /** This is the chat retention days for the subscription. */
-  chatRetentionDays?: number;
+  chatRetentionDays?: number | null;
   /** This is the minutes_included reset frequency for the subscription. */
   minutesIncludedResetFrequency?: "monthly" | "annually";
   /** This is the Role Based Access Control (RBAC) enabled flag for the subscription. */
@@ -31561,12 +41642,19 @@ export interface Subscription {
 
 export interface Org {
   /**
-   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-   * When HIPAA is enabled, only OpenAI/Custom LLM or Azure Providers will be available for LLM and Voice respectively.
+   * When this is enabled, logs, recordings, and transcriptions will be stored in HIPAA-compliant storage. Defaults to false.
+   * When HIPAA is enabled, only HIPAA-compliant providers will be available for LLM, Voice, and Transcriber respectively.
    * This is due to the compliance requirements of HIPAA. Other providers may not meet these requirements.
    * @example false
    */
   hipaaEnabled?: boolean;
+  /**
+   * The org was created locally, but WorkOS access is still being repaired.
+   * Clients should keep the current session/org and refresh the org list.
+   */
+  workosRepairPending?: boolean;
+  /** Whether the pending WorkOS repair was accepted by Kafka. */
+  workosRepairQueued?: boolean;
   subscription?: Subscription;
   /** This is the ID of the subscription the org belongs to. */
   subscriptionId?: string;
@@ -31603,7 +41691,7 @@ export interface Org {
    */
   name?: string;
   /** This is the channel of the org. There is the cluster the API traffic for the org will be directed. */
-  channel?: "daily" | "default" | "weekly" | "intuit";
+  channel?: "daily" | "default" | "weekly" | "intuit" | "hcs";
   /**
    * This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
    * @min 0
@@ -31640,8 +41728,8 @@ export interface Org {
 
 export interface UpdateOrgDTO {
   /**
-   * When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-   * When HIPAA is enabled, only OpenAI/Custom LLM or Azure Providers will be available for LLM and Voice respectively.
+   * When this is enabled, logs, recordings, and transcriptions will be stored in HIPAA-compliant storage. Defaults to false.
+   * When HIPAA is enabled, only HIPAA-compliant providers will be available for LLM, Voice, and Transcriber respectively.
    * This is due to the compliance requirements of HIPAA. Other providers may not meet these requirements.
    * @example false
    */
@@ -31654,7 +41742,7 @@ export interface UpdateOrgDTO {
    */
   name?: string;
   /** This is the channel of the org. There is the cluster the API traffic for the org will be directed. */
-  channel?: "daily" | "default" | "weekly" | "intuit";
+  channel?: "daily" | "default" | "weekly" | "intuit" | "hcs";
   /**
    * This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
    * @min 0
@@ -31711,13 +41799,28 @@ export interface User {
 export interface InviteUserDTO {
   /** @maxItems 100 */
   emails: string[];
-  role: "admin" | "editor" | "viewer";
+  /** @pattern ORG_ROLE_OR_CUSTOM_ROLE_PATTERN */
+  role: "admin" | "editor" | "viewer" | string;
   redirectTo?: string;
+}
+
+export interface PendingInvitationDTO {
+  id: string;
+  email: string;
+}
+
+export interface PendingInvitationsResponseDTO {
+  invitations: PendingInvitationDTO[];
+}
+
+export interface RevokeInvitationResponseDTO {
+  success: boolean;
 }
 
 export interface UpdateUserRoleDTO {
   userId: string;
-  role: "admin" | "editor" | "viewer";
+  /** @pattern ORG_ROLE_OR_CUSTOM_ROLE_PATTERN */
+  role: "admin" | "editor" | "viewer" | string;
 }
 
 export interface JwtResponse {
@@ -31831,6 +41934,87 @@ export interface AnthropicCredential {
   name?: string;
 }
 
+export interface AWSStsAuthenticationArtifact {
+  /** This is the optional external ID for the AWS credential */
+  externalId: string;
+}
+
+export interface AWSStsAssumeRoleUser {
+  /** This is the assumed role ID */
+  AssumedRoleId?: string;
+  /** This is the assumed role ARN */
+  Arn?: string;
+}
+
+export interface AWSStsCredentials {
+  /** This is the access key ID for the AWS credential */
+  AccessKeyId?: string;
+  /**
+   * This is the expiration date for the AWS credential
+   * @format date-time
+   */
+  Expiration?: string;
+  /** This is the secret access key for the AWS credential */
+  SecretAccessKey?: string;
+  /** This is the session token for the AWS credential */
+  SessionToken?: string;
+}
+
+export interface AWSStsAuthenticationSession {
+  /** This is the assumed role user */
+  assumedRoleUser?: AWSStsAssumeRoleUser;
+  /** This is the credentials for the AWS STS assume role */
+  credentials?: AWSStsCredentials;
+  /** This is the size of the policy */
+  packedPolicySize?: number;
+  /** This is the sourced ID entity */
+  sourcedIDEntity?: string;
+}
+
+export interface AnthropicBedrockCredential {
+  provider: "anthropic-bedrock";
+  /** AWS region where Bedrock is configured. */
+  region:
+    | "us-east-1"
+    | "us-west-2"
+    | "eu-central-1"
+    | "eu-west-1"
+    | "eu-west-3"
+    | "ap-northeast-1"
+    | "ap-southeast-2";
+  /** Authentication method - either direct IAM credentials or cross-account role assumption. */
+  authenticationPlan:
+    | AWSIAMCredentialsAuthenticationPlan
+    | AWSStsAuthenticationPlan;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /** Stores the external ID (generated or user-provided) for future AssumeRole calls. */
+  authenticationArtifact?: AWSStsAuthenticationArtifact;
+  /**
+   * Cached authentication session from AssumeRole (temporary credentials).
+   * Managed by the system, auto-refreshed when expired.
+   */
+  authenticationSession?: AWSStsAuthenticationSession;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface AnyscaleCredential {
   provider: "anyscale";
   /**
@@ -31895,22 +42079,29 @@ export interface AzureCredential {
   service: "speech" | "blob_storage";
   /** This is the region of the Azure resource. */
   region?:
-    | "australia"
+    | "australiaeast"
     | "canadaeast"
     | "canadacentral"
+    | "centralus"
     | "eastus2"
     | "eastus"
     | "france"
+    | "germanywestcentral"
     | "india"
     | "japaneast"
     | "japanwest"
-    | "uaenorth"
     | "northcentralus"
     | "norway"
+    | "polandcentral"
     | "southcentralus"
+    | "spaincentral"
     | "swedencentral"
     | "switzerland"
+    | "switzerlandnorth"
+    | "switzerlandwest"
+    | "uaenorth"
     | "uk"
+    | "westeurope"
     | "westus"
     | "westus3";
   /**
@@ -31950,26 +42141,43 @@ export interface AzureCredential {
 export interface AzureOpenAICredential {
   provider: "azure-openai";
   region:
-    | "australia"
+    | "australiaeast"
     | "canadaeast"
     | "canadacentral"
+    | "centralus"
     | "eastus2"
     | "eastus"
     | "france"
+    | "germanywestcentral"
     | "india"
     | "japaneast"
     | "japanwest"
-    | "uaenorth"
     | "northcentralus"
     | "norway"
+    | "polandcentral"
     | "southcentralus"
+    | "spaincentral"
     | "swedencentral"
     | "switzerland"
+    | "switzerlandnorth"
+    | "switzerlandwest"
+    | "uaenorth"
     | "uk"
+    | "westeurope"
     | "westus"
     | "westus3";
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models:
+    | "gpt-5.6-luna-2026-07-09"
+    | "gpt-5.6-terra-2026-07-09"
+    | "gpt-5.6-sol-2026-07-09"
+    | "gpt-5.4"
+    | "gpt-5.4-mini"
+    | "gpt-5.4-nano"
+    | "gpt-5.2"
+    | "gpt-5.2-chat"
+    | "gpt-5.1"
+    | "gpt-5.1-chat"
     | "gpt-5"
     | "gpt-5-mini"
     | "gpt-5-nano"
@@ -31985,7 +42193,10 @@ export interface AzureOpenAICredential {
     | "gpt-4-1106-preview"
     | "gpt-4-0613"
     | "gpt-35-turbo-0125"
-    | "gpt-35-turbo-1106";
+    | "gpt-35-turbo-1106"
+    | "gpt-4o"
+    | "gpt-4.1"
+    | "gpt-5.4-mini-2026-03-17";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -32063,8 +42274,6 @@ export interface ByoSipTrunkCredential {
    * @maxLength 10000
    */
   sipDiversionHeader?: string;
-  /** This is an advanced configuration for enterprise deployments. This uses the onprem SBC to trunk into the SIP trunk's `gateways`, rather than the managed SBC provided by Vapi. */
-  sbcConfiguration?: SbcConfiguration;
 }
 
 export interface CartesiaCredential {
@@ -32091,6 +42300,8 @@ export interface CartesiaCredential {
    * @maxLength 40
    */
   name?: string;
+  /** This can be used to point to an onprem Cartesia instance. Defaults to api.cartesia.ai. */
+  apiUrl?: string;
 }
 
 export interface CerebrasCredential {
@@ -32292,6 +42503,11 @@ export interface ElevenLabsCredential {
    * @maxLength 10000
    */
   apiKey: string;
+  /** ElevenLabs-only API environment for this key: the global endpoint or the EU data residency endpoint. In EU deployments, new credentials must explicitly use the EU data residency endpoint; existing credentials may omit this field on update to retain their saved endpoint. Outside EU deployments, Vapi detects an omitted endpoint automatically and null on update clears and re-detects the endpoint. */
+  apiUrl?:
+    | "https://api.elevenlabs.io"
+    | "https://api.eu.residency.elevenlabs.io"
+    | null;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -32608,6 +42824,41 @@ export interface MakeCredential {
   name?: string;
 }
 
+export interface MicrosoftCredential {
+  provider: "microsoft";
+  /**
+   * This is not returned in the API.
+   * @maxLength 10000
+   */
+  apiKey: string;
+  /**
+   * Azure region for the Speech resource. Defaults to `eastus` when omitted. MAI-Voice-2 is preview and region-limited.
+   * @maxLength 64
+   * @example "eastus"
+   */
+  region?: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface MistralCredential {
   provider: "mistral";
   /**
@@ -32820,6 +43071,35 @@ export interface RunpodCredential {
   name?: string;
 }
 
+export interface WellSaidCredential {
+  provider: "wellsaid";
+  /**
+   * This is not returned in the API.
+   * @maxLength 10000
+   */
+  apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface S3Credential {
   /** Credential provider. Only allowed value is s3 */
   provider: "s3";
@@ -32860,10 +43140,87 @@ export interface S3Credential {
   name?: string;
 }
 
+export interface S3CompatibleBucketPlan {
+  /** S3-compatible endpoint URL, such as https://s3.us-west-004.backblazeb2.com. Must be public HTTPS. */
+  url: string;
+  /**
+   * SigV4 signing region expected by the object store. Most stores accept us-east-1.
+   * @maxLength 64
+   */
+  region: string;
+  /** S3 access key ID. */
+  accessKeyId: string;
+  /** S3 secret access key. This is not returned in the API. */
+  secretAccessKey: string;
+  /** Bucket name. */
+  name: string;
+  /** Optional key prefix inside the bucket, such as recordings/. */
+  path?: string;
+}
+
+export interface S3CompatibleStorageCredential {
+  /** This is for S3-compatible storage such as MinIO, Garage, Ceph, or Backblaze B2. */
+  provider: "s3-compatible";
+  bucketPlan: S3CompatibleBucketPlan;
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface SmallestAICredential {
   provider: "smallest-ai";
   /** This is not returned in the API. */
   apiKey: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface SonioxCredential {
+  provider: "soniox";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** Custom Soniox WebSocket endpoint (e.g. EU server wss://stt-rt.eu.soniox.com/transcribe-websocket). Defaults to the region-appropriate endpoint when omitted. */
+  apiUrl?: string;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -32995,32 +43352,6 @@ export interface TogetherAICredential {
   name?: string;
 }
 
-export interface TrieveCredential {
-  provider: "trieve";
-  /** This is not returned in the API. */
-  apiKey: string;
-  /** This is the unique identifier for the credential. */
-  id: string;
-  /** This is the unique identifier for the org that this credential belongs to. */
-  orgId: string;
-  /**
-   * This is the ISO 8601 date-time string of when the credential was created.
-   * @format date-time
-   */
-  createdAt: string;
-  /**
-   * This is the ISO 8601 date-time string of when the assistant was last updated.
-   * @format date-time
-   */
-  updatedAt: string;
-  /**
-   * This is the name of credential. This is just for your reference.
-   * @minLength 1
-   * @maxLength 40
-   */
-  name?: string;
-}
-
 export interface TwilioCredential {
   provider: "twilio";
   /** This is not returned in the API. */
@@ -33128,6 +43459,29 @@ export interface WebhookCredential {
   name?: string;
 }
 
+export interface SpkiPemPublicKeyConfig {
+  /**
+   * Optional name of the key for identification purposes.
+   * @maxLength 100
+   */
+  name?: string;
+  /** The format of the public key. */
+  format: "spki-pem";
+  /** The PEM-encoded public key. */
+  pem: string;
+}
+
+export interface PublicKeyEncryptionPlan {
+  /** The type of encryption plan. */
+  type: "public-key";
+  /** The encryption algorithm to use. */
+  algorithm: "RSA-OAEP-256";
+  /** The public key configuration. */
+  publicKey: {
+    format: "spki-pem";
+  } & SpkiPemPublicKeyConfig;
+}
+
 export interface CustomCredential {
   provider: "custom-credential";
   /** This is the authentication plan. Supports OAuth2 RFC 6749, HMAC signing, and Bearer authentication. */
@@ -33141,6 +43495,10 @@ export interface CustomCredential {
     | ({
         type: "bearer";
       } & BearerAuthenticationPlan);
+  /** This is the encryption plan for encrypting sensitive data. Currently supports public-key encryption. */
+  encryptionPlan?: {
+    type: "public-key";
+  } & PublicKeyEncryptionPlan;
   /** This is the unique identifier for the credential. */
   id: string;
   /** This is the unique identifier for the org that this credential belongs to. */
@@ -33352,6 +43710,58 @@ export interface InworldCredential {
   name?: string;
 }
 
+export interface EmailCredential {
+  provider: "email";
+  /** The recipient email address for alerts */
+  email: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface SlackWebhookCredential {
+  provider: "slack-webhook";
+  /** Slack incoming webhook URL. See https://api.slack.com/messaging/webhooks for setup instructions. This is not returned in the API. */
+  webhookUrl: string;
+  /** This is the unique identifier for the credential. */
+  id: string;
+  /** This is the unique identifier for the org that this credential belongs to. */
+  orgId: string;
+  /**
+   * This is the ISO 8601 date-time string of when the credential was created.
+   * @format date-time
+   */
+  createdAt: string;
+  /**
+   * This is the ISO 8601 date-time string of when the assistant was last updated.
+   * @format date-time
+   */
+  updatedAt: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CreateCerebrasCredentialDTO {
   provider: "cerebras";
   /**
@@ -33414,6 +43824,27 @@ export interface CreateInflectionAICredentialDTO {
   name?: string;
 }
 
+export interface CreateMicrosoftCredentialDTO {
+  provider: "microsoft";
+  /**
+   * This is not returned in the API.
+   * @maxLength 10000
+   */
+  apiKey: string;
+  /**
+   * Azure region for the Speech resource. Defaults to `eastus` when omitted. MAI-Voice-2 is preview and region-limited.
+   * @maxLength 64
+   * @example "eastus"
+   */
+  region?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CreateMistralCredentialDTO {
   provider: "mistral";
   /**
@@ -33441,9 +43872,12 @@ export interface CreateNeuphonicCredentialDTO {
   name?: string;
 }
 
-export interface CreateSpeechmaticsCredentialDTO {
-  provider: "speechmatics";
-  /** This is not returned in the API. */
+export interface CreateWellSaidCredentialDTO {
+  provider: "wellsaid";
+  /**
+   * This is not returned in the API.
+   * @maxLength 10000
+   */
   apiKey: string;
   /**
    * This is the name of credential. This is just for your reference.
@@ -33453,8 +43887,39 @@ export interface CreateSpeechmaticsCredentialDTO {
   name?: string;
 }
 
-export interface CreateTrieveCredentialDTO {
-  provider: "trieve";
+export interface CreateS3CompatibleCredentialDTO {
+  /** This is for S3-compatible storage such as MinIO, Garage, Ceph, or Backblaze B2. */
+  provider: "s3-compatible";
+  bucketPlan: S3CompatibleBucketPlan;
+  /**
+   * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+   * @min 1
+   */
+  fallbackIndex?: number;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateSonioxCredentialDTO {
+  provider: "soniox";
+  /** This is not returned in the API. */
+  apiKey: string;
+  /** Custom Soniox WebSocket endpoint (e.g. EU server wss://stt-rt.eu.soniox.com/transcribe-websocket). Defaults to the region-appropriate endpoint when omitted. */
+  apiUrl?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateSpeechmaticsCredentialDTO {
+  provider: "speechmatics";
   /** This is not returned in the API. */
   apiKey: string;
   /**
@@ -33478,6 +43943,10 @@ export interface CreateCustomCredentialDTO {
     | ({
         type: "bearer";
       } & BearerAuthenticationPlan);
+  /** This is the encryption plan for encrypting sensitive data. Currently supports public-key encryption. */
+  encryptionPlan?: {
+    type: "public-key";
+  } & PublicKeyEncryptionPlan;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -33513,7 +43982,32 @@ export interface CreateInworldCredentialDTO {
   name?: string;
 }
 
+export interface CreateEmailCredentialDTO {
+  provider: "email";
+  /** The recipient email address for alerts */
+  email: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface CreateSlackWebhookCredentialDTO {
+  provider: "slack-webhook";
+  /** Slack incoming webhook URL. See https://api.slack.com/messaging/webhooks for setup instructions. This is not returned in the API. */
+  webhookUrl: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface UpdateAnthropicCredentialDTO {
+  provider?: "anthropic";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -33527,7 +44021,31 @@ export interface UpdateAnthropicCredentialDTO {
   name?: string;
 }
 
+export interface UpdateAnthropicBedrockCredentialDTO {
+  provider?: "anthropic-bedrock";
+  /** AWS region where Bedrock is configured. */
+  region?:
+    | "us-east-1"
+    | "us-west-2"
+    | "eu-central-1"
+    | "eu-west-1"
+    | "eu-west-3"
+    | "ap-northeast-1"
+    | "ap-southeast-2";
+  /** Authentication method - either direct IAM credentials or cross-account role assumption. */
+  authenticationPlan?:
+    | AWSIAMCredentialsAuthenticationPlan
+    | AWSStsAuthenticationPlan;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface UpdateAnyscaleCredentialDTO {
+  provider?: "anyscale";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -33542,6 +44060,7 @@ export interface UpdateAnyscaleCredentialDTO {
 }
 
 export interface UpdateAssemblyAICredentialDTO {
+  provider?: "assembly-ai";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33553,6 +44072,7 @@ export interface UpdateAssemblyAICredentialDTO {
 }
 
 export interface UpdateAzureCredentialDTO {
+  provider?: "azure";
   /**
    * This is the service being used in Azure.
    * @default "speech"
@@ -33560,22 +44080,29 @@ export interface UpdateAzureCredentialDTO {
   service?: "speech" | "blob_storage";
   /** This is the region of the Azure resource. */
   region?:
-    | "australia"
+    | "australiaeast"
     | "canadaeast"
     | "canadacentral"
+    | "centralus"
     | "eastus2"
     | "eastus"
     | "france"
+    | "germanywestcentral"
     | "india"
     | "japaneast"
     | "japanwest"
-    | "uaenorth"
     | "northcentralus"
     | "norway"
+    | "polandcentral"
     | "southcentralus"
+    | "spaincentral"
     | "swedencentral"
     | "switzerland"
+    | "switzerlandnorth"
+    | "switzerlandwest"
+    | "uaenorth"
     | "uk"
+    | "westeurope"
     | "westus"
     | "westus3";
   /**
@@ -33599,27 +44126,45 @@ export interface UpdateAzureCredentialDTO {
 }
 
 export interface UpdateAzureOpenAICredentialDTO {
+  provider?: "azure-openai";
   region?:
-    | "australia"
+    | "australiaeast"
     | "canadaeast"
     | "canadacentral"
+    | "centralus"
     | "eastus2"
     | "eastus"
     | "france"
+    | "germanywestcentral"
     | "india"
     | "japaneast"
     | "japanwest"
-    | "uaenorth"
     | "northcentralus"
     | "norway"
+    | "polandcentral"
     | "southcentralus"
+    | "spaincentral"
     | "swedencentral"
     | "switzerland"
+    | "switzerlandnorth"
+    | "switzerlandwest"
+    | "uaenorth"
     | "uk"
+    | "westeurope"
     | "westus"
     | "westus3";
   /** @example ["gpt-4-0125-preview","gpt-4-0613"] */
   models?:
+    | "gpt-5.6-luna-2026-07-09"
+    | "gpt-5.6-terra-2026-07-09"
+    | "gpt-5.6-sol-2026-07-09"
+    | "gpt-5.4"
+    | "gpt-5.4-mini"
+    | "gpt-5.4-nano"
+    | "gpt-5.2"
+    | "gpt-5.2-chat"
+    | "gpt-5.1"
+    | "gpt-5.1-chat"
     | "gpt-5"
     | "gpt-5-mini"
     | "gpt-5-nano"
@@ -33635,7 +44180,10 @@ export interface UpdateAzureOpenAICredentialDTO {
     | "gpt-4-1106-preview"
     | "gpt-4-0613"
     | "gpt-35-turbo-0125"
-    | "gpt-35-turbo-1106";
+    | "gpt-35-turbo-1106"
+    | "gpt-4o"
+    | "gpt-4.1"
+    | "gpt-5.4-mini-2026-03-17";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -33654,6 +44202,8 @@ export interface UpdateAzureOpenAICredentialDTO {
 }
 
 export interface UpdateByoSipTrunkCredentialDTO {
+  /** This can be used to bring your own SIP trunks or to connect to a Carrier. */
+  provider?: "byo-sip-trunk";
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -33683,11 +44233,10 @@ export interface UpdateByoSipTrunkCredentialDTO {
    * @maxLength 10000
    */
   sipDiversionHeader?: string;
-  /** This is an advanced configuration for enterprise deployments. This uses the onprem SBC to trunk into the SIP trunk's `gateways`, rather than the managed SBC provided by Vapi. */
-  sbcConfiguration?: SbcConfiguration;
 }
 
 export interface UpdateCartesiaCredentialDTO {
+  provider?: "cartesia";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33696,9 +44245,12 @@ export interface UpdateCartesiaCredentialDTO {
    * @maxLength 40
    */
   name?: string;
+  /** This can be used to point to an onprem Cartesia instance. Defaults to api.cartesia.ai. */
+  apiUrl?: string;
 }
 
 export interface UpdateCerebrasCredentialDTO {
+  provider?: "cerebras";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -33713,6 +44265,8 @@ export interface UpdateCerebrasCredentialDTO {
 }
 
 export interface UpdateCloudflareCredentialDTO {
+  /** Credential provider. Only allowed value is cloudflare */
+  provider?: "cloudflare";
   /** Cloudflare Account Id. */
   accountId?: string;
   /** Cloudflare API Key / Token. */
@@ -33735,6 +44289,7 @@ export interface UpdateCloudflareCredentialDTO {
 }
 
 export interface UpdateCustomLLMCredentialDTO {
+  provider?: "custom-llm";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -33751,6 +44306,7 @@ export interface UpdateCustomLLMCredentialDTO {
 }
 
 export interface UpdateDeepgramCredentialDTO {
+  provider?: "deepgram";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33764,6 +44320,7 @@ export interface UpdateDeepgramCredentialDTO {
 }
 
 export interface UpdateDeepInfraCredentialDTO {
+  provider?: "deepinfra";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33775,6 +44332,7 @@ export interface UpdateDeepInfraCredentialDTO {
 }
 
 export interface UpdateDeepSeekCredentialDTO {
+  provider?: "deep-seek";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33786,11 +44344,17 @@ export interface UpdateDeepSeekCredentialDTO {
 }
 
 export interface UpdateElevenLabsCredentialDTO {
+  provider?: "11labs";
   /**
    * This is not returned in the API.
    * @maxLength 10000
    */
   apiKey?: string;
+  /** ElevenLabs-only API environment for this key: the global endpoint or the EU data residency endpoint. In EU deployments, new credentials must explicitly use the EU data residency endpoint; existing credentials may omit this field on update to retain their saved endpoint. Outside EU deployments, Vapi detects an omitted endpoint automatically and null on update clears and re-detects the endpoint. */
+  apiUrl?:
+    | "https://api.elevenlabs.io"
+    | "https://api.eu.residency.elevenlabs.io"
+    | null;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -33800,6 +44364,7 @@ export interface UpdateElevenLabsCredentialDTO {
 }
 
 export interface UpdateGcpCredentialDTO {
+  provider?: "gcp";
   /**
    * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
    * @min 1
@@ -33826,6 +44391,7 @@ export interface UpdateGcpCredentialDTO {
 }
 
 export interface UpdateGladiaCredentialDTO {
+  provider?: "gladia";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33837,6 +44403,7 @@ export interface UpdateGladiaCredentialDTO {
 }
 
 export interface UpdateGoHighLevelCredentialDTO {
+  provider?: "gohighlevel";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33848,6 +44415,8 @@ export interface UpdateGoHighLevelCredentialDTO {
 }
 
 export interface UpdateGoogleCredentialDTO {
+  /** This is the key for Gemini in Google AI Studio. Get it from here: https://aistudio.google.com/app/apikey */
+  provider?: "google";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -33862,6 +44431,7 @@ export interface UpdateGoogleCredentialDTO {
 }
 
 export interface UpdateGroqCredentialDTO {
+  provider?: "groq";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33873,6 +44443,7 @@ export interface UpdateGroqCredentialDTO {
 }
 
 export interface UpdateHumeCredentialDTO {
+  provider?: "hume";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -33887,6 +44458,8 @@ export interface UpdateHumeCredentialDTO {
 }
 
 export interface UpdateInflectionAICredentialDTO {
+  /** This is the api key for Pi in InflectionAI's console. Get it from here: https://developers.inflection.ai/keys, billing will need to be setup */
+  provider?: "inflection-ai";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -33901,6 +44474,7 @@ export interface UpdateInflectionAICredentialDTO {
 }
 
 export interface UpdateLangfuseCredentialDTO {
+  provider?: "langfuse";
   /** The public key for Langfuse project. Eg: pk-lf-... */
   publicKey?: string;
   /** The secret key for Langfuse project. Eg: sk-lf-... .This is not returned in the API. */
@@ -33916,6 +44490,7 @@ export interface UpdateLangfuseCredentialDTO {
 }
 
 export interface UpdateLmntCredentialDTO {
+  provider?: "lmnt";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33927,6 +44502,7 @@ export interface UpdateLmntCredentialDTO {
 }
 
 export interface UpdateMakeCredentialDTO {
+  provider?: "make";
   /** Team ID */
   teamId?: string;
   /** Region of your application. For example: eu1, eu2, us1, us2 */
@@ -33941,7 +44517,29 @@ export interface UpdateMakeCredentialDTO {
   name?: string;
 }
 
+export interface UpdateMicrosoftCredentialDTO {
+  provider?: "microsoft";
+  /**
+   * This is not returned in the API.
+   * @maxLength 10000
+   */
+  apiKey?: string;
+  /**
+   * Azure region for the Speech resource. Defaults to `eastus` when omitted. MAI-Voice-2 is preview and region-limited.
+   * @maxLength 64
+   * @example "eastus"
+   */
+  region?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface UpdateMistralCredentialDTO {
+  provider?: "mistral";
   /**
    * This is not returned in the API.
    * @maxLength 100
@@ -33956,6 +44554,7 @@ export interface UpdateMistralCredentialDTO {
 }
 
 export interface UpdateNeuphonicCredentialDTO {
+  provider?: "neuphonic";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33967,6 +44566,7 @@ export interface UpdateNeuphonicCredentialDTO {
 }
 
 export interface UpdateOpenAICredentialDTO {
+  provider?: "openai";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33978,6 +44578,7 @@ export interface UpdateOpenAICredentialDTO {
 }
 
 export interface UpdateOpenRouterCredentialDTO {
+  provider?: "openrouter";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -33989,6 +44590,7 @@ export interface UpdateOpenRouterCredentialDTO {
 }
 
 export interface UpdatePerplexityAICredentialDTO {
+  provider?: "perplexity-ai";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -34000,6 +44602,7 @@ export interface UpdatePerplexityAICredentialDTO {
 }
 
 export interface UpdatePlayHTCredentialDTO {
+  provider?: "playht";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -34012,6 +44615,7 @@ export interface UpdatePlayHTCredentialDTO {
 }
 
 export interface UpdateRimeAICredentialDTO {
+  provider?: "rime-ai";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -34023,6 +44627,7 @@ export interface UpdateRimeAICredentialDTO {
 }
 
 export interface UpdateRunpodCredentialDTO {
+  provider?: "runpod";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -34033,7 +44638,24 @@ export interface UpdateRunpodCredentialDTO {
   name?: string;
 }
 
+export interface UpdateWellSaidCredentialDTO {
+  provider?: "wellsaid";
+  /**
+   * This is not returned in the API.
+   * @maxLength 10000
+   */
+  apiKey?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface UpdateS3CredentialDTO {
+  /** Credential provider. Only allowed value is s3 */
+  provider?: "s3";
   /** AWS access key ID. */
   awsAccessKeyId?: string;
   /** AWS access key secret. This is not returned in the API. */
@@ -34057,46 +44679,33 @@ export interface UpdateS3CredentialDTO {
   name?: string;
 }
 
-export interface UpdateSmallestAICredentialDTO {
-  /** This is not returned in the API. */
-  apiKey?: string;
+export interface UpdateS3CompatibleBucketPlanDTO {
+  /** S3-compatible endpoint URL, such as https://s3.us-west-004.backblazeb2.com. Must be public HTTPS. */
+  url?: string;
   /**
-   * This is the name of credential. This is just for your reference.
-   * @minLength 1
-   * @maxLength 40
+   * SigV4 signing region expected by the object store. Most stores accept us-east-1.
+   * @maxLength 64
    */
+  region?: string;
+  /** S3 access key ID. */
+  accessKeyId?: string;
+  /** S3 secret access key. This is not returned in the API. */
+  secretAccessKey?: string;
+  /** Bucket name. */
   name?: string;
+  /** Optional key prefix inside the bucket, such as recordings/. */
+  path?: string;
 }
 
-export interface UpdateSpeechmaticsCredentialDTO {
-  /** This is not returned in the API. */
-  apiKey?: string;
-  /**
-   * This is the name of credential. This is just for your reference.
-   * @minLength 1
-   * @maxLength 40
-   */
-  name?: string;
-}
-
-export interface UpdateSupabaseCredentialDTO {
+export interface UpdateS3CompatibleCredentialDTO {
+  /** This is for S3-compatible storage such as MinIO, Garage, Ceph, or Backblaze B2. */
+  provider?: "s3-compatible";
   /**
    * This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
    * @min 1
    */
   fallbackIndex?: number;
-  /**
-   * This is the name of credential. This is just for your reference.
-   * @minLength 1
-   * @maxLength 40
-   */
-  name?: string;
-  bucketPlan?: SupabaseBucketPlan;
-}
-
-export interface UpdateTavusCredentialDTO {
-  /** This is not returned in the API. */
-  apiKey?: string;
+  bucketPlan?: UpdateS3CompatibleBucketPlanDTO;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -34106,17 +44715,7 @@ export interface UpdateTavusCredentialDTO {
 }
 
 export interface UpdateTogetherAICredentialDTO {
-  /** This is not returned in the API. */
-  apiKey?: string;
-  /**
-   * This is the name of credential. This is just for your reference.
-   * @minLength 1
-   * @maxLength 40
-   */
-  name?: string;
-}
-
-export interface UpdateTrieveCredentialDTO {
+  provider?: "together-ai";
   /** This is not returned in the API. */
   apiKey?: string;
   /**
@@ -34128,6 +44727,7 @@ export interface UpdateTrieveCredentialDTO {
 }
 
 export interface UpdateTwilioCredentialDTO {
+  provider?: "twilio";
   /** This is not returned in the API. */
   authToken?: string;
   /** This is not returned in the API. */
@@ -34144,6 +44744,7 @@ export interface UpdateTwilioCredentialDTO {
 }
 
 export interface UpdateVonageCredentialDTO {
+  provider?: "vonage";
   /** This is not returned in the API. */
   apiSecret?: string;
   /**
@@ -34156,6 +44757,7 @@ export interface UpdateVonageCredentialDTO {
 }
 
 export interface UpdateWebhookCredentialDTO {
+  provider?: "webhook";
   /** This is the authentication plan. Supports OAuth2 RFC 6749, HMAC signing, and Bearer authentication. */
   authenticationPlan?:
     | ({
@@ -34176,6 +44778,7 @@ export interface UpdateWebhookCredentialDTO {
 }
 
 export interface UpdateCustomCredentialDTO {
+  provider?: "custom-credential";
   /** This is the authentication plan. Supports OAuth2 RFC 6749, HMAC signing, and Bearer authentication. */
   authenticationPlan?:
     | ({
@@ -34187,6 +44790,10 @@ export interface UpdateCustomCredentialDTO {
     | ({
         type: "bearer";
       } & BearerAuthenticationPlan);
+  /** This is the encryption plan for encrypting sensitive data. Currently supports public-key encryption. */
+  encryptionPlan?: {
+    type: "public-key";
+  } & PublicKeyEncryptionPlan;
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -34196,6 +44803,8 @@ export interface UpdateCustomCredentialDTO {
 }
 
 export interface UpdateXAiCredentialDTO {
+  /** This is the api key for Grok in XAi's console. Get it from here: https://console.x.ai */
+  provider?: "xai";
   /**
    * This is not returned in the API.
    * @maxLength 10000
@@ -34210,6 +44819,7 @@ export interface UpdateXAiCredentialDTO {
 }
 
 export interface UpdateGoogleCalendarOAuth2ClientCredentialDTO {
+  provider?: "google.calendar.oauth2-client";
   /**
    * This is the name of credential. This is just for your reference.
    * @minLength 1
@@ -34219,6 +44829,7 @@ export interface UpdateGoogleCalendarOAuth2ClientCredentialDTO {
 }
 
 export interface UpdateGoogleCalendarOAuth2AuthorizationCredentialDTO {
+  provider?: "google.calendar.oauth2-authorization";
   /** The authorization ID for the OAuth2 authorization */
   authorizationId?: string;
   /**
@@ -34230,6 +44841,7 @@ export interface UpdateGoogleCalendarOAuth2AuthorizationCredentialDTO {
 }
 
 export interface UpdateGoogleSheetsOAuth2AuthorizationCredentialDTO {
+  provider?: "google.sheets.oauth2-authorization";
   /** The authorization ID for the OAuth2 authorization */
   authorizationId?: string;
   /**
@@ -34241,6 +44853,7 @@ export interface UpdateGoogleSheetsOAuth2AuthorizationCredentialDTO {
 }
 
 export interface UpdateSlackOAuth2AuthorizationCredentialDTO {
+  provider?: "slack.oauth2-authorization";
   /** The authorization ID for the OAuth2 authorization */
   authorizationId?: string;
   /**
@@ -34252,6 +44865,7 @@ export interface UpdateSlackOAuth2AuthorizationCredentialDTO {
 }
 
 export interface UpdateGoHighLevelMCPCredentialDTO {
+  provider?: "ghl.oauth2-authorization";
   /** This is the authentication session for the credential. */
   authenticationSession?: Oauth2AuthenticationSession;
   /**
@@ -34263,6 +44877,7 @@ export interface UpdateGoHighLevelMCPCredentialDTO {
 }
 
 export interface UpdateInworldCredentialDTO {
+  provider?: "inworld";
   /**
    * This is the Inworld Basic (Base64) authentication token. This is not returned in the API.
    * @example "your-base64-token-here"
@@ -34276,11 +44891,50 @@ export interface UpdateInworldCredentialDTO {
   name?: string;
 }
 
+export interface UpdateEmailCredentialDTO {
+  provider?: "email";
+  /** The recipient email address for alerts */
+  email?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface UpdateSlackWebhookCredentialDTO {
+  provider?: "slack-webhook";
+  /** Slack incoming webhook URL. See https://api.slack.com/messaging/webhooks for setup instructions. This is not returned in the API. */
+  webhookUrl?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
+export interface UpdateSonioxCredentialDTO {
+  provider?: "soniox";
+  /** This is not returned in the API. */
+  apiKey?: string;
+  /** Custom Soniox WebSocket endpoint (e.g. EU server wss://stt-rt.eu.soniox.com/transcribe-websocket). Defaults to the region-appropriate endpoint when omitted. */
+  apiUrl?: string;
+  /**
+   * This is the name of credential. This is just for your reference.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name?: string;
+}
+
 export interface CredentialSessionResponse {
   sessionToken: string;
 }
 
 export interface CredentialEndUser {
+  endUserEmail?: string | null;
   endUserId: string;
   organizationId: string;
   tags?: object;
@@ -34303,6 +44957,7 @@ export interface CredentialWebhookDTO {
   success: boolean;
   endUser: CredentialEndUser;
   error?: CredentialSessionError;
+  tags?: object;
 }
 
 export interface CredentialActionRequest {
@@ -34342,6 +44997,32 @@ export interface BearerAuthenticationPlan {
   headerName?: string;
   /** Whether to include the 'Bearer ' prefix in the header value. Defaults to true. */
   bearerPrefixEnabled?: boolean;
+}
+
+export interface AWSIAMCredentialsAuthenticationPlan {
+  type: "aws-iam";
+  /**
+   * AWS Access Key ID. This is not returned in the API.
+   * @maxLength 128
+   */
+  awsAccessKeyId: string;
+  /**
+   * AWS Secret Access Key. This is not returned in the API.
+   * @maxLength 256
+   */
+  awsSecretAccessKey: string;
+}
+
+export interface AWSStsAuthenticationPlan {
+  /** This is the type of authentication plan */
+  type: "aws-sts";
+  /** This is the role ARN for the AWS credential */
+  roleArn: string;
+  /**
+   * Optional external ID for additional security in the role trust policy.
+   * @maxLength 256
+   */
+  externalId?: string;
 }
 
 export interface ToolTemplateSetup {
@@ -34442,6 +45123,7 @@ export interface CreateToolTemplateDTO {
   details?:
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -34459,7 +45141,9 @@ export interface CreateToolTemplateDTO {
     | CreateSlackSendMessageToolDTO
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
-    | CreateTransferCallToolDTO;
+    | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO;
   providerDetails?:
     | MakeToolProviderDetails
     | GhlToolProviderDetails
@@ -34487,6 +45171,7 @@ export interface Template {
   details?:
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -34504,7 +45189,9 @@ export interface Template {
     | CreateSlackSendMessageToolDTO
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
-    | CreateTransferCallToolDTO;
+    | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO;
   providerDetails?:
     | MakeToolProviderDetails
     | GhlToolProviderDetails
@@ -34546,6 +45233,7 @@ export interface UpdateToolTemplateDTO {
   details?:
     | CreateApiRequestToolDTO
     | CreateBashToolDTO
+    | CreateCodeToolDTO
     | CreateComputerToolDTO
     | CreateDtmfToolDTO
     | CreateEndCallToolDTO
@@ -34563,7 +45251,9 @@ export interface UpdateToolTemplateDTO {
     | CreateSlackSendMessageToolDTO
     | CreateSmsToolDTO
     | CreateTextEditorToolDTO
-    | CreateTransferCallToolDTO;
+    | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO;
   providerDetails?:
     | MakeToolProviderDetails
     | GhlToolProviderDetails
@@ -34607,7 +45297,10 @@ export interface VoiceLibrary {
     | "sesame"
     | "inworld"
     | "minimax"
-    | "orpheus";
+    | "wellsaid"
+    | "orpheus"
+    | "xai"
+    | "microsoft";
   /** The ID of the voice provided by the provider. */
   providerId?: string;
   /** The unique slug of the voice. */
@@ -34628,6 +45321,8 @@ export interface VoiceLibrary {
   accent?: string;
   /** The preview URL of the voice. */
   previewUrl?: string;
+  /** The sort order of the voice for display purposes. Lower values appear first. */
+  sortOrder?: number;
   /** The description of the voice. */
   description?: string;
   /** The credential ID of the voice. */
@@ -34650,6 +45345,17 @@ export interface VoiceLibrary {
    * @format date-time
    */
   updatedAt: string;
+  /**
+   * Whether this voice was cloned by the org from their own audio, as opposed
+   * to a seeded/preset voice. Drives the cloned filter and tag. Backed by a
+   * NOT NULL DEFAULT false column, so it is always present at read time.
+   */
+  isCloned?: boolean;
+  /**
+   * The provider that produced the clone (e.g. 'xai'). The voice `provider`
+   * stays 'vapi'; this records the underlying backend. Unset for non-cloned voices.
+   */
+  cloneBackend?: string;
 }
 
 export interface SyncVoiceLibraryDTO {
@@ -34672,14 +45378,82 @@ export interface SyncVoiceLibraryDTO {
     | "sesame"
     | "inworld"
     | "minimax"
-    | "orpheus";
+    | "wellsaid"
+    | "orpheus"
+    | "xai"
+    | "microsoft";
 }
 
 export interface CreateSesameVoiceDTO {
-  /** The name of the voice. */
-  voiceName?: string;
-  /** The transcript of the utterance. */
-  transcription?: string;
+  /**
+   * This is the audio file of the utterance to clone the voice from.
+   * Consumed by multer via FileInterceptor('file'), so it never reaches
+   * class-validator; declared here (like CreateFileDTO.file) so the OpenAPI
+   * spec is truthful about the multipart request body.
+   * @format binary
+   */
+  file: File;
+  /**
+   * The name of the voice.
+   * @minLength 1
+   */
+  voiceName: string;
+  /**
+   * The transcript of the utterance.
+   * @minLength 1
+   */
+  transcription: string;
+}
+
+export interface UpdateVoiceLibraryMetadataDTO {
+  /** Updated display name for the voice. */
+  name?: string;
+  /** Updated description for the voice. */
+  description?: string;
+}
+
+export interface CartesiaPronunciationDictItem {
+  /**
+   * The text to be replaced in pronunciation
+   * @example "Vapi"
+   */
+  text: string;
+  /**
+   * The pronunciation alias or IPA representation
+   * Can be a "sounds-like" guidance (e.g., "VAH-pee") or IPA notation (e.g., "<<ˈ|v|ɑ|ˈ|p|i>>")
+   * @example "VAH-pee"
+   */
+  alias: string;
+}
+
+export interface CartesiaPronunciationDictionary {
+  /**
+   * Unique identifier for the pronunciation dictionary
+   * @example "dict_abc123"
+   */
+  id: string;
+  /**
+   * Name of the pronunciation dictionary
+   * @example "My Dictionary"
+   */
+  name: string;
+  /**
+   * ID of the user who owns this dictionary
+   * @example "user_xyz789"
+   */
+  ownerId: string;
+  /**
+   * Whether this dictionary is pinned for the user
+   * @example false
+   */
+  pinned: boolean;
+  /** List of text-to-pronunciation mappings */
+  items: CartesiaPronunciationDictItem[];
+  /**
+   * ISO 8601 timestamp of when the dictionary was created
+   * @example "2024-01-15T10:30:00Z"
+   */
+  createdAt: string;
 }
 
 export interface ElevenLabsPronunciationDictionary {
@@ -34738,13 +45512,13 @@ export interface ProviderResource {
    */
   updatedAt: string;
   /** This is the provider that manages this resource. */
-  provider: "11labs";
+  provider: "cartesia" | "11labs";
   /** This is the name/type of the resource. */
   resourceName: "pronunciation-dictionary";
   /** This is the provider-specific identifier for the resource. */
   resourceId: string;
   /** This is the full resource data from the provider's API. */
-  resource: ElevenLabsPronunciationDictionary;
+  resource: object;
 }
 
 export interface ProviderResourcePaginatedResponse {
@@ -34753,12 +45527,12 @@ export interface ProviderResourcePaginatedResponse {
 }
 
 export interface VoiceLibraryVoiceResponse {
+  age?: string | number;
   voiceId: string;
   name: string;
   publicOwnerId?: string;
   description?: string;
   gender?: string;
-  age?: object;
   accent?: string;
 }
 
@@ -34779,6 +45553,18 @@ export interface CloneVoiceDTO {
   /** Serialized labels dictionary for the voice. */
   labels?: string;
   /** These are the files you want to use to clone your voice. Only Audio files are supported. */
+  files: File[];
+}
+
+export interface VapiVoiceCloneDTO {
+  /** Display name for the cloned voice. */
+  name: string;
+  /**
+   * Optional language (ISO-639 / BCP-47). When omitted, xAI infers it from the
+   * reference audio.
+   */
+  language?: string;
+  /** Reference audio to clone the voice from (up to 120 seconds). Supported formats: MP3, WAV, OGG/Opus, WebM, AAC, M4A, FLAC, WMA. */
   files: File[];
 }
 
@@ -34847,6 +45633,7 @@ export interface AnalyticsOperation {
     | "costBreakdown.ttsCharacters"
     | "costBreakdown.llmPromptTokens"
     | "costBreakdown.llmCompletionTokens"
+    | "costBreakdown.llmCachedPromptTokens"
     | "duration"
     | "concurrency"
     | "minutesUsed";
@@ -34911,6 +45698,13 @@ export interface ClientMessageWorkflowNodeStarted {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "workflow.node.started" is sent when the active node changes. */
   type: "workflow.node.started";
   /** This is the timestamp of the message. */
@@ -34933,6 +45727,13 @@ export interface ClientMessageAssistantStarted {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "assistant.started" is sent when the assistant is started. */
   type: "assistant.started";
   /** This is the timestamp of the message. */
@@ -34955,6 +45756,13 @@ export interface ClientMessageConversationUpdate {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "conversation-update" is sent when an update is committed to the conversation history. */
   type: "conversation-update";
   /** This is the most up-to-date conversation history at the time the message is sent. */
@@ -34986,6 +45794,13 @@ export interface ClientMessageHang {
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
   /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
+  /**
    * This is the type of the message. "hang" is sent when the assistant is hanging due to a delay. The delay can be caused by many factors, such as:
    * - the model is too slow to respond
    * - the voice is too slow to respond
@@ -35011,6 +45826,13 @@ export interface ClientMessageMetadata {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "metadata" is sent to forward metadata to the client. */
   type: "metadata";
   /** This is the timestamp of the message. */
@@ -35033,8 +45855,20 @@ export interface ClientMessageModelOutput {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "model-output" is sent as the model outputs tokens. */
   type: "model-output";
+  /**
+   * This is the unique identifier for the current LLM turn. All tokens from the same
+   * LLM response share the same turnId. Use this to group tokens and discard on interruption.
+   */
+  turnId?: string;
   /** This is the timestamp of the message. */
   timestamp?: number;
   /** This is the call that the message is associated with. */
@@ -35055,6 +45889,13 @@ export interface ClientMessageSpeechUpdate {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "speech-update" is sent whenever assistant or user start or stop speaking. */
   type: "speech-update";
   /** This is the status of the speech update. */
@@ -35081,6 +45922,13 @@ export interface ClientMessageTranscript {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript. */
   type: "transcript" | "transcript[transcriptType='final']";
   /** This is the timestamp of the message. */
@@ -35097,6 +45945,16 @@ export interface ClientMessageTranscript {
   transcriptType: "partial" | "final";
   /** This is the transcript content. */
   transcript: string;
+  /**
+   * The ID of the assistant that produced this transcript. Present on
+   * assistant-role events when an active assistant ID is available.
+   */
+  assistantId?: string;
+  /**
+   * The name of the assistant that produced this transcript. Present on
+   * assistant-role events when an active assistant name is available.
+   */
+  assistantName?: string;
   /** Indicates if the transcript was filtered for security reasons. */
   isFiltered?: boolean;
   /** List of detected security threats if the transcript was filtered. */
@@ -35113,6 +45971,13 @@ export interface ClientMessageToolCalls {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "tool-calls" is sent to call a tool. */
   type?: "tool-calls";
   /** This is the list of tools calls that the model is requesting along with the original tool configuration. */
@@ -35145,6 +46010,13 @@ export interface ClientMessageToolCallsResult {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "tool-calls-result" is sent to forward the result of a tool call to the client. */
   type: "tool-calls-result";
   /** This is the timestamp of the message. */
@@ -35167,6 +46039,13 @@ export interface ClientMessageTransferUpdate {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "transfer-update" is sent whenever a transfer happens. */
   type: "transfer-update";
   /** This is the destination of the transfer. */
@@ -35200,8 +46079,20 @@ export interface ClientMessageUserInterrupted {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "user-interrupted" is sent when the user interrupts the assistant. */
   type: "user-interrupted";
+  /**
+   * This is the turnId of the LLM response that was interrupted. Matches the turnId
+   * on model-output messages so clients can discard the interrupted turn's tokens.
+   */
+  turnId?: string;
   /** This is the timestamp of the message. */
   timestamp?: number;
   /** This is the call that the message is associated with. */
@@ -35220,6 +46111,13 @@ export interface ClientMessageLanguageChangeDetected {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "language-change-detected" is sent when the transcriber is automatically switched based on the detected language. */
   type: "language-change-detected";
   /** This is the timestamp of the message. */
@@ -35242,6 +46140,13 @@ export interface ClientMessageVoiceInput {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "voice-input" is sent when a generation is requested from voice provider. */
   type: "voice-input";
   /** This is the timestamp of the message. */
@@ -35256,6 +46161,64 @@ export interface ClientMessageVoiceInput {
   input: string;
 }
 
+export interface ClientMessageAssistantSpeech {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
+  /** This is the type of the message. "assistant-speech" is sent as assistant audio is being played. */
+  type: "assistant.speechStarted";
+  /**
+   * The full assistant text for the current turn. This is the complete text,
+   * not an incremental delta — consumers should use `timing` metadata (e.g.
+   * `wordsSpoken`) to determine which portion has been spoken so far.
+   */
+  text: string;
+  /** This is the turn number of the assistant speech event (0-indexed). */
+  turn?: number;
+  /** Indicates how the text was sourced. */
+  source?: "model" | "force-say" | "custom-voice";
+  /**
+   * Optional timing metadata. Shape depends on `timing.type`:
+   *
+   * - `word-alignment` (ElevenLabs): per-character timing at playback
+   *   cadence. words[] includes space entries. Best consumed by tracking
+   *   a running character count: join timing.words, add to a char cursor,
+   *   and highlight text up to that position. No interpolation needed.
+   *
+   * - `word-progress` (Minimax with voice.subtitleType: 'word'): cursor-
+   *   based word count per TTS segment. Use wordsSpoken as the anchor,
+   *   interpolate forward using segmentDurationMs or timing.words until
+   *   the next event arrives.
+   *
+   * When absent, the event is a text-only fallback for providers without
+   * word-level timing (e.g. Cartesia, Deepgram, Azure). Text emits once
+   * per TTS chunk when audio is playing. Optionally interpolate a word
+   * cursor at ~3.5 words/sec between events for approximate tracking.
+   */
+  timing?:
+    | AssistantSpeechWordAlignmentTiming
+    | AssistantSpeechWordProgressTiming;
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+}
+
 export interface ClientMessageChatCreated {
   /** This is the phone number that the message is associated with. */
   phoneNumber?:
@@ -35264,6 +46227,13 @@ export interface ClientMessageChatCreated {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "chat.created" is sent when a new chat is created. */
   type: "chat.created";
   /** This is the timestamp of the message. */
@@ -35286,6 +46256,13 @@ export interface ClientMessageChatDeleted {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "chat.deleted" is sent when a chat is deleted. */
   type: "chat.deleted";
   /** This is the timestamp of the message. */
@@ -35308,6 +46285,13 @@ export interface ClientMessageSessionCreated {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "session.created" is sent when a new session is created. */
   type: "session.created";
   /** This is the timestamp of the message. */
@@ -35330,6 +46314,13 @@ export interface ClientMessageSessionUpdated {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "session.updated" is sent when a session is updated. */
   type: "session.updated";
   /** This is the timestamp of the message. */
@@ -35352,6 +46343,13 @@ export interface ClientMessageSessionDeleted {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "session.deleted" is sent when a session is deleted. */
   type: "session.deleted";
   /** This is the timestamp of the message. */
@@ -35374,6 +46372,13 @@ export interface ClientMessageCallDeleted {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "call.deleted" is sent when a call is deleted. */
   type: "call.deleted";
   /** This is the timestamp of the message. */
@@ -35394,6 +46399,13 @@ export interface ClientMessageCallDeleteFailed {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "call.deleted" is sent when a call is deleted. */
   type: "call.delete.failed";
   /** This is the timestamp of the message. */
@@ -35423,6 +46435,7 @@ export interface ClientMessage {
     | ClientMessageUserInterrupted
     | ClientMessageLanguageChangeDetected
     | ClientMessageVoiceInput
+    | ClientMessageAssistantSpeech
     | ClientMessageChatCreated
     | ClientMessageChatDeleted
     | ClientMessageSessionCreated
@@ -35440,6 +46453,13 @@ export interface ServerMessageAssistantRequest {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "assistant-request" is sent to fetch assistant configuration for an incoming call. */
   type: "assistant-request";
   /** This is the timestamp of the message. */
@@ -35468,6 +46488,13 @@ export interface ServerMessageConversationUpdate {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "conversation-update" is sent when an update is committed to the conversation history. */
   type: "conversation-update";
   /** This is the most up-to-date conversation history at the time the message is sent. */
@@ -35506,6 +46533,13 @@ export interface ServerMessageEndOfCallReport {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "end-of-call-report" is sent when the call ends and post-processing is complete. */
   type: "end-of-call-report";
   /** This is the reason the call ended. This can also be found at `call.endedReason` on GET /call/:id. */
@@ -35534,6 +46568,7 @@ export interface ServerMessageEndOfCallReport {
     | "call.start.error-subscription-upgrade-failed"
     | "call.start.error-subscription-concurrency-limit-reached"
     | "call.start.error-enterprise-feature-not-available-recording-consent"
+    | "call.start.assistant-version-error-validation"
     | "assistant-not-valid"
     | "call.start.error-vapifault-database-error"
     | "assistant-not-found"
@@ -35552,6 +46587,10 @@ export interface ServerMessageEndOfCallReport {
     | "pipeline-error-sesame-voice-failed"
     | "pipeline-error-inworld-voice-failed"
     | "pipeline-error-minimax-voice-failed"
+    | "pipeline-error-wellsaid-voice-failed"
+    | "pipeline-error-xai-voice-failed"
+    | "pipeline-error-microsoft-voice-failed"
+    | "pipeline-error-microsoft-voice-request-canceled"
     | "pipeline-error-tavus-video-failed"
     | "call.in-progress.error-vapifault-openai-voice-failed"
     | "call.in-progress.error-vapifault-cartesia-voice-failed"
@@ -35568,6 +46607,9 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-vapifault-sesame-voice-failed"
     | "call.in-progress.error-vapifault-inworld-voice-failed"
     | "call.in-progress.error-vapifault-minimax-voice-failed"
+    | "call.in-progress.error-vapifault-wellsaid-voice-failed"
+    | "call.in-progress.error-vapifault-xai-voice-failed"
+    | "call.in-progress.error-vapifault-microsoft-voice-failed"
     | "call.in-progress.error-vapifault-tavus-video-failed"
     | "pipeline-error-vapi-llm-failed"
     | "pipeline-error-vapi-400-bad-request-validation-failed"
@@ -35577,12 +46619,17 @@ export interface ServerMessageEndOfCallReport {
     | "pipeline-error-vapi-500-server-error"
     | "pipeline-error-vapi-503-server-overloaded-error"
     | "call.in-progress.error-providerfault-vapi-llm-failed"
+    | "call.in-progress.error-vapifault-vapi-llm-failed"
     | "call.in-progress.error-vapifault-vapi-400-bad-request-validation-failed"
     | "call.in-progress.error-vapifault-vapi-401-unauthorized"
     | "call.in-progress.error-vapifault-vapi-403-model-access-denied"
     | "call.in-progress.error-vapifault-vapi-429-exceeded-quota"
     | "call.in-progress.error-providerfault-vapi-500-server-error"
     | "call.in-progress.error-providerfault-vapi-503-server-overloaded-error"
+    | "pipeline-error-vapi-transcriber-failed"
+    | "call.in-progress.error-vapifault-vapi-transcriber-failed"
+    | "call.in-progress.error-providerfault-vapi-transcriber-failed"
+    | "call.in-progress.error-providerfault-vapi-voice-failed"
     | "pipeline-error-deepgram-transcriber-failed"
     | "pipeline-error-deepgram-transcriber-api-key-missing"
     | "call.in-progress.error-vapifault-deepgram-transcriber-failed"
@@ -35606,6 +46653,34 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-vapifault-talkscriber-transcriber-failed"
     | "pipeline-error-azure-speech-transcriber-failed"
     | "call.in-progress.error-vapifault-azure-speech-transcriber-failed"
+    | "pipeline-error-eleven-labs-transcriber-failed"
+    | "call.in-progress.error-vapifault-eleven-labs-transcriber-failed"
+    | "pipeline-error-google-transcriber-failed"
+    | "call.in-progress.error-vapifault-google-transcriber-failed"
+    | "pipeline-error-openai-transcriber-failed"
+    | "call.in-progress.error-vapifault-openai-transcriber-failed"
+    | "pipeline-error-soniox-transcriber-auth-failed"
+    | "pipeline-error-soniox-transcriber-rate-limited"
+    | "pipeline-error-soniox-transcriber-invalid-config"
+    | "pipeline-error-soniox-transcriber-server-error"
+    | "pipeline-error-soniox-transcriber-failed"
+    | "call.in-progress.error-vapifault-soniox-transcriber-auth-failed"
+    | "call.in-progress.error-vapifault-soniox-transcriber-rate-limited"
+    | "call.in-progress.error-vapifault-soniox-transcriber-invalid-config"
+    | "call.in-progress.error-vapifault-soniox-transcriber-server-error"
+    | "call.in-progress.error-vapifault-soniox-transcriber-failed"
+    | "pipeline-error-xai-transcriber-auth-failed"
+    | "pipeline-error-xai-transcriber-rate-limited"
+    | "pipeline-error-xai-transcriber-invalid-config"
+    | "pipeline-error-xai-transcriber-server-error"
+    | "pipeline-error-xai-transcriber-failed"
+    | "call.in-progress.error-vapifault-xai-transcriber-auth-failed"
+    | "call.in-progress.error-vapifault-xai-transcriber-rate-limited"
+    | "call.in-progress.error-vapifault-xai-transcriber-invalid-config"
+    | "call.in-progress.error-vapifault-xai-transcriber-server-error"
+    | "call.in-progress.error-vapifault-xai-transcriber-failed"
+    | "pipeline-error-cartesia-transcriber-failed"
+    | "call.in-progress.error-vapifault-cartesia-transcriber-failed"
     | "call.in-progress.error-pipeline-no-available-llm-model"
     | "worker-shutdown"
     | "vonage-disconnected"
@@ -35620,15 +46695,21 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-vapifault-worker-died"
     | "call.in-progress.twilio-completed-call"
     | "call.in-progress.sip-completed-call"
+    | "call.in-progress.error-sip-inbound-call-failed-to-connect"
+    | "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable"
+    | "call.in-progress.error-sip-outbound-call-failed-to-connect"
+    | "call.ringing.error-sip-inbound-call-failed-to-connect"
     | "call.in-progress.error-providerfault-openai-llm-failed"
     | "call.in-progress.error-providerfault-azure-openai-llm-failed"
     | "call.in-progress.error-providerfault-groq-llm-failed"
     | "call.in-progress.error-providerfault-google-llm-failed"
     | "call.in-progress.error-providerfault-xai-llm-failed"
     | "call.in-progress.error-providerfault-mistral-llm-failed"
+    | "call.in-progress.error-providerfault-minimax-llm-failed"
     | "call.in-progress.error-providerfault-inflection-ai-llm-failed"
     | "call.in-progress.error-providerfault-cerebras-llm-failed"
     | "call.in-progress.error-providerfault-deep-seek-llm-failed"
+    | "call.in-progress.error-providerfault-baseten-llm-failed"
     | "call.in-progress.error-vapifault-chat-pipeline-failed-to-start"
     | "pipeline-error-openai-400-bad-request-validation-failed"
     | "pipeline-error-openai-401-unauthorized"
@@ -35688,6 +46769,19 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-vapifault-xai-429-exceeded-quota"
     | "call.in-progress.error-providerfault-xai-500-server-error"
     | "call.in-progress.error-providerfault-xai-503-server-overloaded-error"
+    | "pipeline-error-baseten-400-bad-request-validation-failed"
+    | "pipeline-error-baseten-401-unauthorized"
+    | "pipeline-error-baseten-403-model-access-denied"
+    | "pipeline-error-baseten-429-exceeded-quota"
+    | "pipeline-error-baseten-500-server-error"
+    | "pipeline-error-baseten-503-server-overloaded-error"
+    | "pipeline-error-baseten-llm-failed"
+    | "call.in-progress.error-vapifault-baseten-400-bad-request-validation-failed"
+    | "call.in-progress.error-vapifault-baseten-401-unauthorized"
+    | "call.in-progress.error-vapifault-baseten-403-model-access-denied"
+    | "call.in-progress.error-vapifault-baseten-429-exceeded-quota"
+    | "call.in-progress.error-providerfault-baseten-500-server-error"
+    | "call.in-progress.error-providerfault-baseten-503-server-overloaded-error"
     | "pipeline-error-mistral-400-bad-request-validation-failed"
     | "pipeline-error-mistral-401-unauthorized"
     | "pipeline-error-mistral-403-model-access-denied"
@@ -35701,6 +46795,19 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-vapifault-mistral-429-exceeded-quota"
     | "call.in-progress.error-providerfault-mistral-500-server-error"
     | "call.in-progress.error-providerfault-mistral-503-server-overloaded-error"
+    | "pipeline-error-minimax-400-bad-request-validation-failed"
+    | "pipeline-error-minimax-401-unauthorized"
+    | "pipeline-error-minimax-403-model-access-denied"
+    | "pipeline-error-minimax-429-exceeded-quota"
+    | "pipeline-error-minimax-500-server-error"
+    | "pipeline-error-minimax-503-server-overloaded-error"
+    | "pipeline-error-minimax-llm-failed"
+    | "call.in-progress.error-vapifault-minimax-400-bad-request-validation-failed"
+    | "call.in-progress.error-vapifault-minimax-401-unauthorized"
+    | "call.in-progress.error-vapifault-minimax-403-model-access-denied"
+    | "call.in-progress.error-vapifault-minimax-429-exceeded-quota"
+    | "call.in-progress.error-providerfault-minimax-500-server-error"
+    | "call.in-progress.error-providerfault-minimax-503-server-overloaded-error"
     | "pipeline-error-inflection-ai-400-bad-request-validation-failed"
     | "pipeline-error-inflection-ai-401-unauthorized"
     | "pipeline-error-inflection-ai-403-model-access-denied"
@@ -35978,8 +47085,6 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-providerfault-playht-504-gateway-error"
     | "pipeline-error-custom-transcriber-failed"
     | "call.in-progress.error-vapifault-custom-transcriber-failed"
-    | "pipeline-error-eleven-labs-transcriber-failed"
-    | "call.in-progress.error-vapifault-eleven-labs-transcriber-failed"
     | "pipeline-error-deepgram-returning-400-no-such-model-language-tier-combination"
     | "pipeline-error-deepgram-returning-401-invalid-credentials"
     | "pipeline-error-deepgram-returning-403-model-access-denied"
@@ -35995,10 +47100,6 @@ export interface ServerMessageEndOfCallReport {
     | "call.in-progress.error-providerfault-deepgram-returning-500-invalid-json"
     | "call.in-progress.error-providerfault-deepgram-returning-502-network-error"
     | "call.in-progress.error-providerfault-deepgram-returning-502-bad-gateway-ehostunreach"
-    | "pipeline-error-google-transcriber-failed"
-    | "call.in-progress.error-vapifault-google-transcriber-failed"
-    | "pipeline-error-openai-transcriber-failed"
-    | "call.in-progress.error-vapifault-openai-transcriber-failed"
     | "call.in-progress.error-warm-transfer-max-duration"
     | "call.in-progress.error-warm-transfer-assistant-cancelled"
     | "call.in-progress.error-warm-transfer-silence-timeout"
@@ -36015,25 +47116,24 @@ export interface ServerMessageEndOfCallReport {
     | "customer-ended-call"
     | "customer-ended-call-before-warm-transfer"
     | "customer-ended-call-after-warm-transfer-attempt"
+    | "customer-ended-call-during-transfer"
     | "customer-did-not-answer"
     | "customer-did-not-give-microphone-permission"
     | "exceeded-max-duration"
     | "manually-canceled"
     | "phone-call-provider-closed-websocket"
     | "call.forwarding.operator-busy"
+    | "call.forwarding.no-answer"
     | "silence-timed-out"
-    | "call.in-progress.error-sip-inbound-call-failed-to-connect"
     | "call.in-progress.error-providerfault-outbound-sip-403-forbidden"
     | "call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required"
-    | "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable"
+    | "call.in-progress.error-providerfault-outbound-sip-408-request-timeout"
     | "call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable"
-    | "call.in-progress.error-sip-outbound-call-failed-to-connect"
     | "call.ringing.hook-executed-say"
     | "call.ringing.hook-executed-transfer"
     | "call.ending.hook-executed-say"
     | "call.ending.hook-executed-transfer"
     | "call.ringing.sip-inbound-caller-hungup-before-call-connect"
-    | "call.ringing.error-sip-inbound-call-failed-to-connect"
     | "twilio-failed-to-connect-call"
     | "twilio-reported-customer-misdialed"
     | "vonage-rejected"
@@ -36052,6 +47152,11 @@ export interface ServerMessageEndOfCallReport {
     | AnalysisCost
     | KnowledgeBaseCost
   )[];
+  /**
+   * This is the destination the call was transferred to, if the call was forwarded.
+   * This can also be found at `call.destination` on GET /call/:id.
+   */
+  destination?: TransferDestinationNumber | TransferDestinationSip;
   /** This is the timestamp of the message. */
   timestamp?: number;
   /** These are the artifacts from the call. This can also be found at `call.artifact` on GET /call/:id. */
@@ -36088,6 +47193,13 @@ export interface ServerMessageHandoffDestinationRequest {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "handoff-destination-request" is sent when the model is requesting handoff but destination is unknown. */
   type: "handoff-destination-request";
   /** This is the timestamp of the message. */
@@ -36118,6 +47230,13 @@ export interface ServerMessageHang {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /**
    * This is the type of the message. "hang" is sent when the assistant is hanging due to a delay. The delay can be caused by many factors, such as:
    * - the model is too slow to respond
@@ -36152,6 +47271,13 @@ export interface ServerMessageKnowledgeBaseRequest {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "knowledge-base-request" is sent to request knowledge base documents. To enable, use `assistant.knowledgeBase.provider=custom-knowledge-base`. */
   type: "knowledge-base-request";
   /** These are the messages that are going to be sent to the `model` right after the `knowledge-base-request` webhook completes. */
@@ -36190,8 +47316,20 @@ export interface ServerMessageModelOutput {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "model-output" is sent as the model outputs tokens. */
   type: "model-output";
+  /**
+   * This is the unique identifier for the current LLM turn. All tokens from the same
+   * LLM response share the same turnId. Use this to group tokens and discard on interruption.
+   */
+  turnId?: string;
   /** This is the timestamp of the message. */
   timestamp?: number;
   /**
@@ -36220,6 +47358,13 @@ export interface ServerMessagePhoneCallControl {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /**
    * This is the type of the message. "phone-call-control" is an advanced type of message.
    *
@@ -36256,6 +47401,13 @@ export interface ServerMessageSpeechUpdate {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "speech-update" is sent whenever assistant or user start or stop speaking. */
   type: "speech-update";
   /** This is the status of the speech update. */
@@ -36290,6 +47442,13 @@ export interface ServerMessageStatusUpdate {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "status-update" is sent whenever the `call.status` changes. */
   type: "status-update";
   /** This is the status of the call. */
@@ -36328,6 +47487,7 @@ export interface ServerMessageStatusUpdate {
     | "call.start.error-subscription-upgrade-failed"
     | "call.start.error-subscription-concurrency-limit-reached"
     | "call.start.error-enterprise-feature-not-available-recording-consent"
+    | "call.start.assistant-version-error-validation"
     | "assistant-not-valid"
     | "call.start.error-vapifault-database-error"
     | "assistant-not-found"
@@ -36346,6 +47506,10 @@ export interface ServerMessageStatusUpdate {
     | "pipeline-error-sesame-voice-failed"
     | "pipeline-error-inworld-voice-failed"
     | "pipeline-error-minimax-voice-failed"
+    | "pipeline-error-wellsaid-voice-failed"
+    | "pipeline-error-xai-voice-failed"
+    | "pipeline-error-microsoft-voice-failed"
+    | "pipeline-error-microsoft-voice-request-canceled"
     | "pipeline-error-tavus-video-failed"
     | "call.in-progress.error-vapifault-openai-voice-failed"
     | "call.in-progress.error-vapifault-cartesia-voice-failed"
@@ -36362,6 +47526,9 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-vapifault-sesame-voice-failed"
     | "call.in-progress.error-vapifault-inworld-voice-failed"
     | "call.in-progress.error-vapifault-minimax-voice-failed"
+    | "call.in-progress.error-vapifault-wellsaid-voice-failed"
+    | "call.in-progress.error-vapifault-xai-voice-failed"
+    | "call.in-progress.error-vapifault-microsoft-voice-failed"
     | "call.in-progress.error-vapifault-tavus-video-failed"
     | "pipeline-error-vapi-llm-failed"
     | "pipeline-error-vapi-400-bad-request-validation-failed"
@@ -36371,12 +47538,17 @@ export interface ServerMessageStatusUpdate {
     | "pipeline-error-vapi-500-server-error"
     | "pipeline-error-vapi-503-server-overloaded-error"
     | "call.in-progress.error-providerfault-vapi-llm-failed"
+    | "call.in-progress.error-vapifault-vapi-llm-failed"
     | "call.in-progress.error-vapifault-vapi-400-bad-request-validation-failed"
     | "call.in-progress.error-vapifault-vapi-401-unauthorized"
     | "call.in-progress.error-vapifault-vapi-403-model-access-denied"
     | "call.in-progress.error-vapifault-vapi-429-exceeded-quota"
     | "call.in-progress.error-providerfault-vapi-500-server-error"
     | "call.in-progress.error-providerfault-vapi-503-server-overloaded-error"
+    | "pipeline-error-vapi-transcriber-failed"
+    | "call.in-progress.error-vapifault-vapi-transcriber-failed"
+    | "call.in-progress.error-providerfault-vapi-transcriber-failed"
+    | "call.in-progress.error-providerfault-vapi-voice-failed"
     | "pipeline-error-deepgram-transcriber-failed"
     | "pipeline-error-deepgram-transcriber-api-key-missing"
     | "call.in-progress.error-vapifault-deepgram-transcriber-failed"
@@ -36400,6 +47572,34 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-vapifault-talkscriber-transcriber-failed"
     | "pipeline-error-azure-speech-transcriber-failed"
     | "call.in-progress.error-vapifault-azure-speech-transcriber-failed"
+    | "pipeline-error-eleven-labs-transcriber-failed"
+    | "call.in-progress.error-vapifault-eleven-labs-transcriber-failed"
+    | "pipeline-error-google-transcriber-failed"
+    | "call.in-progress.error-vapifault-google-transcriber-failed"
+    | "pipeline-error-openai-transcriber-failed"
+    | "call.in-progress.error-vapifault-openai-transcriber-failed"
+    | "pipeline-error-soniox-transcriber-auth-failed"
+    | "pipeline-error-soniox-transcriber-rate-limited"
+    | "pipeline-error-soniox-transcriber-invalid-config"
+    | "pipeline-error-soniox-transcriber-server-error"
+    | "pipeline-error-soniox-transcriber-failed"
+    | "call.in-progress.error-vapifault-soniox-transcriber-auth-failed"
+    | "call.in-progress.error-vapifault-soniox-transcriber-rate-limited"
+    | "call.in-progress.error-vapifault-soniox-transcriber-invalid-config"
+    | "call.in-progress.error-vapifault-soniox-transcriber-server-error"
+    | "call.in-progress.error-vapifault-soniox-transcriber-failed"
+    | "pipeline-error-xai-transcriber-auth-failed"
+    | "pipeline-error-xai-transcriber-rate-limited"
+    | "pipeline-error-xai-transcriber-invalid-config"
+    | "pipeline-error-xai-transcriber-server-error"
+    | "pipeline-error-xai-transcriber-failed"
+    | "call.in-progress.error-vapifault-xai-transcriber-auth-failed"
+    | "call.in-progress.error-vapifault-xai-transcriber-rate-limited"
+    | "call.in-progress.error-vapifault-xai-transcriber-invalid-config"
+    | "call.in-progress.error-vapifault-xai-transcriber-server-error"
+    | "call.in-progress.error-vapifault-xai-transcriber-failed"
+    | "pipeline-error-cartesia-transcriber-failed"
+    | "call.in-progress.error-vapifault-cartesia-transcriber-failed"
     | "call.in-progress.error-pipeline-no-available-llm-model"
     | "worker-shutdown"
     | "vonage-disconnected"
@@ -36414,15 +47614,21 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-vapifault-worker-died"
     | "call.in-progress.twilio-completed-call"
     | "call.in-progress.sip-completed-call"
+    | "call.in-progress.error-sip-inbound-call-failed-to-connect"
+    | "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable"
+    | "call.in-progress.error-sip-outbound-call-failed-to-connect"
+    | "call.ringing.error-sip-inbound-call-failed-to-connect"
     | "call.in-progress.error-providerfault-openai-llm-failed"
     | "call.in-progress.error-providerfault-azure-openai-llm-failed"
     | "call.in-progress.error-providerfault-groq-llm-failed"
     | "call.in-progress.error-providerfault-google-llm-failed"
     | "call.in-progress.error-providerfault-xai-llm-failed"
     | "call.in-progress.error-providerfault-mistral-llm-failed"
+    | "call.in-progress.error-providerfault-minimax-llm-failed"
     | "call.in-progress.error-providerfault-inflection-ai-llm-failed"
     | "call.in-progress.error-providerfault-cerebras-llm-failed"
     | "call.in-progress.error-providerfault-deep-seek-llm-failed"
+    | "call.in-progress.error-providerfault-baseten-llm-failed"
     | "call.in-progress.error-vapifault-chat-pipeline-failed-to-start"
     | "pipeline-error-openai-400-bad-request-validation-failed"
     | "pipeline-error-openai-401-unauthorized"
@@ -36482,6 +47688,19 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-vapifault-xai-429-exceeded-quota"
     | "call.in-progress.error-providerfault-xai-500-server-error"
     | "call.in-progress.error-providerfault-xai-503-server-overloaded-error"
+    | "pipeline-error-baseten-400-bad-request-validation-failed"
+    | "pipeline-error-baseten-401-unauthorized"
+    | "pipeline-error-baseten-403-model-access-denied"
+    | "pipeline-error-baseten-429-exceeded-quota"
+    | "pipeline-error-baseten-500-server-error"
+    | "pipeline-error-baseten-503-server-overloaded-error"
+    | "pipeline-error-baseten-llm-failed"
+    | "call.in-progress.error-vapifault-baseten-400-bad-request-validation-failed"
+    | "call.in-progress.error-vapifault-baseten-401-unauthorized"
+    | "call.in-progress.error-vapifault-baseten-403-model-access-denied"
+    | "call.in-progress.error-vapifault-baseten-429-exceeded-quota"
+    | "call.in-progress.error-providerfault-baseten-500-server-error"
+    | "call.in-progress.error-providerfault-baseten-503-server-overloaded-error"
     | "pipeline-error-mistral-400-bad-request-validation-failed"
     | "pipeline-error-mistral-401-unauthorized"
     | "pipeline-error-mistral-403-model-access-denied"
@@ -36495,6 +47714,19 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-vapifault-mistral-429-exceeded-quota"
     | "call.in-progress.error-providerfault-mistral-500-server-error"
     | "call.in-progress.error-providerfault-mistral-503-server-overloaded-error"
+    | "pipeline-error-minimax-400-bad-request-validation-failed"
+    | "pipeline-error-minimax-401-unauthorized"
+    | "pipeline-error-minimax-403-model-access-denied"
+    | "pipeline-error-minimax-429-exceeded-quota"
+    | "pipeline-error-minimax-500-server-error"
+    | "pipeline-error-minimax-503-server-overloaded-error"
+    | "pipeline-error-minimax-llm-failed"
+    | "call.in-progress.error-vapifault-minimax-400-bad-request-validation-failed"
+    | "call.in-progress.error-vapifault-minimax-401-unauthorized"
+    | "call.in-progress.error-vapifault-minimax-403-model-access-denied"
+    | "call.in-progress.error-vapifault-minimax-429-exceeded-quota"
+    | "call.in-progress.error-providerfault-minimax-500-server-error"
+    | "call.in-progress.error-providerfault-minimax-503-server-overloaded-error"
     | "pipeline-error-inflection-ai-400-bad-request-validation-failed"
     | "pipeline-error-inflection-ai-401-unauthorized"
     | "pipeline-error-inflection-ai-403-model-access-denied"
@@ -36772,8 +48004,6 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-providerfault-playht-504-gateway-error"
     | "pipeline-error-custom-transcriber-failed"
     | "call.in-progress.error-vapifault-custom-transcriber-failed"
-    | "pipeline-error-eleven-labs-transcriber-failed"
-    | "call.in-progress.error-vapifault-eleven-labs-transcriber-failed"
     | "pipeline-error-deepgram-returning-400-no-such-model-language-tier-combination"
     | "pipeline-error-deepgram-returning-401-invalid-credentials"
     | "pipeline-error-deepgram-returning-403-model-access-denied"
@@ -36789,10 +48019,6 @@ export interface ServerMessageStatusUpdate {
     | "call.in-progress.error-providerfault-deepgram-returning-500-invalid-json"
     | "call.in-progress.error-providerfault-deepgram-returning-502-network-error"
     | "call.in-progress.error-providerfault-deepgram-returning-502-bad-gateway-ehostunreach"
-    | "pipeline-error-google-transcriber-failed"
-    | "call.in-progress.error-vapifault-google-transcriber-failed"
-    | "pipeline-error-openai-transcriber-failed"
-    | "call.in-progress.error-vapifault-openai-transcriber-failed"
     | "call.in-progress.error-warm-transfer-max-duration"
     | "call.in-progress.error-warm-transfer-assistant-cancelled"
     | "call.in-progress.error-warm-transfer-silence-timeout"
@@ -36809,25 +48035,24 @@ export interface ServerMessageStatusUpdate {
     | "customer-ended-call"
     | "customer-ended-call-before-warm-transfer"
     | "customer-ended-call-after-warm-transfer-attempt"
+    | "customer-ended-call-during-transfer"
     | "customer-did-not-answer"
     | "customer-did-not-give-microphone-permission"
     | "exceeded-max-duration"
     | "manually-canceled"
     | "phone-call-provider-closed-websocket"
     | "call.forwarding.operator-busy"
+    | "call.forwarding.no-answer"
     | "silence-timed-out"
-    | "call.in-progress.error-sip-inbound-call-failed-to-connect"
     | "call.in-progress.error-providerfault-outbound-sip-403-forbidden"
     | "call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required"
-    | "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable"
+    | "call.in-progress.error-providerfault-outbound-sip-408-request-timeout"
     | "call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable"
-    | "call.in-progress.error-sip-outbound-call-failed-to-connect"
     | "call.ringing.hook-executed-say"
     | "call.ringing.hook-executed-transfer"
     | "call.ending.hook-executed-say"
     | "call.ending.hook-executed-transfer"
     | "call.ringing.sip-inbound-caller-hungup-before-call-connect"
-    | "call.ringing.error-sip-inbound-call-failed-to-connect"
     | "twilio-failed-to-connect-call"
     | "twilio-reported-customer-misdialed"
     | "vonage-rejected"
@@ -36881,6 +48106,13 @@ export interface ServerMessageToolCalls {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "tool-calls" is sent to call a tool. */
   type?: "tool-calls";
   /** This is the list of tools calls that the model is requesting along with the original tool configuration. */
@@ -36921,6 +48153,13 @@ export interface ServerMessageTransferDestinationRequest {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "transfer-destination-request" is sent when the model is requesting transfer but destination is unknown. */
   type: "transfer-destination-request";
   /** This is the timestamp of the message. */
@@ -36949,6 +48188,13 @@ export interface ServerMessageTransferUpdate {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "transfer-update" is sent whenever a transfer happens. */
   type: "transfer-update";
   /** This is the destination of the transfer. */
@@ -36990,6 +48236,13 @@ export interface ServerMessageTranscript {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript. */
   type: "transcript" | "transcript[transcriptType='final']";
   /** This is the timestamp of the message. */
@@ -37014,6 +48267,16 @@ export interface ServerMessageTranscript {
   transcriptType: "partial" | "final";
   /** This is the transcript content. */
   transcript: string;
+  /**
+   * The ID of the assistant that produced this transcript. Present on
+   * assistant-role events when an active assistant ID is available.
+   */
+  assistantId?: string;
+  /**
+   * The name of the assistant that produced this transcript. Present on
+   * assistant-role events when an active assistant name is available.
+   */
+  assistantName?: string;
   /** Indicates if the transcript was filtered for security reasons. */
   isFiltered?: boolean;
   /** List of detected security threats if the transcript was filtered. */
@@ -37030,8 +48293,20 @@ export interface ServerMessageUserInterrupted {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "user-interrupted" is sent when the user interrupts the assistant. */
   type: "user-interrupted";
+  /**
+   * This is the turnId of the LLM response that was interrupted. Matches the turnId
+   * on model-output messages so clients can discard the interrupted turn's tokens.
+   */
+  turnId?: string;
   /** This is the timestamp of the message. */
   timestamp?: number;
   /**
@@ -37058,6 +48333,13 @@ export interface ServerMessageLanguageChangeDetected {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "language-change-detected" is sent when the transcriber is automatically switched based on the detected language. */
   type: "language-change-detected";
   /** This is the timestamp of the message. */
@@ -37088,6 +48370,13 @@ export interface ServerMessageVoiceInput {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "voice-input" is sent when a generation is requested from voice provider. */
   type: "voice-input";
   /** This is the timestamp of the message. */
@@ -37110,6 +48399,72 @@ export interface ServerMessageVoiceInput {
   input: string;
 }
 
+export interface ServerMessageAssistantSpeech {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
+  /** This is the type of the message. "assistant-speech" is sent as assistant audio is being played. */
+  type: "assistant.speechStarted";
+  /**
+   * The full assistant text for the current turn. This is the complete text,
+   * not an incremental delta — consumers should use `timing` metadata (e.g.
+   * `wordsSpoken`) to determine which portion has been spoken so far.
+   */
+  text: string;
+  /** This is the turn number of the assistant speech event (0-indexed). */
+  turn?: number;
+  /** Indicates how the text was sourced. */
+  source?: "model" | "force-say" | "custom-voice";
+  /**
+   * Optional timing metadata. Shape depends on `timing.type`:
+   *
+   * - `word-alignment` (ElevenLabs): per-character timing at playback
+   *   cadence. words[] includes space entries. Best consumed by tracking
+   *   a running character count: join timing.words, add to a char cursor,
+   *   and highlight text up to that position. No interpolation needed.
+   *
+   * - `word-progress` (Minimax with voice.subtitleType: 'word'): cursor-
+   *   based word count per TTS segment. Use wordsSpoken as the anchor,
+   *   interpolate forward using segmentDurationMs or timing.words until
+   *   the next event arrives.
+   *
+   * When absent, the event is a text-only fallback for providers without
+   * word-level timing (e.g. Cartesia, Deepgram, Azure). Text emits once
+   * per TTS chunk when audio is playing. Optionally interpolate a word
+   * cursor at ~3.5 words/sec between events for approximate tracking.
+   */
+  timing?:
+    | AssistantSpeechWordAlignmentTiming
+    | AssistantSpeechWordProgressTiming;
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
+}
+
 export interface ServerMessageVoiceRequest {
   /** This is the phone number that the message is associated with. */
   phoneNumber?:
@@ -37118,6 +48473,13 @@ export interface ServerMessageVoiceRequest {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /**
    * This is the type of the message. "voice-request" is sent when using `assistant.voice={ "type": "custom-voice" }`.
    *
@@ -37173,6 +48535,13 @@ export interface ServerMessageCallEndpointingRequest {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /**
    * This is the type of the message. "call.endpointing.request" is sent when using `assistant.startSpeakingPlan.smartEndpointingPlan={ "provider": "custom-endpointing-model" }`.
    *
@@ -37238,6 +48607,13 @@ export interface ServerMessageChatCreated {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "chat.created" is sent when a new chat is created. */
   type: "chat.created";
   /** This is the timestamp of the message. */
@@ -37266,6 +48642,13 @@ export interface ServerMessageChatDeleted {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "chat.deleted" is sent when a chat is deleted. */
   type: "chat.deleted";
   /** This is the timestamp of the message. */
@@ -37294,6 +48677,13 @@ export interface ServerMessageSessionCreated {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "session.created" is sent when a new session is created. */
   type: "session.created";
   /** This is the timestamp of the message. */
@@ -37324,6 +48714,13 @@ export interface ServerMessageSessionUpdated {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "session.updated" is sent when a session is updated. */
   type: "session.updated";
   /** This is the timestamp of the message. */
@@ -37354,6 +48751,13 @@ export interface ServerMessageSessionDeleted {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "session.deleted" is sent when a session is deleted. */
   type: "session.deleted";
   /** This is the timestamp of the message. */
@@ -37384,6 +48788,13 @@ export interface ServerMessageCallDeleted {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "call.deleted" is sent when a call is deleted. */
   type: "call.deleted";
   /** This is the timestamp of the message. */
@@ -37412,8 +48823,133 @@ export interface ServerMessageCallDeleteFailed {
     | CreateVonagePhoneNumberDTO
     | CreateVapiPhoneNumberDTO
     | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
   /** This is the type of the message. "call.deleted" is sent when a call is deleted. */
   type: "call.delete.failed";
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
+}
+
+export interface CallArtifactUploadItem {
+  /** The artifact this result refers to. */
+  type:
+    | "end-of-call-report"
+    | "recording-mono"
+    | "recording-stereo"
+    | "recording-assistant"
+    | "recording-customer"
+    | "log"
+    | "pcap";
+  /** Whether this artifact was stored successfully in your own configured storage. */
+  success: boolean;
+}
+
+export interface ServerMessageCallArtifactUpload {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
+  /**
+   * This is the type of the message. "call.artifact.upload" is sent after a call
+   * to report whether each artifact was stored in your own configured storage.
+   */
+  type: "call.artifact.upload";
+  /**
+   * One entry per artifact whose write targeted your own configured storage,
+   * each reporting whether that artifact was stored successfully. Artifacts that
+   * were not destined for your own storage (Vapi default storage, or no storage
+   * credential configured) are omitted, and this message is sent only when at
+   * least one artifact targeted your own storage.
+   */
+  artifacts: CallArtifactUploadItem[];
+  /** This is the timestamp of the message. */
+  timestamp?: number;
+  /**
+   * This is a live version of the `call.artifact`.
+   *
+   * This matches what is stored on `call.artifact` after the call.
+   */
+  artifact?: Artifact;
+  /** This is the assistant that the message is associated with. */
+  assistant?: CreateAssistantDTO;
+  /** This is the customer that the message is associated with. */
+  customer?: CreateCustomerDTO;
+  /** This is the call that the message is associated with. */
+  call?: Call;
+  /** This is the chat object. */
+  chat?: Chat;
+}
+
+export interface CampaignContact {
+  id: string;
+  campaignId: string;
+  orgId: string;
+  customerId?: string;
+  /**
+   * @minLength 3
+   * @maxLength 40
+   */
+  number: string;
+  /** @maxLength 40 */
+  name?: string;
+  assistantOverrides?: AssistantOverrides;
+  /** Use this when the campaign targets a `squadId`. Mirrors the call-level `squadOverrides` field. Merged with the campaign-level squadOverrides at dispatch time. */
+  squadOverrides?: AssistantOverrides;
+  /** @format date-time */
+  createdAt: string;
+}
+
+export interface ServerMessageCampaignPredial {
+  /** This is the phone number that the message is associated with. */
+  phoneNumber?:
+    | CreateByoPhoneNumberDTO
+    | CreateTwilioPhoneNumberDTO
+    | CreateVonagePhoneNumberDTO
+    | CreateVapiPhoneNumberDTO
+    | CreateTelnyxPhoneNumberDTO;
+  /**
+   * This is the version label (e.g. `v3`) of the assistant the call was
+   * configured with. `null` for inline assistants, squad/workflow calls,
+   * pre-resolution assistant-request messages, and orgs not on
+   * assistant versioning.
+   */
+  assistantVersion?: string | null;
+  /** This is the type of the message. "campaign.predial" is sent to the campaign's server before each contact is dialed, so the server can decide whether the contact is eligible to be called. It is only sent when the campaign's `predialPlan` is set (and not disabled). */
+  type: "campaign.predial";
+  /** This is the ID of the campaign the contact belongs to. */
+  campaignId: string;
+  /** This is the contact that is about to be dialed. */
+  contact: CampaignContact;
   /** This is the timestamp of the message. */
   timestamp?: number;
   /**
@@ -37461,6 +48997,7 @@ export interface ServerMessage {
     | ServerMessageUserInterrupted
     | ServerMessageLanguageChangeDetected
     | ServerMessageVoiceInput
+    | ServerMessageAssistantSpeech
     | ServerMessageVoiceRequest
     | ServerMessageCallEndpointingRequest
     | ServerMessageChatCreated
@@ -37469,7 +49006,9 @@ export interface ServerMessage {
     | ServerMessageSessionUpdated
     | ServerMessageSessionDeleted
     | ServerMessageCallDeleted
-    | ServerMessageCallDeleteFailed;
+    | ServerMessageCallDeleteFailed
+    | ServerMessageCallArtifactUpload
+    | ServerMessageCampaignPredial;
 }
 
 export interface ServerMessageResponseAssistantRequest {
@@ -37551,8 +49090,10 @@ export interface ServerMessageResponseAssistantRequest {
 }
 
 export interface ServerMessageResponseHandoffDestinationRequest {
+  /** This is the local tool result message returned for the handoff tool call. */
+  result?: string;
   /** This is the destination you'd like the call to be transferred to. */
-  destination: HandoffDestinationAssistant;
+  destination: object;
   /** This is the error message if the handoff should not be made. */
   error?: string;
 }
@@ -37668,6 +49209,11 @@ export interface ServerMessageResponseCallEndpointingRequest {
   timeoutSeconds: number;
 }
 
+export interface ServerMessageResponseCampaignPredial {
+  /** This is whether the contact is eligible to be dialed. `true` places the call; `false` skips the contact. Any other response — a missing or non-boolean `eligible`, an unreachable server, an error, or a timeout — records a pre-dial failure for the contact and the call is not placed. */
+  eligible: boolean;
+}
+
 export interface ServerMessageResponse {
   /**
    * This is the response that is expected from the server to the message.
@@ -37681,7 +49227,8 @@ export interface ServerMessageResponse {
     | ServerMessageResponseToolCalls
     | ServerMessageResponseTransferDestinationRequest
     | ServerMessageResponseVoiceRequest
-    | ServerMessageResponseCallEndpointingRequest;
+    | ServerMessageResponseCallEndpointingRequest
+    | ServerMessageResponseCampaignPredial;
 }
 
 export interface ClientInboundMessageAddMessage {
@@ -37753,6 +49300,13 @@ export interface ClientInboundMessageTransfer {
   content?: string;
 }
 
+export interface ClientInboundMessageSendTransportMessage {
+  /** This is the type of the message. Send "send-transport-message" to send a transport-specific message during the call. */
+  type: "send-transport-message";
+  /** This is the transport-specific message to send. */
+  message: VapiSipTransportMessage | TwilioTransportMessage;
+}
+
 export interface ClientInboundMessage {
   /** These are the messages that can be sent from client-side SDKs to control the call. */
   message:
@@ -37760,186 +49314,8 @@ export interface ClientInboundMessage {
     | ClientInboundMessageControl
     | ClientInboundMessageSay
     | ClientInboundMessageEndCall
-    | ClientInboundMessageTransfer;
-}
-
-export interface BotMessage {
-  /** The role of the bot in the conversation. */
-  role: string;
-  /** The message content from the bot. */
-  message: string;
-  /** The timestamp when the message was sent. */
-  time: number;
-  /** The timestamp when the message ended. */
-  endTime: number;
-  /** The number of seconds from the start of the conversation. */
-  secondsFromStart: number;
-  /** The source of the message. */
-  source?: string;
-  /** The duration of the message in seconds. */
-  duration?: number;
-  /** Stable speaker label for diarized user speakers (e.g., "Speaker 1"). */
-  speakerLabel?: string;
-}
-
-export interface ToolCallMessage {
-  /** The role of the tool call in the conversation. */
-  role: string;
-  /** The list of tool calls made during the conversation. */
-  toolCalls: object[];
-  /** The message content for the tool call. */
-  message: string;
-  /** The timestamp when the message was sent. */
-  time: number;
-  /** The number of seconds from the start of the conversation. */
-  secondsFromStart: number;
-}
-
-export interface ToolCallResultMessage {
-  /** The role of the tool call result in the conversation. */
-  role: string;
-  /** The ID of the tool call. */
-  toolCallId: string;
-  /** The name of the tool that returned the result. */
-  name: string;
-  /** The result of the tool call in JSON format. */
-  result: string;
-  /** The timestamp when the message was sent. */
-  time: number;
-  /** The number of seconds from the start of the conversation. */
-  secondsFromStart: number;
-  /** The metadata for the tool call result. */
-  metadata?: object;
-}
-
-export interface TransportCost {
-  /** This is the type of cost, always 'transport' for this class. */
-  type: "transport";
-  provider?:
-    | "daily"
-    | "vapi.websocket"
-    | "twilio"
-    | "vonage"
-    | "telnyx"
-    | "vapi.sip";
-  /** This is the minutes of `transport` usage. This should match `call.endedAt` - `call.startedAt`. */
-  minutes: number;
-  /** This is the cost of the component in USD. */
-  cost: number;
-}
-
-export interface TranscriberCost {
-  /** This is the type of cost, always 'transcriber' for this class. */
-  type: "transcriber";
-  /**
-   * This is the transcriber that was used during the call.
-   *
-   * This matches one of the below:
-   * - `call.assistant.transcriber`,
-   * - `call.assistantId->transcriber`,
-   * - `call.squad[n].assistant.transcriber`,
-   * - `call.squad[n].assistantId->transcriber`,
-   * - `call.squadId->[n].assistant.transcriber`,
-   * - `call.squadId->[n].assistantId->transcriber`.
-   */
-  transcriber: object;
-  /** This is the minutes of `transcriber` usage. This should match `call.endedAt` - `call.startedAt` for single assistant calls, while squad calls will have multiple transcriber costs one for each assistant that was used. */
-  minutes: number;
-  /** This is the cost of the component in USD. */
-  cost: number;
-}
-
-export interface ModelCost {
-  /** This is the type of cost, always 'model' for this class. */
-  type: "model";
-  /**
-   * This is the model that was used during the call.
-   *
-   * This matches one of the following:
-   * - `call.assistant.model`,
-   * - `call.assistantId->model`,
-   * - `call.squad[n].assistant.model`,
-   * - `call.squad[n].assistantId->model`,
-   * - `call.squadId->[n].assistant.model`,
-   * - `call.squadId->[n].assistantId->model`.
-   */
-  model: object;
-  /** This is the number of prompt tokens used in the call. These should be total prompt tokens used in the call for single assistant calls, while squad calls will have multiple model costs one for each assistant that was used. */
-  promptTokens: number;
-  /** This is the number of completion tokens generated in the call. These should be total completion tokens used in the call for single assistant calls, while squad calls will have multiple model costs one for each assistant that was used. */
-  completionTokens: number;
-  /** This is the cost of the component in USD. */
-  cost: number;
-}
-
-export interface VoiceCost {
-  /** This is the type of cost, always 'voice' for this class. */
-  type: "voice";
-  /**
-   * This is the voice that was used during the call.
-   *
-   * This matches one of the following:
-   * - `call.assistant.voice`,
-   * - `call.assistantId->voice`,
-   * - `call.squad[n].assistant.voice`,
-   * - `call.squad[n].assistantId->voice`,
-   * - `call.squadId->[n].assistant.voice`,
-   * - `call.squadId->[n].assistantId->voice`.
-   */
-  voice: object;
-  /** This is the number of characters that were generated during the call. These should be total characters used in the call for single assistant calls, while squad calls will have multiple voice costs one for each assistant that was used. */
-  characters: number;
-  /** This is the cost of the component in USD. */
-  cost: number;
-}
-
-export interface VapiCost {
-  /** This is the type of cost, always 'vapi' for this class. */
-  type: "vapi";
-  /** This is the sub type of the cost. */
-  subType: "normal" | "overage";
-  /** This is the minutes of Vapi usage. This should match `call.endedAt` - `call.startedAt`. */
-  minutes: number;
-  /** This is the cost of the component in USD. */
-  cost: number;
-}
-
-export interface AnalysisCost {
-  /** This is the type of cost, always 'analysis' for this class. */
-  type: "analysis";
-  /** This is the type of analysis performed. */
-  analysisType:
-    | "summary"
-    | "structuredData"
-    | "successEvaluation"
-    | "structuredOutput";
-  /** This is the model that was used to perform the analysis. */
-  model: object;
-  /** This is the number of prompt tokens used in the analysis. */
-  promptTokens: number;
-  /** This is the number of completion tokens generated in the analysis. */
-  completionTokens: number;
-  /** This is the cost of the component in USD. */
-  cost: number;
-}
-
-export interface VoicemailDetectionCost {
-  /** This is the type of cost, always 'voicemail-detection' for this class. */
-  type: "voicemail-detection";
-  /** This is the model that was used to perform the analysis. */
-  model: object;
-  /** This is the provider that was used to detect the voicemail. */
-  provider: "twilio" | "google" | "openai" | "vapi";
-  /** This is the number of prompt text tokens used in the voicemail detection. */
-  promptTextTokens: number;
-  /** This is the number of prompt audio tokens used in the voicemail detection. */
-  promptAudioTokens: number;
-  /** This is the number of completion text tokens used in the voicemail detection. */
-  completionTextTokens: number;
-  /** This is the number of completion audio tokens used in the voicemail detection. */
-  completionAudioTokens: number;
-  /** This is the cost of the component in USD. */
-  cost: number;
+    | ClientInboundMessageTransfer
+    | ClientInboundMessageSendTransportMessage;
 }
 
 export interface KnowledgeBaseCost {
@@ -37955,13 +49331,6 @@ export interface KnowledgeBaseCost {
   cost: number;
 }
 
-export interface ChatCost {
-  /** This is the type of cost, always 'chat' for this class. */
-  type: "chat";
-  /** This is the cost of the component in USD. */
-  cost: number;
-}
-
 export interface SessionCost {
   /** This is the type of cost, always 'session' for this class. */
   type: "session";
@@ -37970,11 +49339,7 @@ export interface SessionCost {
 }
 
 export interface FunctionToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -38006,6 +49371,10 @@ export interface FunctionToolWithToolCall {
    *   - Webhook expects a response with tool call result.
    */
   server?: Server;
+  /** Plan to extract variables from the tool response */
+  variableExtractionPlan?: VariableExtractionPlan;
+  /** Static key-value pairs merged into the request body. Values support Liquid templates. */
+  parameters?: ToolParameter[];
   toolCall: ToolCall;
   /** This is the function definition of the tool. */
   function?: OpenAIFunction;
@@ -38093,11 +49462,7 @@ export interface FunctionToolWithToolCall {
 }
 
 export interface GhlToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -38192,11 +49557,7 @@ export interface GhlToolWithToolCall {
 }
 
 export interface MakeToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -38291,11 +49652,7 @@ export interface MakeToolWithToolCall {
 }
 
 export interface BashToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -38408,11 +49765,7 @@ export interface BashToolWithToolCall {
 }
 
 export interface ComputerToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -38531,11 +49884,7 @@ export interface ComputerToolWithToolCall {
 }
 
 export interface TextEditorToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -38648,11 +49997,7 @@ export interface TextEditorToolWithToolCall {
 }
 
 export interface GoogleCalendarCreateEventToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -38746,11 +50091,7 @@ export interface GoogleCalendarCreateEventToolWithToolCall {
 }
 
 export interface GoogleSheetsRowAppendToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -38844,11 +50185,7 @@ export interface GoogleSheetsRowAppendToolWithToolCall {
 }
 
 export interface GoHighLevelCalendarAvailabilityToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -38942,11 +50279,7 @@ export interface GoHighLevelCalendarAvailabilityToolWithToolCall {
 }
 
 export interface GoHighLevelCalendarEventCreateToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -39040,11 +50373,7 @@ export interface GoHighLevelCalendarEventCreateToolWithToolCall {
 }
 
 export interface GoHighLevelContactCreateToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -39138,11 +50467,7 @@ export interface GoHighLevelContactCreateToolWithToolCall {
 }
 
 export interface GoHighLevelContactGetToolWithToolCall {
-  /**
-   * These are the messages that will be spoken to the user as the tool is running.
-   *
-   * For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-   */
+  /** Messages spoken while the tool is running. Multiple request-start messages are variants. For request-response-delayed, same timing means variants and different timings mean staged updates. */
   messages?: (
     | ToolMessageStart
     | ToolMessageComplete
@@ -39233,6 +50558,24 @@ export interface GoHighLevelContactGetToolWithToolCall {
    * ```
    */
   rejectionPlan?: ToolRejectionPlan;
+}
+
+export interface VapiSipTransportMessage {
+  /** This is the transport type. */
+  transport: "vapi.sip";
+  /** This is the SIP verb to use. Must be one of INFO, MESSAGE, or NOTIFY. */
+  sipVerb: "INFO" | "MESSAGE" | "NOTIFY";
+  /** These are the headers to include with the SIP request. */
+  headers?: object;
+  /** This is the body of the SIP request, if any. */
+  body?: string;
+}
+
+export interface TwilioTransportMessage {
+  /** This is the transport type. */
+  transport: "twilio";
+  /** This is the TwiML to send to the Twilio call. */
+  twiml: string;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -39598,6 +50941,38 @@ export class Api<
      * No description
      *
      * @tags Assistants
+     * @name AssistantControllerFindAllOrgDrafts
+     * @summary List All Assistant Drafts
+     * @request GET:/assistant/draft
+     * @secure
+     */
+    assistantControllerFindAllOrgDrafts: (
+      query?: {
+        /** Opaque base64-encoded keyset cursor. Omit on first page. */
+        cursor?: string;
+        /**
+         * Page size, defaults to 25, capped at 100.
+         * @min 1
+         * @max 100
+         */
+        limit?: number;
+        createdBy?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantDraftPaginatedResponse, any>({
+        path: `/assistant/draft`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
      * @name AssistantControllerFindOne
      * @summary Get Assistant
      * @request GET:/assistant/{id}
@@ -39670,7 +51045,7 @@ export class Api<
      * @secure
      */
     assistantControllerRemove: (id: string, params: RequestParams = {}) =>
-      this.request<Assistant, any>({
+      this.request<Assistant, AssistantPinnedConflictResponseDTO>({
         path: `/assistant/${id}`,
         method: "DELETE",
         secure: true,
@@ -39679,12 +51054,13 @@ export class Api<
       }),
 
     /**
-     * No description
+     * @description Deprecated. Use `GET /assistant/:id/versions` instead.
      *
      * @tags Assistants
      * @name AssistantControllerFindVersions
-     * @summary List Assistant Versions
+     * @summary List Legacy Assistant Versions
      * @request GET:/assistant/{id}/version
+     * @deprecated
      * @secure
      */
     assistantControllerFindVersions: (
@@ -39696,10 +51072,271 @@ export class Api<
       },
       params: RequestParams = {},
     ) =>
-      this.request<AssistantVersionPaginatedResponse, any>({
+      this.request<LegacyAssistantVersionPaginatedResponse, any>({
         path: `/assistant/${id}/version`,
         method: "GET",
         query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Returns the version history for the assistant.
+     *
+     * @tags Assistants
+     * @name AssistantControllerFindAllVersions
+     * @summary List Assistant Versions
+     * @request GET:/assistant/{id}/versions
+     * @secure
+     */
+    assistantControllerFindAllVersions: (
+      id: string,
+      query?: {
+        /** Opaque base64-encoded keyset cursor. Omit on first page. */
+        cursor?: string;
+        /**
+         * Page size, defaults to 25, capped at 100.
+         * @min 1
+         * @max 100
+         */
+        limit?: number;
+        /** When true, also returns soft-deleted versions. Defaults to false. */
+        includeDeleted?: boolean;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantVersionPaginatedResponse, any>({
+        path: `/assistant/${id}/versions`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
+     * @name AssistantControllerFindOneVersion
+     * @summary Get Assistant Version
+     * @request GET:/assistant/{id}/versions/{version}
+     * @secure
+     */
+    assistantControllerFindOneVersion: (
+      id: string,
+      version: string,
+      query?: {
+        /** When true, returns the version even if soft-deleted. Defaults to false. */
+        includeDeleted?: boolean;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantVersion, any>({
+        path: `/assistant/${id}/versions/${version}`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
+     * @name AssistantControllerAssistantVersionMetadataUpdate
+     * @summary Update Assistant Version Metadata
+     * @request PATCH:/assistant/{id}/versions/{version}
+     * @secure
+     */
+    assistantControllerAssistantVersionMetadataUpdate: (
+      id: string,
+      version: string,
+      data: UpdateAssistantVersionMetadataDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantVersion, any>({
+        path: `/assistant/${id}/versions/${version}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
+     * @name AssistantControllerSoftDeleteVersion
+     * @summary Delete Assistant Version
+     * @request DELETE:/assistant/{id}/versions/{version}
+     * @secure
+     */
+    assistantControllerSoftDeleteVersion: (
+      id: string,
+      version: string,
+      query?: {
+        /** Force-delete the version even when it is pinned (overrides the 409). Note: force-deleting a version that is still being served will hard-fail any in-progress calls running on it. */
+        force?: boolean;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantVersion, VersionPinConflictResponseDTO>({
+        path: `/assistant/${id}/versions/${version}`,
+        method: "DELETE",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Restores the assistant to the selected version.
+     *
+     * @tags Assistants
+     * @name AssistantControllerRestoreVersion
+     * @summary Restore Assistant Version
+     * @request POST:/assistant/{id}/restore/{version}
+     * @secure
+     */
+    assistantControllerRestoreVersion: (
+      id: string,
+      version: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<Assistant, any>({
+        path: `/assistant/${id}/restore/${version}`,
+        method: "POST",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
+     * @name AssistantControllerFindAllDrafts
+     * @summary List Assistant Drafts
+     * @request GET:/assistant/{id}/draft
+     * @secure
+     */
+    assistantControllerFindAllDrafts: (
+      id: string,
+      query?: {
+        /** Opaque base64-encoded keyset cursor. Omit on first page. */
+        cursor?: string;
+        /**
+         * Page size, defaults to 25, capped at 100.
+         * @min 1
+         * @max 100
+         */
+        limit?: number;
+        createdBy?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantDraftPaginatedResponse, any>({
+        path: `/assistant/${id}/draft`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
+     * @name AssistantControllerCreateDraft
+     * @summary Create Assistant Draft
+     * @request POST:/assistant/{id}/draft
+     * @secure
+     */
+    assistantControllerCreateDraft: (
+      id: string,
+      data: CreateAssistantDraftDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantDraft, AssistantDraftConflictResponseDTO>({
+        path: `/assistant/${id}/draft`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
+     * @name AssistantControllerFindOneDraft
+     * @summary Get Assistant Draft
+     * @request GET:/assistant/{id}/draft/{draftId}
+     * @secure
+     */
+    assistantControllerFindOneDraft: (
+      id: string,
+      draftId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantDraft, any>({
+        path: `/assistant/${id}/draft/${draftId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
+     * @name AssistantControllerUpdateDraft
+     * @summary Update Assistant Draft
+     * @request PATCH:/assistant/{id}/draft/{draftId}
+     * @secure
+     */
+    assistantControllerUpdateDraft: (
+      id: string,
+      draftId: string,
+      data: UpdateAssistantDraftDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantDraft, any>({
+        path: `/assistant/${id}/draft/${draftId}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Assistants
+     * @name AssistantControllerDeleteDraft
+     * @summary Delete Assistant Draft
+     * @request DELETE:/assistant/{id}/draft/{draftId}
+     * @secure
+     */
+    assistantControllerDeleteDraft: (
+      id: string,
+      draftId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<AssistantDraft, any>({
+        path: `/assistant/${id}/draft/${draftId}`,
+        method: "DELETE",
         secure: true,
         format: "json",
         ...params,
@@ -39718,12 +51355,24 @@ export class Api<
     assistantControllerFindAllPaginated: (
       query?: {
         /**
+         * Return only assistants matching the provided ids
+         * @format uuid
+         */
+        idAny?: string[];
+        /**
+         * Filter assistants by case-insensitive substring match on name.
+         * @maxLength 40
+         */
+        name?: string;
+        /**
          * This is the page number to return. Defaults to 1.
          * @min 1
          */
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -39794,6 +51443,26 @@ export class Api<
     callControllerCallsExport: (
       query?: {
         /**
+         * Filter by multiple assistant IDs. Provide as comma-separated values.
+         * @example "assistant-1,assistant-2,assistant-3"
+         */
+        assistantIdAny?: string;
+        /**
+         * Filter by multiple squad IDs. Provide as comma-separated values.
+         * @example "squad-1,squad-2,squad-3"
+         */
+        squadIdAny?: string;
+        /**
+         * Filter by any of the specified ended reasons (comma-separated).
+         * @example "customer-ended-call,assistant-ended-call"
+         */
+        endedReasonAny?: string;
+        /**
+         * Compact bitmap encoding of selected ended reasons. Format: `<8hex-version>.<base64url-bytes>`. Use this in place of `endedReasonAny` when the selection is large enough to overflow URL limits.
+         * @example "a1b2c3d4.AAEC"
+         */
+        endedReasonAnyBitmap?: string;
+        /**
          * Filter by assistant overrides. Use variableValues to filter by template variables.
          * @example {"variableValues":{"name":"John","age":"25"}}
          */
@@ -39804,8 +51473,19 @@ export class Api<
          */
         customer?: object;
         /**
+         * Filter by any of the specified customer phone numbers (comma-separated).
+         * @example "+1234567890,+0987654321"
+         */
+        customerNumberAny?: string;
+        /**
+         * Filter by transcript text (case-insensitive partial match). Requires createdAtGe to be set and a date range of 7 days or less.
+         * @maxLength 500
+         * @example "hello world"
+         */
+        transcript?: string;
+        /**
          * Columns to include in the CSV export
-         * @default ["id","assistantId","squadId","customerId","customerName","customerNumber","customerSipUri","customerExtension","phoneNumberId","endedReason","type","duration","startedAt","endedAt","transcript","summary","successEvaluation","recordingUrl","cost","phoneCallProvider","phoneCallProviderId","createdAt","updatedAt"]
+         * @default ["id","assistantId","squadId","customerId","customerName","customerNumber","customerSipUri","customerExtension","phoneNumberId","endedReason","type","duration","startedAt","endedAt","transcript","summary","successEvaluation","recordingUrl","cost","phoneCallProvider","phoneCallProviderId","createdAt","updatedAt","assistantVersion"]
          */
         columns?:
           | "id"
@@ -39830,7 +51510,8 @@ export class Api<
           | "phoneCallProvider"
           | "phoneCallProviderId"
           | "createdAt"
-          | "updatedAt";
+          | "updatedAt"
+          | "assistantVersion";
         /**
          * This determines if the CSV export is async.
          *
@@ -39893,6 +51574,8 @@ export class Api<
         endedReason?: string;
         /** This will return calls with the specified phoneNumberId. */
         phoneNumberId?: string;
+        /** This will return calls with any of the specified phoneNumberIds. */
+        phoneNumberIdAny?: string[];
         /**
          * Filter calls by structured output values. Use structured output ID as key and filter operators as values.
          * @example {"c9dddda4-d70a-4dad-aa5c-aaf117f85cea":{"eq":"2","gt":"1"}}
@@ -39904,12 +51587,23 @@ export class Api<
          */
         score?: StructuredOutputFilterDTO;
         /**
+         * Opaque keyset-pagination cursor (PRO-3163). When provided, results are
+         * fetched after this cursor via a keyset predicate instead of a deep OFFSET
+         * scan. Obtain it from `metadata.nextCursor` of the previous page. Only
+         * honored for the default `createdAt` sort by the v2 query path; ignored for
+         * `duration`/`cost` sorts, which keep page/offset pagination.
+         * @maxLength 500
+         */
+        cursor?: string;
+        /**
          * This is the page number to return. Defaults to 1.
          * @min 1
          */
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -39979,6 +51673,26 @@ export class Api<
     callControllerFindAllPaginated: (
       query?: {
         /**
+         * Filter by multiple assistant IDs. Provide as comma-separated values.
+         * @example "assistant-1,assistant-2,assistant-3"
+         */
+        assistantIdAny?: string;
+        /**
+         * Filter by multiple squad IDs. Provide as comma-separated values.
+         * @example "squad-1,squad-2,squad-3"
+         */
+        squadIdAny?: string;
+        /**
+         * Filter by any of the specified ended reasons (comma-separated).
+         * @example "customer-ended-call,assistant-ended-call"
+         */
+        endedReasonAny?: string;
+        /**
+         * Compact bitmap encoding of selected ended reasons. Format: `<8hex-version>.<base64url-bytes>`. Use this in place of `endedReasonAny` when the selection is large enough to overflow URL limits.
+         * @example "a1b2c3d4.AAEC"
+         */
+        endedReasonAnyBitmap?: string;
+        /**
          * Filter by assistant overrides. Use variableValues to filter by template variables.
          * @example {"variableValues":{"name":"John","age":"25"}}
          */
@@ -39988,6 +51702,17 @@ export class Api<
          * @example {"number":"+1234567890","name":"John Doe"}
          */
         customer?: object;
+        /**
+         * Filter by any of the specified customer phone numbers (comma-separated).
+         * @example "+1234567890,+0987654321"
+         */
+        customerNumberAny?: string;
+        /**
+         * Filter by transcript text (case-insensitive partial match). Requires createdAtGe to be set and a date range of 7 days or less.
+         * @maxLength 500
+         * @example "hello world"
+         */
+        transcript?: string;
         /** This will return calls with the specified assistantId. */
         assistantId?: string;
         /**
@@ -40021,6 +51746,8 @@ export class Api<
         endedReason?: string;
         /** This will return calls with the specified phoneNumberId. */
         phoneNumberId?: string;
+        /** This will return calls with any of the specified phoneNumberIds. */
+        phoneNumberIdAny?: string[];
         /**
          * Filter calls by structured output values. Use structured output ID as key and filter operators as values.
          * @example {"c9dddda4-d70a-4dad-aa5c-aaf117f85cea":{"eq":"2","gt":"1"}}
@@ -40032,12 +51759,23 @@ export class Api<
          */
         score?: StructuredOutputFilterDTO;
         /**
+         * Opaque keyset-pagination cursor (PRO-3163). When provided, results are
+         * fetched after this cursor via a keyset predicate instead of a deep OFFSET
+         * scan. Obtain it from `metadata.nextCursor` of the previous page. Only
+         * honored for the default `createdAt` sort by the v2 query path; ignored for
+         * `duration`/`cost` sorts, which keep page/offset pagination.
+         * @maxLength 500
+         */
+        cursor?: string;
+        /**
          * This is the page number to return. Defaults to 1.
          * @min 1
          */
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -40108,6 +51846,26 @@ export class Api<
     callControllerFindAllMetadataPaginated: (
       query?: {
         /**
+         * Filter by multiple assistant IDs. Provide as comma-separated values.
+         * @example "assistant-1,assistant-2,assistant-3"
+         */
+        assistantIdAny?: string;
+        /**
+         * Filter by multiple squad IDs. Provide as comma-separated values.
+         * @example "squad-1,squad-2,squad-3"
+         */
+        squadIdAny?: string;
+        /**
+         * Filter by any of the specified ended reasons (comma-separated).
+         * @example "customer-ended-call,assistant-ended-call"
+         */
+        endedReasonAny?: string;
+        /**
+         * Compact bitmap encoding of selected ended reasons. Format: `<8hex-version>.<base64url-bytes>`. Use this in place of `endedReasonAny` when the selection is large enough to overflow URL limits.
+         * @example "a1b2c3d4.AAEC"
+         */
+        endedReasonAnyBitmap?: string;
+        /**
          * Filter by assistant overrides. Use variableValues to filter by template variables.
          * @example {"variableValues":{"name":"John","age":"25"}}
          */
@@ -40117,6 +51875,17 @@ export class Api<
          * @example {"number":"+1234567890","name":"John Doe"}
          */
         customer?: object;
+        /**
+         * Filter by any of the specified customer phone numbers (comma-separated).
+         * @example "+1234567890,+0987654321"
+         */
+        customerNumberAny?: string;
+        /**
+         * Filter by transcript text (case-insensitive partial match). Requires createdAtGe to be set and a date range of 7 days or less.
+         * @maxLength 500
+         * @example "hello world"
+         */
+        transcript?: string;
         /** This will return calls with the specified assistantId. */
         assistantId?: string;
         /**
@@ -40150,6 +51919,8 @@ export class Api<
         endedReason?: string;
         /** This will return calls with the specified phoneNumberId. */
         phoneNumberId?: string;
+        /** This will return calls with any of the specified phoneNumberIds. */
+        phoneNumberIdAny?: string[];
         /**
          * Filter calls by structured output values. Use structured output ID as key and filter operators as values.
          * @example {"c9dddda4-d70a-4dad-aa5c-aaf117f85cea":{"eq":"2","gt":"1"}}
@@ -40161,12 +51932,23 @@ export class Api<
          */
         score?: StructuredOutputFilterDTO;
         /**
+         * Opaque keyset-pagination cursor (PRO-3163). When provided, results are
+         * fetched after this cursor via a keyset predicate instead of a deep OFFSET
+         * scan. Obtain it from `metadata.nextCursor` of the previous page. Only
+         * honored for the default `createdAt` sort by the v2 query path; ignored for
+         * `duration`/`cost` sorts, which keep page/offset pagination.
+         * @maxLength 500
+         */
+        cursor?: string;
+        /**
          * This is the page number to return. Defaults to 1.
          * @min 1
          */
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -40228,6 +52010,254 @@ export class Api<
     /**
      * No description
      *
+     * @tags Campaigns
+     * @name CampaignControllerCreateV2
+     * @summary Create Campaign V2
+     * @request POST:/v2/campaign
+     * @secure
+     */
+    campaignControllerCreateV2: (
+      data: CreateCampaignDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Campaign, any>({
+        path: `/v2/campaign`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Campaigns
+     * @name CampaignControllerFindAllV2
+     * @summary List Campaigns V2
+     * @request GET:/v2/campaign
+     * @secure
+     */
+    campaignControllerFindAllV2: (
+      query?: {
+        id?: string;
+        status?:
+          | "scheduled"
+          | "in-progress"
+          | "ended"
+          | "cancelled"
+          | "archived";
+        /**
+         * When true, every campaign in the response includes `contactCounters` and
+         * `callMetrics`. These are aggregate queries over contacts and events —
+         * batched across the page, so the cost is three queries per request rather
+         * than three per campaign, but still opt-in rather than paid for on every
+         * read. Defaults to false.
+         */
+        includeCounters?: boolean;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<CampaignSummaryPaginatedResponse, any>({
+        path: `/v2/campaign`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Campaigns
+     * @name CampaignControllerFindOneV2
+     * @summary Get Campaign V2
+     * @request GET:/v2/campaign/{id}
+     * @secure
+     */
+    campaignControllerFindOneV2: (
+      id: string,
+      query?: {
+        /**
+         * When true, the response includes `contactCounters` and `callMetrics`.
+         * These are aggregate queries over the campaign's contacts and events, so
+         * they are opt-in rather than paid for on every read. Defaults to false.
+         */
+        includeCounters?: boolean;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<CampaignSummary, any>({
+        path: `/v2/campaign/${id}`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Campaigns
+     * @name CampaignControllerUpdateV2
+     * @summary Update Campaign
+     * @request PATCH:/v2/campaign/{id}
+     * @secure
+     */
+    campaignControllerUpdateV2: (
+      id: string,
+      data: UpdateCampaignDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Campaign, any>({
+        path: `/v2/campaign/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Campaigns
+     * @name CampaignControllerRemoveV2
+     * @summary Delete Campaign
+     * @request DELETE:/v2/campaign/{id}
+     * @secure
+     */
+    campaignControllerRemoveV2: (id: string, params: RequestParams = {}) =>
+      this.request<Campaign, any>({
+        path: `/v2/campaign/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Campaigns
+     * @name CampaignControllerGetCampaignV2Contacts
+     * @summary Get Campaign V2 Contacts
+     * @request GET:/v2/campaign/{id}/contacts
+     * @secure
+     */
+    campaignControllerGetCampaignV2Contacts: (
+      id: string,
+      query?: {
+        /**
+         * This is the status to filter contacts by. Pass once or multiple times to
+         * filter on any of the provided statuses.
+         */
+        status?: (
+          | "contact.pending"
+          | "contact.dispatched"
+          | "contact.completed"
+          | "contact.failed"
+          | "contact.skipped"
+          | "contact.predial-failed"
+        )[];
+        /**
+         * This is the maximum number of contacts to return. Defaults to 50.
+         * @min 1
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This is the column to sort by. Defaults to `position` — the order contacts
+         * were uploaded, which is also dial order.
+         *
+         * `status` sorts by the enum's declaration order rather than alphabetically,
+         * which means it reads as a lifecycle: pending, dispatched, completed,
+         * failed, skipped, predial-failed.
+         *
+         * Only columns on `campaign_contact` are sortable. Call-level values such as
+         * cost or duration live on the call and are attached after this query, so
+         * sorting by them here would only reorder the current page.
+         */
+        sortBy?: "position" | "status";
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<CampaignContactPaginatedResponse, any>({
+        path: `/v2/campaign/${id}/contacts`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
      * @tags Phone Numbers
      * @name PhoneNumberControllerFindAllPaginated
      * @summary List Phone Numbers
@@ -40248,6 +52278,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -40305,6 +52337,209 @@ export class Api<
         format: "json",
         ...params,
       }),
+
+    /**
+     * No description
+     *
+     * @tags Knowledge Bases V2
+     * @name KnowledgeBaseV2ControllerCreate
+     * @summary Create a Knowledge Base V2
+     * @request POST:/v2/knowledge-base
+     * @secure
+     */
+    knowledgeBaseV2ControllerCreate: (
+      data: CreateKnowledgeBaseV2DTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<KnowledgeBaseV2, any>({
+        path: `/v2/knowledge-base`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Knowledge Bases V2
+     * @name KnowledgeBaseV2ControllerFindAll
+     * @summary List Knowledge Bases V2
+     * @request GET:/v2/knowledge-base
+     * @secure
+     */
+    knowledgeBaseV2ControllerFindAll: (
+      query?: {
+        /**
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<KnowledgeBaseV2[], any>({
+        path: `/v2/knowledge-base`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Knowledge Bases V2
+     * @name KnowledgeBaseV2ControllerFilesGet
+     * @summary List files in a Knowledge Base V2
+     * @request GET:/v2/knowledge-base/{id}/file
+     * @secure
+     */
+    knowledgeBaseV2ControllerFilesGet: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<KnowledgeBaseV2File[], any>({
+        path: `/v2/knowledge-base/${id}/file`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Knowledge Bases V2
+     * @name KnowledgeBaseV2ControllerFileAttach
+     * @summary Attach and ingest a file
+     * @request POST:/v2/knowledge-base/{id}/file
+     * @secure
+     */
+    knowledgeBaseV2ControllerFileAttach: (
+      id: string,
+      data: AttachKnowledgeBaseV2FileDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<KnowledgeBaseV2File, any>({
+        path: `/v2/knowledge-base/${id}/file`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Knowledge Bases V2
+     * @name KnowledgeBaseV2ControllerFileDetach
+     * @summary Detach a file
+     * @request DELETE:/v2/knowledge-base/{id}/file/{fileId}
+     * @secure
+     */
+    knowledgeBaseV2ControllerFileDetach: (
+      id: string,
+      fileId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<KnowledgeBaseV2File, any>({
+        path: `/v2/knowledge-base/${id}/file/${fileId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Knowledge Bases V2
+     * @name KnowledgeBaseV2ControllerFileRetry
+     * @summary Retry indexing a failed file
+     * @request POST:/v2/knowledge-base/{id}/file/{fileId}/retry
+     * @secure
+     */
+    knowledgeBaseV2ControllerFileRetry: (
+      id: string,
+      fileId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<KnowledgeBaseV2File, any>({
+        path: `/v2/knowledge-base/${id}/file/${fileId}/retry`,
+        method: "POST",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Knowledge Bases V2
+     * @name KnowledgeBaseV2ControllerUpdate
+     * @summary Update a Knowledge Base V2
+     * @request PATCH:/v2/knowledge-base/{id}
+     * @secure
+     */
+    knowledgeBaseV2ControllerUpdate: (
+      id: string,
+      data: UpdateKnowledgeBaseV2DTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<KnowledgeBaseV2, any>({
+        path: `/v2/knowledge-base/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Knowledge Bases V2
+     * @name KnowledgeBaseV2ControllerFindOne
+     * @summary Get a Knowledge Base V2
+     * @request GET:/v2/knowledge-base/{id}
+     * @secure
+     */
+    knowledgeBaseV2ControllerFindOne: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<KnowledgeBaseV2WithFiles, any>({
+        path: `/v2/knowledge-base/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Knowledge Bases V2
+     * @name KnowledgeBaseV2ControllerRemove
+     * @summary Delete a Knowledge Base V2
+     * @request DELETE:/v2/knowledge-base/{id}
+     * @secure
+     */
+    knowledgeBaseV2ControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<KnowledgeBaseV2, any>({
+        path: `/v2/knowledge-base/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
   };
   squad = {
     /**
@@ -40338,6 +52573,11 @@ export class Api<
      */
     squadControllerFindAll: (
       query?: {
+        /**
+         * Return only squads matching the provided ids
+         * @format uuid
+         */
+        idAny?: string[];
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -40569,7 +52809,7 @@ export class Api<
      * @secure
      */
     callControllerCreate: (data: CreateCallDTO, params: RequestParams = {}) =>
-      this.request<Call | CallBatchResponse, any>({
+      this.request<Call | CallBatchResponse, void>({
         path: `/call`,
         method: "POST",
         body: data,
@@ -40705,7 +52945,7 @@ export class Api<
      *
      * @tags Calls
      * @name CallControllerDeleteCallData
-     * @summary Delete Call Data
+     * @summary Delete Call
      * @request DELETE:/call/{id}
      * @secure
      */
@@ -40714,7 +52954,7 @@ export class Api<
       data: DeleteCallDTO,
       params: RequestParams = {},
     ) =>
-      this.request<Call, any>({
+      this.request<Call, void>({
         path: `/call/${id}`,
         method: "DELETE",
         body: data,
@@ -40770,6 +53010,146 @@ export class Api<
         format: "json",
         ...params,
       }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallArtifactControllerMonoRecordingDownload
+     * @summary Download Call Mono Recording
+     * @request GET:/call/{id}/mono-recording
+     * @secure
+     */
+    callArtifactControllerMonoRecordingDownload: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/call/${id}/mono-recording`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallArtifactControllerStereoRecordingDownload
+     * @summary Download Call Stereo Recording
+     * @request GET:/call/{id}/stereo-recording
+     * @secure
+     */
+    callArtifactControllerStereoRecordingDownload: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/call/${id}/stereo-recording`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallArtifactControllerVideoRecordingDownload
+     * @summary Download Call Video Recording
+     * @request GET:/call/{id}/video-recording
+     * @secure
+     */
+    callArtifactControllerVideoRecordingDownload: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/call/${id}/video-recording`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallArtifactControllerCustomerRecordingDownload
+     * @summary Download Call Customer Recording
+     * @request GET:/call/{id}/customer-recording
+     * @secure
+     */
+    callArtifactControllerCustomerRecordingDownload: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/call/${id}/customer-recording`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallArtifactControllerAssistantRecordingDownload
+     * @summary Download Call Assistant Recording
+     * @request GET:/call/{id}/assistant-recording
+     * @secure
+     */
+    callArtifactControllerAssistantRecordingDownload: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/call/${id}/assistant-recording`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallArtifactControllerPcapDownload
+     * @summary Download Call Packet Capture (pcap)
+     * @request GET:/call/{id}/pcap
+     * @secure
+     */
+    callArtifactControllerPcapDownload: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/call/${id}/pcap`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name CallArtifactControllerCallLogsDownload
+     * @summary Download Call Logs
+     * @request GET:/call/{id}/call-logs
+     * @secure
+     */
+    callArtifactControllerCallLogsDownload: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/call/${id}/call-logs`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
   };
   chat = {
     /**
@@ -40783,14 +53163,23 @@ export class Api<
      */
     chatControllerListChats: (
       query?: {
+        /** This is the unique identifier for the chat to filter by. */
+        id?: string;
         /** This is the unique identifier for the assistant that will be used for the chat. */
         assistantId?: string;
+        /**
+         * Filter by multiple assistant IDs. Provide as comma-separated values.
+         * @example "assistant-1,assistant-2,assistant-3"
+         */
+        assistantIdAny?: string;
         /** This is the unique identifier for the squad that will be used for the chat. */
         squadId?: string;
         /** This is the unique identifier for the session that will be used for the chat. */
         sessionId?: string;
         /** This is the unique identifier for the previous chat to filter by. */
         previousChatId?: string;
+        /** Filter by multiple chat IDs. Provide as comma-separated values. */
+        idAny?: string;
         /**
          * This is the page number to return. Defaults to 1.
          * @min 1
@@ -40798,6 +53187,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -40876,6 +53267,127 @@ export class Api<
         secure: true,
         type: ContentType.Json,
         format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Chats
+     * @name ChatControllerChatsExport
+     * @summary Export Chats to CSV
+     * @request GET:/chat/export
+     * @secure
+     */
+    chatControllerChatsExport: (
+      query?: {
+        /** This is the unique identifier for the chat to filter by. */
+        id?: string;
+        /** This is the unique identifier for the assistant that will be used for the chat. */
+        assistantId?: string;
+        /**
+         * Filter by multiple assistant IDs. Provide as comma-separated values.
+         * @example "assistant-1,assistant-2,assistant-3"
+         */
+        assistantIdAny?: string;
+        /** This is the unique identifier for the squad that will be used for the chat. */
+        squadId?: string;
+        /** This is the unique identifier for the session that will be used for the chat. */
+        sessionId?: string;
+        /** This is the unique identifier for the previous chat to filter by. */
+        previousChatId?: string;
+        /** Filter by multiple chat IDs. Provide as comma-separated values. */
+        idAny?: string;
+        /**
+         * Columns to include in the CSV export
+         * @default ["id","assistantId","squadId","sessionId","previousChatId","cost","messages","output","createdAt","updatedAt"]
+         */
+        columns?:
+          | "id"
+          | "assistantId"
+          | "squadId"
+          | "sessionId"
+          | "previousChatId"
+          | "cost"
+          | "messages"
+          | "output"
+          | "createdAt"
+          | "updatedAt";
+        /**
+         * This is the email address to send the export to.
+         * Required if userId is not available in the request context.
+         */
+        email?: string;
+        /**
+         * This is the format of the export.
+         *
+         * @default csv
+         * @default "csv"
+         */
+        format?: "csv" | "json";
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<void, any>({
+        path: `/chat/export`,
+        method: "GET",
+        query: query,
+        secure: true,
         ...params,
       }),
 
@@ -41034,7 +53546,12 @@ export class Api<
     campaignControllerFindAll: (
       query?: {
         id?: string;
-        status?: "scheduled" | "in-progress" | "ended";
+        status?:
+          | "scheduled"
+          | "in-progress"
+          | "ended"
+          | "cancelled"
+          | "archived";
         /**
          * This is the page number to return. Defaults to 1.
          * @min 1
@@ -41042,6 +53559,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -41195,6 +53714,8 @@ export class Api<
      */
     sessionControllerFindAllPaginated: (
       query?: {
+        /** This is the unique identifier for the session to filter by. */
+        id?: string;
         /**
          * This is the name of the customer. This is just for your own reference.
          *
@@ -41204,6 +53725,11 @@ export class Api<
         name?: string;
         /** This is the ID of the assistant to filter sessions by. */
         assistantId?: string;
+        /**
+         * Filter by multiple assistant IDs. Provide as comma-separated values.
+         * @example "assistant-1,assistant-2,assistant-3"
+         */
+        assistantIdAny?: string;
         /** This is the ID of the squad to filter sessions by. */
         squadId?: string;
         /** This is the ID of the workflow to filter sessions by. */
@@ -41233,6 +53759,12 @@ export class Api<
          */
         assistantOverrides?: AssistantOverrides;
         /**
+         * These are the overrides applied when the call targets a `squadId`. Mirrors
+         * the call-level `squadOverrides` — use this instead of `assistantOverrides`
+         * when the campaign or call is squad-based.
+         */
+        squadOverrides?: AssistantOverrides;
+        /**
          * This is the number of the customer.
          * @minLength 3
          * @maxLength 40
@@ -41251,12 +53783,25 @@ export class Api<
          */
         externalId?: string;
         /**
+         * Filter by any of the specified customer phone numbers (comma-separated).
+         * @example "+1234567890,+0987654321"
+         */
+        customerNumberAny?: string;
+        /** Filter by multiple session IDs. Provide as comma-separated values. */
+        idAny?: string;
+        /** This will return sessions with the specified phoneNumberId. */
+        phoneNumberId?: string;
+        /** This will return sessions with any of the specified phoneNumberIds. */
+        phoneNumberIdAny?: string[];
+        /**
          * This is the page number to return. Defaults to 1.
          * @min 1
          */
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -41312,6 +53857,186 @@ export class Api<
         query: query,
         secure: true,
         format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Sessions
+     * @name SessionControllerSessionsExport
+     * @summary Export Sessions to CSV
+     * @request GET:/session/export
+     * @secure
+     */
+    sessionControllerSessionsExport: (
+      query?: {
+        /** This is the unique identifier for the session to filter by. */
+        id?: string;
+        /**
+         * This is the name of the customer. This is just for your own reference.
+         *
+         * For SIP inbound calls, this is extracted from the `From` SIP header with format `"Display Name" <sip:username@domain>`.
+         * @maxLength 40
+         */
+        name?: string;
+        /** This is the ID of the assistant to filter sessions by. */
+        assistantId?: string;
+        /**
+         * Filter by multiple assistant IDs. Provide as comma-separated values.
+         * @example "assistant-1,assistant-2,assistant-3"
+         */
+        assistantIdAny?: string;
+        /** This is the ID of the squad to filter sessions by. */
+        squadId?: string;
+        /** This is the ID of the workflow to filter sessions by. */
+        workflowId?: string;
+        /**
+         * This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
+         *
+         * Use cases:
+         * - `false`: To allow non-E164 numbers like `+001234567890`, `1234`, or `abc`. This is useful for dialing out to non-E164 numbers on your SIP trunks.
+         * - `true` (default): To allow only E164 numbers like `+14155551234`. This is standard for PSTN calls.
+         *
+         * If `false`, the `number` is still required to only contain alphanumeric characters (regex: `/^\+?[a-zA-Z0-9]+$/`).
+         *
+         * @default true (E164 check is enabled)
+         * @default true
+         */
+        numberE164CheckEnabled?: boolean;
+        /**
+         * This is the extension that will be dialed after the call is answered.
+         * @maxLength 10
+         * @example null
+         */
+        extension?: string;
+        /**
+         * These are the overrides for the assistant's settings and template variables specific to this customer.
+         * This allows customization of the assistant's behavior for individual customers in batch calls.
+         */
+        assistantOverrides?: AssistantOverrides;
+        /**
+         * These are the overrides applied when the call targets a `squadId`. Mirrors
+         * the call-level `squadOverrides` — use this instead of `assistantOverrides`
+         * when the campaign or call is squad-based.
+         */
+        squadOverrides?: AssistantOverrides;
+        /**
+         * This is the number of the customer.
+         * @minLength 3
+         * @maxLength 40
+         */
+        number?: string;
+        /** This is the SIP URI of the customer. */
+        sipUri?: string;
+        /**
+         * This is the email address to send the export to.
+         * Required if userId is not available in the request context.
+         */
+        email?: string;
+        /**
+         * This is the external ID of the customer.
+         * @maxLength 40
+         */
+        externalId?: string;
+        /**
+         * Filter by any of the specified customer phone numbers (comma-separated).
+         * @example "+1234567890,+0987654321"
+         */
+        customerNumberAny?: string;
+        /** Filter by multiple session IDs. Provide as comma-separated values. */
+        idAny?: string;
+        /**
+         * Columns to include in the CSV export
+         * @default ["id","name","status","assistantId","squadId","customerName","customerNumber","phoneNumberId","cost","messages","createdAt","updatedAt"]
+         */
+        columns?:
+          | "id"
+          | "name"
+          | "status"
+          | "assistantId"
+          | "squadId"
+          | "customerName"
+          | "customerNumber"
+          | "phoneNumberId"
+          | "cost"
+          | "messages"
+          | "createdAt"
+          | "updatedAt";
+        /**
+         * This is the format of the export.
+         *
+         * @default csv
+         * @default "csv"
+         */
+        format?: "csv" | "json";
+        /** This will return sessions with the specified phoneNumberId. */
+        phoneNumberId?: string;
+        /** This will return sessions with any of the specified phoneNumberIds. */
+        phoneNumberIdAny?: string[];
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<void, any>({
+        path: `/session/export`,
+        method: "GET",
+        query: query,
+        secure: true,
         ...params,
       }),
 
@@ -41798,13 +54523,22 @@ export class Api<
           } & CreateGoHighLevelContactCreateToolDTO)
         | ({
             type: "gohighlevel.contact.get";
-          } & CreateGoHighLevelContactGetToolDTO),
+          } & CreateGoHighLevelContactGetToolDTO)
+        | ({
+            type: "sipRequest";
+          } & CreateSipRequestToolDTO)
+        | ({
+            type: "voicemail";
+          } & CreateVoicemailToolDTO),
       params: RequestParams = {},
     ) =>
       this.request<
         | ({
             type: "apiRequest";
           } & ApiRequestTool)
+        | ({
+            type: "code";
+          } & CodeTool)
         | ({
             type: "dtmf";
           } & DtmfTool)
@@ -41814,6 +54548,9 @@ export class Api<
         | ({
             type: "function";
           } & FunctionTool)
+        | ({
+            type: "knowledgeBase";
+          } & KnowledgeBaseTool)
         | ({
             type: "transferCall";
           } & TransferCallTool)
@@ -41861,7 +54598,13 @@ export class Api<
           } & GoHighLevelContactCreateTool)
         | ({
             type: "gohighlevel.contact.get";
-          } & GoHighLevelContactGetTool),
+          } & GoHighLevelContactGetTool)
+        | ({
+            type: "sipRequest";
+          } & SipRequestTool)
+        | ({
+            type: "voicemail";
+          } & VoicemailTool),
         any
       >({
         path: `/tool`,
@@ -41939,6 +54682,9 @@ export class Api<
               type: "apiRequest";
             } & ApiRequestTool)
           | ({
+              type: "code";
+            } & CodeTool)
+          | ({
               type: "dtmf";
             } & DtmfTool)
           | ({
@@ -41947,6 +54693,9 @@ export class Api<
           | ({
               type: "function";
             } & FunctionTool)
+          | ({
+              type: "knowledgeBase";
+            } & KnowledgeBaseTool)
           | ({
               type: "transferCall";
             } & TransferCallTool)
@@ -41995,10 +54744,48 @@ export class Api<
           | ({
               type: "gohighlevel.contact.get";
             } & GoHighLevelContactGetTool)
+          | ({
+              type: "sipRequest";
+            } & SipRequestTool)
+          | ({
+              type: "voicemail";
+            } & VoicemailTool)
         )[],
         any
       >({
         path: `/tool`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerFindAllOrgDrafts
+     * @summary List All Tool Drafts
+     * @request GET:/tool/draft
+     * @secure
+     */
+    toolControllerFindAllOrgDrafts: (
+      query?: {
+        /** Opaque base64-encoded keyset cursor. Omit on first page. */
+        cursor?: string;
+        /**
+         * Page size, defaults to 25, capped at 100.
+         * @min 1
+         * @max 100
+         */
+        limit?: number;
+        createdBy?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<ToolDraftPaginatedResponse, any>({
+        path: `/tool/draft`,
         method: "GET",
         query: query,
         secure: true,
@@ -42021,6 +54808,9 @@ export class Api<
             type: "apiRequest";
           } & ApiRequestTool)
         | ({
+            type: "code";
+          } & CodeTool)
+        | ({
             type: "dtmf";
           } & DtmfTool)
         | ({
@@ -42029,6 +54819,9 @@ export class Api<
         | ({
             type: "function";
           } & FunctionTool)
+        | ({
+            type: "knowledgeBase";
+          } & KnowledgeBaseTool)
         | ({
             type: "transferCall";
           } & TransferCallTool)
@@ -42076,7 +54869,13 @@ export class Api<
           } & GoHighLevelContactCreateTool)
         | ({
             type: "gohighlevel.contact.get";
-          } & GoHighLevelContactGetTool),
+          } & GoHighLevelContactGetTool)
+        | ({
+            type: "sipRequest";
+          } & SipRequestTool)
+        | ({
+            type: "voicemail";
+          } & VoicemailTool),
         any
       >({
         path: `/tool/${id}`,
@@ -42110,6 +54909,9 @@ export class Api<
         | ({
             type: "function";
           } & UpdateFunctionToolDTO)
+        | ({
+            type: "knowledgeBase";
+          } & UpdateKnowledgeBaseToolDTO)
         | ({
             type: "transferCall";
           } & UpdateTransferCallToolDTO)
@@ -42157,13 +54959,22 @@ export class Api<
           } & UpdateGoHighLevelContactCreateToolDTO)
         | ({
             type: "gohighlevel.contact.get";
-          } & UpdateGoHighLevelContactGetToolDTO),
+          } & UpdateGoHighLevelContactGetToolDTO)
+        | ({
+            type: "sipRequest";
+          } & UpdateSipRequestToolDTO)
+        | ({
+            type: "voicemail";
+          } & UpdateVoicemailToolDTO),
       params: RequestParams = {},
     ) =>
       this.request<
         | ({
             type: "apiRequest";
           } & ApiRequestTool)
+        | ({
+            type: "code";
+          } & CodeTool)
         | ({
             type: "dtmf";
           } & DtmfTool)
@@ -42173,6 +54984,9 @@ export class Api<
         | ({
             type: "function";
           } & FunctionTool)
+        | ({
+            type: "knowledgeBase";
+          } & KnowledgeBaseTool)
         | ({
             type: "transferCall";
           } & TransferCallTool)
@@ -42220,7 +55034,13 @@ export class Api<
           } & GoHighLevelContactCreateTool)
         | ({
             type: "gohighlevel.contact.get";
-          } & GoHighLevelContactGetTool),
+          } & GoHighLevelContactGetTool)
+        | ({
+            type: "sipRequest";
+          } & SipRequestTool)
+        | ({
+            type: "voicemail";
+          } & VoicemailTool),
         any
       >({
         path: `/tool/${id}`,
@@ -42247,6 +55067,9 @@ export class Api<
             type: "apiRequest";
           } & ApiRequestTool)
         | ({
+            type: "code";
+          } & CodeTool)
+        | ({
             type: "dtmf";
           } & DtmfTool)
         | ({
@@ -42255,6 +55078,9 @@ export class Api<
         | ({
             type: "function";
           } & FunctionTool)
+        | ({
+            type: "knowledgeBase";
+          } & KnowledgeBaseTool)
         | ({
             type: "transferCall";
           } & TransferCallTool)
@@ -42302,10 +55128,255 @@ export class Api<
           } & GoHighLevelContactCreateTool)
         | ({
             type: "gohighlevel.contact.get";
-          } & GoHighLevelContactGetTool),
-        any
+          } & GoHighLevelContactGetTool)
+        | ({
+            type: "sipRequest";
+          } & SipRequestTool)
+        | ({
+            type: "voicemail";
+          } & VoicemailTool),
+        ToolPinnedConflictResponseDTO
       >({
         path: `/tool/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Returns the Postgres-backed version history for the tool.
+     *
+     * @tags Tools
+     * @name ToolControllerFindAllVersions
+     * @summary List Tool Versions
+     * @request GET:/tool/{id}/versions
+     * @secure
+     */
+    toolControllerFindAllVersions: (
+      id: string,
+      query?: {
+        /** Opaque base64-encoded keyset cursor. Omit on first page. */
+        cursor?: string;
+        /**
+         * Page size, defaults to 25, capped at 100.
+         * @min 1
+         * @max 100
+         */
+        limit?: number;
+        /** When true, also returns soft-deleted versions. Defaults to false. */
+        includeDeleted?: true | false | "true" | "false";
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<ToolVersionPaginatedResponse, any>({
+        path: `/tool/${id}/versions`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerFindOneVersion
+     * @summary Get Tool Version
+     * @request GET:/tool/{id}/versions/{version}
+     * @secure
+     */
+    toolControllerFindOneVersion: (
+      id: string,
+      version: string,
+      query?: {
+        /** When true, returns the version even if soft-deleted. Defaults to false. */
+        includeDeleted?: true | false | "true" | "false";
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<ToolVersion, any>({
+        path: `/tool/${id}/versions/${version}`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerToolVersionMetadataUpdate
+     * @summary Update Tool Version Metadata
+     * @request PATCH:/tool/{id}/versions/{version}
+     * @secure
+     */
+    toolControllerToolVersionMetadataUpdate: (
+      id: string,
+      version: string,
+      data: UpdateToolVersionMetadataDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<ToolVersion, any>({
+        path: `/tool/${id}/versions/${version}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerSoftDeleteVersion
+     * @summary Delete Tool Version
+     * @request DELETE:/tool/{id}/versions/{version}
+     * @secure
+     */
+    toolControllerSoftDeleteVersion: (
+      id: string,
+      version: string,
+      query?: {
+        /** Force-delete the version even when it is pinned (overrides the 409). Note: force-deleting a version that is still being served will hard-fail any in-progress calls running on it. */
+        force?: boolean;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<ToolVersion, VersionPinConflictResponseDTO>({
+        path: `/tool/${id}/versions/${version}`,
+        method: "DELETE",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerFindAllDrafts
+     * @summary List Tool Drafts
+     * @request GET:/tool/{id}/draft
+     * @secure
+     */
+    toolControllerFindAllDrafts: (
+      id: string,
+      query?: {
+        /** Opaque base64-encoded keyset cursor. Omit on first page. */
+        cursor?: string;
+        /**
+         * Page size, defaults to 25, capped at 100.
+         * @min 1
+         * @max 100
+         */
+        limit?: number;
+        createdBy?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<ToolDraftPaginatedResponse, any>({
+        path: `/tool/${id}/draft`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerCreateDraft
+     * @summary Create Tool Draft
+     * @request POST:/tool/{id}/draft
+     * @secure
+     */
+    toolControllerCreateDraft: (
+      id: string,
+      data: CreateToolDraftDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<ToolDraft, ToolDraftConflictResponseDTO>({
+        path: `/tool/${id}/draft`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerFindOneDraft
+     * @summary Get Tool Draft
+     * @request GET:/tool/{id}/draft/{draftId}
+     * @secure
+     */
+    toolControllerFindOneDraft: (
+      id: string,
+      draftId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<ToolDraft, any>({
+        path: `/tool/${id}/draft/${draftId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerUpdateDraft
+     * @summary Update Tool Draft
+     * @request PATCH:/tool/{id}/draft/{draftId}
+     * @secure
+     */
+    toolControllerUpdateDraft: (
+      id: string,
+      draftId: string,
+      data: UpdateToolDraftDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<ToolDraft, any>({
+        path: `/tool/${id}/draft/${draftId}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Tools
+     * @name ToolControllerDeleteDraft
+     * @summary Delete Tool Draft
+     * @request DELETE:/tool/{id}/draft/{draftId}
+     * @secure
+     */
+    toolControllerDeleteDraft: (
+      id: string,
+      draftId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<ToolDraft, any>({
+        path: `/tool/${id}/draft/${draftId}`,
         method: "DELETE",
         secure: true,
         format: "json",
@@ -42366,10 +55437,16 @@ export class Api<
      * @request GET:/file
      * @secure
      */
-    fileControllerFindAll: (params: RequestParams = {}) =>
+    fileControllerFindAll: (
+      query: {
+        purpose: string;
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<File[], any>({
         path: `/file`,
         method: "GET",
+        query: query,
         secure: true,
         format: "json",
         ...params,
@@ -42446,22 +55523,15 @@ export class Api<
      * @secure
      */
     knowledgeBaseControllerCreate: (
-      data:
-        | ({
-            provider: "trieve";
-          } & CreateTrieveKnowledgeBaseDTO)
-        | ({
-            provider: "custom-knowledge-base";
-          } & CreateCustomKnowledgeBaseDTO),
+      data: {
+        provider: "custom-knowledge-base";
+      } & CreateCustomKnowledgeBaseDTO,
       params: RequestParams = {},
     ) =>
       this.request<
-        | ({
-            provider: "trieve";
-          } & TrieveKnowledgeBase)
-        | ({
-            provider: "custom-knowledge-base";
-          } & CustomKnowledgeBase),
+        {
+          provider: "custom-knowledge-base";
+        } & CustomKnowledgeBase,
         any
       >({
         path: `/knowledge-base`,
@@ -42534,14 +55604,9 @@ export class Api<
       params: RequestParams = {},
     ) =>
       this.request<
-        (
-          | ({
-              provider: "trieve";
-            } & TrieveKnowledgeBase)
-          | ({
-              provider: "custom-knowledge-base";
-            } & CustomKnowledgeBase)
-        )[],
+        ({
+          provider: "custom-knowledge-base";
+        } & CustomKnowledgeBase)[],
         any
       >({
         path: `/knowledge-base`,
@@ -42563,12 +55628,9 @@ export class Api<
      */
     knowledgeBaseControllerFindOne: (id: string, params: RequestParams = {}) =>
       this.request<
-        | ({
-            provider: "trieve";
-          } & TrieveKnowledgeBase)
-        | ({
-            provider: "custom-knowledge-base";
-          } & CustomKnowledgeBase),
+        {
+          provider: "custom-knowledge-base";
+        } & CustomKnowledgeBase,
         any
       >({
         path: `/knowledge-base/${id}`,
@@ -42589,22 +55651,15 @@ export class Api<
      */
     knowledgeBaseControllerUpdate: (
       id: string,
-      data:
-        | ({
-            provider: "trieve";
-          } & UpdateTrieveKnowledgeBaseDTO)
-        | ({
-            provider: "custom-knowledge-base";
-          } & UpdateCustomKnowledgeBaseDTO),
+      data: {
+        provider: "custom-knowledge-base";
+      } & UpdateCustomKnowledgeBaseDTO,
       params: RequestParams = {},
     ) =>
       this.request<
-        | ({
-            provider: "trieve";
-          } & TrieveKnowledgeBase)
-        | ({
-            provider: "custom-knowledge-base";
-          } & CustomKnowledgeBase),
+        {
+          provider: "custom-knowledge-base";
+        } & CustomKnowledgeBase,
         any
       >({
         path: `/knowledge-base/${id}`,
@@ -42627,12 +55682,9 @@ export class Api<
      */
     knowledgeBaseControllerRemove: (id: string, params: RequestParams = {}) =>
       this.request<
-        | ({
-            provider: "trieve";
-          } & TrieveKnowledgeBase)
-        | ({
-            provider: "custom-knowledge-base";
-          } & CustomKnowledgeBase),
+        {
+          provider: "custom-knowledge-base";
+        } & CustomKnowledgeBase,
         any
       >({
         path: `/knowledge-base/${id}`,
@@ -42665,6 +55717,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -42829,7 +55883,10 @@ export class Api<
       data: StructuredOutputRunDTO,
       params: RequestParams = {},
     ) =>
-      this.request<StructuredOutput, any>({
+      this.request<
+        StructuredOutputRunPreviewResponse | StructuredOutputRerunResponse,
+        any
+      >({
         path: `/structured-output/run`,
         method: "POST",
         body: data,
@@ -42858,6 +55915,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -43018,6 +56077,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -43232,6 +56293,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -43383,6 +56446,1325 @@ export class Api<
         ...params,
       }),
   };
+  eval = {
+    /**
+     * No description
+     *
+     * @tags Simulation Personalities
+     * @name PersonalityControllerCreate
+     * @summary Create Personality
+     * @request POST:/eval/simulation/personality
+     * @secure
+     */
+    personalityControllerCreate: (
+      data: CreatePersonalityDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Personality, any>({
+        path: `/eval/simulation/personality`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Personalities
+     * @name PersonalityControllerFindAll
+     * @summary List Personalities
+     * @request GET:/eval/simulation/personality
+     * @secure
+     */
+    personalityControllerFindAll: (
+      query?: {
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<Personality[], any>({
+        path: `/eval/simulation/personality`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Personalities
+     * @name PersonalityControllerFindOne
+     * @summary Get Personality
+     * @request GET:/eval/simulation/personality/{id}
+     * @secure
+     */
+    personalityControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Personality, any>({
+        path: `/eval/simulation/personality/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Personalities
+     * @name PersonalityControllerUpdate
+     * @summary Update Personality
+     * @request PATCH:/eval/simulation/personality/{id}
+     * @secure
+     */
+    personalityControllerUpdate: (
+      id: string,
+      data: UpdatePersonalityDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Personality, any>({
+        path: `/eval/simulation/personality/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Personalities
+     * @name PersonalityControllerRemove
+     * @summary Delete Personality
+     * @request DELETE:/eval/simulation/personality/{id}
+     * @secure
+     */
+    personalityControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Personality, any>({
+        path: `/eval/simulation/personality/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Scenarios
+     * @name ScenarioControllerCreate
+     * @summary Create Scenario
+     * @request POST:/eval/simulation/scenario
+     * @secure
+     */
+    scenarioControllerCreate: (
+      data: CreateScenarioDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Scenario, any>({
+        path: `/eval/simulation/scenario`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Scenarios
+     * @name ScenarioControllerFindAll
+     * @summary List Scenarios
+     * @request GET:/eval/simulation/scenario
+     * @secure
+     */
+    scenarioControllerFindAll: (
+      query?: {
+        /**
+         * Return only scenarios matching the provided ids
+         * @format uuid
+         */
+        idAny?: string[];
+        /** Search by scenario name */
+        name?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<Scenario[], any>({
+        path: `/eval/simulation/scenario`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Scenarios
+     * @name ScenarioControllerFindOne
+     * @summary Get Scenario
+     * @request GET:/eval/simulation/scenario/{id}
+     * @secure
+     */
+    scenarioControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Scenario, any>({
+        path: `/eval/simulation/scenario/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Scenarios
+     * @name ScenarioControllerUpdate
+     * @summary Update Scenario
+     * @request PATCH:/eval/simulation/scenario/{id}
+     * @secure
+     */
+    scenarioControllerUpdate: (
+      id: string,
+      data: UpdateScenarioDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Scenario, any>({
+        path: `/eval/simulation/scenario/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Scenarios
+     * @name ScenarioControllerRemove
+     * @summary Delete Scenario
+     * @request DELETE:/eval/simulation/scenario/{id}
+     * @secure
+     */
+    scenarioControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Scenario, any>({
+        path: `/eval/simulation/scenario/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Runs
+     * @name SimulationRunControllerCreate
+     * @summary Create Simulation Run
+     * @request POST:/eval/simulation/run
+     * @secure
+     */
+    simulationRunControllerCreate: (
+      data: CreateSimulationRunDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        CreateSimulationRunResponse,
+        SimulationRunPaymentRequiredResponse
+      >({
+        path: `/eval/simulation/run`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Runs
+     * @name SimulationRunControllerFindAll
+     * @summary List Simulation Runs
+     * @request GET:/eval/simulation/run
+     * @secure
+     */
+    simulationRunControllerFindAll: (
+      query?: {
+        /** Filter by status */
+        status?: "queued" | "running" | "ended";
+        /** Filter by aggregate run result status */
+        filterStatus?: "passed" | "failed" | "running";
+        /** Filter by target type */
+        targetType?: "assistant" | "squad";
+        /**
+         * Filter by target id
+         * @format uuid
+         */
+        targetId?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<SimulationRun[] | SimulationRunsPaginatedResponse, any>({
+        path: `/eval/simulation/run`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Runs
+     * @name SimulationRunControllerFindOne
+     * @summary Get Simulation Run
+     * @request GET:/eval/simulation/run/{id}
+     * @secure
+     */
+    simulationRunControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<SimulationRun, any>({
+        path: `/eval/simulation/run/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Runs
+     * @name SimulationRunControllerCancelGroup
+     * @summary Cancel Simulation Run
+     * @request PATCH:/eval/simulation/run/{id}
+     * @secure
+     */
+    simulationRunControllerCancelGroup: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<SimulationRun, any>({
+        path: `/eval/simulation/run/${id}`,
+        method: "PATCH",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Runs, Simulation Run Items
+     * @name SimulationRunControllerFindItems
+     * @summary List Simulation Run Items
+     * @request GET:/eval/simulation/run/{id}/item
+     * @secure
+     */
+    simulationRunControllerFindItems: (
+      id: string,
+      query?: {
+        /**
+         * This is the simulation ID to filter by.
+         * @format uuid
+         */
+        simulationId?: string;
+        /**
+         * This is the run ID (batch/group) to filter by.
+         * @format uuid
+         */
+        runId?: string;
+        /** This is the status to filter by. */
+        status?:
+          | "queued"
+          | "running"
+          | "evaluating"
+          | "passed"
+          | "failed"
+          | "canceled";
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<SimulationRunItem[], any>({
+        path: `/eval/simulation/run/${id}/item`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Runs, Simulation Run Items
+     * @name SimulationRunControllerFindItem
+     * @summary Get Simulation Run Item
+     * @request GET:/eval/simulation/run/{id}/item/{itemId}
+     * @secure
+     */
+    simulationRunControllerFindItem: (
+      id: string,
+      itemId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<SimulationRunItem, any>({
+        path: `/eval/simulation/run/${id}/item/${itemId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Runs, Simulation Run Items
+     * @name SimulationRunControllerCancelItem
+     * @summary Cancel Simulation Run Item
+     * @request PATCH:/eval/simulation/run/{id}/item/{itemId}
+     * @secure
+     */
+    simulationRunControllerCancelItem: (
+      id: string,
+      itemId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<SimulationRunItem, any>({
+        path: `/eval/simulation/run/${id}/item/${itemId}`,
+        method: "PATCH",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Runs, Simulation Run Items
+     * @name SimulationRunControllerGenerateSuggestions
+     * @summary Generate Improvement Suggestions
+     * @request POST:/eval/simulation/run/{id}/item/{itemId}/generate
+     * @secure
+     */
+    simulationRunControllerGenerateSuggestions: (
+      id: string,
+      itemId: string,
+      query: {
+        force: string;
+        persist?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<void, any>({
+        path: `/eval/simulation/run/${id}/item/${itemId}/generate`,
+        method: "POST",
+        query: query,
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Suites
+     * @name SimulationSuiteControllerCreate
+     * @summary Create Simulation Suite
+     * @request POST:/eval/simulation/suite
+     * @secure
+     */
+    simulationSuiteControllerCreate: (
+      data: CreateSimulationSuiteDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<SimulationSuite, any>({
+        path: `/eval/simulation/suite`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Suites
+     * @name SimulationSuiteControllerFindAll
+     * @summary List Simulation Suites
+     * @request GET:/eval/simulation/suite
+     * @secure
+     */
+    simulationSuiteControllerFindAll: (
+      query?: {
+        /** Search by simulation suite name */
+        name?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<SimulationSuite[], any>({
+        path: `/eval/simulation/suite`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Suites
+     * @name SimulationSuiteControllerFindOne
+     * @summary Get Simulation Suite
+     * @request GET:/eval/simulation/suite/{id}
+     * @secure
+     */
+    simulationSuiteControllerFindOne: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<SimulationSuite, any>({
+        path: `/eval/simulation/suite/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Suites
+     * @name SimulationSuiteControllerUpdate
+     * @summary Update Simulation Suite
+     * @request PATCH:/eval/simulation/suite/{id}
+     * @secure
+     */
+    simulationSuiteControllerUpdate: (
+      id: string,
+      data: UpdateSimulationSuiteDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<SimulationSuite, any>({
+        path: `/eval/simulation/suite/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulation Suites
+     * @name SimulationSuiteControllerRemove
+     * @summary Delete Simulation Suite
+     * @request DELETE:/eval/simulation/suite/{id}
+     * @secure
+     */
+    simulationSuiteControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<SimulationSuite, any>({
+        path: `/eval/simulation/suite/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Uses AI to analyze an assistant or squad configuration and generate test scenarios
+     *
+     * @tags Simulations
+     * @name SimulationGenerateControllerGenerate
+     * @summary Generate Scenarios with AI
+     * @request POST:/eval/simulation/scenario/generate
+     * @secure
+     */
+    simulationGenerateControllerGenerate: (
+      data: GenerateScenariosDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<GenerateScenariosResponse, any>({
+        path: `/eval/simulation/scenario/generate`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulations
+     * @name SimulationControllerCreate
+     * @summary Create Simulation
+     * @request POST:/eval/simulation
+     * @secure
+     */
+    simulationControllerCreate: (
+      data: CreateSimulationDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Simulation, any>({
+        path: `/eval/simulation`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulations
+     * @name SimulationControllerFindAll
+     * @summary List Simulations
+     * @request GET:/eval/simulation
+     * @secure
+     */
+    simulationControllerFindAll: (
+      query?: {
+        /**
+         * Return only simulations matching the provided ids
+         * @format uuid
+         */
+        idAny?: string[];
+        /** Only include simulations that are not part of a suite */
+        standaloneOnly?: boolean;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<Simulation[], any>({
+        path: `/eval/simulation`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulations
+     * @name SimulationControllerFindOne
+     * @summary Get Simulation
+     * @request GET:/eval/simulation/{id}
+     * @secure
+     */
+    simulationControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Simulation, any>({
+        path: `/eval/simulation/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulations
+     * @name SimulationControllerUpdate
+     * @summary Update Simulation
+     * @request PATCH:/eval/simulation/{id}
+     * @secure
+     */
+    simulationControllerUpdate: (
+      id: string,
+      data: UpdateSimulationDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Simulation, any>({
+        path: `/eval/simulation/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulations
+     * @name SimulationControllerRemove
+     * @summary Delete Simulation
+     * @request DELETE:/eval/simulation/{id}
+     * @secure
+     */
+    simulationControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Simulation, any>({
+        path: `/eval/simulation/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Simulations
+     * @name SimulationControllerGetConcurrency
+     * @summary Get Simulation Concurrency
+     * @request GET:/eval/simulation/concurrency
+     * @secure
+     */
+    simulationControllerGetConcurrency: (params: RequestParams = {}) =>
+      this.request<SimulationConcurrencyResponse, any>({
+        path: `/eval/simulation/concurrency`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerCreate
+     * @summary Create Eval
+     * @request POST:/eval
+     * @secure
+     */
+    evalControllerCreate: (data: CreateEvalDTO, params: RequestParams = {}) =>
+      this.request<Eval, any>({
+        path: `/eval`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerGetPaginated
+     * @summary List Evals
+     * @request GET:/eval
+     * @secure
+     */
+    evalControllerGetPaginated: (
+      query?: {
+        id?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<EvalPaginatedResponse, any>({
+        path: `/eval`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerUpdate
+     * @summary Update Eval
+     * @request PATCH:/eval/{id}
+     * @secure
+     */
+    evalControllerUpdate: (
+      id: string,
+      data: UpdateEvalDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Eval, any>({
+        path: `/eval/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerRemove
+     * @summary Delete Eval
+     * @request DELETE:/eval/{id}
+     * @secure
+     */
+    evalControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Eval, any>({
+        path: `/eval/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerGet
+     * @summary Get Eval
+     * @request GET:/eval/{id}
+     * @secure
+     */
+    evalControllerGet: (id: string, params: RequestParams = {}) =>
+      this.request<Eval, any>({
+        path: `/eval/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerRemoveRun
+     * @summary Delete Eval Run
+     * @request DELETE:/eval/run/{id}
+     * @secure
+     */
+    evalControllerRemoveRun: (id: string, params: RequestParams = {}) =>
+      this.request<EvalRun, any>({
+        path: `/eval/run/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerGetRun
+     * @summary Get Eval Run
+     * @request GET:/eval/run/{id}
+     * @secure
+     */
+    evalControllerGetRun: (id: string, params: RequestParams = {}) =>
+      this.request<EvalRun, any>({
+        path: `/eval/run/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerRun
+     * @summary Create Eval Run
+     * @request POST:/eval/run
+     * @secure
+     */
+    evalControllerRun: (data: CreateEvalRunDTO, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/eval/run`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Eval
+     * @name EvalControllerGetRunsPaginated
+     * @summary List Eval Runs
+     * @request GET:/eval/run
+     * @secure
+     */
+    evalControllerGetRunsPaginated: (
+      query?: {
+        id?: string;
+        /**
+         * This is the page number to return. Defaults to 1.
+         * @min 1
+         */
+        page?: number;
+        /** This is the sort order for pagination. Defaults to 'DESC'. */
+        sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
+        /**
+         * This is the maximum number of items to return. Defaults to 100.
+         * @min 0
+         * @max 1000
+         */
+        limit?: number;
+        /**
+         * This will return items where the createdAt is greater than the specified value.
+         * @format date-time
+         */
+        createdAtGt?: string;
+        /**
+         * This will return items where the createdAt is less than the specified value.
+         * @format date-time
+         */
+        createdAtLt?: string;
+        /**
+         * This will return items where the createdAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtGe?: string;
+        /**
+         * This will return items where the createdAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        createdAtLe?: string;
+        /**
+         * This will return items where the updatedAt is greater than the specified value.
+         * @format date-time
+         */
+        updatedAtGt?: string;
+        /**
+         * This will return items where the updatedAt is less than the specified value.
+         * @format date-time
+         */
+        updatedAtLt?: string;
+        /**
+         * This will return items where the updatedAt is greater than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtGe?: string;
+        /**
+         * This will return items where the updatedAt is less than or equal to the specified value.
+         * @format date-time
+         */
+        updatedAtLe?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<EvalRunPaginatedResponse, any>({
+        path: `/eval/run`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+  };
   reporting = {
     /**
      * No description
@@ -43452,6 +57834,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -43682,20 +58066,19 @@ export class Api<
         format: "json",
         ...params,
       }),
-  };
-  eval = {
+
     /**
      * No description
      *
-     * @tags Eval
-     * @name EvalControllerCreate
-     * @summary Create Eval
-     * @request POST:/eval
+     * @tags Board
+     * @name BoardControllerCreate
+     * @summary Create Board
+     * @request POST:/reporting/board
      * @secure
      */
-    evalControllerCreate: (data: CreateEvalDTO, params: RequestParams = {}) =>
-      this.request<Eval, any>({
-        path: `/eval`,
+    boardControllerCreate: (data: CreateBoardDTO, params: RequestParams = {}) =>
+      this.request<Board, any>({
+        path: `/reporting/board`,
         method: "POST",
         body: data,
         secure: true,
@@ -43707,15 +58090,14 @@ export class Api<
     /**
      * No description
      *
-     * @tags Eval
-     * @name EvalControllerGetPaginated
-     * @summary List Evals
-     * @request GET:/eval
+     * @tags Board
+     * @name BoardControllerFindAll
+     * @summary Get Boards
+     * @request GET:/reporting/board
      * @secure
      */
-    evalControllerGetPaginated: (
+    boardControllerFindAll: (
       query?: {
-        id?: string;
         /**
          * This is the page number to return. Defaults to 1.
          * @min 1
@@ -43723,6 +58105,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -43772,8 +58156,8 @@ export class Api<
       },
       params: RequestParams = {},
     ) =>
-      this.request<EvalPaginatedResponse, any>({
-        path: `/eval`,
+      this.request<BoardPaginatedResponse, any>({
+        path: `/reporting/board`,
         method: "GET",
         query: query,
         secure: true,
@@ -43784,19 +58168,37 @@ export class Api<
     /**
      * No description
      *
-     * @tags Eval
-     * @name EvalControllerUpdate
-     * @summary Update Eval
-     * @request PATCH:/eval/{id}
+     * @tags Board
+     * @name BoardControllerMetricsOverviewEnsure
+     * @summary Get Default Metrics Overview Board
+     * @request GET:/reporting/board/default/metrics-overview
      * @secure
      */
-    evalControllerUpdate: (
+    boardControllerMetricsOverviewEnsure: (params: RequestParams = {}) =>
+      this.request<Board, any>({
+        path: `/reporting/board/default/metrics-overview`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Board
+     * @name BoardControllerUpdate
+     * @summary Update Board
+     * @request PATCH:/reporting/board/{id}
+     * @secure
+     */
+    boardControllerUpdate: (
       id: string,
-      data: UpdateEvalDTO,
+      data: UpdateBoardDTO,
       params: RequestParams = {},
     ) =>
-      this.request<Eval, any>({
-        path: `/eval/${id}`,
+      this.request<Board, any>({
+        path: `/reporting/board/${id}`,
         method: "PATCH",
         body: data,
         secure: true,
@@ -43808,166 +58210,34 @@ export class Api<
     /**
      * No description
      *
-     * @tags Eval
-     * @name EvalControllerRemove
-     * @summary Delete Eval
-     * @request DELETE:/eval/{id}
+     * @tags Board
+     * @name BoardControllerFindOne
+     * @summary Get Board
+     * @request GET:/reporting/board/{id}
      * @secure
      */
-    evalControllerRemove: (id: string, params: RequestParams = {}) =>
-      this.request<Eval, any>({
-        path: `/eval/${id}`,
+    boardControllerFindOne: (id: string, params: RequestParams = {}) =>
+      this.request<Board, any>({
+        path: `/reporting/board/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Board
+     * @name BoardControllerRemove
+     * @summary Delete Board
+     * @request DELETE:/reporting/board/{id}
+     * @secure
+     */
+    boardControllerRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Board, any>({
+        path: `/reporting/board/${id}`,
         method: "DELETE",
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Eval
-     * @name EvalControllerGet
-     * @summary Get Eval
-     * @request GET:/eval/{id}
-     * @secure
-     */
-    evalControllerGet: (id: string, params: RequestParams = {}) =>
-      this.request<Eval, any>({
-        path: `/eval/${id}`,
-        method: "GET",
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Eval
-     * @name EvalControllerRemoveRun
-     * @summary Delete Eval Run
-     * @request DELETE:/eval/run/{id}
-     * @secure
-     */
-    evalControllerRemoveRun: (id: string, params: RequestParams = {}) =>
-      this.request<EvalRun, any>({
-        path: `/eval/run/${id}`,
-        method: "DELETE",
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Eval
-     * @name EvalControllerGetRun
-     * @summary Get Eval Run
-     * @request GET:/eval/run/{id}
-     * @secure
-     */
-    evalControllerGetRun: (id: string, params: RequestParams = {}) =>
-      this.request<EvalRun, any>({
-        path: `/eval/run/${id}`,
-        method: "GET",
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Eval
-     * @name EvalControllerRun
-     * @summary Create Eval Run
-     * @request POST:/eval/run
-     * @secure
-     */
-    evalControllerRun: (data: CreateEvalRunDTO, params: RequestParams = {}) =>
-      this.request<void, any>({
-        path: `/eval/run`,
-        method: "POST",
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Eval
-     * @name EvalControllerGetRunsPaginated
-     * @summary List Eval Runs
-     * @request GET:/eval/run
-     * @secure
-     */
-    evalControllerGetRunsPaginated: (
-      query?: {
-        id?: string;
-        /**
-         * This is the page number to return. Defaults to 1.
-         * @min 1
-         */
-        page?: number;
-        /** This is the sort order for pagination. Defaults to 'DESC'. */
-        sortOrder?: "ASC" | "DESC";
-        /**
-         * This is the maximum number of items to return. Defaults to 100.
-         * @min 0
-         * @max 1000
-         */
-        limit?: number;
-        /**
-         * This will return items where the createdAt is greater than the specified value.
-         * @format date-time
-         */
-        createdAtGt?: string;
-        /**
-         * This will return items where the createdAt is less than the specified value.
-         * @format date-time
-         */
-        createdAtLt?: string;
-        /**
-         * This will return items where the createdAt is greater than or equal to the specified value.
-         * @format date-time
-         */
-        createdAtGe?: string;
-        /**
-         * This will return items where the createdAt is less than or equal to the specified value.
-         * @format date-time
-         */
-        createdAtLe?: string;
-        /**
-         * This will return items where the updatedAt is greater than the specified value.
-         * @format date-time
-         */
-        updatedAtGt?: string;
-        /**
-         * This will return items where the updatedAt is less than the specified value.
-         * @format date-time
-         */
-        updatedAtLt?: string;
-        /**
-         * This will return items where the updatedAt is greater than or equal to the specified value.
-         * @format date-time
-         */
-        updatedAtGe?: string;
-        /**
-         * This will return items where the updatedAt is less than or equal to the specified value.
-         * @format date-time
-         */
-        updatedAtLe?: string;
-      },
-      params: RequestParams = {},
-    ) =>
-      this.request<EvalRunPaginatedResponse, any>({
-        path: `/eval/run`,
-        method: "GET",
-        query: query,
         secure: true,
         format: "json",
         ...params,
@@ -44053,6 +58323,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -44327,12 +58599,55 @@ export class Api<
       data: InviteUserDTO,
       params: RequestParams = {},
     ) =>
-      this.request<void, any>({
+      this.request<void, void>({
         path: `/org/${id}/invite`,
         method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs
+     * @name OrgControllerPendingInvitationsList
+     * @summary List Pending Organization Invitations
+     * @request GET:/org/{id}/invitations/pending
+     * @secure
+     */
+    orgControllerPendingInvitationsList: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<PendingInvitationsResponseDTO, any>({
+        path: `/org/${id}/invitations/pending`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs
+     * @name OrgControllerPendingInvitationRevoke
+     * @summary Revoke Pending Organization Invitation
+     * @request DELETE:/org/{id}/invitations/{invitationId}
+     * @secure
+     */
+    orgControllerPendingInvitationRevoke: (
+      id: string,
+      invitationId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<RevokeInvitationResponseDTO, any>({
+        path: `/org/${id}/invitations/${invitationId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
         ...params,
       }),
 
@@ -44372,6 +58687,42 @@ export class Api<
       this.request<JwtResponse, any>({
         path: `/org/${id}/auth`,
         method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs
+     * @name OrgControllerZdrBuy
+     * @summary Purchase ZDR add-on
+     * @request POST:/org/{id}/zdr
+     * @secure
+     */
+    orgControllerZdrBuy: (id: string, params: RequestParams = {}) =>
+      this.request<Subscription, any>({
+        path: `/org/${id}/zdr`,
+        method: "POST",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Orgs
+     * @name OrgControllerZdrRemove
+     * @summary Remove ZDR add-on
+     * @request DELETE:/org/{id}/zdr
+     * @secure
+     */
+    orgControllerZdrRemove: (id: string, params: RequestParams = {}) =>
+      this.request<Subscription, any>({
+        path: `/org/${id}/zdr`,
+        method: "DELETE",
         secure: true,
         format: "json",
         ...params,
@@ -44546,6 +58897,9 @@ export class Api<
             provider: "anthropic";
           } & CreateAnthropicCredentialDTO)
         | ({
+            provider: "anthropic-bedrock";
+          } & CreateAnthropicBedrockCredentialDTO)
+        | ({
             provider: "anyscale";
           } & CreateAnyscaleCredentialDTO)
         | ({
@@ -44630,6 +58984,9 @@ export class Api<
             provider: "s3";
           } & CreateS3CredentialDTO)
         | ({
+            provider: "s3-compatible";
+          } & CreateS3CompatibleCredentialDTO)
+        | ({
             provider: "supabase";
           } & CreateSupabaseCredentialDTO)
         | ({
@@ -44657,6 +59014,9 @@ export class Api<
             provider: "xai";
           } & CreateXAiCredentialDTO)
         | ({
+            provider: "microsoft";
+          } & CreateMicrosoftCredentialDTO)
+        | ({
             provider: "neuphonic";
           } & CreateNeuphonicCredentialDTO)
         | ({
@@ -44669,8 +59029,8 @@ export class Api<
             provider: "speechmatics";
           } & CreateSpeechmaticsCredentialDTO)
         | ({
-            provider: "trieve";
-          } & CreateTrieveCredentialDTO)
+            provider: "soniox";
+          } & CreateSonioxCredentialDTO)
         | ({
             provider: "google.calendar.oauth2-client";
           } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
@@ -44691,7 +59051,16 @@ export class Api<
           } & CreateInworldCredentialDTO)
         | ({
             provider: "minimax";
-          } & CreateMinimaxCredentialDTO),
+          } & CreateMinimaxCredentialDTO)
+        | ({
+            provider: "wellsaid";
+          } & CreateWellSaidCredentialDTO)
+        | ({
+            provider: "email";
+          } & CreateEmailCredentialDTO)
+        | ({
+            provider: "slack-webhook";
+          } & CreateSlackWebhookCredentialDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -44701,6 +59070,9 @@ export class Api<
         | ({
             provider: "anthropic";
           } & AnthropicCredential)
+        | ({
+            provider: "anthropic-bedrock";
+          } & AnthropicBedrockCredential)
         | ({
             provider: "anyscale";
           } & AnyscaleCredential)
@@ -44783,6 +59155,9 @@ export class Api<
             provider: "s3";
           } & S3Credential)
         | ({
+            provider: "s3-compatible";
+          } & S3CompatibleStorageCredential)
+        | ({
             provider: "supabase";
           } & SupabaseCredential)
         | ({
@@ -44816,14 +59191,17 @@ export class Api<
             provider: "xai";
           } & XAiCredential)
         | ({
+            provider: "microsoft";
+          } & MicrosoftCredential)
+        | ({
             provider: "mistral";
           } & MistralCredential)
         | ({
             provider: "speechmatics";
           } & SpeechmaticsCredential)
         | ({
-            provider: "trieve";
-          } & TrieveCredential)
+            provider: "soniox";
+          } & SonioxCredential)
         | ({
             provider: "telnyx";
           } & any)
@@ -44853,7 +59231,16 @@ export class Api<
           } & InworldCredential)
         | ({
             provider: "minimax";
-          } & any),
+          } & any)
+        | ({
+            provider: "wellsaid";
+          } & WellSaidCredential)
+        | ({
+            provider: "email";
+          } & EmailCredential)
+        | ({
+            provider: "slack-webhook";
+          } & SlackWebhookCredential),
         any
       >({
         path: `/credential`,
@@ -44933,6 +59320,9 @@ export class Api<
           | ({
               provider: "anthropic";
             } & AnthropicCredential)
+          | ({
+              provider: "anthropic-bedrock";
+            } & AnthropicBedrockCredential)
           | ({
               provider: "anyscale";
             } & AnyscaleCredential)
@@ -45015,6 +59405,9 @@ export class Api<
               provider: "s3";
             } & S3Credential)
           | ({
+              provider: "s3-compatible";
+            } & S3CompatibleStorageCredential)
+          | ({
               provider: "supabase";
             } & SupabaseCredential)
           | ({
@@ -45048,14 +59441,17 @@ export class Api<
               provider: "xai";
             } & XAiCredential)
           | ({
+              provider: "microsoft";
+            } & MicrosoftCredential)
+          | ({
               provider: "mistral";
             } & MistralCredential)
           | ({
               provider: "speechmatics";
             } & SpeechmaticsCredential)
           | ({
-              provider: "trieve";
-            } & TrieveCredential)
+              provider: "soniox";
+            } & SonioxCredential)
           | ({
               provider: "telnyx";
             } & any)
@@ -45086,6 +59482,15 @@ export class Api<
           | ({
               provider: "minimax";
             } & any)
+          | ({
+              provider: "wellsaid";
+            } & WellSaidCredential)
+          | ({
+              provider: "email";
+            } & EmailCredential)
+          | ({
+              provider: "slack-webhook";
+            } & SlackWebhookCredential)
         )[],
         any
       >({
@@ -45114,6 +59519,9 @@ export class Api<
         | ({
             provider: "anthropic";
           } & AnthropicCredential)
+        | ({
+            provider: "anthropic-bedrock";
+          } & AnthropicBedrockCredential)
         | ({
             provider: "anyscale";
           } & AnyscaleCredential)
@@ -45196,6 +59604,9 @@ export class Api<
             provider: "s3";
           } & S3Credential)
         | ({
+            provider: "s3-compatible";
+          } & S3CompatibleStorageCredential)
+        | ({
             provider: "supabase";
           } & SupabaseCredential)
         | ({
@@ -45229,14 +59640,17 @@ export class Api<
             provider: "xai";
           } & XAiCredential)
         | ({
+            provider: "microsoft";
+          } & MicrosoftCredential)
+        | ({
             provider: "mistral";
           } & MistralCredential)
         | ({
             provider: "speechmatics";
           } & SpeechmaticsCredential)
         | ({
-            provider: "trieve";
-          } & TrieveCredential)
+            provider: "soniox";
+          } & SonioxCredential)
         | ({
             provider: "telnyx";
           } & any)
@@ -45266,7 +59680,16 @@ export class Api<
           } & InworldCredential)
         | ({
             provider: "minimax";
-          } & any),
+          } & any)
+        | ({
+            provider: "wellsaid";
+          } & WellSaidCredential)
+        | ({
+            provider: "email";
+          } & EmailCredential)
+        | ({
+            provider: "slack-webhook";
+          } & SlackWebhookCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -45294,6 +59717,9 @@ export class Api<
         | ({
             provider: "anthropic";
           } & UpdateAnthropicCredentialDTO)
+        | ({
+            provider: "anthropic-bedrock";
+          } & UpdateAnthropicBedrockCredentialDTO)
         | ({
             provider: "anyscale";
           } & UpdateAnyscaleCredentialDTO)
@@ -45333,6 +59759,9 @@ export class Api<
         | ({
             provider: "gladia";
           } & UpdateGladiaCredentialDTO)
+        | ({
+            provider: "soniox";
+          } & UpdateSonioxCredentialDTO)
         | ({
             provider: "gohighlevel";
           } & UpdateGoHighLevelCredentialDTO)
@@ -45376,11 +59805,14 @@ export class Api<
             provider: "s3";
           } & UpdateS3CredentialDTO)
         | ({
+            provider: "s3-compatible";
+          } & UpdateS3CompatibleCredentialDTO)
+        | ({
             provider: "supabase";
-          } & UpdateSupabaseCredentialDTO)
+          } & any)
         | ({
             provider: "smallest-ai";
-          } & UpdateSmallestAICredentialDTO)
+          } & any)
         | ({
             provider: "neuphonic";
           } & UpdateNeuphonicCredentialDTO)
@@ -45389,7 +59821,7 @@ export class Api<
           } & UpdateHumeCredentialDTO)
         | ({
             provider: "tavus";
-          } & UpdateTavusCredentialDTO)
+          } & any)
         | ({
             provider: "together-ai";
           } & UpdateTogetherAICredentialDTO)
@@ -45409,8 +59841,23 @@ export class Api<
             provider: "xai";
           } & UpdateXAiCredentialDTO)
         | ({
+            provider: "microsoft";
+          } & UpdateMicrosoftCredentialDTO)
+        | ({
             provider: "inworld";
-          } & UpdateInworldCredentialDTO),
+          } & UpdateInworldCredentialDTO)
+        | ({
+            provider: "minimax";
+          } & any)
+        | ({
+            provider: "wellsaid";
+          } & UpdateWellSaidCredentialDTO)
+        | ({
+            provider: "email";
+          } & UpdateEmailCredentialDTO)
+        | ({
+            provider: "slack-webhook";
+          } & UpdateSlackWebhookCredentialDTO),
       params: RequestParams = {},
     ) =>
       this.request<
@@ -45420,6 +59867,9 @@ export class Api<
         | ({
             provider: "anthropic";
           } & AnthropicCredential)
+        | ({
+            provider: "anthropic-bedrock";
+          } & AnthropicBedrockCredential)
         | ({
             provider: "anyscale";
           } & AnyscaleCredential)
@@ -45502,6 +59952,9 @@ export class Api<
             provider: "s3";
           } & S3Credential)
         | ({
+            provider: "s3-compatible";
+          } & S3CompatibleStorageCredential)
+        | ({
             provider: "supabase";
           } & SupabaseCredential)
         | ({
@@ -45535,14 +59988,17 @@ export class Api<
             provider: "xai";
           } & XAiCredential)
         | ({
+            provider: "microsoft";
+          } & MicrosoftCredential)
+        | ({
             provider: "mistral";
           } & MistralCredential)
         | ({
             provider: "speechmatics";
           } & SpeechmaticsCredential)
         | ({
-            provider: "trieve";
-          } & TrieveCredential)
+            provider: "soniox";
+          } & SonioxCredential)
         | ({
             provider: "telnyx";
           } & any)
@@ -45572,7 +60028,16 @@ export class Api<
           } & InworldCredential)
         | ({
             provider: "minimax";
-          } & any),
+          } & any)
+        | ({
+            provider: "wellsaid";
+          } & WellSaidCredential)
+        | ({
+            provider: "email";
+          } & EmailCredential)
+        | ({
+            provider: "slack-webhook";
+          } & SlackWebhookCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -45602,6 +60067,9 @@ export class Api<
             provider: "anthropic";
           } & AnthropicCredential)
         | ({
+            provider: "anthropic-bedrock";
+          } & AnthropicBedrockCredential)
+        | ({
             provider: "anyscale";
           } & AnyscaleCredential)
         | ({
@@ -45683,6 +60151,9 @@ export class Api<
             provider: "s3";
           } & S3Credential)
         | ({
+            provider: "s3-compatible";
+          } & S3CompatibleStorageCredential)
+        | ({
             provider: "supabase";
           } & SupabaseCredential)
         | ({
@@ -45716,14 +60187,17 @@ export class Api<
             provider: "xai";
           } & XAiCredential)
         | ({
+            provider: "microsoft";
+          } & MicrosoftCredential)
+        | ({
             provider: "mistral";
           } & MistralCredential)
         | ({
             provider: "speechmatics";
           } & SpeechmaticsCredential)
         | ({
-            provider: "trieve";
-          } & TrieveCredential)
+            provider: "soniox";
+          } & SonioxCredential)
         | ({
             provider: "telnyx";
           } & any)
@@ -45753,7 +60227,16 @@ export class Api<
           } & InworldCredential)
         | ({
             provider: "minimax";
-          } & any),
+          } & any)
+        | ({
+            provider: "wellsaid";
+          } & WellSaidCredential)
+        | ({
+            provider: "email";
+          } & EmailCredential)
+        | ({
+            provider: "slack-webhook";
+          } & SlackWebhookCredential),
         any
       >({
         path: `/credential/${id}`,
@@ -45966,13 +60449,19 @@ export class Api<
         | "sesame"
         | "inworld"
         | "minimax"
-        | "orpheus",
+        | "wellsaid"
+        | "orpheus"
+        | "xai"
+        | "microsoft",
       query?: {
         page?: number;
         keyword?: string;
         language?: string;
         accent?: string;
         gender?: string;
+        currentVoiceId?: string;
+        /** When true, return only voices the org cloned themselves (is_cloned = true). */
+        isCloned?: boolean;
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -46059,7 +60548,10 @@ export class Api<
         | "sesame"
         | "inworld"
         | "minimax"
-        | "orpheus",
+        | "wellsaid"
+        | "orpheus"
+        | "xai"
+        | "microsoft",
       params: RequestParams = {},
     ) =>
       this.request<VoiceLibrary[], any>({
@@ -46098,7 +60590,10 @@ export class Api<
         | "sesame"
         | "inworld"
         | "minimax"
-        | "orpheus",
+        | "wellsaid"
+        | "orpheus"
+        | "xai"
+        | "microsoft",
       params: RequestParams = {},
     ) =>
       this.request<VoiceLibrary[], any>({
@@ -46150,7 +60645,51 @@ export class Api<
         method: "POST",
         body: data,
         secure: true,
+        type: ContentType.FormData,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Voice Library
+     * @name VoiceLibraryControllerVoiceLibraryVoiceUpdate
+     * @summary Update a Voice Library voice (name/description).
+     * @request PATCH:/voice-library/{id}
+     * @secure
+     */
+    voiceLibraryControllerVoiceLibraryVoiceUpdate: (
+      id: string,
+      data: UpdateVoiceLibraryMetadataDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<VoiceLibrary, any>({
+        path: `/voice-library/${id}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Voice Library
+     * @name VoiceLibraryControllerVoiceLibraryVoiceDelete
+     * @summary Delete a Voice Library voice.
+     * @request DELETE:/voice-library/{id}
+     * @secure
+     */
+    voiceLibraryControllerVoiceLibraryVoiceDelete: (
+      id: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, any>({
+        path: `/voice-library/${id}`,
+        method: "DELETE",
+        secure: true,
         ...params,
       }),
   };
@@ -46165,7 +60704,7 @@ export class Api<
      * @secure
      */
     providerResourceControllerCreateProviderResource: (
-      provider: "11labs",
+      provider: "cartesia" | "11labs",
       resourceName: "pronunciation-dictionary",
       params: RequestParams = {},
     ) =>
@@ -46187,7 +60726,7 @@ export class Api<
      * @secure
      */
     providerResourceControllerGetProviderResourcesPaginated: (
-      provider: "11labs",
+      provider: "cartesia" | "11labs",
       resourceName: "pronunciation-dictionary",
       query?: {
         id?: string;
@@ -46199,6 +60738,8 @@ export class Api<
         page?: number;
         /** This is the sort order for pagination. Defaults to 'DESC'. */
         sortOrder?: "ASC" | "DESC";
+        /** This is the column to sort by. Defaults to 'createdAt'. */
+        sortBy?: "createdAt" | "duration" | "cost";
         /**
          * This is the maximum number of items to return. Defaults to 100.
          * @min 0
@@ -46267,7 +60808,7 @@ export class Api<
      * @secure
      */
     providerResourceControllerGetProviderResource: (
-      provider: "11labs",
+      provider: "cartesia" | "11labs",
       resourceName: "pronunciation-dictionary",
       id: string,
       params: RequestParams = {},
@@ -46290,7 +60831,7 @@ export class Api<
      * @secure
      */
     providerResourceControllerDeleteProviderResource: (
-      provider: "11labs",
+      provider: "cartesia" | "11labs",
       resourceName: "pronunciation-dictionary",
       id: string,
       params: RequestParams = {},
@@ -46313,7 +60854,7 @@ export class Api<
      * @secure
      */
     providerResourceControllerUpdateProviderResource: (
-      provider: "11labs",
+      provider: "cartesia" | "11labs",
       resourceName: "pronunciation-dictionary",
       id: string,
       params: RequestParams = {},
@@ -46509,6 +61050,29 @@ export class Api<
     ) =>
       this.request<void, void>({
         path: `/11labs/voice/clone`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        ...params,
+      }),
+  };
+  vapi = {
+    /**
+     * No description
+     *
+     * @tags Providers
+     * @name VoiceProviderControllerCloneVapiVoice
+     * @summary Clone a Vapi Voice (xAI-backed) and add it to your Voice Library.
+     * @request POST:/vapi/voice/clone
+     * @secure
+     */
+    voiceProviderControllerCloneVapiVoice: (
+      data: VapiVoiceCloneDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/vapi/voice/clone`,
         method: "POST",
         body: data,
         secure: true,
