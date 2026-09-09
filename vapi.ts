@@ -423,6 +423,36 @@ export default class Vapi extends VapiEventEmitter {
     });
   }
 
+  /**
+   * Starts Daily's local (microphone) audio level observer.
+   *
+   * Only runs when something is listening for 'local-volume-level'. The observer
+   * costs an AudioContext plus an AudioWorklet for the lifetime of the call and
+   * nothing else in the SDK reads the level, so starting it unconditionally
+   * charges every consumer for a feature almost none of them use. Listeners
+   * attached after the call is under way should call the public
+   * `startLocalAudioLevelObserver()`.
+   *
+   * Must run after the noise-cancellation processor has settled. Krisp replaces
+   * the microphone track, Daily reacts to any local track change by closing the
+   * AudioContext its in-flight `audioWorklet.addModule()` is still loading into,
+   * and Chrome and Firefox reject that load with "AbortError: Unable to load a
+   * worklet's module". Daily answers by stopping the observer for the rest of
+   * the call, so losing this race costs the feature, not just console noise.
+   * Tracked upstream at https://github.com/daily-co/daily-js/issues/317.
+   */
+  private async maybeStartLocalAudioLevelObserver(): Promise<void> {
+    if (!this.call || this.listenerCount('local-volume-level') === 0) {
+      return;
+    }
+
+    try {
+      await this.call.startLocalAudioLevelObserver(100);
+    } catch (error) {
+      this.emit('local-audio-level-observer-error', serializeError(error));
+    }
+  }
+
   async start(
     assistant?: CreateAssistantDTO | string,
     assistantOverrides?: AssistantOverrides,
@@ -835,7 +865,6 @@ export default class Vapi extends VapiEventEmitter {
       
       try {
         this.call.startRemoteParticipantsAudioLevelObserver(100);
-        this.call.startLocalAudioLevelObserver(100);
         const audioObserverDuration = Date.now() - audioObserverStartTime;
         this.emit('call-start-progress', {
           stage: 'audio-observer-setup',
@@ -905,17 +934,28 @@ export default class Vapi extends VapiEventEmitter {
       const audioProcessingStartTime = Date.now();
       
       try {
-        this.call
-          .updateInputSettings({
-            audio: {
-              processor: {
-                type: 'noise-cancellation',
-              },
+        const audioProcessingUpdate = this.call.updateInputSettings({
+          audio: {
+            processor: {
+              type: 'noise-cancellation',
             },
-          })
-          .catch((error) => {
-            this.emitAudioProcessingError('audio-processing-setup', error);
-          });
+          },
+        });
+
+        audioProcessingUpdate.catch((error) => {
+          this.emitAudioProcessingError('audio-processing-setup', error);
+        });
+
+        // The observer waits for this update rather than starting alongside the
+        // remote one above, so that Krisp has already swapped the microphone
+        // track. See maybeStartLocalAudioLevelObserver().
+        //
+        // A separate chain, not another link on the one above: EventEmitter
+        // rethrows out of emit('error') when a consumer registered no 'error'
+        // listener, and whether the observer starts must not hinge on that.
+        audioProcessingUpdate
+          .catch(() => {})
+          .then(() => this.maybeStartLocalAudioLevelObserver());
 
         const audioProcessingDuration = Date.now() - audioProcessingStartTime;
         this.emit('call-start-progress', {
@@ -1758,7 +1798,6 @@ export default class Vapi extends VapiEventEmitter {
       
       try {
         this.call.startRemoteParticipantsAudioLevelObserver(100);
-        this.call.startLocalAudioLevelObserver(100);
         const audioObserverDuration = Date.now() - audioObserverStartTime;
         this.emit('call-start-progress', {
           stage: 'audio-observer-setup',
@@ -1789,17 +1828,28 @@ export default class Vapi extends VapiEventEmitter {
       const audioProcessingStartTime = Date.now();
       
       try {
-        this.call
-          .updateInputSettings({
-            audio: {
-              processor: {
-                type: 'noise-cancellation',
-              },
+        const audioProcessingUpdate = this.call.updateInputSettings({
+          audio: {
+            processor: {
+              type: 'noise-cancellation',
             },
-          })
-          .catch((error) => {
-            this.emitAudioProcessingError('audio-processing-setup', error);
-          });
+          },
+        });
+
+        audioProcessingUpdate.catch((error) => {
+          this.emitAudioProcessingError('audio-processing-setup', error);
+        });
+
+        // The observer waits for this update rather than starting alongside the
+        // remote one above, so that Krisp has already swapped the microphone
+        // track. See maybeStartLocalAudioLevelObserver().
+        //
+        // A separate chain, not another link on the one above: EventEmitter
+        // rethrows out of emit('error') when a consumer registered no 'error'
+        // listener, and whether the observer starts must not hinge on that.
+        audioProcessingUpdate
+          .catch(() => {})
+          .then(() => this.maybeStartLocalAudioLevelObserver());
 
         const audioProcessingDuration = Date.now() - audioProcessingStartTime;
         this.emit('call-start-progress', {
