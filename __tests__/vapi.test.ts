@@ -420,3 +420,138 @@ describe("Vapi audio processing failures", () => {
     expect(emitted?.error?.message).toBe("Canceled");
   });
 });
+
+// Daily tears the local audio level observer down on any local track change, and
+// its teardown closes the AudioContext that the observer's in-flight
+// audioWorklet.addModule() is still loading into. Chrome and Firefox reject that
+// load ("AbortError: Unable to load a worklet's module") and Daily responds by
+// stopping the observer for the whole call. Enabling noise cancellation swaps the
+// microphone track, so starting the observer before that swap loses the race.
+// Upstream: https://github.com/daily-co/daily-js/issues/317
+describe("Vapi local audio level observer", () => {
+  const webCall = {
+    id: "call_test",
+    webCallUrl: "https://example.daily.co/test",
+  };
+
+  // A pending updateInputSettings() stands in for Krisp still initializing, so a
+  // test can assert what the SDK does on each side of the track swap.
+  function deferredInputSettings() {
+    let settle = () => {};
+    const pending = new Promise<void>((resolve) => {
+      settle = () => resolve();
+    });
+    return { updateInputSettings: jest.fn(() => pending), settle };
+  }
+
+  afterEach(() => {
+    mockDailyCall = null;
+  });
+
+  it("does not start the observer when nothing listens for local-volume-level", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    const vapi = new Vapi("dummy_token");
+
+    await vapi.start("dummy_assistant_id");
+    await flushRejections();
+
+    expect(mockDailyCall.startLocalAudioLevelObserver).not.toHaveBeenCalled();
+    // The assistant's level is a separate observer and stays unconditional.
+    expect(
+      mockDailyCall.startRemoteParticipantsAudioLevelObserver
+    ).toHaveBeenCalledWith(100);
+  });
+
+  it("starts the observer when a local-volume-level listener is registered", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    const vapi = new Vapi("dummy_token");
+    vapi.on("local-volume-level", () => {});
+
+    await vapi.start("dummy_assistant_id");
+    await flushRejections();
+
+    expect(mockDailyCall.startLocalAudioLevelObserver).toHaveBeenCalledWith(100);
+  });
+
+  it("waits for the noise cancellation processor to settle before starting", async () => {
+    const { updateInputSettings, settle } = deferredInputSettings();
+    mockDailyCall = createMockDailyCall(updateInputSettings as jest.Mock);
+    const vapi = new Vapi("dummy_token");
+    vapi.on("local-volume-level", () => {});
+
+    await vapi.start("dummy_assistant_id");
+    await flushRejections();
+
+    // Krisp is still initializing: starting now is what loses the race.
+    expect(mockDailyCall.startLocalAudioLevelObserver).not.toHaveBeenCalled();
+
+    settle();
+    await flushRejections();
+
+    expect(mockDailyCall.startLocalAudioLevelObserver).toHaveBeenCalledWith(100);
+  });
+
+  it("starts the observer even when noise cancellation fails", async () => {
+    const updateInputSettings = jest.fn(() => {
+      return Promise.reject(new Error("Canceled"));
+    });
+    mockDailyCall = createMockDailyCall(updateInputSettings as jest.Mock);
+    const vapi = new Vapi("dummy_token");
+    vapi.on("local-volume-level", () => {});
+    // EventEmitter rethrows out of emit('error') with no listener registered,
+    // which is reported separately from the observer start for that reason.
+    vapi.on("error", () => {});
+
+    await vapi.start("dummy_assistant_id");
+    await flushRejections();
+
+    expect(mockDailyCall.startLocalAudioLevelObserver).toHaveBeenCalledWith(100);
+  });
+
+  it("reports a rejected observer start rather than letting it escape", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    mockDailyCall.startLocalAudioLevelObserver.mockRejectedValue(
+      new Error("Unable to load a worklet's module.")
+    );
+    const vapi = new Vapi("dummy_token");
+    vapi.on("local-volume-level", () => {});
+    const observerErrors: any[] = [];
+    vapi.on("local-audio-level-observer-error", (error) => {
+      observerErrors.push(error);
+    });
+
+    const call = await vapi.start("dummy_assistant_id");
+    await flushRejections();
+
+    // Non-fatal: the call still starts.
+    expect(call).not.toBeNull();
+    expect(observerErrors[0]?.message).toBe("Unable to load a worklet's module.");
+  });
+
+  it("does not start the observer on reconnect() when nothing listens", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    const vapi = new Vapi("dummy_token");
+
+    await vapi.reconnect(webCall);
+    await flushRejections();
+
+    expect(mockDailyCall.startLocalAudioLevelObserver).not.toHaveBeenCalled();
+  });
+
+  it("waits for the processor to settle on reconnect() too", async () => {
+    const { updateInputSettings, settle } = deferredInputSettings();
+    mockDailyCall = createMockDailyCall(updateInputSettings as jest.Mock);
+    const vapi = new Vapi("dummy_token");
+    vapi.on("local-volume-level", () => {});
+
+    await vapi.reconnect(webCall);
+    await flushRejections();
+
+    expect(mockDailyCall.startLocalAudioLevelObserver).not.toHaveBeenCalled();
+
+    settle();
+    await flushRejections();
+
+    expect(mockDailyCall.startLocalAudioLevelObserver).toHaveBeenCalledWith(100);
+  });
+});
