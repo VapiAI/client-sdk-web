@@ -384,7 +384,7 @@ export default class Vapi extends VapiEventEmitter {
     }
     this.audioPlayer = null;
     this.pendingAudioBuilds.clear();
-    this.speakingTimeout = null;
+    this.endSpeaking();
   }
 
   private isMobileDevice() {
@@ -1081,6 +1081,19 @@ export default class Vapi extends VapiEventEmitter {
     }, 1000);
   }
 
+  /**
+   * Cancels the pending speech-end timer. If the assistant was mid-speech,
+   * emits speech-end now, so it is not fired later into the next call.
+   */
+  private endSpeaking() {
+    if (!this.speakingTimeout) {
+      return;
+    }
+    clearTimeout(this.speakingTimeout);
+    this.speakingTimeout = null;
+    this.emit('speech-end');
+  }
+
   private handleLocalAudioLevel(e: DailyEventObjectLocalAudioLevel) {
     this.emit('local-volume-level', e.audioLevel);
   }
@@ -1099,7 +1112,7 @@ export default class Vapi extends VapiEventEmitter {
     }
     this.audioPlayer = null;
     this.pendingAudioBuilds.clear();
-    this.speakingTimeout = null;
+    this.endSpeaking();
   }
 
   /**
