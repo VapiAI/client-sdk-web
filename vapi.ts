@@ -410,6 +410,8 @@ class VapiEventEmitter extends EventEmitter {
 
 export default class Vapi extends VapiEventEmitter {
   private started: boolean = false;
+  // Bumped by stop() so a start() still in flight can tell it was cancelled.
+  private startGeneration = 0;
   private call: DailyCall | null = null;
   private audioPlayer: HTMLAudioElement | null = null;
   // Survives teardown so the caller's choice persists across calls.
@@ -602,6 +604,8 @@ export default class Vapi extends VapiEventEmitter {
     
     this.started = true;
     this.clientSideNoiseCancellationEnabled = options?.clientSideNoiseCancellationEnabled ?? true;
+    const generation = ++this.startGeneration;
+    const isCancelled = () => generation !== this.startGeneration;
 
     let failureStage = 'microphone-preflight';
     try {
@@ -641,6 +645,9 @@ export default class Vapi extends VapiEventEmitter {
         await client.call.callControllerCreateWebCall(createWebCallBody)
       ).data;
       
+      // stop() was called while the web call was being created.
+      if (isCancelled()) return null;
+
       const webCallDuration = Date.now() - webCallStartTime;
       this.emit('call-start-progress', {
         stage: 'web-call-creation',
@@ -843,6 +850,7 @@ export default class Vapi extends VapiEventEmitter {
       if (isMobile) {
         const mobileWaitStartTime = Date.now();
         await this.sleep(1000);
+        if (isCancelled()) return null;
         const mobileWaitDuration = Date.now() - mobileWaitStartTime;
         this.emit('call-start-progress', {
           stage: 'mobile-permissions',
@@ -880,6 +888,8 @@ export default class Vapi extends VapiEventEmitter {
           subscribeToTracksAutomatically: false,
         });
         
+        if (isCancelled()) return null;
+
         const joinDuration = Date.now() - joinStartTime;
         this.emit('call-start-progress', {
           stage: 'daily-call-join',
@@ -888,6 +898,7 @@ export default class Vapi extends VapiEventEmitter {
           timestamp: new Date().toISOString()
         });
       } catch (error) {
+        if (isCancelled()) return null;
         const joinDuration = Date.now() - joinStartTime;
         const serializedError = serializeError(error);
         this.emit('call-start-progress', {
@@ -1194,6 +1205,7 @@ export default class Vapi extends VapiEventEmitter {
    * If `roomDeleteOnUserLeaveEnabled` is set to `true`, the Vapi call will also be destroyed, preventing any reconnections.
    */
   async stop(): Promise<void> {
+    this.startGeneration++;
     if (this.cancelMicrophonePreflight) {
       this.cancelMicrophonePreflight();
       return;
