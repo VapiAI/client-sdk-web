@@ -10,6 +10,12 @@ You can install the package via npm:
 npm install @vapi-ai/web
 ```
 
+### Requirements
+
+Installing the package requires Node.js `>=22.14.0` (inherited from `@daily-co/daily-js`). The SDK itself runs in the browser.
+
+If you can't upgrade Node yet, stay on the 2.x line: `npm install @vapi-ai/web@^2`.
+
 ## Usage
 
 First, import the Vapi class from the package:
