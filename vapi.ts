@@ -206,6 +206,8 @@ type VapiEventListeners = {
 };
 
 type StartCallOptions = {
+  /** Acquire the microphone before creating a backend call. Defaults to true. */
+  microphonePreflightEnabled?: boolean;
   /**
    * This determines whether the daily room will be deleted and all participants will be kicked once the user leaves the room.
    * If set to `false`, the room will be kept alive even after the user leaves, allowing clients to reconnect to the same room.
@@ -356,6 +358,40 @@ export default class Vapi extends VapiEventEmitter {
   private speakingTimeout: NodeJS.Timeout | null = null;
   private dailyCallConfig: DailyAdvancedConfig = {};
   private dailyCallObject: DailyFactoryOptions = {};
+  private microphoneTrack: MediaStreamTrack | null = null;
+  private cancelMicrophonePreflight: (() => void) | null = null;
+
+  private async microphoneAcquire(): Promise<MediaStreamTrack> {
+    const source = this.dailyCallObject.audioSource;
+    if (source && typeof source === 'object') {
+      if (source.readyState === 'ended') {
+        throw new DOMException('The supplied microphone track has ended.', 'NotReadableError');
+      }
+      return source;
+    }
+    return new Promise<MediaStreamTrack>((resolve, reject) => {
+      let cancelled = false;
+      this.cancelMicrophonePreflight = () => {
+        cancelled = true;
+        reject(new DOMException('Microphone preflight cancelled.', 'AbortError'));
+      };
+      navigator.mediaDevices.getUserMedia({
+        audio: typeof source === 'string' ? { deviceId: { exact: source } } : true,
+      }).then((stream) => {
+        const track = stream.getAudioTracks()[0];
+        if (cancelled || !track || track.readyState === 'ended') {
+          stream.getTracks().forEach((item) => item.stop());
+          reject(new DOMException('No live microphone track available.', 'NotFoundError'));
+          return;
+        }
+        stream.getTracks().filter((item) => item !== track).forEach((item) => item.stop());
+        this.microphoneTrack = track;
+        resolve(track);
+      }, reject);
+    }).finally(() => {
+      this.cancelMicrophonePreflight = null;
+    });
+  }
 
   private hasEmittedCallEndedStatus: boolean = false;
 
@@ -376,6 +412,8 @@ export default class Vapi extends VapiEventEmitter {
   }
 
   private async cleanup() {
+    this.microphoneTrack?.stop();
+    this.microphoneTrack = null;
     this.started = false;
     this.hasEmittedCallEndedStatus = false;
     if (this.call) {
@@ -498,7 +536,16 @@ export default class Vapi extends VapiEventEmitter {
     
     this.started = true;
 
+    let failureStage = 'microphone-preflight';
     try {
+      if (this.call) {
+        await this.cleanup();
+        this.started = true;
+      }
+      const audioSource = options?.microphonePreflightEnabled === false
+        ? this.dailyCallObject.audioSource ?? true
+        : await this.microphoneAcquire();
+      failureStage = 'unknown';
             // Stage 1: Create web call
       this.emit('call-start-progress', {
         stage: 'web-call-creation',
@@ -535,16 +582,6 @@ export default class Vapi extends VapiEventEmitter {
         }
       });
 
-      if (this.call) {
-        this.emit('call-start-progress', {
-          stage: 'daily-call-object-creation',
-          status: 'started',
-          timestamp: new Date().toISOString(),
-          metadata: { action: 'cleanup-existing' }
-        });
-        await this.cleanup();
-      }
-
       const isVideoRecordingEnabled =
         webCall?.artifactPlan?.videoRecordingEnabled ?? false;
 
@@ -575,7 +612,7 @@ export default class Vapi extends VapiEventEmitter {
       
       try {
         this.call = DailyIframe.createCallObject({
-          audioSource: this.dailyCallObject.audioSource ?? true,
+          audioSource,
           videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
           dailyConfig: this.dailyCallConfig,
         });
@@ -994,9 +1031,10 @@ export default class Vapi extends VapiEventEmitter {
     } catch (e) {
       const totalDuration = Date.now() - startTime;
       const serializedError = serializeError(e);
+      await this.cleanup();
       
       this.emit('call-start-failed', {
-        stage: 'unknown',
+        stage: failureStage,
         totalDuration,
         error: serializedError.message,
         errorStack: serializedError.stack || 'No stack trace available',
@@ -1011,8 +1049,10 @@ export default class Vapi extends VapiEventEmitter {
       
       // Also emit the generic error event for backward compatibility
       this.emit('error', {
-        type: 'start-method-error',
-        stage: 'unknown',
+        type: failureStage === 'microphone-preflight'
+          ? `microphone-preflight-${e && typeof e === 'object' && 'name' in e ? e.name : 'error'}`
+          : 'start-method-error',
+        stage: failureStage,
         error: serializedError,
         totalDuration,
         timestamp: new Date().toISOString(),
@@ -1024,7 +1064,6 @@ export default class Vapi extends VapiEventEmitter {
         }
       });
       
-      await this.cleanup();
       return null;
     }
   }
@@ -1092,6 +1131,12 @@ export default class Vapi extends VapiEventEmitter {
    * If `roomDeleteOnUserLeaveEnabled` is set to `true`, the Vapi call will also be destroyed, preventing any reconnections.
    */
   async stop(): Promise<void> {
+    if (this.cancelMicrophonePreflight) {
+      this.cancelMicrophonePreflight();
+      return;
+    }
+    this.microphoneTrack?.stop();
+    this.microphoneTrack = null;
     this.started = false;
     if (this.call) {
       await this.call.destroy();
