@@ -1,5 +1,17 @@
 import Vapi from "../vapi"; // Adjust the import path based on your project structure
 
+const mockGetUserMedia = jest.fn();
+beforeEach(() => {
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: { userAgent: 'test', mediaDevices: { getUserMedia: mockGetUserMedia } },
+  });
+  const track = { readyState: 'live', stop: jest.fn() };
+  mockGetUserMedia.mockReset().mockResolvedValue({
+    getAudioTracks: () => [track], getTracks: () => [track],
+  });
+});
+
 // The DailyCall object the mocked daily-js factory hands back. It is read when
 // createCallObject() is called, so each test installs its own fake first.
 let mockDailyCall: any = null;
@@ -8,9 +20,9 @@ jest.mock("@daily-co/daily-js", () => {
   return {
     __esModule: true,
     default: {
-      createCallObject: () => {
+      createCallObject: jest.fn(() => {
         return mockDailyCall;
-      },
+      }),
     },
   };
 });
@@ -21,14 +33,14 @@ jest.mock("../client", () => {
       baseUrl: "",
       setSecurityData: () => {},
       call: {
-        callControllerCreateWebCall: () => {
+        callControllerCreateWebCall: jest.fn(() => {
           return Promise.resolve({
             data: {
               id: "call_test",
               webCallUrl: "https://example.daily.co/test",
             },
           });
-        },
+        }),
       },
     },
   };
