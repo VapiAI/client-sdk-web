@@ -2,6 +2,9 @@ import type { Config } from '@jest/types';
 
 const config: Config.InitialOptions = {
   preset: 'ts-jest',
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: { types: ['jest', 'node'] } }],
+  },
   testEnvironment: 'node',
   // Your Jest configuration options here
   // For example, to match test files:
