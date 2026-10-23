@@ -61,10 +61,33 @@ jobs:
             exit 1
           fi
 
+          bump_commit=""
+          while read -r candidate; do
+            if ! parent="$(git rev-parse "${candidate}^1" 2>/dev/null)"; then
+              continue
+            fi
+            candidate_version="$(git show "${candidate}:package.json" | jq -r '.version')"
+            parent_version="$(git show "${parent}:package.json" | jq -r '.version')"
+            if [[ "$candidate_version" != "$parent_version" ]]; then
+              bump_commit="$candidate"
+              break
+            fi
+          done < <(git log --first-parent --format=%H "$tag_commit" -- package.json)
+
+          if [[ -z "$bump_commit" ]]; then
+            echo "::error::Release tag ${RELEASE_TAG} has no package version bump on main."
+            exit 1
+          fi
+
+          if [[ "$candidate_version" != "$package_version" ]]; then
+            echo "::error::Version bump ${bump_commit} does not match package version ${package_version}."
+            exit 1
+          fi
+
           pull_requests="$(
             gh api \
               -H "Accept: application/vnd.github+json" \
-              "repos/${GITHUB_REPOSITORY}/commits/${tag_commit}/pulls"
+              "repos/${GITHUB_REPOSITORY}/commits/${bump_commit}/pulls"
           )"
           release_pr="$(
             jq -c \
@@ -73,7 +96,7 @@ jobs:
           )"
 
           if [[ -z "$release_pr" ]]; then
-            echo "::error::Release tag ${RELEASE_TAG} must point to a pull request merged into main."
+            echo "::error::Version bump ${bump_commit} must belong to a pull request merged into main."
             exit 1
           fi
 
@@ -107,7 +130,7 @@ jobs:
             exit 1
           fi
 
-          echo "Verified v${previous_version} -> v${package_version} from merged PR #${pr_number}."
+          echo "Verified v${previous_version} -> v${package_version} from merged PR #${pr_number} (bump commit ${bump_commit}, tag commit ${tag_commit})"
           echo "version=${package_version}" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
