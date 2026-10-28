@@ -23,6 +23,7 @@ import {
   CreateSquadDTO,
   CreateAssistantDTO,
   AssistantOverrides,
+  CreateWebCallDTO,
   CreateWorkflowDTO,
   WorkflowOverrides,
 } from './api';
@@ -205,6 +206,21 @@ type VapiEventListeners = {
   'recording-upload-completed': (event: DailyEventObjectNoPayload) => void;
 };
 
+// TODO(VAPICS-1747): replace with CreateWebCallDTO['videoRecordingStartMode']
+// once api.ts is regenerated from a prod spec that has the field.
+type VideoRecordingStartMode = 'client' | 'server';
+
+// The app message Vapi sends when it couldn't start a server-mode recording.
+const VIDEO_RECORDING_START_FAILED_MESSAGE_TYPE = 'video-recording.start-failed';
+
+type VideoRecordingStartFailedMessage = {
+  type: typeof VIDEO_RECORDING_START_FAILED_MESSAGE_TYPE;
+  /** `not-hosting` when Daily saw nobody in the room; `failed` for any other failure. */
+  outcome: 'not-hosting' | 'failed';
+  /** A short description of the failure. */
+  error: string;
+};
+
 type StartCallOptions = {
   /** Acquire the microphone before creating a backend call. Defaults to true. */
   microphonePreflightEnabled?: boolean;
@@ -217,6 +233,25 @@ type StartCallOptions = {
    * @example true
    */
   roomDeleteOnUserLeaveEnabled?: boolean;
+  /**
+   * This determines who starts the video recording. Only applies when video
+   * recording is enabled (`artifactPlan.videoRecordingEnabled`).
+   *
+   * - `client`: the web client starts the recording when it joins.
+   * - `server`: Vapi starts the recording once the user has joined, so a weak
+   *   client connection can't stop it from starting. If Vapi can't set up the
+   *   server-side start, or the start itself fails, the SDK emits
+   *   `recording-error`.
+   *
+   * In `server` mode the SDK never calls `startRecording()` itself. If the
+   * server-side start couldn't be set up, calling it yourself may still start
+   * the recording.
+   *
+   * Requires a Vapi API that supports this field; older servers reject the
+   * request. The server defaults to `client` when it is not set.
+   * @example "server"
+   */
+  videoRecordingStartMode?: VideoRecordingStartMode;
 }
 
 type WebCall = {
@@ -244,12 +279,22 @@ type WebCall = {
   assistant?: { voice?: { provider?: string } };
   /**
    * The Vapi WebCall transport. When video recording is enabled, the server
-   * sets `callToken` to a Daily meeting token that auto-starts the cloud
-   * recording on join.
+   * sets `callToken` to the Daily meeting token to join with. In `client` mode
+   * the token auto-starts the cloud recording on join; in `server` mode it
+   * starts nothing and Vapi starts the recording. If there is no token, the
+   * SDK emits `recording-error` and starts nothing, though `startRecording()`
+   * may still start the recording from the client.
+   *
+   * `videoRecordingStartMode` is `server` when Vapi starts the recording, and
+   * is absent when video recording is off or the server-side start couldn't
+   * be set up.
    *
    * call.transport
    */
-  transport?: { callToken?: string };
+  transport?: {
+    callToken?: string;
+    videoRecordingStartMode?: VideoRecordingStartMode;
+  };
 }
 
 async function startAudioPlayer(
@@ -555,18 +600,26 @@ export default class Vapi extends VapiEventEmitter {
       
       const webCallStartTime = Date.now();
       
+      // TODO(VAPICS-1747): plain CreateWebCallDTO once api.ts has
+      // videoRecordingStartMode. An unset option stays undefined, so
+      // JSON.stringify drops the key and older servers never see it.
+      const createWebCallBody: CreateWebCallDTO & {
+        videoRecordingStartMode?: VideoRecordingStartMode;
+      } = {
+        assistant: typeof assistant === 'string' ? undefined : assistant,
+        assistantId: typeof assistant === 'string' ? assistant : undefined,
+        assistantOverrides,
+        squad: typeof squad === 'string' ? undefined : squad,
+        squadId: typeof squad === 'string' ? squad : undefined,
+        workflow: typeof workflow === 'string' ? undefined : workflow,
+        workflowId: typeof workflow === 'string' ? workflow : undefined,
+        workflowOverrides,
+        roomDeleteOnUserLeaveEnabled: options?.roomDeleteOnUserLeaveEnabled,
+        videoRecordingStartMode: options?.videoRecordingStartMode,
+      };
+
       const webCall = (
-        await client.call.callControllerCreateWebCall({
-          assistant: typeof assistant === 'string' ? undefined : assistant,
-          assistantId: typeof assistant === 'string' ? assistant : undefined,
-          assistantOverrides,
-          squad: typeof squad === 'string' ? undefined : squad,
-          squadId: typeof squad === 'string' ? squad : undefined,
-          workflow: typeof workflow === 'string' ? undefined : workflow,
-          workflowId: typeof workflow === 'string' ? workflow : undefined,
-          workflowOverrides,
-          roomDeleteOnUserLeaveEnabled: options?.roomDeleteOnUserLeaveEnabled,
-        })
+        await client.call.callControllerCreateWebCall(createWebCallBody)
       ).data;
       
       const webCallDuration = Date.now() - webCallStartTime;
@@ -588,12 +641,16 @@ export default class Vapi extends VapiEventEmitter {
       const isVideoEnabled = webCall?.assistant?.voice?.provider === 'tavus';
 
       // When video recording is enabled, the server sends a Daily meeting
-      // token that auto-starts the cloud recording on join — more reliable
-      // than calling startRecording() from a weak client network. Older
-      // servers don't send one; then the client starts the recording itself.
-      const callToken = (
-        webCall?.transport as { callToken?: string } | undefined
-      )?.callToken;
+      // token. In client mode it auto-starts the cloud recording on join. In
+      // server mode it starts nothing: Vapi starts the recording from its
+      // servers once the user has joined, which a weak client network can't
+      // stop. Without a token the SDK emits recording-error and starts
+      // nothing.
+      const transport = webCall?.transport as WebCall['transport'];
+      const callToken = transport?.callToken;
+      const isRecordingStartedByServer =
+        transport?.videoRecordingStartMode === 'server';
+      const recordingTokenMissing = isVideoRecordingEnabled && !callToken;
 
       // Stage 2: Create Daily call object
       this.emit('call-start-progress', {
@@ -836,52 +893,28 @@ export default class Vapi extends VapiEventEmitter {
 
       // Stage 5: Video recording setup (if enabled)
       if (isVideoRecordingEnabled && callToken) {
-        // The meeting token auto-started the recording at join, so there is
-        // nothing to request from the client.
+        // The meeting token auto-started the recording at join, or Vapi
+        // starts it from its servers, so there is nothing to request from the
+        // client.
         this.emit('call-start-progress', {
           stage: 'video-recording-setup',
           status: 'completed',
           timestamp: new Date().toISOString(),
-          metadata: { action: 'auto-started-via-meeting-token' }
+          metadata: {
+            action: isRecordingStartedByServer
+              ? 'started-by-server'
+              : 'auto-started-via-meeting-token'
+          }
         });
       } else if (isVideoRecordingEnabled) {
+        // No token: nothing starts the recording. The recording-error is
+        // reported once start() has finished.
         this.emit('call-start-progress', {
           stage: 'video-recording-setup',
-          status: 'started',
-          timestamp: new Date().toISOString()
+          status: 'failed',
+          timestamp: new Date().toISOString(),
+          metadata: { action: 'no-meeting-token' }
         });
-
-        const recordingStartTime = Date.now();
-
-        try {
-          recordingRequestedTime = new Date().getTime();
-          this.startRecording();
-
-          const recordingSetupDuration = Date.now() - recordingStartTime;
-          this.emit('call-start-progress', {
-            stage: 'video-recording-setup',
-            status: 'completed',
-            duration: recordingSetupDuration,
-            timestamp: new Date().toISOString()
-          });
-        } catch (error) {
-          const recordingSetupDuration = Date.now() - recordingStartTime;
-          const serializedError = serializeError(error);
-          this.emit('call-start-progress', {
-            stage: 'video-recording-setup',
-            status: 'failed',
-            duration: recordingSetupDuration,
-            timestamp: new Date().toISOString(),
-            metadata: { error: serializedError.message }
-          });
-          this.emit('error', {
-            type: 'video-recording-setup-error',
-            stage: 'video-recording-setup',
-            error: serializedError,
-            timestamp: new Date().toISOString()
-          });
-          // Don't throw here, video recording is optional
-        }
       } else {
         this.emit('call-start-progress', {
           stage: 'video-recording-setup',
@@ -1027,6 +1060,10 @@ export default class Vapi extends VapiEventEmitter {
         timestamp: new Date().toISOString()
       });
 
+      if (recordingTokenMissing) {
+        this.recordingTokenMissingReportSchedule();
+      }
+
       return webCall;
     } catch (e) {
       const totalDuration = Date.now() - startTime;
@@ -1078,6 +1115,12 @@ export default class Vapi extends VapiEventEmitter {
       } else {
         try {
           const parsedMessage = JSON.parse(e.data);
+          // Not a Vapi client message: re-emitted as recording-error, and kept
+          // out of 'message' because its consumers switch on `type`.
+          if (parsedMessage?.type === VIDEO_RECORDING_START_FAILED_MESSAGE_TYPE) {
+            this.videoRecordingStartFailedReport(parsedMessage);
+            return;
+          }
           this.emit('message', parsedMessage);
           if (parsedMessage && 'type' in parsedMessage && 'status' in parsedMessage && parsedMessage.type === 'status-update' && parsedMessage.status === 'ended') {
             this.hasEmittedCallEndedStatus = true;
@@ -1274,6 +1317,41 @@ export default class Vapi extends VapiEventEmitter {
     } catch (error) {
       console.error(`[vapi] ${event} event listener threw`, error);
     }
+  }
+
+  /**
+   * Reported in a later task, like Daily's own recording-error: start() or
+   * reconnect() has resolved and the caller's await continuation has run, so a
+   * listener registered right after it still hears this, and one that calls
+   * stop() can't interrupt call setup. Skipped if that call was stopped or
+   * replaced.
+   */
+  private recordingTokenMissingReportSchedule() {
+    const call = this.call;
+    if (!call) return;
+    setTimeout(() => {
+      if (!this.started || this.call !== call) return;
+      this.emitToConsumer('recording-error', {
+        action: 'recording-error',
+        callClientId: call.callClientId,
+        errorMsg:
+          'Vapi returned no recording token, so the recording was not started. Call startRecording() to try starting it from the client.',
+      });
+    }, 0);
+  }
+
+  /** The fields are read defensively: the app message is untrusted JSON. */
+  private videoRecordingStartFailedReport(
+    message: Partial<VideoRecordingStartFailedMessage>,
+  ) {
+    const outcome =
+      typeof message.outcome === 'string' ? message.outcome : 'unknown';
+    const error = typeof message.error === 'string' ? message.error : 'unknown';
+    this.emitToConsumer('recording-error', {
+      action: 'recording-error',
+      callClientId: this.call?.callClientId ?? '',
+      errorMsg: `Vapi couldn't start the recording (${outcome}): ${error}`,
+    });
   }
 
   /** Drops the reference before removing, so nothing hands out a detached element. */
@@ -1545,10 +1623,15 @@ export default class Vapi extends VapiEventEmitter {
       const isVideoRecordingEnabled = webCall?.artifactPlan?.videoRecordingEnabled ?? false;
       const isVideoEnabled = webCall?.assistant?.voice?.provider === 'tavus';
 
-      // Same auto-start token as in start(). Rejoining with it while the
+      // Same token as in start(). In client mode, rejoining with it while the
       // recording is still running is safe; if the recording stopped when the
-      // user left, the token starts a new one.
+      // user left, the token starts a new one. In server mode it starts
+      // nothing. Without a token the SDK emits recording-error and starts
+      // nothing.
       const callToken = webCall?.transport?.callToken;
+      const isRecordingStartedByServer =
+        webCall?.transport?.videoRecordingStartMode === 'server';
+      const recordingTokenMissing = isVideoRecordingEnabled && !callToken;
 
       // Stage 1: Create Daily call object
       this.emit('call-start-progress', {
@@ -1783,46 +1866,28 @@ export default class Vapi extends VapiEventEmitter {
 
       // Stage 4: Video recording setup (if enabled)
       if (isVideoRecordingEnabled && callToken) {
-        // The meeting token auto-started the recording at join, so there is
-        // nothing to request from the client.
+        // The meeting token auto-started the recording at join, or Vapi
+        // starts it from its servers, so there is nothing to request from the
+        // client.
         this.emit('call-start-progress', {
           stage: 'video-recording-setup',
           status: 'completed',
           timestamp: new Date().toISOString(),
-          metadata: { action: 'auto-started-via-meeting-token' }
+          metadata: {
+            action: isRecordingStartedByServer
+              ? 'started-by-server'
+              : 'auto-started-via-meeting-token'
+          }
         });
       } else if (isVideoRecordingEnabled) {
+        // No token: nothing starts the recording. The recording-error is
+        // reported once reconnect() has finished.
         this.emit('call-start-progress', {
           stage: 'video-recording-setup',
-          status: 'started',
-          timestamp: new Date().toISOString()
+          status: 'failed',
+          timestamp: new Date().toISOString(),
+          metadata: { action: 'no-meeting-token' }
         });
-
-        const recordingStartTime = Date.now();
-
-        try {
-          recordingRequestedTime = new Date().getTime();
-          this.startRecording();
-
-          const recordingSetupDuration = Date.now() - recordingStartTime;
-          this.emit('call-start-progress', {
-            stage: 'video-recording-setup',
-            status: 'completed',
-            duration: recordingSetupDuration,
-            timestamp: new Date().toISOString()
-          });
-        } catch (error) {
-          const recordingSetupDuration = Date.now() - recordingStartTime;
-          const serializedError = serializeError(error);
-          this.emit('call-start-progress', {
-            stage: 'video-recording-setup',
-            status: 'failed',
-            duration: recordingSetupDuration,
-            timestamp: new Date().toISOString(),
-            metadata: { error: serializedError.message }
-          });
-          // Don't throw here, video recording is optional
-        }
       } else {
         this.emit('call-start-progress', {
           stage: 'video-recording-setup',
@@ -1924,6 +1989,10 @@ export default class Vapi extends VapiEventEmitter {
       });
 
       this.emit('call-start');
+
+      if (recordingTokenMissing) {
+        this.recordingTokenMissingReportSchedule();
+      }
 
     } catch (e) {
       const totalDuration = Date.now() - startTime;
