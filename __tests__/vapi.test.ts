@@ -1,4 +1,5 @@
 import Vapi from "../vapi"; // Adjust the import path based on your project structure
+import { client } from "../client";
 
 const mockGetUserMedia = jest.fn();
 beforeEach(() => {
@@ -50,13 +51,21 @@ jest.mock("../client", () => {
 // registered event handlers are kept so tests can fire Daily's events.
 function createMockDailyCall(updateInputSettings: jest.Mock) {
   const handlers: Record<string, (event: any) => void> = {};
+  const onceHandlers: Record<string, (event: any) => void> = {};
   return {
     handlers,
+    onceHandlers,
+    callClientId: "client_test",
     updateInputSettings,
     on: jest.fn((event: string, handler: (event: any) => void) => {
       handlers[event] = handler;
     }),
+    once: jest.fn((event: string, handler: (event: any) => void) => {
+      onceHandlers[event] = handler;
+    }),
     join: jest.fn().mockResolvedValue(undefined),
+    startRecording: jest.fn(),
+    stopRecording: jest.fn(),
     destroy: jest.fn().mockResolvedValue(undefined),
     iframe: jest.fn().mockReturnValue(null),
     setLocalAudio: jest.fn(),
@@ -565,5 +574,379 @@ describe("Vapi local audio level observer", () => {
     await flushRejections();
 
     expect(mockDailyCall.startLocalAudioLevelObserver).toHaveBeenCalledWith(100);
+  });
+});
+
+// The SDK never starts a recording itself: a token (or Vapi's servers) does,
+// and a missing token or a failed server-side start becomes recording-error.
+describe("Vapi video recording start", () => {
+  const createWebCall = client.call.callControllerCreateWebCall as jest.Mock;
+  const baseWebCall = {
+    id: "call_test",
+    webCallUrl: "https://example.daily.co/test",
+  };
+  const noTokenErrorMsg =
+    "Vapi returned no recording token, so the recording was not started. Call startRecording() to try starting it from the client.";
+
+  // Restores the module-level default, which mockReset drops, so a queued
+  // mockResolvedValueOnce can't leak into another test.
+  function createWebCallReset() {
+    createWebCall.mockReset();
+    createWebCall.mockResolvedValue({ data: baseWebCall });
+  }
+
+  function webCallResolveOnce(transport?: Record<string, unknown>) {
+    createWebCall.mockResolvedValueOnce({
+      data: {
+        ...baseWebCall,
+        artifactPlan: { videoRecordingEnabled: true },
+        ...(transport ? { transport } : {}),
+      },
+    });
+  }
+
+  // Queued after the SDK's own zero-delay timer, so it runs after it.
+  async function flushTimers() {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  // Records the events a recording test asserts on, in emission order.
+  function eventsRecord(vapi: Vapi) {
+    const order: string[] = [];
+    const recordingErrors: any[] = [];
+    const messages: any[] = [];
+    const setupProgress: any[] = [];
+    vapi.on("call-start-success", () => order.push("call-start-success"));
+    vapi.on("call-start-failed", () => order.push("call-start-failed"));
+    vapi.on("recording-error", (event) => {
+      order.push("recording-error");
+      recordingErrors.push(event);
+    });
+    vapi.on("message", (message) => messages.push(message));
+    vapi.on("call-start-progress", (event) => {
+      if (event.stage === "video-recording-setup") setupProgress.push(event);
+    });
+    return { order, recordingErrors, messages, setupProgress };
+  }
+
+  beforeEach(() => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    createWebCallReset();
+  });
+
+  afterEach(() => {
+    mockDailyCall = null;
+    createWebCallReset();
+  });
+
+  it("start() passes videoRecordingStartMode: 'server' to the API", async () => {
+    const vapi = new Vapi("dummy_token");
+
+    const call = await vapi.start("dummy_assistant_id", undefined, undefined, undefined, undefined, {
+      videoRecordingStartMode: "server",
+    });
+
+    expect(call).not.toBeNull();
+    expect(createWebCall.mock.calls[0][0]).toMatchObject({
+      videoRecordingStartMode: "server",
+    });
+  });
+
+  // Servers that predate the field reject any value of it, so an unset option
+  // must never reach the wire.
+  it("start() without the option leaves videoRecordingStartMode out of the serialized body", async () => {
+    const vapi = new Vapi("dummy_token");
+
+    await vapi.start("dummy_assistant_id");
+
+    expect(JSON.stringify(createWebCall.mock.calls[0][0])).not.toContain(
+      "videoRecordingStartMode"
+    );
+  });
+
+  it("joins with a client-mode token and starts nothing itself", async () => {
+    webCallResolveOnce({ callToken: "tok", videoRecordingStartMode: "client" });
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    const call = await vapi.start("dummy_assistant_id");
+    await flushTimers();
+
+    expect(call).not.toBeNull();
+    expect(events.order).not.toContain("call-start-failed");
+    expect(mockDailyCall.join).toHaveBeenCalledWith(
+      expect.objectContaining({ token: "tok" })
+    );
+    expect(mockDailyCall.startRecording).not.toHaveBeenCalled();
+    expect(events.setupProgress).toEqual([
+      expect.objectContaining({
+        status: "completed",
+        metadata: { action: "auto-started-via-meeting-token" },
+      }),
+    ]);
+    expect(events.recordingErrors).toEqual([]);
+  });
+
+  it("labels a server-mode token as started by the server", async () => {
+    webCallResolveOnce({ callToken: "tok", videoRecordingStartMode: "server" });
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    const call = await vapi.start("dummy_assistant_id", undefined, undefined, undefined, undefined, {
+      videoRecordingStartMode: "server",
+    });
+    await flushTimers();
+
+    expect(call).not.toBeNull();
+    expect(events.order).not.toContain("call-start-failed");
+    expect(mockDailyCall.startRecording).not.toHaveBeenCalled();
+    expect(events.setupProgress).toEqual([
+      expect.objectContaining({
+        status: "completed",
+        metadata: { action: "started-by-server" },
+      }),
+    ]);
+    expect(events.recordingErrors).toEqual([]);
+  });
+
+  it("start() with no token starts nothing and reports recording-error after the call started", async () => {
+    webCallResolveOnce();
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    const call = await vapi.start("dummy_assistant_id");
+
+    expect(call).not.toBeNull();
+    // Not yet: it is reported in a later task.
+    expect(events.recordingErrors).toEqual([]);
+    const lateListener = jest.fn();
+    vapi.on("recording-error", lateListener);
+
+    await flushTimers();
+
+    expect(mockDailyCall.startRecording).not.toHaveBeenCalled();
+    expect(events.setupProgress).toEqual([
+      expect.objectContaining({
+        status: "failed",
+        metadata: { action: "no-meeting-token" },
+      }),
+    ]);
+    expect(lateListener).toHaveBeenCalledTimes(1);
+    expect(lateListener).toHaveBeenCalledWith({
+      action: "recording-error",
+      callClientId: "client_test",
+      errorMsg: noTokenErrorMsg,
+    });
+    expect(events.order).toEqual(["call-start-success", "recording-error"]);
+  });
+
+  it("reconnect() with no token starts nothing and reports recording-error after the call started", async () => {
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    await vapi.reconnect({
+      ...baseWebCall,
+      artifactPlan: { videoRecordingEnabled: true },
+    });
+
+    expect(events.recordingErrors).toEqual([]);
+    const lateListener = jest.fn();
+    vapi.on("recording-error", lateListener);
+
+    await flushTimers();
+
+    expect(mockDailyCall.startRecording).not.toHaveBeenCalled();
+    expect(events.setupProgress).toEqual([
+      expect.objectContaining({
+        status: "failed",
+        metadata: { action: "no-meeting-token" },
+      }),
+    ]);
+    expect(lateListener).toHaveBeenCalledTimes(1);
+    expect(lateListener).toHaveBeenCalledWith({
+      action: "recording-error",
+      callClientId: "client_test",
+      errorMsg: noTokenErrorMsg,
+    });
+    expect(events.order).toEqual(["call-start-success", "recording-error"]);
+  });
+
+  it("reconnect() labels a server-mode token as started by the server", async () => {
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    await vapi.reconnect({
+      ...baseWebCall,
+      artifactPlan: { videoRecordingEnabled: true },
+      transport: { callToken: "tok", videoRecordingStartMode: "server" },
+    });
+    await flushTimers();
+
+    expect(events.order).not.toContain("call-start-failed");
+    expect(mockDailyCall.join).toHaveBeenCalledWith(
+      expect.objectContaining({ token: "tok" })
+    );
+    expect(mockDailyCall.startRecording).not.toHaveBeenCalled();
+    expect(events.setupProgress).toEqual([
+      expect.objectContaining({
+        status: "completed",
+        metadata: { action: "started-by-server" },
+      }),
+    ]);
+    expect(events.recordingErrors).toEqual([]);
+  });
+
+  it("does not report the missing token for a call stopped before the report ran", async () => {
+    webCallResolveOnce();
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    const call = await vapi.start("dummy_assistant_id");
+    await vapi.stop();
+    await flushTimers();
+
+    expect(call).not.toBeNull();
+    expect(events.recordingErrors).toEqual([]);
+  });
+
+  it("keeps a throwing recording-error listener from affecting the call", async () => {
+    webCallResolveOnce();
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+    vapi.on("recording-error", () => {
+      throw new Error("listener failed");
+    });
+
+    try {
+      const call = await vapi.start("dummy_assistant_id");
+      await flushTimers();
+
+      expect(call).not.toBeNull();
+      expect(events.order).not.toContain("call-start-failed");
+      expect(consoleError).toHaveBeenCalledWith(
+        "[vapi] recording-error event listener threw",
+        expect.any(Error)
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("reports nothing and starts nothing when video recording is off", async () => {
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    const call = await vapi.start("dummy_assistant_id");
+    await flushTimers();
+
+    expect(call).not.toBeNull();
+    expect(events.order).not.toContain("call-start-failed");
+    expect(mockDailyCall.startRecording).not.toHaveBeenCalled();
+    expect(events.setupProgress).toEqual([
+      expect.objectContaining({
+        status: "completed",
+        metadata: { action: "skipped-not-enabled" },
+      }),
+    ]);
+    expect(events.recordingErrors).toEqual([]);
+  });
+
+  it("re-emits a video-recording.start-failed app message as recording-error, not message", async () => {
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+    await vapi.start("dummy_assistant_id");
+
+    mockDailyCall.handlers["app-message"]({
+      data: '{"type":"video-recording.start-failed","outcome":"failed","error":"boom"}',
+    });
+
+    expect(events.recordingErrors).toEqual([
+      {
+        action: "recording-error",
+        callClientId: "client_test",
+        errorMsg: "Vapi couldn't start the recording (failed): boom",
+      },
+    ]);
+    expect(events.messages).toEqual([]);
+  });
+
+  // Vapi starts a server-mode recording when it sees the user join, so the
+  // failure can arrive before join() resolves. Like Daily, the mock delivers
+  // it only to a listener that is already registered.
+  function startFailedDeliverDuringJoin() {
+    mockDailyCall.join.mockImplementationOnce(async () => {
+      mockDailyCall.handlers["app-message"]?.({
+        data: '{"type":"video-recording.start-failed","outcome":"not-hosting","error":"boom"}',
+      });
+    });
+  }
+
+  const startFailedDuringJoinError = {
+    action: "recording-error",
+    callClientId: "client_test",
+    errorMsg: "Vapi couldn't start the recording (not-hosting): boom",
+  };
+
+  it("start() reports a start-failed message that arrives during join", async () => {
+    webCallResolveOnce({ callToken: "tok", videoRecordingStartMode: "server" });
+    startFailedDeliverDuringJoin();
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    const call = await vapi.start("dummy_assistant_id", undefined, undefined, undefined, undefined, {
+      videoRecordingStartMode: "server",
+    });
+
+    expect(call).not.toBeNull();
+    expect(events.recordingErrors).toEqual([startFailedDuringJoinError]);
+    expect(events.order).toEqual(["recording-error", "call-start-success"]);
+    expect(events.messages).toEqual([]);
+  });
+
+  it("reconnect() reports a start-failed message that arrives during join", async () => {
+    startFailedDeliverDuringJoin();
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    await vapi.reconnect({
+      ...baseWebCall,
+      artifactPlan: { videoRecordingEnabled: true },
+      transport: { callToken: "tok", videoRecordingStartMode: "server" },
+    });
+
+    expect(events.recordingErrors).toEqual([startFailedDuringJoinError]);
+    expect(events.order).toEqual(["recording-error", "call-start-success"]);
+    expect(events.messages).toEqual([]);
+  });
+
+  it("falls back to 'unknown' for a start-failed message without outcome or error", async () => {
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+    await vapi.start("dummy_assistant_id");
+
+    mockDailyCall.handlers["app-message"]({
+      data: '{"type":"video-recording.start-failed"}',
+    });
+
+    expect(events.recordingErrors.map((event) => event.errorMsg)).toEqual([
+      "Vapi couldn't start the recording (unknown): unknown",
+    ]);
+    expect(events.messages).toEqual([]);
+  });
+
+  it("still emits other app messages as message", async () => {
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+    await vapi.start("dummy_assistant_id");
+
+    mockDailyCall.handlers["app-message"]({
+      data: '{"type":"status-update","status":"in-progress"}',
+    });
+
+    expect(events.messages).toEqual([
+      { type: "status-update", status: "in-progress" },
+    ]);
+    expect(events.recordingErrors).toEqual([]);
   });
 });

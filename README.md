@@ -148,7 +148,17 @@ vapi.on('error', (e) => {
 
 ## Recording
 
-When video recording is enabled on the call's artifact plan, Vapi starts a recording automatically when the call begins. When the server provides a meeting token for the call (`call.transport.callToken`), the SDK joins with it and Daily auto-starts the cloud recording, which is more reliable on weak networks. Otherwise the SDK starts the recording from the client after joining. Recording start is asynchronous: success is signaled by the `recording-started` event and failure by the `recording-error` event.
+When video recording is enabled on the call's artifact plan, Vapi starts the recording automatically when the user joins the call.
+
+By default, the recording is started by the client. To have Vapi start the recording from the server, pass `videoRecordingStartMode: 'server'`. This may be more reliable on weak connections.
+
+```javascript
+vapi.start(assistantId, undefined, undefined, undefined, undefined, {
+  videoRecordingStartMode: 'server',
+});
+```
+
+Recording start is asynchronous: success is signaled by the `recording-started` event and failure by the `recording-error` event.
 
 A failed recording start is not retried automatically. Use `startRecording()` and `stopRecording()` to control the recording yourself. For example, to retry after a failure:
 
