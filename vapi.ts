@@ -206,9 +206,9 @@ type VapiEventListeners = {
   'recording-upload-completed': (event: DailyEventObjectNoPayload) => void;
 };
 
-// TODO(VAPICS-1747): replace with CreateWebCallDTO['videoRecordingStartMode']
-// once api.ts is regenerated from a prod spec that has the field.
-type VideoRecordingStartMode = 'client' | 'server';
+type VideoRecordingStartMode = NonNullable<
+  CreateWebCallDTO['videoRecordingStartMode']
+>;
 
 // The app message Vapi sends when it couldn't start a server-mode recording.
 const VIDEO_RECORDING_START_FAILED_MESSAGE_TYPE = 'video-recording.start-failed';
@@ -599,12 +599,9 @@ export default class Vapi extends VapiEventEmitter {
       
       const webCallStartTime = Date.now();
       
-      // TODO(VAPICS-1747): plain CreateWebCallDTO once api.ts has
-      // videoRecordingStartMode. An unset option stays undefined, so
-      // JSON.stringify drops the key and older servers never see it.
-      const createWebCallBody: CreateWebCallDTO & {
-        videoRecordingStartMode?: VideoRecordingStartMode;
-      } = {
+      // An unset option stays undefined, so JSON.stringify drops the key and
+      // older servers never see it.
+      const createWebCallBody: CreateWebCallDTO = {
         assistant: typeof assistant === 'string' ? undefined : assistant,
         assistantId: typeof assistant === 'string' ? assistant : undefined,
         assistantOverrides,
