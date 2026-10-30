@@ -781,6 +781,11 @@ export default class Vapi extends VapiEventEmitter {
         this.detachAudioPlayer(e.participant.session_id);
       });
 
+      // Registered before join(), as in reconnect(): Vapi starts a server-mode
+      // recording when it sees the user join, so its start-failed message can
+      // arrive while join() is still in flight.
+      this.call.on('app-message', (e) => this.onAppMessage(e));
+
       // Registered before join(): a token-auto-started recording can begin
       // while join() is still in flight, so a listener added after join
       // could miss the event.
@@ -956,8 +961,6 @@ export default class Vapi extends VapiEventEmitter {
       this.call.on('local-audio-level', (e) => {
         if (e) this.handleLocalAudioLevel(e);
       });
-
-      this.call.on('app-message', (e) => this.onAppMessage(e));
 
       this.call.on('nonfatal-error', (e) => {
         // https://docs.daily.co/reference/daily-js/events/meeting-events#type-audio-processor-error

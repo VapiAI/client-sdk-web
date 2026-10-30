@@ -871,6 +871,55 @@ describe("Vapi video recording start", () => {
     expect(events.messages).toEqual([]);
   });
 
+  // Vapi starts a server-mode recording when it sees the user join, so the
+  // failure can arrive before join() resolves. Like Daily, the mock delivers
+  // it only to a listener that is already registered.
+  function startFailedDeliverDuringJoin() {
+    mockDailyCall.join.mockImplementationOnce(async () => {
+      mockDailyCall.handlers["app-message"]?.({
+        data: '{"type":"video-recording.start-failed","outcome":"not-hosting","error":"boom"}',
+      });
+    });
+  }
+
+  const startFailedDuringJoinError = {
+    action: "recording-error",
+    callClientId: "client_test",
+    errorMsg: "Vapi couldn't start the recording (not-hosting): boom",
+  };
+
+  it("start() reports a start-failed message that arrives during join", async () => {
+    webCallResolveOnce({ callToken: "tok", videoRecordingStartMode: "server" });
+    startFailedDeliverDuringJoin();
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    const call = await vapi.start("dummy_assistant_id", undefined, undefined, undefined, undefined, {
+      videoRecordingStartMode: "server",
+    });
+
+    expect(call).not.toBeNull();
+    expect(events.recordingErrors).toEqual([startFailedDuringJoinError]);
+    expect(events.order).toEqual(["recording-error", "call-start-success"]);
+    expect(events.messages).toEqual([]);
+  });
+
+  it("reconnect() reports a start-failed message that arrives during join", async () => {
+    startFailedDeliverDuringJoin();
+    const vapi = new Vapi("dummy_token");
+    const events = eventsRecord(vapi);
+
+    await vapi.reconnect({
+      ...baseWebCall,
+      artifactPlan: { videoRecordingEnabled: true },
+      transport: { callToken: "tok", videoRecordingStartMode: "server" },
+    });
+
+    expect(events.recordingErrors).toEqual([startFailedDuringJoinError]);
+    expect(events.order).toEqual(["recording-error", "call-start-success"]);
+    expect(events.messages).toEqual([]);
+  });
+
   it("falls back to 'unknown' for a start-failed message without outcome or error", async () => {
     const vapi = new Vapi("dummy_token");
     const events = eventsRecord(vapi);
