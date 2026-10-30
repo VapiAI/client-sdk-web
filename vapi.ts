@@ -342,14 +342,13 @@ function subscribeToTracks(
   e: DailyEventObjectParticipant,
   call: DailyCall,
   isVideoRecordingEnabled?: boolean,
-  isVideoEnabled?: boolean,
 ) {
   if (e.participant.local) return;
 
   call.updateParticipant(e.participant.session_id, {
     setSubscribedTracks: {
       audio: true,
-      video: isVideoRecordingEnabled || isVideoEnabled,
+      video: isVideoRecordingEnabled,
     },
   });
 }
@@ -638,8 +637,6 @@ export default class Vapi extends VapiEventEmitter {
       const isVideoRecordingEnabled =
         webCall?.artifactPlan?.videoRecordingEnabled ?? false;
 
-      const isVideoEnabled = webCall?.assistant?.voice?.provider === 'tavus';
-
       // When video recording is enabled, the server sends a Daily meeting
       // token. In client mode it auto-starts the cloud recording on join. In
       // server mode it starts nothing: Vapi starts the recording from its
@@ -661,7 +658,6 @@ export default class Vapi extends VapiEventEmitter {
           audioSource: this.dailyCallObject.audioSource ?? true,
           videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
           isVideoRecordingEnabled,
-          isVideoEnabled
         }
       });
       
@@ -771,12 +767,7 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('participant-joined', (e) => {
         if (!e || !this.call) return;
-        subscribeToTracks(
-          e,
-          this.call,
-          isVideoRecordingEnabled,
-          isVideoEnabled,
-        );
+        subscribeToTracks(e, this.call, isVideoRecordingEnabled);
       });
 
       this.call.on('participant-updated', (e) => {
@@ -1621,7 +1612,6 @@ export default class Vapi extends VapiEventEmitter {
       }
 
       const isVideoRecordingEnabled = webCall?.artifactPlan?.videoRecordingEnabled ?? false;
-      const isVideoEnabled = webCall?.assistant?.voice?.provider === 'tavus';
 
       // Same token as in start(). In client mode, rejoining with it while the
       // recording is still running is safe; if the recording stopped when the
@@ -1642,7 +1632,6 @@ export default class Vapi extends VapiEventEmitter {
           audioSource: this.dailyCallObject.audioSource ?? true,
           videoSource: this.dailyCallObject.videoSource ?? isVideoRecordingEnabled,
           isVideoRecordingEnabled,
-          isVideoEnabled
         }
       });
 
@@ -1733,12 +1722,7 @@ export default class Vapi extends VapiEventEmitter {
 
       this.call.on('participant-joined', (e) => {
         if (!e || !this.call) return;
-        subscribeToTracks(
-          e,
-          this.call,
-          isVideoRecordingEnabled,
-          isVideoEnabled,
-        );
+        subscribeToTracks(e, this.call, isVideoRecordingEnabled);
       });
 
       this.call.on('participant-updated', (e) => {
