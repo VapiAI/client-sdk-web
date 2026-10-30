@@ -567,3 +567,99 @@ describe("Vapi local audio level observer", () => {
     expect(mockDailyCall.startLocalAudioLevelObserver).toHaveBeenCalledWith(100);
   });
 });
+
+describe("Vapi noiseCancellationEnabled", () => {
+  const webCall = {
+    id: "call_test",
+    webCallUrl: "https://example.daily.co/test",
+  };
+  const noiseCancellation = {
+    audio: { processor: { type: "noise-cancellation" } },
+  };
+
+  afterEach(() => {
+    mockDailyCall = null;
+  });
+
+  function startCall(vapi: Vapi, options?: { noiseCancellationEnabled?: boolean }) {
+    return vapi.start(
+      "dummy_assistant_id",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      options
+    );
+  }
+
+  it("turns noise cancellation on by default", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    const vapi = new Vapi("dummy_token");
+
+    await startCall(vapi);
+
+    expect(mockDailyCall.updateInputSettings).toHaveBeenCalledWith(
+      noiseCancellation
+    );
+  });
+
+  it("skips noise cancellation when start() is told not to", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    const vapi = new Vapi("dummy_token");
+    vapi.on("local-volume-level", () => {});
+
+    const call = await startCall(vapi, { noiseCancellationEnabled: false });
+    await flushRejections();
+
+    expect(call).not.toBeNull();
+    expect(mockDailyCall.updateInputSettings).not.toHaveBeenCalled();
+    // Nothing swaps the track, so the observer starts without waiting.
+    expect(mockDailyCall.startLocalAudioLevelObserver).toHaveBeenCalledWith(100);
+  });
+
+  it("keeps the value from start() on reconnect()", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    const vapi = new Vapi("dummy_token");
+    await startCall(vapi, { noiseCancellationEnabled: false });
+    await vapi.stop();
+
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    await vapi.reconnect(webCall);
+
+    expect(mockDailyCall.updateInputSettings).not.toHaveBeenCalled();
+  });
+
+  it("lets reconnect() override the value from start()", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    const vapi = new Vapi("dummy_token");
+    await startCall(vapi, { noiseCancellationEnabled: false });
+    await vapi.stop();
+
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    await vapi.reconnect(webCall, { noiseCancellationEnabled: true });
+
+    expect(mockDailyCall.updateInputSettings).toHaveBeenCalledWith(
+      noiseCancellation
+    );
+  });
+
+  it("turns noise cancellation on for reconnect() without a prior start()", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    const vapi = new Vapi("dummy_token");
+
+    await vapi.reconnect(webCall);
+
+    expect(mockDailyCall.updateInputSettings).toHaveBeenCalledWith(
+      noiseCancellation
+    );
+  });
+
+  it("skips noise cancellation when reconnect() is told not to", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    const vapi = new Vapi("dummy_token");
+
+    await vapi.reconnect(webCall, { noiseCancellationEnabled: false });
+
+    expect(mockDailyCall.updateInputSettings).not.toHaveBeenCalled();
+  });
+});

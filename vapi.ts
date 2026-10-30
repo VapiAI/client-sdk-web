@@ -209,6 +209,11 @@ type StartCallOptions = {
   /** Acquire the microphone before creating a backend call. Defaults to true. */
   microphonePreflightEnabled?: boolean;
   /**
+   * Run Daily's client-side Krisp noise cancellation on the microphone.
+   * Set to `false` to send the raw microphone audio. Defaults to true.
+   */
+  noiseCancellationEnabled?: boolean;
+  /**
    * This determines whether the daily room will be deleted and all participants will be kicked once the user leaves the room.
    * If set to `false`, the room will be kept alive even after the user leaves, allowing clients to reconnect to the same room.
    * If set to `true`, the room will be deleted and reconnection will not be allowed.
@@ -217,6 +222,14 @@ type StartCallOptions = {
    * @example true
    */
   roomDeleteOnUserLeaveEnabled?: boolean;
+}
+
+type ReconnectOptions = {
+  /**
+   * Run Daily's client-side Krisp noise cancellation on the microphone.
+   * Defaults to the value passed to the last `start()`, or true.
+   */
+  noiseCancellationEnabled?: boolean;
 }
 
 type WebCall = {
@@ -360,6 +373,7 @@ export default class Vapi extends VapiEventEmitter {
   private dailyCallObject: DailyFactoryOptions = {};
   private microphoneTrack: MediaStreamTrack | null = null;
   private cancelMicrophonePreflight: (() => void) | null = null;
+  private noiseCancellationEnabled: boolean = true;
 
   private async microphoneAcquire(): Promise<MediaStreamTrack> {
     const source = this.dailyCallObject.audioSource;
@@ -535,6 +549,7 @@ export default class Vapi extends VapiEventEmitter {
     });
     
     this.started = true;
+    this.noiseCancellationEnabled = options?.noiseCancellationEnabled ?? true;
 
     let failureStage = 'microphone-preflight';
     try {
@@ -971,13 +986,17 @@ export default class Vapi extends VapiEventEmitter {
       const audioProcessingStartTime = Date.now();
       
       try {
-        const audioProcessingUpdate = this.call.updateInputSettings({
-          audio: {
-            processor: {
-              type: 'noise-cancellation',
-            },
-          },
-        });
+        // Daily's default processor is 'none', so skipping the update leaves
+        // the raw microphone track in place and avoids loading Krisp at all.
+        const audioProcessingUpdate = this.noiseCancellationEnabled
+          ? this.call.updateInputSettings({
+              audio: {
+                processor: {
+                  type: 'noise-cancellation',
+                },
+              },
+            })
+          : Promise.resolve();
 
         audioProcessingUpdate.catch((error) => {
           this.emitAudioProcessingError('audio-processing-setup', error);
@@ -1498,11 +1517,11 @@ export default class Vapi extends VapiEventEmitter {
 
   /**
    * Reconnects to an active call.
-   * 
-   * 
-   * @param webCall 
+   *
+   * @param webCall
+   * @param options
    */
-  async reconnect(webCall: WebCall): Promise<void> {
+  async reconnect(webCall: WebCall, options?: ReconnectOptions): Promise<void> {
     const startTime = Date.now();
     
     if (this.started) {
@@ -1511,6 +1530,10 @@ export default class Vapi extends VapiEventEmitter {
 
     if (!webCall.webCallUrl) {
       throw new Error('webCallUrl is required for reconnection.');
+    }
+
+    if (options?.noiseCancellationEnabled !== undefined) {
+      this.noiseCancellationEnabled = options.noiseCancellationEnabled;
     }
 
     this.emit('call-start-progress', {
@@ -1873,13 +1896,17 @@ export default class Vapi extends VapiEventEmitter {
       const audioProcessingStartTime = Date.now();
       
       try {
-        const audioProcessingUpdate = this.call.updateInputSettings({
-          audio: {
-            processor: {
-              type: 'noise-cancellation',
-            },
-          },
-        });
+        // Daily's default processor is 'none', so skipping the update leaves
+        // the raw microphone track in place and avoids loading Krisp at all.
+        const audioProcessingUpdate = this.noiseCancellationEnabled
+          ? this.call.updateInputSettings({
+              audio: {
+                processor: {
+                  type: 'noise-cancellation',
+                },
+              },
+            })
+          : Promise.resolve();
 
         audioProcessingUpdate.catch((error) => {
           this.emitAudioProcessingError('audio-processing-setup', error);
