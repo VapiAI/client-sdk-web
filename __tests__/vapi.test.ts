@@ -568,7 +568,7 @@ describe("Vapi local audio level observer", () => {
   });
 });
 
-describe("Vapi noiseCancellationEnabled", () => {
+describe("Vapi clientSideNoiseCancellationEnabled", () => {
   const webCall = {
     id: "call_test",
     webCallUrl: "https://example.daily.co/test",
@@ -581,7 +581,7 @@ describe("Vapi noiseCancellationEnabled", () => {
     mockDailyCall = null;
   });
 
-  function startCall(vapi: Vapi, options?: { noiseCancellationEnabled?: boolean }) {
+  function startCall(vapi: Vapi, options?: { clientSideNoiseCancellationEnabled?: boolean }) {
     return vapi.start(
       "dummy_assistant_id",
       undefined,
@@ -608,7 +608,7 @@ describe("Vapi noiseCancellationEnabled", () => {
     const vapi = new Vapi("dummy_token");
     vapi.on("local-volume-level", () => {});
 
-    const call = await startCall(vapi, { noiseCancellationEnabled: false });
+    const call = await startCall(vapi, { clientSideNoiseCancellationEnabled: false });
     await flushRejections();
 
     expect(call).not.toBeNull();
@@ -620,7 +620,7 @@ describe("Vapi noiseCancellationEnabled", () => {
   it("keeps the value from start() on reconnect()", async () => {
     mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
     const vapi = new Vapi("dummy_token");
-    await startCall(vapi, { noiseCancellationEnabled: false });
+    await startCall(vapi, { clientSideNoiseCancellationEnabled: false });
     await vapi.stop();
 
     mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
@@ -632,11 +632,11 @@ describe("Vapi noiseCancellationEnabled", () => {
   it("lets reconnect() override the value from start()", async () => {
     mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
     const vapi = new Vapi("dummy_token");
-    await startCall(vapi, { noiseCancellationEnabled: false });
+    await startCall(vapi, { clientSideNoiseCancellationEnabled: false });
     await vapi.stop();
 
     mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
-    await vapi.reconnect(webCall, { noiseCancellationEnabled: true });
+    await vapi.reconnect(webCall, { clientSideNoiseCancellationEnabled: true });
 
     expect(mockDailyCall.updateInputSettings).toHaveBeenCalledWith(
       noiseCancellation
@@ -658,7 +658,7 @@ describe("Vapi noiseCancellationEnabled", () => {
     mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
     const vapi = new Vapi("dummy_token");
 
-    await vapi.reconnect(webCall, { noiseCancellationEnabled: false });
+    await vapi.reconnect(webCall, { clientSideNoiseCancellationEnabled: false });
 
     expect(mockDailyCall.updateInputSettings).not.toHaveBeenCalled();
   });

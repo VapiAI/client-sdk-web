@@ -209,14 +209,14 @@ type StartCallOptions = {
   /** Acquire the microphone before creating a backend call. Defaults to true. */
   microphonePreflightEnabled?: boolean;
   /**
-   * Client-side only: run Daily's Krisp noise cancellation on the microphone
+   * Run Daily's Krisp noise cancellation on the microphone
    * in the browser, before the audio leaves the device. Set to `false` to send
    * the raw microphone audio. Defaults to true.
    *
    * Separate from the assistant's server-side `backgroundSpeechDenoisingPlan`,
    * which this option does not change.
    */
-  noiseCancellationEnabled?: boolean;
+  clientSideNoiseCancellationEnabled?: boolean;
   /**
    * This determines whether the daily room will be deleted and all participants will be kicked once the user leaves the room.
    * If set to `false`, the room will be kept alive even after the user leaves, allowing clients to reconnect to the same room.
@@ -230,13 +230,13 @@ type StartCallOptions = {
 
 type ReconnectOptions = {
   /**
-   * Client-side only: run Daily's Krisp noise cancellation on the microphone
+   * Run Daily's Krisp noise cancellation on the microphone
    * in the browser. Defaults to the value passed to the last `start()`, or true.
    *
    * Separate from the assistant's server-side `backgroundSpeechDenoisingPlan`,
    * which this option does not change.
    */
-  noiseCancellationEnabled?: boolean;
+  clientSideNoiseCancellationEnabled?: boolean;
 }
 
 type WebCall = {
@@ -380,7 +380,7 @@ export default class Vapi extends VapiEventEmitter {
   private dailyCallObject: DailyFactoryOptions = {};
   private microphoneTrack: MediaStreamTrack | null = null;
   private cancelMicrophonePreflight: (() => void) | null = null;
-  private noiseCancellationEnabled: boolean = true;
+  private clientSideNoiseCancellationEnabled: boolean = true;
 
   private async microphoneAcquire(): Promise<MediaStreamTrack> {
     const source = this.dailyCallObject.audioSource;
@@ -556,7 +556,7 @@ export default class Vapi extends VapiEventEmitter {
     });
     
     this.started = true;
-    this.noiseCancellationEnabled = options?.noiseCancellationEnabled ?? true;
+    this.clientSideNoiseCancellationEnabled = options?.clientSideNoiseCancellationEnabled ?? true;
 
     let failureStage = 'microphone-preflight';
     try {
@@ -995,7 +995,7 @@ export default class Vapi extends VapiEventEmitter {
       try {
         // Daily's default processor is 'none', so skipping the update leaves
         // the raw microphone track in place and avoids loading Krisp at all.
-        const audioProcessingUpdate = this.noiseCancellationEnabled
+        const audioProcessingUpdate = this.clientSideNoiseCancellationEnabled
           ? this.call.updateInputSettings({
               audio: {
                 processor: {
@@ -1539,8 +1539,8 @@ export default class Vapi extends VapiEventEmitter {
       throw new Error('webCallUrl is required for reconnection.');
     }
 
-    if (options?.noiseCancellationEnabled !== undefined) {
-      this.noiseCancellationEnabled = options.noiseCancellationEnabled;
+    if (options?.clientSideNoiseCancellationEnabled !== undefined) {
+      this.clientSideNoiseCancellationEnabled = options.clientSideNoiseCancellationEnabled;
     }
 
     this.emit('call-start-progress', {
@@ -1905,7 +1905,7 @@ export default class Vapi extends VapiEventEmitter {
       try {
         // Daily's default processor is 'none', so skipping the update leaves
         // the raw microphone track in place and avoids loading Krisp at all.
-        const audioProcessingUpdate = this.noiseCancellationEnabled
+        const audioProcessingUpdate = this.clientSideNoiseCancellationEnabled
           ? this.call.updateInputSettings({
               audio: {
                 processor: {
