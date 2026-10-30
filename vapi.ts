@@ -209,8 +209,12 @@ type StartCallOptions = {
   /** Acquire the microphone before creating a backend call. Defaults to true. */
   microphonePreflightEnabled?: boolean;
   /**
-   * Run Daily's client-side Krisp noise cancellation on the microphone.
-   * Set to `false` to send the raw microphone audio. Defaults to true.
+   * Client-side only: run Daily's Krisp noise cancellation on the microphone
+   * in the browser, before the audio leaves the device. Set to `false` to send
+   * the raw microphone audio. Defaults to true.
+   *
+   * Separate from the assistant's server-side `backgroundSpeechDenoisingPlan`,
+   * which this option does not change.
    */
   noiseCancellationEnabled?: boolean;
   /**
@@ -226,8 +230,11 @@ type StartCallOptions = {
 
 type ReconnectOptions = {
   /**
-   * Run Daily's client-side Krisp noise cancellation on the microphone.
-   * Defaults to the value passed to the last `start()`, or true.
+   * Client-side only: run Daily's Krisp noise cancellation on the microphone
+   * in the browser. Defaults to the value passed to the last `start()`, or true.
+   *
+   * Separate from the assistant's server-side `backgroundSpeechDenoisingPlan`,
+   * which this option does not change.
    */
   noiseCancellationEnabled?: boolean;
 }
