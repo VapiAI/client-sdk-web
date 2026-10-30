@@ -617,6 +617,19 @@ describe("Vapi clientSideNoiseCancellationEnabled", () => {
     expect(mockDailyCall.startLocalAudioLevelObserver).toHaveBeenCalledWith(100);
   });
 
+  it("reports no audio processing stage when start() skips it", async () => {
+    mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
+    const vapi = new Vapi("dummy_token");
+    const stages: string[] = [];
+    vapi.on("call-start-progress", (event) => {
+      stages.push(event.stage);
+    });
+
+    await startCall(vapi, { clientSideNoiseCancellationEnabled: false });
+
+    expect(stages).not.toContain("audio-processing-setup");
+  });
+
   it("keeps the value from start() on reconnect()", async () => {
     mockDailyCall = createMockDailyCall(jest.fn().mockResolvedValue(undefined));
     const vapi = new Vapi("dummy_token");
