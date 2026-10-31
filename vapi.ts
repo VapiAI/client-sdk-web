@@ -390,6 +390,8 @@ class VapiEventEmitter extends EventEmitter {
 export default class Vapi extends VapiEventEmitter {
   private started: boolean = false;
   private call: DailyCall | null = null;
+  // Microphone stream and audio graph behind the last increaseMicLevel() call.
+  private micBoost: { stream: MediaStream; audioContext: AudioContext } | null = null;
   private audioPlayer: HTMLAudioElement | null = null;
   // Survives teardown so the caller's choice persists across calls.
   private desiredVolume: number | null = null;
@@ -464,9 +466,18 @@ export default class Vapi extends VapiEventEmitter {
       await this.call.destroy();
       this.call = null;
     }
+    this.releaseMicBoost();
     this.audioPlayer = null;
     this.pendingAudioBuilds.clear();
     this.speakingTimeout = null;
+  }
+
+  private releaseMicBoost() {
+    const boost = this.micBoost;
+    if (!boost) return;
+    this.micBoost = null;
+    boost.stream.getTracks().forEach((track) => track.stop());
+    boost.audioContext.close().catch(() => {});
   }
 
   private isMobileDevice() {
@@ -1176,6 +1187,7 @@ export default class Vapi extends VapiEventEmitter {
       await this.call.destroy();
       this.call = null;
     }
+    this.releaseMicBoost();
     this.audioPlayer = null;
     this.pendingAudioBuilds.clear();
     this.speakingTimeout = null;
@@ -1441,9 +1453,11 @@ export default class Vapi extends VapiEventEmitter {
       throw new Error('Call object is not available.');
     }
     
+    let boost: { stream: MediaStream; audioContext: AudioContext } | null = null;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const audioContext = new AudioContext();
+      boost = { stream, audioContext };
   
       const source = audioContext.createMediaStreamSource(stream);
       
@@ -1456,8 +1470,20 @@ export default class Vapi extends VapiEventEmitter {
       gainNode.connect(destination);
   
       const [boostedTrack] = destination.stream.getAudioTracks();
-      await safeSetInputDevicesAsync(this.call, { audioSource: boostedTrack });      
+      await safeSetInputDevicesAsync(this.call, { audioSource: boostedTrack });
+
+      // The previous boost is no longer the active input. Keep this one alive
+      // until the call ends, unless stop() ran while it was being set up.
+      this.releaseMicBoost();
+      if (this.call) {
+        this.micBoost = boost;
+      } else {
+        boost.stream.getTracks().forEach((track) => track.stop());
+        boost.audioContext.close().catch(() => {});
+      }
     } catch (error) {
+      boost?.stream.getTracks().forEach((track) => track.stop());
+      boost?.audioContext.close().catch(() => {});
       console.error("Error adjusting microphone level:", error);
     }
   }  
