@@ -31,6 +31,8 @@ function App() {
   const [networkTestResults, setNetworkTestResults] = useState<any>(null);
   const [simulateFailure, setSimulateFailure] = useState<string>('none');
   const [videoRecordingEnabled, setVideoRecordingEnabled] = useState(false);
+  // 'default' omits videoRecordingStartMode so the server picks the mode.
+  const [videoRecordingStartMode, setVideoRecordingStartMode] = useState<'default' | 'client' | 'server'>('default');
   const [localVideoTrack, setLocalVideoTrack] = useState<MediaStreamTrack | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -122,7 +124,19 @@ function App() {
       console.log('📊 Call Start Progress:', event);
       const statusEmoji = event.status === 'completed' ? '✅' : event.status === 'failed' ? '❌' : '⏳';
       const duration = event.duration ? ` (${event.duration}ms)` : '';
-      addMessage('system', `${statusEmoji} ${event.stage}: ${event.status}${duration}`);
+      const action = event.metadata?.action ? ` [${event.metadata.action}]` : '';
+      addMessage('system', `${statusEmoji} ${event.stage}: ${event.status}${duration}${action}`);
+    });
+
+    // Recording events
+    vapi.on('recording-started', (event) => {
+      console.log('⏺️ Recording Started:', event);
+      addMessage('system', '⏺️ Recording started');
+    });
+
+    vapi.on('recording-error', (event) => {
+      console.error('⏺️ Recording Error:', event);
+      addMessage('system', `⏺️ Recording error: ${event.errorMsg}`);
     });
 
     vapi.on('call-start-success', (event) => {
@@ -232,7 +246,8 @@ function App() {
         // Max call duration (in seconds) - 10 minutes
         maxDurationSeconds: 600
       }, undefined, undefined, undefined, undefined, {
-        roomDeleteOnUserLeaveEnabled: false
+        roomDeleteOnUserLeaveEnabled: false,
+        videoRecordingStartMode: videoRecordingStartMode === 'default' ? undefined : videoRecordingStartMode
       });
       
       // Store webCall in localStorage if it was created successfully
@@ -527,9 +542,23 @@ function App() {
           />
           <span style={{ fontWeight: '500' }}>🎥 Video Recording Enabled</span>
         </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
+          <span style={{ fontWeight: '500' }}>⏺️ Recording Start Mode</span>
+          <select
+            value={videoRecordingStartMode}
+            onChange={(e) => setVideoRecordingStartMode(e.target.value as 'default' | 'client' | 'server')}
+            disabled={connected}
+            style={{ cursor: connected ? 'not-allowed' : 'pointer' }}
+          >
+            <option value="default">Default (not sent)</option>
+            <option value="client">client</option>
+            <option value="server">server</option>
+          </select>
+        </label>
         <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: 0, marginTop: '10px' }}>
-          When enabled, your camera turns on and the call is recorded to video. Applies to the next
-          call you start.
+          When enabled, your camera turns on and the call is recorded to video. The start mode sets
+          who starts the recording: the client when it joins, or Vapi from its servers. Applies to
+          the next call you start.
         </p>
       </div>
 

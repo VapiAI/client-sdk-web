@@ -907,6 +907,16 @@ export interface DeepgramTranscriber {
    */
   confidenceThreshold?: number;
   /**
+   * Controls whether Vapi filters user transcripts that repeat text from the
+   * assistant's recent transcript. Disable this only when legitimate caller
+   * responses are being mistaken for assistant audio feedback.
+   *
+   * @default true
+   * @default true
+   * @example true
+   */
+  feedbackFilterEnabled?: boolean;
+  /**
    * End-of-turn confidence required to finish a turn. Only used with Flux models.
    *
    * @default 0.7
@@ -3504,6 +3514,16 @@ export interface FallbackDeepgramTranscriber {
    * @example 0.4
    */
   confidenceThreshold?: number;
+  /**
+   * Controls whether Vapi filters user transcripts that repeat text from the
+   * assistant's recent transcript. Disable this only when legitimate caller
+   * responses are being mistaken for assistant audio feedback.
+   *
+   * @default true
+   * @default true
+   * @example true
+   */
+  feedbackFilterEnabled?: boolean;
   /**
    * End-of-turn confidence required to finish a turn. Only used with Flux models.
    *
@@ -6912,7 +6932,6 @@ export interface TransferAssistant {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -6980,6 +6999,19 @@ export interface TransferAssistant {
    * @example 120
    */
   maxDurationSeconds?: number;
+  /**
+   * This decides whether the transfer assistant runs the main assistant's hooks on the operator leg of a `warm-transfer-experimental` transfer. The operator is the "customer" there. When unset or `true`, the transfer assistant runs all of the main assistant's hooks, plus `hooks`. When `false`, it runs only `hooks`, plus the main assistant's `call.ending` hooks. An `endCall` in an inherited `customer.speech.timeout` hook ends the whole call when the operator is silent, so set this to `false` to stop that.
+   * @default true
+   */
+  assistantHooksInheritEnabled?: boolean;
+  /** These are the hooks the transfer assistant runs on the operator leg of a `warm-transfer-experimental` transfer. The operator is the "customer" there, so `customer.speech.timeout` fires on operator silence. Whether the main assistant's other hooks also run on the operator leg depends on `assistantHooksInheritEnabled`. These hooks run after them. `call.ending` and `call.timeElapsed` are not allowed here. The main assistant's `call.ending` hooks are kept automatically. Time-elapsed hooks are not armed on the operator leg. An `endCall` tool in these hooks ends the whole call, not only the operator leg. A `tool` action must carry an inline `tool`, because `toolId` is not resolved for the transfer assistant. */
+  hooks?: (
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+    | CallHookModelResponseTimeout
+    | CallHookTranscriberEndpointedSpeechLowConfidence
+  )[];
   /**
    * This enables filtering of noise and background speech while the user is talking.
    *
@@ -7630,6 +7662,1874 @@ export interface ContextEngineeringPlanPreviousAssistantMessages {
   type: "previousAssistantMessages";
 }
 
+export interface RecordingConsentPlanStayOnLine {
+  /**
+   * This is the message asking for consent to record the call.
+   * If the type is `stay-on-line`, the message should ask the user to hang up if they do not consent.
+   * If the type is `verbal`, the message should ask the user to verbally consent or decline.
+   * @maxLength 1000
+   */
+  message: string;
+  /**
+   * This is the voice to use for the consent message. If not specified, inherits from the assistant's voice.
+   * Use a different voice for the consent message for a better user experience.
+   */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | WellSaidVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
+  /**
+   * This controls whether the consent assistant speaks first or waits for the caller to speak first.
+   *
+   * Use:
+   * - `assistant-speaks-first` (default) to have the consent assistant play the consent message as soon as the call is answered.
+   * - `assistant-waits-for-user` to have the consent assistant wait for the caller to speak before playing the consent message.
+   *
+   * We strongly recommend `assistant-waits-for-user` for outbound calls. Some telephony providers signal "answered" while the line is still ringing, which can cause the consent message to play into a ringing line and be missed by the caller. Waiting for the caller to speak first guarantees they hear the full consent message.
+   *
+   * Note: when combined with `type: 'stay-on-line'`, silence only counts toward consent after the caller has spoken at least once.
+   *
+   * @default 'assistant-speaks-first'
+   * @default "assistant-speaks-first"
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?: "assistant-speaks-first" | "assistant-waits-for-user";
+  /**
+   * This is the type of recording consent plan. This type assumes consent is granted if the user stays on the line.
+   * @example "stay-on-line"
+   */
+  type: "stay-on-line";
+  /**
+   * Number of seconds to wait before transferring to the assistant if user stays on the call
+   * @min 1
+   * @max 6
+   * @default 3
+   * @example 3
+   */
+  waitSeconds?: number;
+}
+
+export interface RecordingConsentPlanVerbal {
+  /**
+   * This is the message asking for consent to record the call.
+   * If the type is `stay-on-line`, the message should ask the user to hang up if they do not consent.
+   * If the type is `verbal`, the message should ask the user to verbally consent or decline.
+   * @maxLength 1000
+   */
+  message: string;
+  /**
+   * This is the voice to use for the consent message. If not specified, inherits from the assistant's voice.
+   * Use a different voice for the consent message for a better user experience.
+   */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | WellSaidVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
+  /**
+   * This controls whether the consent assistant speaks first or waits for the caller to speak first.
+   *
+   * Use:
+   * - `assistant-speaks-first` (default) to have the consent assistant play the consent message as soon as the call is answered.
+   * - `assistant-waits-for-user` to have the consent assistant wait for the caller to speak before playing the consent message.
+   *
+   * We strongly recommend `assistant-waits-for-user` for outbound calls. Some telephony providers signal "answered" while the line is still ringing, which can cause the consent message to play into a ringing line and be missed by the caller. Waiting for the caller to speak first guarantees they hear the full consent message.
+   *
+   * Note: when combined with `type: 'stay-on-line'`, silence only counts toward consent after the caller has spoken at least once.
+   *
+   * @default 'assistant-speaks-first'
+   * @default "assistant-speaks-first"
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?: "assistant-speaks-first" | "assistant-waits-for-user";
+  /**
+   * This is the type of recording consent plan. This type assumes consent is granted if the user verbally consents or declines.
+   * @example "verbal"
+   */
+  type: "verbal";
+  /** Tool to execute if user verbally declines recording consent */
+  declineTool?: object;
+  /** ID of existing tool to execute if user verbally declines recording consent */
+  declineToolId?: string;
+}
+
+export type SecurityFilterBase = object;
+
+export interface SecurityFilterPlan {
+  /**
+   * Whether the security filter is enabled.
+   * @default false
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * Array of security filter types to apply.
+   * If array is not empty, only those security filters are run.
+   * @example "[{ type: "sql-injection" }, { type: "xss" }]"
+   */
+  filters?: SecurityFilterBase[];
+  /**
+   * Mode of operation when a security threat is detected.
+   * - 'sanitize': Remove or replace the threatening content
+   * - 'reject': Replace the entire transcript with replacement text
+   * - 'replace': Replace threatening patterns with replacement text
+   * @default 'sanitize'
+   * @default "sanitize"
+   */
+  mode?: "sanitize" | "reject" | "replace";
+  /**
+   * Text to use when replacing filtered content.
+   * @default '[FILTERED]'
+   * @default "[FILTERED]"
+   */
+  replacementText?: string;
+}
+
+export interface CompliancePlan {
+  /** When this is enabled, logs, recordings, and transcriptions will be stored in HIPAA-compliant storage. Defaults to false. Only HIPAA-compliant providers will be available for LLM, Voice, and Transcriber respectively. This setting is only honored if the organization is on an Enterprise subscription or has purchased the HIPAA add-on. */
+  hipaaEnabled?: boolean;
+  /**
+   * When this is enabled, the user will be restricted to use PCI-compliant providers, and no logs or transcripts are stored.
+   * At the end of the call, you will receive an end-of-call-report message to store on your server. Defaults to false.
+   * @example {"pciEnabled":false}
+   */
+  pciEnabled?: boolean;
+  /** This is the security filter plan for the assistant. It allows filtering of transcripts for security threats before sending to LLM. */
+  securityFilterPlan?: SecurityFilterPlan;
+  recordingConsentPlan?:
+    | ({
+        type: "stay-on-line";
+      } & RecordingConsentPlanStayOnLine)
+    | ({
+        type: "verbal";
+      } & RecordingConsentPlanVerbal);
+}
+
+export interface StructuredDataPlan {
+  /**
+   * These are the messages used to generate the structured data.
+   *
+   * @default: ```
+   * [
+   *   {
+   *     "role": "system",
+   *     "content": "You are an expert data extractor. You will be given a transcript of a call. Extract structured data per the JSON Schema. DO NOT return anything except the structured data.\n\nJson Schema:\\n{{schema}}\n\nOnly respond with the JSON."
+   *   },
+   *   {
+   *     "role": "user",
+   *     "content": "Here is the transcript:\n\n{{transcript}}\n\n. Here is the ended reason of the call:\n\n{{endedReason}}\n\n"
+   *   }
+   * ]```
+   *
+   * You can customize by providing any messages you want.
+   *
+   * Here are the template variables available:
+   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{messages}}: the messages of the call from `assistant.model.messages`- {{schema}}: the schema of the structured data from `structuredDataPlan.schema`- {{endedReason}}: the ended reason of the call from `call.endedReason`
+   */
+  messages?: object[];
+  /**
+   * This determines whether structured data is generated and stored in `call.analysis.structuredData`. Defaults to false.
+   *
+   * Usage:
+   * - If you want to extract structured data, set this to true and provide a `schema`.
+   *
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * This is the schema of the structured data. The output is stored in `call.analysis.structuredData`.
+   *
+   * Complete guide on JSON Schema can be found [here](https://ajv.js.org/json-schema.html#json-data-type).
+   */
+  schema?: JsonSchema;
+  /**
+   * This is how long the request is tried before giving up. When request times out, `call.analysis.structuredData` will be empty.
+   *
+   * Usage:
+   * - To guarantee the structured data is generated, set this value high. Note, this will delay the end of call report in cases where model is slow to respond.
+   *
+   * @default 5 seconds
+   * @min 1
+   * @max 60
+   */
+  timeoutSeconds?: number;
+}
+
+export interface StructuredDataMultiPlan {
+  /** This is the key of the structured data plan in the catalog. */
+  key: string;
+  /** This is an individual structured data plan in the catalog. */
+  plan: StructuredDataPlan;
+}
+
+export interface SuccessEvaluationPlan {
+  /**
+   * This enforces the rubric of the evaluation. The output is stored in `call.analysis.successEvaluation`.
+   *
+   * Options include:
+   * - 'NumericScale': A scale of 1 to 10.
+   * - 'DescriptiveScale': A scale of Excellent, Good, Fair, Poor.
+   * - 'Checklist': A checklist of criteria and their status.
+   * - 'Matrix': A grid that evaluates multiple criteria across different performance levels.
+   * - 'PercentageScale': A scale of 0% to 100%.
+   * - 'LikertScale': A scale of Strongly Agree, Agree, Neutral, Disagree, Strongly Disagree.
+   * - 'AutomaticRubric': Automatically break down evaluation into several criteria, each with its own score.
+   * - 'PassFail': A simple 'true' if call passed, 'false' if not.
+   *
+   * Default is 'PassFail'.
+   */
+  rubric?:
+    | "NumericScale"
+    | "DescriptiveScale"
+    | "Checklist"
+    | "Matrix"
+    | "PercentageScale"
+    | "LikertScale"
+    | "AutomaticRubric"
+    | "PassFail";
+  /**
+   * These are the messages used to generate the success evaluation.
+   *
+   * @default: ```
+   * [
+   *   {
+   *     "role": "system",
+   *     "content": "You are an expert call evaluator. You will be given a transcript of a call and the system prompt of the AI participant. Determine if the call was successful based on the objectives inferred from the system prompt. DO NOT return anything except the result.\n\nRubric:\\n{{rubric}}\n\nOnly respond with the result."
+   *   },
+   *   {
+   *     "role": "user",
+   *     "content": "Here is the transcript:\n\n{{transcript}}\n\n"
+   *   },
+   *   {
+   *     "role": "user",
+   *     "content": "Here was the system prompt of the call:\n\n{{systemPrompt}}\n\n. Here is the ended reason of the call:\n\n{{endedReason}}\n\n"
+   *   }
+   * ]```
+   *
+   * You can customize by providing any messages you want.
+   *
+   * Here are the template variables available:
+   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{messages}}: the messages of the call from `assistant.model.messages`- {{rubric}}: the rubric of the success evaluation from `successEvaluationPlan.rubric`- {{endedReason}}: the ended reason of the call from `call.endedReason`
+   */
+  messages?: object[];
+  /**
+   * This determines whether a success evaluation is generated and stored in `call.analysis.successEvaluation`. Defaults to true.
+   *
+   * Usage:
+   * - If you want to disable the success evaluation, set this to false.
+   *
+   * @default true
+   */
+  enabled?: boolean;
+  /**
+   * This is how long the request is tried before giving up. When request times out, `call.analysis.successEvaluation` will be empty.
+   *
+   * Usage:
+   * - To guarantee the success evaluation is generated, set this value high. Note, this will delay the end of call report in cases where model is slow to respond.
+   *
+   * @default 5 seconds
+   * @min 1
+   * @max 60
+   */
+  timeoutSeconds?: number;
+}
+
+export interface AnalysisPlan {
+  /**
+   * The minimum number of messages required to run the analysis plan.
+   * If the number of messages is less than this, analysis will be skipped.
+   *
+   * @default 2
+   * @deprecated
+   * @min 0
+   */
+  minMessagesThreshold?: number;
+  /**
+   * This is the plan for generating the summary of the call. This outputs to `call.analysis.summary`.
+   * @deprecated
+   */
+  summaryPlan?: SummaryPlan;
+  /**
+   * This is the plan for generating the structured data from the call. This outputs to `call.analysis.structuredData`.
+   * @deprecated
+   */
+  structuredDataPlan?: StructuredDataPlan;
+  /**
+   * This is an array of structured data plan catalogs. Each entry includes a `key` and a `plan` for generating the structured data from the call. This outputs to `call.analysis.structuredDataMulti`.
+   * @deprecated
+   */
+  structuredDataMultiPlan?: StructuredDataMultiPlan[];
+  /**
+   * This is the plan for generating the success evaluation of the call. This outputs to `call.analysis.successEvaluation`.
+   * @deprecated
+   */
+  successEvaluationPlan?: SuccessEvaluationPlan;
+  /**
+   * This is an array of outcome UUIDs to be calculated during analysis.
+   * The outcomes will be calculated and stored in `call.analysis.outcomes`.
+   * @deprecated
+   */
+  outcomeIds?: string[];
+}
+
+export interface TranscriptPlan {
+  /**
+   * This determines whether the transcript is stored in `call.artifact.transcript`. Defaults to true.
+   *
+   * @default true
+   * @example true
+   */
+  enabled?: boolean;
+  /**
+   * This is the name of the assistant in the transcript. Defaults to 'AI'.
+   *
+   * Usage:
+   * - If you want to change the name of the assistant in the transcript, set this. Example, here is what the transcript would look like with `assistantName` set to 'Buyer':
+   * ```
+   * User: Hello, how are you?
+   * Buyer: I'm fine.
+   * User: Do you want to buy a car?
+   * Buyer: No.
+   * ```
+   *
+   * @default 'AI'
+   */
+  assistantName?: string;
+  /**
+   * This is the name of the user in the transcript. Defaults to 'User'.
+   *
+   * Usage:
+   * - If you want to change the name of the user in the transcript, set this. Example, here is what the transcript would look like with `userName` set to 'Seller':
+   * ```
+   * Seller: Hello, how are you?
+   * AI: I'm fine.
+   * Seller: Do you want to buy a car?
+   * AI: No.
+   * ```
+   *
+   * @default 'User'
+   */
+  userName?: string;
+}
+
+export interface MinMessagesCondition {
+  /**
+   * This is the type discriminator for the minMessages condition.
+   * @example "minMessages"
+   */
+  type: "minMessages";
+  /**
+   * This is the minimum number of conversation messages required for the
+   * structured output to run.
+   *
+   * A count of 0 removes the runtime default minimum, so the structured output
+   * runs regardless of how few messages the conversation has.
+   * @min 0
+   * @example 4
+   */
+  count: number;
+}
+
+export interface MinCallDurationCondition {
+  /**
+   * This is the type discriminator for the minCallDuration condition.
+   * @example "minCallDuration"
+   */
+  type: "minCallDuration";
+  /**
+   * This is the minimum call duration in seconds required for the structured
+   * output to run.
+   *
+   * When timestamps are unavailable (for example, chat sessions have no call
+   * timestamps), this check passes and does not block the structured output.
+   * @min 0
+   * @example 10
+   */
+  seconds: number;
+}
+
+export interface EndedReasonCondition {
+  /**
+   * This is the type discriminator for the endedReason condition.
+   * @example "endedReason"
+   */
+  type: "endedReason";
+  /**
+   * This is the membership operator applied against `values`.
+   *
+   * - 'oneOf': the structured output runs only if the call's ended reason is in `values`.
+   * - 'notOneOf': the structured output runs only if the call's ended reason is NOT in `values`.
+   * @example "oneOf"
+   */
+  operator: "oneOf" | "notOneOf";
+  /**
+   * These are the ended reasons compared against the call's ended reason.
+   *
+   * Any string is accepted so configurations never break when new ended
+   * reasons are introduced. Must contain at least one value.
+   * @example ["customer-ended-call"]
+   */
+  values: string[];
+}
+
+export interface ComplianceOverride {
+  /**
+   * Force storage for this output under HIPAA. Only enable if output contains no sensitive data.
+   * @example false
+   */
+  forceStoreOnHipaaEnabled?: boolean;
+}
+
+export interface CreateStructuredOutputDTO {
+  /**
+   * This is the type of structured output.
+   *
+   * - 'ai': Uses an LLM to extract structured data from the conversation (default).
+   * - 'regex': Uses a regex pattern to extract data from the transcript without an LLM.
+   *
+   * Defaults to 'ai' if not specified.
+   * @default "ai"
+   */
+  type?: "ai" | "regex";
+  /**
+   * This is the regex pattern to match against the transcript.
+   *
+   * Simulation evaluations use a canonical transcript built from recorded messages:
+   * User: and AI: dialogue, AI: tool_calls: JSON name/arguments records, and
+   * AI: tool_call_results: JSON results. System messages are excluded. These
+   * fixed labels apply even when custom artifact transcript labels are configured.
+   * Tool payloads participate in first-match and all-match extraction in event order.
+   * An empty message array falls back to the supplied transcript verbatim.
+   * Production-call extraction and call preview use their existing transcripts,
+   * so previewing the same output on a simulation's call can return a different result.
+   *
+   * Only used when type is 'regex'. Supports both raw patterns (e.g. '\d+') and
+   * regex literal format (e.g. '/\d+/gi'). Uses RE2 syntax for safety.
+   *
+   * The result depends on the schema type:
+   * - boolean: true if the pattern matches, false otherwise
+   * - string: the first match or first capture group
+   * - number/integer: the first match parsed as a number
+   * - array: all matches
+   * @minLength 1
+   * @maxLength 1000
+   */
+  regex?: string;
+  /**
+   * This is the model that will be used to extract the structured output.
+   *
+   * To provide your own custom system and user prompts for structured output extraction, populate the messages array with your system and user messages. You can specify liquid templating in your system and user messages.
+   * For text extraction, you must reference 'transcript', 'messages', or 'messagesWithConfidence' with the `{{}}` syntax to access the conversation history.
+   * In structured outputs, `{{messages}}` includes conversation text and tool calls/results but omits caller transcription-confidence fields. Text extraction can use `{{messagesWithConfidence}}` when the output needs the original message history with transcription confidence. These variables also apply in structured-output schema descriptions. Audio-targeted (`messages-with-audio`) extraction ignores custom messages. Stored call artifacts and API messages retain their confidence data.
+   * Between the system or user messages, you must reference a variation of the structured output with the `{{}}` syntax to access the structured output definition.
+   * i.e.:
+   * `{{structuredOutput}}`
+   * `{{structuredOutput.name}}`
+   * `{{structuredOutput.description}}`
+   * `{{structuredOutput.schema}}`
+   *
+   * If model is not specified, GPT-4.1 will be used by default for extraction, utilizing default system and user prompts.
+   * If messages or required fields are not specified, the default system and user prompts will be used.
+   */
+  model?:
+    | WorkflowOpenAIModel
+    | WorkflowAnthropicModel
+    | WorkflowAnthropicBedrockModel
+    | WorkflowGoogleModel
+    | WorkflowCustomModel;
+  /**
+   * Compliance configuration for this output. Only enable overrides if no sensitive data will be stored.
+   * @example {"forceStoreOnHipaaEnabled":false}
+   */
+  compliancePlan?: ComplianceOverride;
+  /**
+   * These are the conditions that gate the execution of this structured output. Every condition must pass for the structured output to run (AND semantics). When omitted or empty, no user-defined conditions gate this output. Send null to clear a previously saved gate.
+   * @example [{"type":"minMessages","count":4},{"type":"minCallDuration","seconds":10}]
+   */
+  conditions?:
+    | (MinMessagesCondition | MinCallDurationCondition | EndedReasonCondition)[]
+    | null;
+  /**
+   * This is the name of the structured output.
+   * @minLength 1
+   * @maxLength 40
+   */
+  name: string;
+  /**
+   * This is the JSON Schema definition for the structured output.
+   *
+   * This is required when creating a structured output. Defines the structure and validation rules for the data that will be extracted. Supports all JSON Schema features including:
+   * - Objects and nested properties
+   * - Arrays and array validation
+   * - String, number, boolean, and null types
+   * - Enums and const values
+   * - Validation constraints (min/max, patterns, etc.)
+   * - Composition with allOf, anyOf, oneOf
+   */
+  schema: JsonSchema;
+  /**
+   * This is the description of what the structured output extracts.
+   *
+   * Use this to provide context about what data will be extracted and how it will be used.
+   */
+  description?: string;
+  /**
+   * These are the assistant IDs that this structured output is linked to.
+   *
+   * When linked to assistants, this structured output will be available for extraction during those assistant's calls.
+   */
+  assistantIds?: string[];
+  /**
+   * These are the workflow IDs that this structured output is linked to.
+   *
+   * When linked to workflows, this structured output will be available for extraction during those workflow's execution.
+   */
+  workflowIds?: string[];
+}
+
+export interface NumberComparatorScorecardMetricCondition {
+  /** This is the type of the condition. Currently only 'comparator' is supported. */
+  type: "comparator";
+  /**
+   * This is the comparator that will be used to compare the result of the structured output with the value specified.
+   * Only '=', '!=', '>', '<', '>=', and '<=' are supported for number conditions
+   * Only '=' is supported for boolean conditions.
+   */
+  comparator: "=" | "!=" | ">" | "<" | ">=" | "<=";
+  /**
+   * This is the value that will be used to compare the result of the structured output with the comparator.
+   * If the result of the comparison is true, the points will be added to the overall score.
+   */
+  value: number;
+  /**
+   * These are the points that will be added to the overall score if the condition is met.
+   * The points must be between 0 and 100.
+   * @min 0
+   * @max 100
+   */
+  points: number;
+}
+
+export interface BooleanComparatorScorecardMetricCondition {
+  /** This is the type of the condition. Currently only 'comparator' is supported. */
+  type: "comparator";
+  /** The comparator can only be '=' for boolean conditions. */
+  comparator: "=";
+  /**
+   * This is the value that will be used to compare the result of the structured output with the comparator.
+   * If the result of the comparison is true, the points will be added to the overall score.
+   */
+  value: boolean;
+  /**
+   * These are the points that will be added to the overall score if the condition is met.
+   * The points must be between 0 and 100.
+   * @min 0
+   * @max 100
+   */
+  points: number;
+}
+
+export interface ScorecardMetric {
+  /**
+   * These are the conditions that will be used to evaluate the scorecard.
+   * Each condition will have a comparator, value, and points that will be used to calculate the final score.
+   * The points will be added to the overall score if the condition is met.
+   * The overall score will be normalized to a 100 point scale to ensure uniformity across different scorecards.
+   */
+  conditions: (
+    | NumberComparatorScorecardMetricCondition
+    | BooleanComparatorScorecardMetricCondition
+  )[];
+  /**
+   * This is the unique identifier for the structured output that will be used to evaluate the scorecard.
+   * The structured output must be of type number or boolean only for now.
+   */
+  structuredOutputId: string;
+}
+
+export interface CreateScorecardDTO {
+  /**
+   * This is the name of the scorecard. It is only for user reference and will not be used for any evaluation.
+   * @maxLength 80
+   */
+  name?: string;
+  /**
+   * This is the description of the scorecard. It is only for user reference and will not be used for any evaluation.
+   * @maxLength 500
+   */
+  description?: string;
+  /**
+   * These are the metrics that will be used to evaluate the scorecard.
+   * Each metric will have a set of conditions and points that will be used to generate the score.
+   */
+  metrics: ScorecardMetric[];
+  /**
+   * These are the assistant IDs that this scorecard is linked to.
+   * When linked to assistants, this scorecard will be available for evaluation during those assistants' calls.
+   */
+  assistantIds?: string[];
+}
+
+export interface ArtifactPlan {
+  /**
+   * This determines whether assistant's calls are recorded. Defaults to true.
+   *
+   * Usage:
+   * - If you don't want to record the calls, set this to false.
+   * - If you want to record the calls when `assistant.hipaaEnabled` (deprecated) or `assistant.compliancePlan.hipaaEnabled` explicity set this to true and make sure to provide S3 or GCP credentials on the Provider Credentials page in the Dashboard.
+   *
+   * You can find the recording at `call.artifact.recordingUrl` and `call.artifact.stereoRecordingUrl` after the call is ended.
+   *
+   * @default true
+   * @example true
+   */
+  recordingEnabled?: boolean;
+  /**
+   * This determines the format of the recording. Defaults to `wav;l16`.
+   *
+   * @default 'wav;l16'
+   */
+  recordingFormat?: "wav;l16" | "mp3";
+  /**
+   * This determines whether to use custom storage (S3 or GCP) for call recordings when storage credentials are configured.
+   *
+   * When set to false, recordings will be stored on Vapi's storage instead of your custom storage, even if you have custom storage credentials configured.
+   *
+   * Usage:
+   * - Set to false if you have custom storage configured but want to store recordings on Vapi's storage for this assistant.
+   * - Set to true (or leave unset) to use your custom storage for recordings when available.
+   *
+   * If your organization has ZDR (zero data retention) or PCI enabled, recordings are never written to Vapi storage. In that case, false means "do not use my custom storage", so nothing is stored at all.
+   *
+   * @default true
+   * @example true
+   */
+  recordingUseCustomStorageEnabled?: boolean;
+  /**
+   * This determines whether the video is recorded during the call. Defaults to false. Only relevant for `webCall` type.
+   *
+   * You can find the video recording at `call.artifact.videoRecordingUrl` after the call is ended.
+   *
+   * @default false
+   * @example false
+   */
+  videoRecordingEnabled?: boolean;
+  /**
+   * This determines whether the artifact contains the full message history, even after handoff context engineering. Defaults to false.
+   * @example false
+   */
+  fullMessageHistoryEnabled?: boolean;
+  /**
+   * This determines whether the SIP packet capture is enabled. Defaults to true. Only relevant for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`.
+   *
+   * You can find the packet capture at `call.artifact.pcapUrl` after the call is ended.
+   *
+   * @default true
+   * @example true
+   */
+  pcapEnabled?: boolean;
+  /**
+   * This is the path where the SIP packet capture will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
+   *
+   * If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
+   *
+   * Usage:
+   * - If you want to upload the packet capture to a specific path, set this to the path. Example: `/my-assistant-captures`.
+   * - If you want to upload the packet capture to the root of the bucket, set this to `/`.
+   *
+   * @default '/'
+   * @example "/pcaps"
+   */
+  pcapS3PathPrefix?: string;
+  /**
+   * This determines whether to use custom storage (S3 or GCP) for SIP packet captures when storage credentials are configured.
+   *
+   * When set to false, packet captures will be stored on Vapi's storage instead of your custom storage, even if you have custom storage credentials configured.
+   *
+   * Usage:
+   * - Set to false if you have custom storage configured but want to store packet captures on Vapi's storage for this assistant.
+   * - Set to true (or leave unset) to use your custom storage for packet captures when available.
+   *
+   * If your organization has ZDR (zero data retention) or PCI enabled, packet captures are never written to Vapi storage. In that case, false means "do not use my custom storage", so nothing is stored at all.
+   *
+   * @default true
+   * @example true
+   */
+  pcapUseCustomStorageEnabled?: boolean;
+  /**
+   * This determines whether the call logs are enabled. Defaults to true.
+   *
+   * @default true
+   * @example true
+   */
+  loggingEnabled?: boolean;
+  /**
+   * This determines whether to use custom storage (S3 or GCP) for call logs when storage credentials are configured.
+   *
+   * When set to false, logs will be stored on Vapi's storage instead of your custom storage, even if you have custom storage credentials configured.
+   *
+   * Usage:
+   * - Set to false if you have custom storage configured but want to store logs on Vapi's storage for this assistant.
+   * - Set to true (or leave unset) to use your custom storage for logs when available.
+   *
+   * If your organization has ZDR (zero data retention) or PCI enabled, logs are never written to Vapi storage. In that case, false means "do not use my custom storage", so nothing is stored at all.
+   *
+   * @default true
+   * @example true
+   */
+  loggingUseCustomStorageEnabled?: boolean;
+  /** This is the plan for `call.artifact.transcript`. To disable, set `transcriptPlan.enabled` to false. */
+  transcriptPlan?: TranscriptPlan;
+  /**
+   * This is the path where the recording will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
+   *
+   * If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
+   *
+   * Usage:
+   * - If you want to upload the recording to a specific path, set this to the path. Example: `/my-assistant-recordings`.
+   * - If you want to upload the recording to the root of the bucket, set this to `/`.
+   *
+   * @default '/'
+   */
+  recordingPath?: string;
+  /**
+   * This is an array of structured output IDs to be calculated during the call.
+   * The outputs will be extracted and stored in `call.artifact.structuredOutputs` after the call is ended.
+   */
+  structuredOutputIds?: string[];
+  /**
+   * This is an array of transient structured outputs to be calculated during the call.
+   * The outputs will be extracted and stored in `call.artifact.structuredOutputs` after the call is ended.
+   * Use this to provide inline structured output configurations instead of referencing existing ones via structuredOutputIds.
+   */
+  structuredOutputs?: CreateStructuredOutputDTO[];
+  /**
+   * This is an array of scorecard IDs that will be evaluated based on the structured outputs extracted during the call.
+   * The scorecards will be evaluated and the results will be stored in `call.artifact.scorecards` after the call has ended.
+   */
+  scorecardIds?: string[];
+  /**
+   * This is the array of scorecards that will be evaluated based on the structured outputs extracted during the call.
+   * The scorecards will be evaluated and the results will be stored in `call.artifact.scorecards` after the call has ended.
+   */
+  scorecards?: CreateScorecardDTO[];
+  /**
+   * This is the path where the call logs will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
+   *
+   * If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
+   *
+   * Usage:
+   * - If you want to upload the call logs to a specific path, set this to the path. Example: `/my-assistant-logs`.
+   * - If you want to upload the call logs to the root of the bucket, set this to `/`.
+   *
+   * @default '/'
+   */
+  loggingPath?: string;
+}
+
+export interface StopSpeakingPlan {
+  /**
+   * This is the number of words that the customer has to say before the assistant will stop talking.
+   *
+   * Words like "stop", "actually", "no", etc. will always interrupt immediately regardless of this value.
+   *
+   * Words like "okay", "yeah", "right" will never interrupt.
+   *
+   * When set to 0, `voiceSeconds` is used in addition to the transcriptions to determine the customer has started speaking.
+   *
+   * Defaults to 0.
+   *
+   * @default 0
+   * @min 0
+   * @max 10
+   * @example 0
+   */
+  numWords?: number;
+  /**
+   * This is the seconds customer has to speak before the assistant stops talking. This uses the VAD (Voice Activity Detection) spike to determine if the customer has started speaking.
+   *
+   * Considerations:
+   * - A lower value might be more responsive but could potentially pick up non-speech sounds.
+   * - A higher value reduces false positives but might slightly delay the detection of speech onset.
+   *
+   * This is only used if `numWords` is set to 0.
+   *
+   * Defaults to 0.2
+   *
+   * @default 0.2
+   * @min 0
+   * @max 0.5
+   * @example 0.2
+   */
+  voiceSeconds?: number;
+  /**
+   * This is the seconds to wait before the assistant will start talking again after being interrupted.
+   *
+   * Defaults to 1.
+   *
+   * @default 1
+   * @min 0
+   * @max 10
+   * @example 1
+   */
+  backoffSeconds?: number;
+  /**
+   * These are the phrases that will never interrupt the assistant, even if numWords threshold is met.
+   * These are typically acknowledgement or backchanneling phrases.
+   * @default ["i understand","i see","i got it","i hear you","im listening","im with you","right","okay","ok","sure","alright","got it","understood","yeah","yes","uh-huh","mm-hmm","gotcha","mhmm","ah","yeah okay","yeah sure"]
+   * @example ["i understand","i see","i got it","i hear you","im listening","im with you","right","okay","ok","sure","alright","got it","understood","yeah","yes","uh-huh","mm-hmm","gotcha","mhmm","ah","yeah okay","yeah sure"]
+   */
+  acknowledgementPhrases?: string[];
+  /**
+   * These are the phrases that will always interrupt the assistant immediately, regardless of numWords.
+   * These are typically phrases indicating disagreement or desire to stop.
+   * @default ["stop","shut","up","enough","quiet","silence","but","dont","not","no","hold","wait","cut","pause","nope","nah","nevermind","never","bad","actually"]
+   * @example ["stop","shut","up","enough","quiet","silence","but","dont","not","no","hold","wait","cut","pause","nope","nah","nevermind","never","bad","actually"]
+   */
+  interruptionPhrases?: string[];
+}
+
+export interface MonitorPlan {
+  /**
+   * This determines whether the assistant's calls allow live listening. Defaults to true.
+   *
+   * Fetch `call.monitor.listenUrl` to get the live listening URL.
+   *
+   * @default true
+   * @example false
+   */
+  listenEnabled?: boolean;
+  /**
+   * This enables authentication on the `call.monitor.listenUrl`.
+   *
+   * If `listenAuthenticationEnabled` is `true`, the `call.monitor.listenUrl` will require an `Authorization: Bearer <vapi-public-api-key>` header.
+   *
+   * @default false
+   * @example false
+   */
+  listenAuthenticationEnabled?: boolean;
+  /**
+   * This determines whether the assistant's calls allow live control. Defaults to true.
+   *
+   * Fetch `call.monitor.controlUrl` to get the live control URL.
+   *
+   * To use, send any control message via a POST request to `call.monitor.controlUrl`. Here are the types of controls supported: https://docs.vapi.ai/api-reference/messages/client-inbound-message
+   *
+   * @default true
+   * @example false
+   */
+  controlEnabled?: boolean;
+  /**
+   * This enables authentication on the `call.monitor.controlUrl`.
+   *
+   * If `controlAuthenticationEnabled` is `true`, the `call.monitor.controlUrl` will require an `Authorization: Bearer <vapi-public-api-key>` header.
+   *
+   * @default false
+   * @example false
+   */
+  controlAuthenticationEnabled?: boolean;
+  /**
+   * This the set of monitor ids that are attached to the assistant.
+   * The source of truth for the monitor ids is the assistant_monitor join table.
+   * This field can be used for transient assistants and to update assistants with new monitor ids.
+   *
+   * @default []
+   * @example ["123e4567-e89b-12d3-a456-426614174000"]
+   */
+  monitorIds?: string[];
+}
+
+export interface KeypadInputPlan {
+  /**
+   * This keeps track of whether the user has enabled keypad input.
+   * By default, it is off.
+   *
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * This is the time in seconds to wait before processing the input.
+   * If the input is not received within this time, the input will be ignored.
+   * If set to "off", the input will be processed when the user enters a delimiter or immediately if no delimiter is used.
+   *
+   * @default 2
+   * @min 0
+   * @max 10
+   */
+  timeoutSeconds?: number;
+  /**
+   * This is the delimiter(s) that will be used to process the input.
+   * Can be '#', '*', or an empty array.
+   */
+  delimiters?: "#" | "*" | "";
+}
+
+export interface TransientAssistantDTO {
+  /** These are the options for the assistant's transcriber. */
+  transcriber?:
+    | AssemblyAITranscriber
+    | AzureSpeechTranscriber
+    | CustomTranscriber
+    | DeepgramTranscriber
+    | ElevenLabsTranscriber
+    | GladiaTranscriber
+    | GoogleTranscriber
+    | SpeechmaticsTranscriber
+    | TalkscriberTranscriber
+    | OpenAITranscriber
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | AnthropicModel
+    | AnthropicBedrockModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | MinimaxLLMModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel
+    | VapiModel;
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | WellSaidVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
+  /**
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
+   *
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
+   * @example "Hello! How can I help you today?"
+   */
+  firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Use:
+   * - 'assistant-speaks-first' to have the assistant speak first.
+   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
+   *
+   * @default 'assistant-speaks-first'
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?:
+    | "assistant-speaks-first"
+    | "assistant-speaks-first-with-model-generated-message"
+    | "assistant-waits-for-user";
+  /**
+   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+   * By default, voicemail detection is disabled.
+   */
+  voicemailDetection?:
+    | "off"
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
+   */
+  clientMessages?:
+    | "conversation-update"
+    | "assistant.speechStarted"
+    | "function-call"
+    | "function-call-result"
+    | "hang"
+    | "language-changed"
+    | "metadata"
+    | "model-output"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "tool-calls"
+    | "tool-calls-result"
+    | "tool.completed"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "workflow.node.started"
+    | "assistant.started";
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
+   */
+  serverMessages?:
+    | "assistant.started"
+    | "assistant.speechStarted"
+    | "conversation-update"
+    | "end-of-call-report"
+    | "function-call"
+    | "hang"
+    | "language-changed"
+    | "language-change-detected"
+    | "model-output"
+    | "phone-call-control"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "transcript[transcriptType='final']"
+    | "tool-calls"
+    | "transfer-destination-request"
+    | "handoff-destination-request"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted"
+    | "call.deleted"
+    | "call.delete.failed"
+    | "call.artifact.upload";
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   *
+   * @default 600 (10 minutes)
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /**
+   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
+   *
+   * @default false
+   * @example false
+   */
+  modelOutputInMessagesEnabled?: boolean;
+  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
+  transportConfigurations?: TransportConfigurationTwilio[];
+  /**
+   * This is the plan for observability of assistant's calls.
+   *
+   * Currently, only Langfuse is supported.
+   */
+  observabilityPlan?: LangfuseObservabilityPlan;
+  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
+  credentials?: (
+    | ({
+        provider: "11labs";
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: "anthropic";
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
+    | ({
+        provider: "anyscale";
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: "assembly-ai";
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: "azure-openai";
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: "azure";
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: "byo-sip-trunk";
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: "cartesia";
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: "cerebras";
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: "cloudflare";
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: "custom-llm";
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: "deepgram";
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: "deepinfra";
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: "deep-seek";
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: "gcp";
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: "gladia";
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: "gohighlevel";
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: "google";
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: "groq";
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: "inflection-ai";
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: "langfuse";
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: "lmnt";
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: "make";
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: "openai";
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: "openrouter";
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: "perplexity-ai";
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: "playht";
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: "rime-ai";
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: "runpod";
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: "s3";
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
+        provider: "supabase";
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: "smallest-ai";
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: "tavus";
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: "together-ai";
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: "twilio";
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: "vonage";
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: "webhook";
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: "custom-credential";
+      } & CreateCustomCredentialDTO)
+    | ({
+        provider: "xai";
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
+        provider: "neuphonic";
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: "hume";
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: "mistral";
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: "speechmatics";
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-client";
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-authorization";
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "google.sheets.oauth2-authorization";
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "slack.oauth2-authorization";
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "ghl.oauth2-authorization";
+      } & CreateGoHighLevelMCPCredentialDTO)
+    | ({
+        provider: "inworld";
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
+  )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+    | SessionCreatedHook
+  )[];
+  /**
+   * This is the name of the assistant.
+   *
+   * This is required when you want to transfer between assistants in a call.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 1000
+   */
+  endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
+  compliancePlan?: CompliancePlan;
+  /** This is for metadata you want to store on the assistant. */
+  metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
+  /**
+   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+   * @deprecated
+   */
+  analysisPlan?: AnalysisPlan;
+  /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
+  artifactPlan?: ArtifactPlan;
+  /**
+   * This is the plan for when the assistant should start talking.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to start talking after the customer is done speaking.
+   * - The assistant is too fast to start talking after the customer is done speaking.
+   * - The assistant is so fast that it's actually interrupting the customer.
+   */
+  startSpeakingPlan?: StartSpeakingPlan;
+  /**
+   * This is the plan for when assistant should stop talking on customer interruption.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to recognize customer's interruption.
+   * - The assistant is too fast to recognize customer's interruption.
+   * - The assistant is getting interrupted by phrases that are just acknowledgments.
+   * - The assistant is getting interrupted by background noises.
+   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+   */
+  stopSpeakingPlan?: StopSpeakingPlan;
+  /**
+   * This is the plan for real-time monitoring of the assistant's calls.
+   *
+   * Usage:
+   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
+   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
+   */
+  monitorPlan?: MonitorPlan;
+  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
+  credentialIds?: string[];
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. assistant.server.url
+   * 2. phoneNumber.serverUrl
+   * 3. org.serverUrl
+   */
+  server?: Server;
+  keypadInputPlan?: KeypadInputPlan;
+}
+
+export interface AssistantOverrides {
+  /** These are the options for the assistant's transcriber. */
+  transcriber?:
+    | AssemblyAITranscriber
+    | AzureSpeechTranscriber
+    | CustomTranscriber
+    | DeepgramTranscriber
+    | ElevenLabsTranscriber
+    | GladiaTranscriber
+    | GoogleTranscriber
+    | SpeechmaticsTranscriber
+    | TalkscriberTranscriber
+    | OpenAITranscriber
+    | CartesiaTranscriber
+    | SonioxTranscriber
+    | XaiTranscriber
+    | VapiTranscriber;
+  /** These are the options for the assistant's LLM. */
+  model?:
+    | AnthropicModel
+    | AnthropicBedrockModel
+    | AnyscaleModel
+    | CerebrasModel
+    | CustomLLMModel
+    | DeepInfraModel
+    | DeepSeekModel
+    | GoogleModel
+    | GroqModel
+    | InflectionAIModel
+    | MinimaxLLMModel
+    | OpenAIModel
+    | OpenRouterModel
+    | PerplexityAIModel
+    | TogetherAIModel
+    | XaiModel
+    | VapiModel;
+  /** These are the options for the assistant's voice. */
+  voice?:
+    | AzureVoice
+    | CartesiaVoice
+    | CustomVoice
+    | DeepgramVoice
+    | ElevenLabsVoice
+    | HumeVoice
+    | LMNTVoice
+    | NeuphonicVoice
+    | OpenAIVoice
+    | PlayHTVoice
+    | WellSaidVoice
+    | RimeAIVoice
+    | SmallestAIVoice
+    | VapiVoice
+    | SesameVoice
+    | InworldVoice
+    | MinimaxVoice
+    | XaiVoice
+    | MicrosoftVoice;
+  /**
+   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
+   *
+   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
+   * @example "Hello! How can I help you today?"
+   */
+  firstMessage?: string;
+  /** @default false */
+  firstMessageInterruptionsEnabled?: boolean;
+  /**
+   * This is the mode for the first message. Default is 'assistant-speaks-first'.
+   *
+   * Use:
+   * - 'assistant-speaks-first' to have the assistant speak first.
+   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
+   *
+   * @default 'assistant-speaks-first'
+   * @example "assistant-speaks-first"
+   */
+  firstMessageMode?:
+    | "assistant-speaks-first"
+    | "assistant-speaks-first-with-model-generated-message"
+    | "assistant-waits-for-user";
+  /**
+   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+   * By default, voicemail detection is disabled.
+   */
+  voicemailDetection?:
+    | "off"
+    | GoogleVoicemailDetectionPlan
+    | OpenAIVoicemailDetectionPlan
+    | TwilioVoicemailDetectionPlan
+    | VapiVoicemailDetectionPlan;
+  /**
+   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
+   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
+   */
+  clientMessages?:
+    | "conversation-update"
+    | "assistant.speechStarted"
+    | "function-call"
+    | "function-call-result"
+    | "hang"
+    | "language-changed"
+    | "metadata"
+    | "model-output"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "tool-calls"
+    | "tool-calls-result"
+    | "tool.completed"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "workflow.node.started"
+    | "assistant.started";
+  /**
+   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
+   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
+   */
+  serverMessages?:
+    | "assistant.started"
+    | "assistant.speechStarted"
+    | "conversation-update"
+    | "end-of-call-report"
+    | "function-call"
+    | "hang"
+    | "language-changed"
+    | "language-change-detected"
+    | "model-output"
+    | "phone-call-control"
+    | "speech-update"
+    | "status-update"
+    | "transcript"
+    | "transcript[transcriptType='final']"
+    | "tool-calls"
+    | "transfer-destination-request"
+    | "handoff-destination-request"
+    | "transfer-update"
+    | "user-interrupted"
+    | "voice-input"
+    | "chat.created"
+    | "chat.deleted"
+    | "session.created"
+    | "session.updated"
+    | "session.deleted"
+    | "call.deleted"
+    | "call.delete.failed"
+    | "call.artifact.upload";
+  /**
+   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+   *
+   * @default 600 (10 minutes)
+   * @min 10
+   * @max 43200
+   * @example 600
+   */
+  maxDurationSeconds?: number;
+  /**
+   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+   * You can also provide a custom sound by providing a URL to an audio file.
+   */
+  backgroundSound?: "off" | "office" | string;
+  /**
+   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
+   *
+   * @default false
+   * @example false
+   */
+  modelOutputInMessagesEnabled?: boolean;
+  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
+  transportConfigurations?: TransportConfigurationTwilio[];
+  /**
+   * This is the plan for observability of assistant's calls.
+   *
+   * Currently, only Langfuse is supported.
+   */
+  observabilityPlan?: LangfuseObservabilityPlan;
+  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
+  credentials?: (
+    | ({
+        provider: "11labs";
+      } & CreateElevenLabsCredentialDTO)
+    | ({
+        provider: "anthropic";
+      } & CreateAnthropicCredentialDTO)
+    | ({
+        provider: "anthropic-bedrock";
+      } & CreateAnthropicBedrockCredentialDTO)
+    | ({
+        provider: "anyscale";
+      } & CreateAnyscaleCredentialDTO)
+    | ({
+        provider: "assembly-ai";
+      } & CreateAssemblyAICredentialDTO)
+    | ({
+        provider: "azure-openai";
+      } & CreateAzureOpenAICredentialDTO)
+    | ({
+        provider: "azure";
+      } & CreateAzureCredentialDTO)
+    | ({
+        provider: "byo-sip-trunk";
+      } & CreateByoSipTrunkCredentialDTO)
+    | ({
+        provider: "cartesia";
+      } & CreateCartesiaCredentialDTO)
+    | ({
+        provider: "cerebras";
+      } & CreateCerebrasCredentialDTO)
+    | ({
+        provider: "cloudflare";
+      } & CreateCloudflareCredentialDTO)
+    | ({
+        provider: "custom-llm";
+      } & CreateCustomLLMCredentialDTO)
+    | ({
+        provider: "deepgram";
+      } & CreateDeepgramCredentialDTO)
+    | ({
+        provider: "deepinfra";
+      } & CreateDeepInfraCredentialDTO)
+    | ({
+        provider: "deep-seek";
+      } & CreateDeepSeekCredentialDTO)
+    | ({
+        provider: "gcp";
+      } & CreateGcpCredentialDTO)
+    | ({
+        provider: "gladia";
+      } & CreateGladiaCredentialDTO)
+    | ({
+        provider: "gohighlevel";
+      } & CreateGoHighLevelCredentialDTO)
+    | ({
+        provider: "google";
+      } & CreateGoogleCredentialDTO)
+    | ({
+        provider: "groq";
+      } & CreateGroqCredentialDTO)
+    | ({
+        provider: "inflection-ai";
+      } & CreateInflectionAICredentialDTO)
+    | ({
+        provider: "langfuse";
+      } & CreateLangfuseCredentialDTO)
+    | ({
+        provider: "lmnt";
+      } & CreateLmntCredentialDTO)
+    | ({
+        provider: "make";
+      } & CreateMakeCredentialDTO)
+    | ({
+        provider: "openai";
+      } & CreateOpenAICredentialDTO)
+    | ({
+        provider: "openrouter";
+      } & CreateOpenRouterCredentialDTO)
+    | ({
+        provider: "perplexity-ai";
+      } & CreatePerplexityAICredentialDTO)
+    | ({
+        provider: "playht";
+      } & CreatePlayHTCredentialDTO)
+    | ({
+        provider: "rime-ai";
+      } & CreateRimeAICredentialDTO)
+    | ({
+        provider: "runpod";
+      } & CreateRunpodCredentialDTO)
+    | ({
+        provider: "s3";
+      } & CreateS3CredentialDTO)
+    | ({
+        provider: "s3-compatible";
+      } & CreateS3CompatibleCredentialDTO)
+    | ({
+        provider: "supabase";
+      } & CreateSupabaseCredentialDTO)
+    | ({
+        provider: "smallest-ai";
+      } & CreateSmallestAICredentialDTO)
+    | ({
+        provider: "tavus";
+      } & CreateTavusCredentialDTO)
+    | ({
+        provider: "together-ai";
+      } & CreateTogetherAICredentialDTO)
+    | ({
+        provider: "twilio";
+      } & CreateTwilioCredentialDTO)
+    | ({
+        provider: "vonage";
+      } & CreateVonageCredentialDTO)
+    | ({
+        provider: "webhook";
+      } & CreateWebhookCredentialDTO)
+    | ({
+        provider: "custom-credential";
+      } & CreateCustomCredentialDTO)
+    | ({
+        provider: "xai";
+      } & CreateXAiCredentialDTO)
+    | ({
+        provider: "microsoft";
+      } & CreateMicrosoftCredentialDTO)
+    | ({
+        provider: "neuphonic";
+      } & CreateNeuphonicCredentialDTO)
+    | ({
+        provider: "hume";
+      } & CreateHumeCredentialDTO)
+    | ({
+        provider: "mistral";
+      } & CreateMistralCredentialDTO)
+    | ({
+        provider: "speechmatics";
+      } & CreateSpeechmaticsCredentialDTO)
+    | ({
+        provider: "soniox";
+      } & CreateSonioxCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-client";
+      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
+    | ({
+        provider: "google.calendar.oauth2-authorization";
+      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "google.sheets.oauth2-authorization";
+      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "slack.oauth2-authorization";
+      } & CreateSlackOAuth2AuthorizationCredentialDTO)
+    | ({
+        provider: "ghl.oauth2-authorization";
+      } & CreateGoHighLevelMCPCredentialDTO)
+    | ({
+        provider: "inworld";
+      } & CreateInworldCredentialDTO)
+    | ({
+        provider: "minimax";
+      } & CreateMinimaxCredentialDTO)
+    | ({
+        provider: "wellsaid";
+      } & CreateWellSaidCredentialDTO)
+    | ({
+        provider: "email";
+      } & CreateEmailCredentialDTO)
+    | ({
+        provider: "slack-webhook";
+      } & CreateSlackWebhookCredentialDTO)
+  )[];
+  /** This is a set of actions that will be performed on certain events. */
+  hooks?: (
+    | CallHookCallEnding
+    | CallHookAssistantSpeechInterrupted
+    | CallHookCustomerSpeechInterrupted
+    | CallHookCustomerSpeechTimeout
+    | SessionCreatedHook
+  )[];
+  "tools:append"?: (
+    | CreateApiRequestToolDTO
+    | CreateBashToolDTO
+    | CreateCodeToolDTO
+    | CreateComputerToolDTO
+    | CreateDtmfToolDTO
+    | CreateEndCallToolDTO
+    | CreateFunctionToolDTO
+    | CreateGoHighLevelCalendarAvailabilityToolDTO
+    | CreateGoHighLevelCalendarEventCreateToolDTO
+    | CreateGoHighLevelContactCreateToolDTO
+    | CreateGoHighLevelContactGetToolDTO
+    | CreateGoogleCalendarCheckAvailabilityToolDTO
+    | CreateGoogleCalendarCreateEventToolDTO
+    | CreateGoogleSheetsRowAppendToolDTO
+    | CreateHandoffToolDTO
+    | CreateMcpToolDTO
+    | CreateQueryToolDTO
+    | CreateSlackSendMessageToolDTO
+    | CreateSmsToolDTO
+    | CreateTextEditorToolDTO
+    | CreateTransferCallToolDTO
+    | CreateSipRequestToolDTO
+    | CreateVoicemailToolDTO
+  )[];
+  /**
+   * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
+   * This uses LiquidJS syntax. https://liquidjs.com/tutorials/intro-to-liquid.html
+   *
+   * So for example, `{{ name }}` will be replaced with the value of `name` in `variableValues`.
+   * `{{"now" | date: "%b %d, %Y, %I:%M %p", "America/New_York"}}` will be replaced with the current date and time in New York.
+   *  Some VAPI reserved defaults:
+   *  - *customer* - the customer object
+   */
+  variableValues?: object;
+  /**
+   * This is the name of the assistant.
+   *
+   * This is required when you want to transfer between assistants in a call.
+   * @maxLength 40
+   */
+  name?: string;
+  /**
+   * This is the message that the assistant will say if the call is forwarded to voicemail.
+   *
+   * If unspecified, it will hang up.
+   * @maxLength 1000
+   */
+  voicemailMessage?: string;
+  /**
+   * This is the message that the assistant will say if it ends the call.
+   *
+   * If unspecified, it will hang up without saying anything.
+   * @maxLength 1000
+   */
+  endCallMessage?: string;
+  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
+  endCallPhrases?: string[];
+  compliancePlan?: CompliancePlan;
+  /** This is for metadata you want to store on the assistant. */
+  metadata?: object;
+  /**
+   * This enables filtering of noise and background speech while the user is talking.
+   *
+   * Features:
+   * - Smart denoising using Krisp
+   * - Fourier denoising
+   *
+   * Smart denoising can be combined with or used independently of Fourier denoising.
+   *
+   * Order of precedence:
+   * - Smart denoising
+   * - Fourier denoising
+   */
+  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
+  /**
+   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+   * @deprecated
+   */
+  analysisPlan?: AnalysisPlan;
+  /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
+  artifactPlan?: ArtifactPlan;
+  /**
+   * This is the plan for when the assistant should start talking.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to start talking after the customer is done speaking.
+   * - The assistant is too fast to start talking after the customer is done speaking.
+   * - The assistant is so fast that it's actually interrupting the customer.
+   */
+  startSpeakingPlan?: StartSpeakingPlan;
+  /**
+   * This is the plan for when assistant should stop talking on customer interruption.
+   *
+   * You should configure this if you're running into these issues:
+   * - The assistant is too slow to recognize customer's interruption.
+   * - The assistant is too fast to recognize customer's interruption.
+   * - The assistant is getting interrupted by phrases that are just acknowledgments.
+   * - The assistant is getting interrupted by background noises.
+   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+   */
+  stopSpeakingPlan?: StopSpeakingPlan;
+  /**
+   * This is the plan for real-time monitoring of the assistant's calls.
+   *
+   * Usage:
+   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
+   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
+   */
+  monitorPlan?: MonitorPlan;
+  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
+  credentialIds?: string[];
+  /**
+   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+   *
+   * The order of precedence is:
+   *
+   * 1. assistant.server.url
+   * 2. phoneNumber.serverUrl
+   * 3. org.serverUrl
+   */
+  server?: Server;
+  keypadInputPlan?: KeypadInputPlan;
+}
+
 export interface HandoffDestinationAssistant {
   type: "assistant";
   /** This is the plan for manipulating the message context before handing off the call to the next assistant. */
@@ -7644,7 +9544,7 @@ export interface HandoffDestinationAssistant {
   /** This is the assistant id to transfer the call to. You must provide either assistantName or assistantId. */
   assistantId?: string;
   /** This is a transient assistant to transfer the call to. You may provide a transient assistant in the response  `handoff-destination-request` in a dynamic handoff. */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /** This is the variable extraction plan for the handoff tool. */
   variableExtractionPlan?: VariableExtractionPlan;
   /** These are the assistant overrides to apply to the destination assistant. */
@@ -7684,7 +9584,7 @@ export interface SquadMemberDTO {
   /** This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead. */
   assistantId?: string | null;
   /** This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead. */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /** This can be used to override the assistant's settings and provide values for it's template variables. */
   assistantOverrides?: AssistantOverrides;
 }
@@ -11266,6 +13166,14 @@ export interface WorkflowOpenAIModel {
     | "gpt-4o:australiaeast"
     | "gpt-5.4-mini:australiaeast";
   /**
+   * This is the reasoning effort for structured output extraction. It applies to the primary extraction attempt only; the GPT-4.1 and Gemini fallbacks run without it. Other features that use this model type ignore it.
+   *
+   * Only reasoning models accept it, and each accepts only the efforts OpenAI supports for it (for example `none` and `xhigh` on gpt-5.6, `minimal` on gpt-5). When unset, OpenAI's default effort for the model applies, except on GPT-6 models, which Vapi sends with `none`.
+   *
+   * Reasoning tokens are billed as output tokens.
+   */
+  reasoningEffort?: "minimal" | "none" | "low" | "medium" | "high" | "xhigh";
+  /**
    * This is the temperature of the model.
    * @min 0
    * @max 2
@@ -11583,7 +13491,6 @@ export interface ConversationNode {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -12247,941 +14154,6 @@ export interface Edge {
   metadata?: object;
 }
 
-export interface RecordingConsentPlanStayOnLine {
-  /**
-   * This is the message asking for consent to record the call.
-   * If the type is `stay-on-line`, the message should ask the user to hang up if they do not consent.
-   * If the type is `verbal`, the message should ask the user to verbally consent or decline.
-   * @maxLength 1000
-   */
-  message: string;
-  /**
-   * This is the voice to use for the consent message. If not specified, inherits from the assistant's voice.
-   * Use a different voice for the consent message for a better user experience.
-   */
-  voice?:
-    | AzureVoice
-    | CartesiaVoice
-    | CustomVoice
-    | DeepgramVoice
-    | ElevenLabsVoice
-    | HumeVoice
-    | LMNTVoice
-    | NeuphonicVoice
-    | OpenAIVoice
-    | PlayHTVoice
-    | WellSaidVoice
-    | RimeAIVoice
-    | SmallestAIVoice
-    | TavusVoice
-    | VapiVoice
-    | SesameVoice
-    | InworldVoice
-    | MinimaxVoice
-    | XaiVoice
-    | MicrosoftVoice;
-  /**
-   * This controls whether the consent assistant speaks first or waits for the caller to speak first.
-   *
-   * Use:
-   * - `assistant-speaks-first` (default) to have the consent assistant play the consent message as soon as the call is answered.
-   * - `assistant-waits-for-user` to have the consent assistant wait for the caller to speak before playing the consent message.
-   *
-   * We strongly recommend `assistant-waits-for-user` for outbound calls. Some telephony providers signal "answered" while the line is still ringing, which can cause the consent message to play into a ringing line and be missed by the caller. Waiting for the caller to speak first guarantees they hear the full consent message.
-   *
-   * Note: when combined with `type: 'stay-on-line'`, silence only counts toward consent after the caller has spoken at least once.
-   *
-   * @default 'assistant-speaks-first'
-   * @default "assistant-speaks-first"
-   * @example "assistant-speaks-first"
-   */
-  firstMessageMode?: "assistant-speaks-first" | "assistant-waits-for-user";
-  /**
-   * This is the type of recording consent plan. This type assumes consent is granted if the user stays on the line.
-   * @example "stay-on-line"
-   */
-  type: "stay-on-line";
-  /**
-   * Number of seconds to wait before transferring to the assistant if user stays on the call
-   * @min 1
-   * @max 6
-   * @default 3
-   * @example 3
-   */
-  waitSeconds?: number;
-}
-
-export interface RecordingConsentPlanVerbal {
-  /**
-   * This is the message asking for consent to record the call.
-   * If the type is `stay-on-line`, the message should ask the user to hang up if they do not consent.
-   * If the type is `verbal`, the message should ask the user to verbally consent or decline.
-   * @maxLength 1000
-   */
-  message: string;
-  /**
-   * This is the voice to use for the consent message. If not specified, inherits from the assistant's voice.
-   * Use a different voice for the consent message for a better user experience.
-   */
-  voice?:
-    | AzureVoice
-    | CartesiaVoice
-    | CustomVoice
-    | DeepgramVoice
-    | ElevenLabsVoice
-    | HumeVoice
-    | LMNTVoice
-    | NeuphonicVoice
-    | OpenAIVoice
-    | PlayHTVoice
-    | WellSaidVoice
-    | RimeAIVoice
-    | SmallestAIVoice
-    | TavusVoice
-    | VapiVoice
-    | SesameVoice
-    | InworldVoice
-    | MinimaxVoice
-    | XaiVoice
-    | MicrosoftVoice;
-  /**
-   * This controls whether the consent assistant speaks first or waits for the caller to speak first.
-   *
-   * Use:
-   * - `assistant-speaks-first` (default) to have the consent assistant play the consent message as soon as the call is answered.
-   * - `assistant-waits-for-user` to have the consent assistant wait for the caller to speak before playing the consent message.
-   *
-   * We strongly recommend `assistant-waits-for-user` for outbound calls. Some telephony providers signal "answered" while the line is still ringing, which can cause the consent message to play into a ringing line and be missed by the caller. Waiting for the caller to speak first guarantees they hear the full consent message.
-   *
-   * Note: when combined with `type: 'stay-on-line'`, silence only counts toward consent after the caller has spoken at least once.
-   *
-   * @default 'assistant-speaks-first'
-   * @default "assistant-speaks-first"
-   * @example "assistant-speaks-first"
-   */
-  firstMessageMode?: "assistant-speaks-first" | "assistant-waits-for-user";
-  /**
-   * This is the type of recording consent plan. This type assumes consent is granted if the user verbally consents or declines.
-   * @example "verbal"
-   */
-  type: "verbal";
-  /** Tool to execute if user verbally declines recording consent */
-  declineTool?: object;
-  /** ID of existing tool to execute if user verbally declines recording consent */
-  declineToolId?: string;
-}
-
-export type SecurityFilterBase = object;
-
-export interface SecurityFilterPlan {
-  /**
-   * Whether the security filter is enabled.
-   * @default false
-   * @default false
-   */
-  enabled?: boolean;
-  /**
-   * Array of security filter types to apply.
-   * If array is not empty, only those security filters are run.
-   * @example "[{ type: "sql-injection" }, { type: "xss" }]"
-   */
-  filters?: SecurityFilterBase[];
-  /**
-   * Mode of operation when a security threat is detected.
-   * - 'sanitize': Remove or replace the threatening content
-   * - 'reject': Replace the entire transcript with replacement text
-   * - 'replace': Replace threatening patterns with replacement text
-   * @default 'sanitize'
-   * @default "sanitize"
-   */
-  mode?: "sanitize" | "reject" | "replace";
-  /**
-   * Text to use when replacing filtered content.
-   * @default '[FILTERED]'
-   * @default "[FILTERED]"
-   */
-  replacementText?: string;
-}
-
-export interface CompliancePlan {
-  /** When this is enabled, logs, recordings, and transcriptions will be stored in HIPAA-compliant storage. Defaults to false. Only HIPAA-compliant providers will be available for LLM, Voice, and Transcriber respectively. This setting is only honored if the organization is on an Enterprise subscription or has purchased the HIPAA add-on. */
-  hipaaEnabled?: boolean;
-  /**
-   * When this is enabled, the user will be restricted to use PCI-compliant providers, and no logs or transcripts are stored.
-   * At the end of the call, you will receive an end-of-call-report message to store on your server. Defaults to false.
-   * @example {"pciEnabled":false}
-   */
-  pciEnabled?: boolean;
-  /** This is the security filter plan for the assistant. It allows filtering of transcripts for security threats before sending to LLM. */
-  securityFilterPlan?: SecurityFilterPlan;
-  recordingConsentPlan?:
-    | ({
-        type: "stay-on-line";
-      } & RecordingConsentPlanStayOnLine)
-    | ({
-        type: "verbal";
-      } & RecordingConsentPlanVerbal);
-}
-
-export interface StructuredDataPlan {
-  /**
-   * These are the messages used to generate the structured data.
-   *
-   * @default: ```
-   * [
-   *   {
-   *     "role": "system",
-   *     "content": "You are an expert data extractor. You will be given a transcript of a call. Extract structured data per the JSON Schema. DO NOT return anything except the structured data.\n\nJson Schema:\\n{{schema}}\n\nOnly respond with the JSON."
-   *   },
-   *   {
-   *     "role": "user",
-   *     "content": "Here is the transcript:\n\n{{transcript}}\n\n. Here is the ended reason of the call:\n\n{{endedReason}}\n\n"
-   *   }
-   * ]```
-   *
-   * You can customize by providing any messages you want.
-   *
-   * Here are the template variables available:
-   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{messages}}: the messages of the call from `assistant.model.messages`- {{schema}}: the schema of the structured data from `structuredDataPlan.schema`- {{endedReason}}: the ended reason of the call from `call.endedReason`
-   */
-  messages?: object[];
-  /**
-   * This determines whether structured data is generated and stored in `call.analysis.structuredData`. Defaults to false.
-   *
-   * Usage:
-   * - If you want to extract structured data, set this to true and provide a `schema`.
-   *
-   * @default false
-   */
-  enabled?: boolean;
-  /**
-   * This is the schema of the structured data. The output is stored in `call.analysis.structuredData`.
-   *
-   * Complete guide on JSON Schema can be found [here](https://ajv.js.org/json-schema.html#json-data-type).
-   */
-  schema?: JsonSchema;
-  /**
-   * This is how long the request is tried before giving up. When request times out, `call.analysis.structuredData` will be empty.
-   *
-   * Usage:
-   * - To guarantee the structured data is generated, set this value high. Note, this will delay the end of call report in cases where model is slow to respond.
-   *
-   * @default 5 seconds
-   * @min 1
-   * @max 60
-   */
-  timeoutSeconds?: number;
-}
-
-export interface StructuredDataMultiPlan {
-  /** This is the key of the structured data plan in the catalog. */
-  key: string;
-  /** This is an individual structured data plan in the catalog. */
-  plan: StructuredDataPlan;
-}
-
-export interface SuccessEvaluationPlan {
-  /**
-   * This enforces the rubric of the evaluation. The output is stored in `call.analysis.successEvaluation`.
-   *
-   * Options include:
-   * - 'NumericScale': A scale of 1 to 10.
-   * - 'DescriptiveScale': A scale of Excellent, Good, Fair, Poor.
-   * - 'Checklist': A checklist of criteria and their status.
-   * - 'Matrix': A grid that evaluates multiple criteria across different performance levels.
-   * - 'PercentageScale': A scale of 0% to 100%.
-   * - 'LikertScale': A scale of Strongly Agree, Agree, Neutral, Disagree, Strongly Disagree.
-   * - 'AutomaticRubric': Automatically break down evaluation into several criteria, each with its own score.
-   * - 'PassFail': A simple 'true' if call passed, 'false' if not.
-   *
-   * Default is 'PassFail'.
-   */
-  rubric?:
-    | "NumericScale"
-    | "DescriptiveScale"
-    | "Checklist"
-    | "Matrix"
-    | "PercentageScale"
-    | "LikertScale"
-    | "AutomaticRubric"
-    | "PassFail";
-  /**
-   * These are the messages used to generate the success evaluation.
-   *
-   * @default: ```
-   * [
-   *   {
-   *     "role": "system",
-   *     "content": "You are an expert call evaluator. You will be given a transcript of a call and the system prompt of the AI participant. Determine if the call was successful based on the objectives inferred from the system prompt. DO NOT return anything except the result.\n\nRubric:\\n{{rubric}}\n\nOnly respond with the result."
-   *   },
-   *   {
-   *     "role": "user",
-   *     "content": "Here is the transcript:\n\n{{transcript}}\n\n"
-   *   },
-   *   {
-   *     "role": "user",
-   *     "content": "Here was the system prompt of the call:\n\n{{systemPrompt}}\n\n. Here is the ended reason of the call:\n\n{{endedReason}}\n\n"
-   *   }
-   * ]```
-   *
-   * You can customize by providing any messages you want.
-   *
-   * Here are the template variables available:
-   * - {{transcript}}: the transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: the system prompt of the call from `assistant.model.messages[type=system].content`- {{messages}}: the messages of the call from `assistant.model.messages`- {{rubric}}: the rubric of the success evaluation from `successEvaluationPlan.rubric`- {{endedReason}}: the ended reason of the call from `call.endedReason`
-   */
-  messages?: object[];
-  /**
-   * This determines whether a success evaluation is generated and stored in `call.analysis.successEvaluation`. Defaults to true.
-   *
-   * Usage:
-   * - If you want to disable the success evaluation, set this to false.
-   *
-   * @default true
-   */
-  enabled?: boolean;
-  /**
-   * This is how long the request is tried before giving up. When request times out, `call.analysis.successEvaluation` will be empty.
-   *
-   * Usage:
-   * - To guarantee the success evaluation is generated, set this value high. Note, this will delay the end of call report in cases where model is slow to respond.
-   *
-   * @default 5 seconds
-   * @min 1
-   * @max 60
-   */
-  timeoutSeconds?: number;
-}
-
-export interface AnalysisPlan {
-  /**
-   * The minimum number of messages required to run the analysis plan.
-   * If the number of messages is less than this, analysis will be skipped.
-   *
-   * @default 2
-   * @deprecated
-   * @min 0
-   */
-  minMessagesThreshold?: number;
-  /**
-   * This is the plan for generating the summary of the call. This outputs to `call.analysis.summary`.
-   * @deprecated
-   */
-  summaryPlan?: SummaryPlan;
-  /**
-   * This is the plan for generating the structured data from the call. This outputs to `call.analysis.structuredData`.
-   * @deprecated
-   */
-  structuredDataPlan?: StructuredDataPlan;
-  /**
-   * This is an array of structured data plan catalogs. Each entry includes a `key` and a `plan` for generating the structured data from the call. This outputs to `call.analysis.structuredDataMulti`.
-   * @deprecated
-   */
-  structuredDataMultiPlan?: StructuredDataMultiPlan[];
-  /**
-   * This is the plan for generating the success evaluation of the call. This outputs to `call.analysis.successEvaluation`.
-   * @deprecated
-   */
-  successEvaluationPlan?: SuccessEvaluationPlan;
-  /**
-   * This is an array of outcome UUIDs to be calculated during analysis.
-   * The outcomes will be calculated and stored in `call.analysis.outcomes`.
-   * @deprecated
-   */
-  outcomeIds?: string[];
-}
-
-export interface TranscriptPlan {
-  /**
-   * This determines whether the transcript is stored in `call.artifact.transcript`. Defaults to true.
-   *
-   * @default true
-   * @example true
-   */
-  enabled?: boolean;
-  /**
-   * This is the name of the assistant in the transcript. Defaults to 'AI'.
-   *
-   * Usage:
-   * - If you want to change the name of the assistant in the transcript, set this. Example, here is what the transcript would look like with `assistantName` set to 'Buyer':
-   * ```
-   * User: Hello, how are you?
-   * Buyer: I'm fine.
-   * User: Do you want to buy a car?
-   * Buyer: No.
-   * ```
-   *
-   * @default 'AI'
-   */
-  assistantName?: string;
-  /**
-   * This is the name of the user in the transcript. Defaults to 'User'.
-   *
-   * Usage:
-   * - If you want to change the name of the user in the transcript, set this. Example, here is what the transcript would look like with `userName` set to 'Seller':
-   * ```
-   * Seller: Hello, how are you?
-   * AI: I'm fine.
-   * Seller: Do you want to buy a car?
-   * AI: No.
-   * ```
-   *
-   * @default 'User'
-   */
-  userName?: string;
-}
-
-export interface MinMessagesCondition {
-  /**
-   * This is the type discriminator for the minMessages condition.
-   * @example "minMessages"
-   */
-  type: "minMessages";
-  /**
-   * This is the minimum number of conversation messages required for the
-   * structured output to run.
-   *
-   * A count of 0 removes the runtime default minimum, so the structured output
-   * runs regardless of how few messages the conversation has.
-   * @min 0
-   * @example 4
-   */
-  count: number;
-}
-
-export interface MinCallDurationCondition {
-  /**
-   * This is the type discriminator for the minCallDuration condition.
-   * @example "minCallDuration"
-   */
-  type: "minCallDuration";
-  /**
-   * This is the minimum call duration in seconds required for the structured
-   * output to run.
-   *
-   * When timestamps are unavailable (for example, chat sessions have no call
-   * timestamps), this check passes and does not block the structured output.
-   * @min 0
-   * @example 10
-   */
-  seconds: number;
-}
-
-export interface EndedReasonCondition {
-  /**
-   * This is the type discriminator for the endedReason condition.
-   * @example "endedReason"
-   */
-  type: "endedReason";
-  /**
-   * This is the membership operator applied against `values`.
-   *
-   * - 'oneOf': the structured output runs only if the call's ended reason is in `values`.
-   * - 'notOneOf': the structured output runs only if the call's ended reason is NOT in `values`.
-   * @example "oneOf"
-   */
-  operator: "oneOf" | "notOneOf";
-  /**
-   * These are the ended reasons compared against the call's ended reason.
-   *
-   * Any string is accepted so configurations never break when new ended
-   * reasons are introduced. Must contain at least one value.
-   * @example ["customer-ended-call"]
-   */
-  values: string[];
-}
-
-export interface ComplianceOverride {
-  /**
-   * Force storage for this output under HIPAA. Only enable if output contains no sensitive data.
-   * @example false
-   */
-  forceStoreOnHipaaEnabled?: boolean;
-}
-
-export interface CreateStructuredOutputDTO {
-  /**
-   * This is the type of structured output.
-   *
-   * - 'ai': Uses an LLM to extract structured data from the conversation (default).
-   * - 'regex': Uses a regex pattern to extract data from the transcript without an LLM.
-   *
-   * Defaults to 'ai' if not specified.
-   * @default "ai"
-   */
-  type?: "ai" | "regex";
-  /**
-   * This is the regex pattern to match against the transcript.
-   *
-   * Simulation evaluations use a canonical transcript built from recorded messages:
-   * User: and AI: dialogue, AI: tool_calls: JSON name/arguments records, and
-   * AI: tool_call_results: JSON results. System messages are excluded. These
-   * fixed labels apply even when custom artifact transcript labels are configured.
-   * Tool payloads participate in first-match and all-match extraction in event order.
-   * An empty message array falls back to the supplied transcript verbatim.
-   * Production-call extraction and call preview use their existing transcripts,
-   * so previewing the same output on a simulation's call can return a different result.
-   *
-   * Only used when type is 'regex'. Supports both raw patterns (e.g. '\d+') and
-   * regex literal format (e.g. '/\d+/gi'). Uses RE2 syntax for safety.
-   *
-   * The result depends on the schema type:
-   * - boolean: true if the pattern matches, false otherwise
-   * - string: the first match or first capture group
-   * - number/integer: the first match parsed as a number
-   * - array: all matches
-   * @minLength 1
-   * @maxLength 1000
-   */
-  regex?: string;
-  /**
-   * This is the model that will be used to extract the structured output.
-   *
-   * To provide your own custom system and user prompts for structured output extraction, populate the messages array with your system and user messages. You can specify liquid templating in your system and user messages.
-   * For text extraction, you must reference 'transcript', 'messages', or 'messagesWithConfidence' with the `{{}}` syntax to access the conversation history.
-   * In structured outputs, `{{messages}}` includes conversation text and tool calls/results but omits caller transcription-confidence fields. Text extraction can use `{{messagesWithConfidence}}` when the output needs the original message history with transcription confidence. These variables also apply in structured-output schema descriptions. Audio-targeted (`messages-with-audio`) extraction ignores custom messages. Stored call artifacts and API messages retain their confidence data.
-   * Between the system or user messages, you must reference a variation of the structured output with the `{{}}` syntax to access the structured output definition.
-   * i.e.:
-   * `{{structuredOutput}}`
-   * `{{structuredOutput.name}}`
-   * `{{structuredOutput.description}}`
-   * `{{structuredOutput.schema}}`
-   *
-   * If model is not specified, GPT-4.1 will be used by default for extraction, utilizing default system and user prompts.
-   * If messages or required fields are not specified, the default system and user prompts will be used.
-   */
-  model?:
-    | WorkflowOpenAIModel
-    | WorkflowAnthropicModel
-    | WorkflowAnthropicBedrockModel
-    | WorkflowGoogleModel
-    | WorkflowCustomModel;
-  /**
-   * Compliance configuration for this output. Only enable overrides if no sensitive data will be stored.
-   * @example {"forceStoreOnHipaaEnabled":false}
-   */
-  compliancePlan?: ComplianceOverride;
-  /**
-   * These are the conditions that gate the execution of this structured output. Every condition must pass for the structured output to run (AND semantics). When omitted or empty, no user-defined conditions gate this output. Send null to clear a previously saved gate.
-   * @example [{"type":"minMessages","count":4},{"type":"minCallDuration","seconds":10}]
-   */
-  conditions?:
-    | (MinMessagesCondition | MinCallDurationCondition | EndedReasonCondition)[]
-    | null;
-  /**
-   * This is the name of the structured output.
-   * @minLength 1
-   * @maxLength 40
-   */
-  name: string;
-  /**
-   * This is the JSON Schema definition for the structured output.
-   *
-   * This is required when creating a structured output. Defines the structure and validation rules for the data that will be extracted. Supports all JSON Schema features including:
-   * - Objects and nested properties
-   * - Arrays and array validation
-   * - String, number, boolean, and null types
-   * - Enums and const values
-   * - Validation constraints (min/max, patterns, etc.)
-   * - Composition with allOf, anyOf, oneOf
-   */
-  schema: JsonSchema;
-  /**
-   * This is the description of what the structured output extracts.
-   *
-   * Use this to provide context about what data will be extracted and how it will be used.
-   */
-  description?: string;
-  /**
-   * These are the assistant IDs that this structured output is linked to.
-   *
-   * When linked to assistants, this structured output will be available for extraction during those assistant's calls.
-   */
-  assistantIds?: string[];
-  /**
-   * These are the workflow IDs that this structured output is linked to.
-   *
-   * When linked to workflows, this structured output will be available for extraction during those workflow's execution.
-   */
-  workflowIds?: string[];
-}
-
-export interface NumberComparatorScorecardMetricCondition {
-  /** This is the type of the condition. Currently only 'comparator' is supported. */
-  type: "comparator";
-  /**
-   * This is the comparator that will be used to compare the result of the structured output with the value specified.
-   * Only '=', '!=', '>', '<', '>=', and '<=' are supported for number conditions
-   * Only '=' is supported for boolean conditions.
-   */
-  comparator: "=" | "!=" | ">" | "<" | ">=" | "<=";
-  /**
-   * This is the value that will be used to compare the result of the structured output with the comparator.
-   * If the result of the comparison is true, the points will be added to the overall score.
-   */
-  value: number;
-  /**
-   * These are the points that will be added to the overall score if the condition is met.
-   * The points must be between 0 and 100.
-   * @min 0
-   * @max 100
-   */
-  points: number;
-}
-
-export interface BooleanComparatorScorecardMetricCondition {
-  /** This is the type of the condition. Currently only 'comparator' is supported. */
-  type: "comparator";
-  /** The comparator can only be '=' for boolean conditions. */
-  comparator: "=";
-  /**
-   * This is the value that will be used to compare the result of the structured output with the comparator.
-   * If the result of the comparison is true, the points will be added to the overall score.
-   */
-  value: boolean;
-  /**
-   * These are the points that will be added to the overall score if the condition is met.
-   * The points must be between 0 and 100.
-   * @min 0
-   * @max 100
-   */
-  points: number;
-}
-
-export interface ScorecardMetric {
-  /**
-   * These are the conditions that will be used to evaluate the scorecard.
-   * Each condition will have a comparator, value, and points that will be used to calculate the final score.
-   * The points will be added to the overall score if the condition is met.
-   * The overall score will be normalized to a 100 point scale to ensure uniformity across different scorecards.
-   */
-  conditions: (
-    | NumberComparatorScorecardMetricCondition
-    | BooleanComparatorScorecardMetricCondition
-  )[];
-  /**
-   * This is the unique identifier for the structured output that will be used to evaluate the scorecard.
-   * The structured output must be of type number or boolean only for now.
-   */
-  structuredOutputId: string;
-}
-
-export interface CreateScorecardDTO {
-  /**
-   * This is the name of the scorecard. It is only for user reference and will not be used for any evaluation.
-   * @maxLength 80
-   */
-  name?: string;
-  /**
-   * This is the description of the scorecard. It is only for user reference and will not be used for any evaluation.
-   * @maxLength 500
-   */
-  description?: string;
-  /**
-   * These are the metrics that will be used to evaluate the scorecard.
-   * Each metric will have a set of conditions and points that will be used to generate the score.
-   */
-  metrics: ScorecardMetric[];
-  /**
-   * These are the assistant IDs that this scorecard is linked to.
-   * When linked to assistants, this scorecard will be available for evaluation during those assistants' calls.
-   */
-  assistantIds?: string[];
-}
-
-export interface ArtifactPlan {
-  /**
-   * This determines whether assistant's calls are recorded. Defaults to true.
-   *
-   * Usage:
-   * - If you don't want to record the calls, set this to false.
-   * - If you want to record the calls when `assistant.hipaaEnabled` (deprecated) or `assistant.compliancePlan.hipaaEnabled` explicity set this to true and make sure to provide S3 or GCP credentials on the Provider Credentials page in the Dashboard.
-   *
-   * You can find the recording at `call.artifact.recordingUrl` and `call.artifact.stereoRecordingUrl` after the call is ended.
-   *
-   * @default true
-   * @example true
-   */
-  recordingEnabled?: boolean;
-  /**
-   * This determines the format of the recording. Defaults to `wav;l16`.
-   *
-   * @default 'wav;l16'
-   */
-  recordingFormat?: "wav;l16" | "mp3";
-  /**
-   * This determines whether to use custom storage (S3 or GCP) for call recordings when storage credentials are configured.
-   *
-   * When set to false, recordings will be stored on Vapi's storage instead of your custom storage, even if you have custom storage credentials configured.
-   *
-   * Usage:
-   * - Set to false if you have custom storage configured but want to store recordings on Vapi's storage for this assistant.
-   * - Set to true (or leave unset) to use your custom storage for recordings when available.
-   *
-   * If your organization has ZDR (zero data retention) or PCI enabled, recordings are never written to Vapi storage. In that case, false means "do not use my custom storage", so nothing is stored at all.
-   *
-   * @default true
-   * @example true
-   */
-  recordingUseCustomStorageEnabled?: boolean;
-  /**
-   * This determines whether the video is recorded during the call. Defaults to false. Only relevant for `webCall` type.
-   *
-   * You can find the video recording at `call.artifact.videoRecordingUrl` after the call is ended.
-   *
-   * @default false
-   * @example false
-   */
-  videoRecordingEnabled?: boolean;
-  /**
-   * This determines whether the artifact contains the full message history, even after handoff context engineering. Defaults to false.
-   * @example false
-   */
-  fullMessageHistoryEnabled?: boolean;
-  /**
-   * This determines whether the SIP packet capture is enabled. Defaults to true. Only relevant for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`.
-   *
-   * You can find the packet capture at `call.artifact.pcapUrl` after the call is ended.
-   *
-   * @default true
-   * @example true
-   */
-  pcapEnabled?: boolean;
-  /**
-   * This is the path where the SIP packet capture will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
-   *
-   * If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
-   *
-   * Usage:
-   * - If you want to upload the packet capture to a specific path, set this to the path. Example: `/my-assistant-captures`.
-   * - If you want to upload the packet capture to the root of the bucket, set this to `/`.
-   *
-   * @default '/'
-   * @example "/pcaps"
-   */
-  pcapS3PathPrefix?: string;
-  /**
-   * This determines whether to use custom storage (S3 or GCP) for SIP packet captures when storage credentials are configured.
-   *
-   * When set to false, packet captures will be stored on Vapi's storage instead of your custom storage, even if you have custom storage credentials configured.
-   *
-   * Usage:
-   * - Set to false if you have custom storage configured but want to store packet captures on Vapi's storage for this assistant.
-   * - Set to true (or leave unset) to use your custom storage for packet captures when available.
-   *
-   * If your organization has ZDR (zero data retention) or PCI enabled, packet captures are never written to Vapi storage. In that case, false means "do not use my custom storage", so nothing is stored at all.
-   *
-   * @default true
-   * @example true
-   */
-  pcapUseCustomStorageEnabled?: boolean;
-  /**
-   * This determines whether the call logs are enabled. Defaults to true.
-   *
-   * @default true
-   * @example true
-   */
-  loggingEnabled?: boolean;
-  /**
-   * This determines whether to use custom storage (S3 or GCP) for call logs when storage credentials are configured.
-   *
-   * When set to false, logs will be stored on Vapi's storage instead of your custom storage, even if you have custom storage credentials configured.
-   *
-   * Usage:
-   * - Set to false if you have custom storage configured but want to store logs on Vapi's storage for this assistant.
-   * - Set to true (or leave unset) to use your custom storage for logs when available.
-   *
-   * If your organization has ZDR (zero data retention) or PCI enabled, logs are never written to Vapi storage. In that case, false means "do not use my custom storage", so nothing is stored at all.
-   *
-   * @default true
-   * @example true
-   */
-  loggingUseCustomStorageEnabled?: boolean;
-  /** This is the plan for `call.artifact.transcript`. To disable, set `transcriptPlan.enabled` to false. */
-  transcriptPlan?: TranscriptPlan;
-  /**
-   * This is the path where the recording will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
-   *
-   * If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
-   *
-   * Usage:
-   * - If you want to upload the recording to a specific path, set this to the path. Example: `/my-assistant-recordings`.
-   * - If you want to upload the recording to the root of the bucket, set this to `/`.
-   *
-   * @default '/'
-   */
-  recordingPath?: string;
-  /**
-   * This is an array of structured output IDs to be calculated during the call.
-   * The outputs will be extracted and stored in `call.artifact.structuredOutputs` after the call is ended.
-   */
-  structuredOutputIds?: string[];
-  /**
-   * This is an array of transient structured outputs to be calculated during the call.
-   * The outputs will be extracted and stored in `call.artifact.structuredOutputs` after the call is ended.
-   * Use this to provide inline structured output configurations instead of referencing existing ones via structuredOutputIds.
-   */
-  structuredOutputs?: CreateStructuredOutputDTO[];
-  /**
-   * This is an array of scorecard IDs that will be evaluated based on the structured outputs extracted during the call.
-   * The scorecards will be evaluated and the results will be stored in `call.artifact.scorecards` after the call has ended.
-   */
-  scorecardIds?: string[];
-  /**
-   * This is the array of scorecards that will be evaluated based on the structured outputs extracted during the call.
-   * The scorecards will be evaluated and the results will be stored in `call.artifact.scorecards` after the call has ended.
-   */
-  scorecards?: CreateScorecardDTO[];
-  /**
-   * This is the path where the call logs will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
-   *
-   * If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
-   *
-   * Usage:
-   * - If you want to upload the call logs to a specific path, set this to the path. Example: `/my-assistant-logs`.
-   * - If you want to upload the call logs to the root of the bucket, set this to `/`.
-   *
-   * @default '/'
-   */
-  loggingPath?: string;
-}
-
-export interface StopSpeakingPlan {
-  /**
-   * This is the number of words that the customer has to say before the assistant will stop talking.
-   *
-   * Words like "stop", "actually", "no", etc. will always interrupt immediately regardless of this value.
-   *
-   * Words like "okay", "yeah", "right" will never interrupt.
-   *
-   * When set to 0, `voiceSeconds` is used in addition to the transcriptions to determine the customer has started speaking.
-   *
-   * Defaults to 0.
-   *
-   * @default 0
-   * @min 0
-   * @max 10
-   * @example 0
-   */
-  numWords?: number;
-  /**
-   * This is the seconds customer has to speak before the assistant stops talking. This uses the VAD (Voice Activity Detection) spike to determine if the customer has started speaking.
-   *
-   * Considerations:
-   * - A lower value might be more responsive but could potentially pick up non-speech sounds.
-   * - A higher value reduces false positives but might slightly delay the detection of speech onset.
-   *
-   * This is only used if `numWords` is set to 0.
-   *
-   * Defaults to 0.2
-   *
-   * @default 0.2
-   * @min 0
-   * @max 0.5
-   * @example 0.2
-   */
-  voiceSeconds?: number;
-  /**
-   * This is the seconds to wait before the assistant will start talking again after being interrupted.
-   *
-   * Defaults to 1.
-   *
-   * @default 1
-   * @min 0
-   * @max 10
-   * @example 1
-   */
-  backoffSeconds?: number;
-  /**
-   * These are the phrases that will never interrupt the assistant, even if numWords threshold is met.
-   * These are typically acknowledgement or backchanneling phrases.
-   * @default ["i understand","i see","i got it","i hear you","im listening","im with you","right","okay","ok","sure","alright","got it","understood","yeah","yes","uh-huh","mm-hmm","gotcha","mhmm","ah","yeah okay","yeah sure"]
-   * @example ["i understand","i see","i got it","i hear you","im listening","im with you","right","okay","ok","sure","alright","got it","understood","yeah","yes","uh-huh","mm-hmm","gotcha","mhmm","ah","yeah okay","yeah sure"]
-   */
-  acknowledgementPhrases?: string[];
-  /**
-   * These are the phrases that will always interrupt the assistant immediately, regardless of numWords.
-   * These are typically phrases indicating disagreement or desire to stop.
-   * @default ["stop","shut","up","enough","quiet","silence","but","dont","not","no","hold","wait","cut","pause","nope","nah","nevermind","never","bad","actually"]
-   * @example ["stop","shut","up","enough","quiet","silence","but","dont","not","no","hold","wait","cut","pause","nope","nah","nevermind","never","bad","actually"]
-   */
-  interruptionPhrases?: string[];
-}
-
-export interface MonitorPlan {
-  /**
-   * This determines whether the assistant's calls allow live listening. Defaults to true.
-   *
-   * Fetch `call.monitor.listenUrl` to get the live listening URL.
-   *
-   * @default true
-   * @example false
-   */
-  listenEnabled?: boolean;
-  /**
-   * This enables authentication on the `call.monitor.listenUrl`.
-   *
-   * If `listenAuthenticationEnabled` is `true`, the `call.monitor.listenUrl` will require an `Authorization: Bearer <vapi-public-api-key>` header.
-   *
-   * @default false
-   * @example false
-   */
-  listenAuthenticationEnabled?: boolean;
-  /**
-   * This determines whether the assistant's calls allow live control. Defaults to true.
-   *
-   * Fetch `call.monitor.controlUrl` to get the live control URL.
-   *
-   * To use, send any control message via a POST request to `call.monitor.controlUrl`. Here are the types of controls supported: https://docs.vapi.ai/api-reference/messages/client-inbound-message
-   *
-   * @default true
-   * @example false
-   */
-  controlEnabled?: boolean;
-  /**
-   * This enables authentication on the `call.monitor.controlUrl`.
-   *
-   * If `controlAuthenticationEnabled` is `true`, the `call.monitor.controlUrl` will require an `Authorization: Bearer <vapi-public-api-key>` header.
-   *
-   * @default false
-   * @example false
-   */
-  controlAuthenticationEnabled?: boolean;
-  /**
-   * This the set of monitor ids that are attached to the assistant.
-   * The source of truth for the monitor ids is the assistant_monitor join table.
-   * This field can be used for transient assistants and to update assistants with new monitor ids.
-   *
-   * @default []
-   * @example ["123e4567-e89b-12d3-a456-426614174000"]
-   */
-  monitorIds?: string[];
-}
-
-export interface KeypadInputPlan {
-  /**
-   * This keeps track of whether the user has enabled keypad input.
-   * By default, it is off.
-   *
-   * @default false
-   */
-  enabled?: boolean;
-  /**
-   * This is the time in seconds to wait before processing the input.
-   * If the input is not received within this time, the input will be ignored.
-   * If set to "off", the input will be processed when the user enters a delimiter or immediately if no delimiter is used.
-   *
-   * @default 2
-   * @min 0
-   * @max 10
-   */
-  timeoutSeconds?: number;
-  /**
-   * This is the delimiter(s) that will be used to process the input.
-   * Can be '#', '*', or an empty array.
-   */
-  delimiters?: "#" | "*" | "";
-}
-
 export interface WorkflowUserEditable {
   nodes: (ConversationNode | ToolNode)[];
   /**
@@ -13234,7 +14206,6 @@ export interface WorkflowUserEditable {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -13913,7 +14884,6 @@ export interface FallbackPlan {
     | FallbackWellSaidVoice
     | FallbackRimeAIVoice
     | FallbackSmallestAIVoice
-    | FallbackTavusVoice
     | FallbackNeuphonicVoice
     | FallbackSesameVoice
     | FallbackInworldVoice
@@ -14769,8 +15739,7 @@ export interface OpenAIVoice {
   provider: "openai";
   /**
    * This is the provider-specific ID that will be used.
-   * Voice availability depends on the selected model.
-   * quartz, ripple, vesper, willow, stone, gleam, meridian, bossa, tempo, beacon, delta, cinder are only supported with GPT-Live models.
+   * Voice availability depends on the selected model: voices offered only by GPT-Live are rejected for other models.
    */
   voiceId:
     | "alloy"
@@ -14785,14 +15754,23 @@ export interface OpenAIVoice {
     | "ballad"
     | "beacon"
     | "bossa"
+    | "brise"
     | "cinder"
     | "coral"
     | "delta"
+    | "flitz"
     | "gleam"
+    | "harema"
+    | "juni"
     | "meridian"
+    | "nira"
+    | "noeul"
+    | "nuri"
     | "quartz"
     | "ripple"
     | "sage"
+    | "shida"
+    | "sillage"
     | "stone"
     | "tempo"
     | "verse"
@@ -15131,76 +16109,6 @@ export interface SmallestAIVoice {
   speed?: number;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
-  /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
-  fallbackPlan?: FallbackPlan;
-}
-
-export interface TavusConversationProperties {
-  /**
-   * The maximum duration of the call in seconds. The default `maxCallDuration` is 3600 seconds (1 hour).
-   * Once the time limit specified by this parameter has been reached, the conversation will automatically shut down.
-   */
-  maxCallDuration?: number;
-  /** The duration in seconds after which the call will be automatically shut down once the last participant leaves. */
-  participantLeftTimeout?: number;
-  /**
-   * Starting from conversation creation, the duration in seconds after which the call will be automatically shut down if no participant joins the call.
-   * Default is 300 seconds (5 minutes).
-   */
-  participantAbsentTimeout?: number;
-  /** If true, the user will be able to record the conversation. */
-  enableRecording?: boolean;
-  /**
-   * If true, the user will be able to transcribe the conversation.
-   * You can find more instructions on displaying transcriptions if you are using your custom DailyJS components here.
-   * You need to have an event listener on Daily that listens for `app-messages`.
-   */
-  enableTranscription?: boolean;
-  /**
-   * If true, the background will be replaced with a greenscreen (RGB values: `[0, 255, 155]`).
-   * You can use WebGL on the frontend to make the greenscreen transparent or change its color.
-   */
-  applyGreenscreen?: boolean;
-  /**
-   * The language of the conversation. Please provide the **full language name**, not the two-letter code.
-   * If you are using your own TTS voice, please ensure it supports the language you provide.
-   * If you are using a stock replica or default persona, please note that only ElevenLabs and Cartesia supported languages are available.
-   * You can find a full list of supported languages for Cartesia here, for ElevenLabs here, and for PlayHT here.
-   */
-  language?: string;
-  /** The name of the S3 bucket where the recording will be stored. */
-  recordingS3BucketName?: string;
-  /** The region of the S3 bucket where the recording will be stored. */
-  recordingS3BucketRegion?: string;
-  /** The ARN of the role that will be assumed to access the S3 bucket. */
-  awsAssumeRoleArn?: string;
-}
-
-export interface TavusVoice {
-  /**
-   * This is the flag to toggle voice caching for the assistant.
-   * @default true
-   * @example true
-   */
-  cachingEnabled?: boolean;
-  /** This is the voice provider that will be used. */
-  provider: "tavus";
-  /** This is the provider-specific ID that will be used. */
-  voiceId: "r52da2535a" | string;
-  /** This is the plan for chunking the model output before it is sent to the voice provider. */
-  chunkPlan?: ChunkPlan;
-  /** This is the unique identifier for the persona that the replica will use in the conversation. */
-  personaId?: string;
-  /** This is the url that will receive webhooks with updates regarding the conversation state. */
-  callbackUrl?: string;
-  /** This is the name for the conversation. */
-  conversationName?: string;
-  /** This is the context that will be appended to any context provided in the persona, if one is provided. */
-  conversationalContext?: string;
-  /** This is the custom greeting that the replica will give once a participant joines the conversation. */
-  customGreeting?: string;
-  /** These are optional properties used to customize the conversation. */
-  properties?: TavusConversationProperties;
   /** This is the plan for voice provider fallbacks in the event that the primary voice provider fails. */
   fallbackPlan?: FallbackPlan;
 }
@@ -16645,8 +17553,7 @@ export interface FallbackOpenAIVoice {
   provider: "openai";
   /**
    * This is the provider-specific ID that will be used.
-   * Voice availability depends on the selected model.
-   * quartz, ripple, vesper, willow, stone, gleam, meridian, bossa, tempo, beacon, delta, cinder are only supported with GPT-Live models.
+   * Voice availability depends on the selected model: voices offered only by GPT-Live are rejected for other models.
    */
   voiceId:
     | "alloy"
@@ -16661,14 +17568,23 @@ export interface FallbackOpenAIVoice {
     | "ballad"
     | "beacon"
     | "bossa"
+    | "brise"
     | "cinder"
     | "coral"
     | "delta"
+    | "flitz"
     | "gleam"
+    | "harema"
+    | "juni"
     | "meridian"
+    | "nira"
+    | "noeul"
+    | "nuri"
     | "quartz"
     | "ripple"
     | "sage"
+    | "shida"
+    | "sillage"
     | "stone"
     | "tempo"
     | "verse"
@@ -16997,33 +17913,6 @@ export interface FallbackSmallestAIVoice {
    * @example null
    */
   speed?: number;
-  /** This is the plan for chunking the model output before it is sent to the voice provider. */
-  chunkPlan?: ChunkPlan;
-}
-
-export interface FallbackTavusVoice {
-  /**
-   * This is the flag to toggle voice caching for the assistant.
-   * @default true
-   * @example true
-   */
-  cachingEnabled?: boolean;
-  /** This is the voice provider that will be used. */
-  provider: "tavus";
-  /** This is the provider-specific ID that will be used. */
-  voiceId: "r52da2535a" | string;
-  /** This is the unique identifier for the persona that the replica will use in the conversation. */
-  personaId?: string;
-  /** This is the url that will receive webhooks with updates regarding the conversation state. */
-  callbackUrl?: string;
-  /** This is the name for the conversation. */
-  conversationName?: string;
-  /** This is the context that will be appended to any context provided in the persona, if one is provided. */
-  conversationalContext?: string;
-  /** This is the custom greeting that the replica will give once a participant joines the conversation. */
-  customGreeting?: string;
-  /** These are optional properties used to customize the conversation. */
-  properties?: TavusConversationProperties;
   /** This is the plan for chunking the model output before it is sent to the voice provider. */
   chunkPlan?: ChunkPlan;
 }
@@ -18534,493 +19423,33 @@ export interface RegexSecurityFilter {
   regex: string;
 }
 
-export interface AssistantOverrides {
-  /** These are the options for the assistant's transcriber. */
-  transcriber?:
-    | AssemblyAITranscriber
-    | AzureSpeechTranscriber
-    | CustomTranscriber
-    | DeepgramTranscriber
-    | ElevenLabsTranscriber
-    | GladiaTranscriber
-    | GoogleTranscriber
-    | SpeechmaticsTranscriber
-    | TalkscriberTranscriber
-    | OpenAITranscriber
-    | CartesiaTranscriber
-    | SonioxTranscriber
-    | XaiTranscriber
-    | VapiTranscriber;
-  /** These are the options for the assistant's LLM. */
-  model?:
-    | AnthropicModel
-    | AnthropicBedrockModel
-    | AnyscaleModel
-    | CerebrasModel
-    | CustomLLMModel
-    | DeepInfraModel
-    | DeepSeekModel
-    | GoogleModel
-    | GroqModel
-    | InflectionAIModel
-    | MinimaxLLMModel
-    | OpenAIModel
-    | OpenRouterModel
-    | PerplexityAIModel
-    | TogetherAIModel
-    | XaiModel
-    | VapiModel;
-  /** These are the options for the assistant's voice. */
-  voice?:
-    | AzureVoice
-    | CartesiaVoice
-    | CustomVoice
-    | DeepgramVoice
-    | ElevenLabsVoice
-    | HumeVoice
-    | LMNTVoice
-    | NeuphonicVoice
-    | OpenAIVoice
-    | PlayHTVoice
-    | WellSaidVoice
-    | RimeAIVoice
-    | SmallestAIVoice
-    | TavusVoice
-    | VapiVoice
-    | SesameVoice
-    | InworldVoice
-    | MinimaxVoice
-    | XaiVoice
-    | MicrosoftVoice;
+export interface GuardrailFailurePolicy {
+  type: "end-call";
+}
+
+export interface GuardrailPlan {
+  /** Explicit fallback for evaluator failures and exhausted recovery. */
+  failurePolicy?: GuardrailFailurePolicy;
   /**
-   * This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
-   *
-   * If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
-   * @example "Hello! How can I help you today?"
+   * Effective default is true; omission on PATCH preserves the saved value.
+   * @default true
    */
-  firstMessage?: string;
-  /** @default false */
-  firstMessageInterruptionsEnabled?: boolean;
+  enabled?: boolean;
+  /** Omission preserves direct selections; [] clears local selections. */
+  guardrailIds?: string[];
+  /** Omission preserves pack selections; [] clears local selections. */
+  packIds?: string[];
   /**
-   * This is the mode for the first message. Default is 'assistant-speaks-first'.
-   *
-   * Use:
-   * - 'assistant-speaks-first' to have the assistant speak first.
-   * - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
-   * - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
-   *
-   * @default 'assistant-speaks-first'
-   * @example "assistant-speaks-first"
+   * Legacy inline rules retained separately from shared selections.
+   * @maxLength 10000
+   * @maxItems 100
    */
-  firstMessageMode?:
-    | "assistant-speaks-first"
-    | "assistant-speaks-first-with-model-generated-message"
-    | "assistant-waits-for-user";
-  /**
-   * These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
-   * By default, voicemail detection is disabled.
-   */
-  voicemailDetection?:
-    | "off"
-    | GoogleVoicemailDetectionPlan
-    | OpenAIVoicemailDetectionPlan
-    | TwilioVoicemailDetectionPlan
-    | VapiVoicemailDetectionPlan;
-  /**
-   * These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started,assistant.started. You can check the shape of the messages in ClientMessage schema.
-   * @example ["conversation-update","function-call","hang","model-output","speech-update","status-update","transfer-update","transcript","tool-calls","user-interrupted","voice-input","workflow.node.started","assistant.started"]
-   */
-  clientMessages?:
-    | "conversation-update"
-    | "assistant.speechStarted"
-    | "function-call"
-    | "function-call-result"
-    | "hang"
-    | "language-changed"
-    | "metadata"
-    | "model-output"
-    | "speech-update"
-    | "status-update"
-    | "transcript"
-    | "tool-calls"
-    | "tool-calls-result"
-    | "tool.completed"
-    | "transfer-update"
-    | "user-interrupted"
-    | "voice-input"
-    | "workflow.node.started"
-    | "assistant.started";
-  /**
-   * These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,handoff-destination-request,user-interrupted,assistant.started. You can check the shape of the messages in ServerMessage schema.
-   * @example ["conversation-update","end-of-call-report","function-call","hang","speech-update","status-update","tool-calls","transfer-destination-request","handoff-destination-request","user-interrupted","assistant.started"]
-   */
-  serverMessages?:
-    | "assistant.started"
-    | "assistant.speechStarted"
-    | "conversation-update"
-    | "end-of-call-report"
-    | "function-call"
-    | "hang"
-    | "language-changed"
-    | "language-change-detected"
-    | "model-output"
-    | "phone-call-control"
-    | "speech-update"
-    | "status-update"
-    | "transcript"
-    | "transcript[transcriptType='final']"
-    | "tool-calls"
-    | "transfer-destination-request"
-    | "handoff-destination-request"
-    | "transfer-update"
-    | "user-interrupted"
-    | "voice-input"
-    | "chat.created"
-    | "chat.deleted"
-    | "session.created"
-    | "session.updated"
-    | "session.deleted"
-    | "call.deleted"
-    | "call.delete.failed"
-    | "call.artifact.upload";
-  /**
-   * This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
-   *
-   * @default 600 (10 minutes)
-   * @min 10
-   * @max 43200
-   * @example 600
-   */
-  maxDurationSeconds?: number;
-  /**
-   * This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-   * You can also provide a custom sound by providing a URL to an audio file.
-   */
-  backgroundSound?: "off" | "office" | string;
-  /**
-   * This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
-   *
-   * @default false
-   * @example false
-   */
-  modelOutputInMessagesEnabled?: boolean;
-  /** These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used. */
-  transportConfigurations?: TransportConfigurationTwilio[];
-  /**
-   * This is the plan for observability of assistant's calls.
-   *
-   * Currently, only Langfuse is supported.
-   */
-  observabilityPlan?: LangfuseObservabilityPlan;
-  /** These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials. */
-  credentials?: (
-    | ({
-        provider: "11labs";
-      } & CreateElevenLabsCredentialDTO)
-    | ({
-        provider: "anthropic";
-      } & CreateAnthropicCredentialDTO)
-    | ({
-        provider: "anthropic-bedrock";
-      } & CreateAnthropicBedrockCredentialDTO)
-    | ({
-        provider: "anyscale";
-      } & CreateAnyscaleCredentialDTO)
-    | ({
-        provider: "assembly-ai";
-      } & CreateAssemblyAICredentialDTO)
-    | ({
-        provider: "azure-openai";
-      } & CreateAzureOpenAICredentialDTO)
-    | ({
-        provider: "azure";
-      } & CreateAzureCredentialDTO)
-    | ({
-        provider: "byo-sip-trunk";
-      } & CreateByoSipTrunkCredentialDTO)
-    | ({
-        provider: "cartesia";
-      } & CreateCartesiaCredentialDTO)
-    | ({
-        provider: "cerebras";
-      } & CreateCerebrasCredentialDTO)
-    | ({
-        provider: "cloudflare";
-      } & CreateCloudflareCredentialDTO)
-    | ({
-        provider: "custom-llm";
-      } & CreateCustomLLMCredentialDTO)
-    | ({
-        provider: "deepgram";
-      } & CreateDeepgramCredentialDTO)
-    | ({
-        provider: "deepinfra";
-      } & CreateDeepInfraCredentialDTO)
-    | ({
-        provider: "deep-seek";
-      } & CreateDeepSeekCredentialDTO)
-    | ({
-        provider: "gcp";
-      } & CreateGcpCredentialDTO)
-    | ({
-        provider: "gladia";
-      } & CreateGladiaCredentialDTO)
-    | ({
-        provider: "gohighlevel";
-      } & CreateGoHighLevelCredentialDTO)
-    | ({
-        provider: "google";
-      } & CreateGoogleCredentialDTO)
-    | ({
-        provider: "groq";
-      } & CreateGroqCredentialDTO)
-    | ({
-        provider: "inflection-ai";
-      } & CreateInflectionAICredentialDTO)
-    | ({
-        provider: "langfuse";
-      } & CreateLangfuseCredentialDTO)
-    | ({
-        provider: "lmnt";
-      } & CreateLmntCredentialDTO)
-    | ({
-        provider: "make";
-      } & CreateMakeCredentialDTO)
-    | ({
-        provider: "openai";
-      } & CreateOpenAICredentialDTO)
-    | ({
-        provider: "openrouter";
-      } & CreateOpenRouterCredentialDTO)
-    | ({
-        provider: "perplexity-ai";
-      } & CreatePerplexityAICredentialDTO)
-    | ({
-        provider: "playht";
-      } & CreatePlayHTCredentialDTO)
-    | ({
-        provider: "rime-ai";
-      } & CreateRimeAICredentialDTO)
-    | ({
-        provider: "runpod";
-      } & CreateRunpodCredentialDTO)
-    | ({
-        provider: "s3";
-      } & CreateS3CredentialDTO)
-    | ({
-        provider: "s3-compatible";
-      } & CreateS3CompatibleCredentialDTO)
-    | ({
-        provider: "supabase";
-      } & CreateSupabaseCredentialDTO)
-    | ({
-        provider: "smallest-ai";
-      } & CreateSmallestAICredentialDTO)
-    | ({
-        provider: "tavus";
-      } & CreateTavusCredentialDTO)
-    | ({
-        provider: "together-ai";
-      } & CreateTogetherAICredentialDTO)
-    | ({
-        provider: "twilio";
-      } & CreateTwilioCredentialDTO)
-    | ({
-        provider: "vonage";
-      } & CreateVonageCredentialDTO)
-    | ({
-        provider: "webhook";
-      } & CreateWebhookCredentialDTO)
-    | ({
-        provider: "custom-credential";
-      } & CreateCustomCredentialDTO)
-    | ({
-        provider: "xai";
-      } & CreateXAiCredentialDTO)
-    | ({
-        provider: "microsoft";
-      } & CreateMicrosoftCredentialDTO)
-    | ({
-        provider: "neuphonic";
-      } & CreateNeuphonicCredentialDTO)
-    | ({
-        provider: "hume";
-      } & CreateHumeCredentialDTO)
-    | ({
-        provider: "mistral";
-      } & CreateMistralCredentialDTO)
-    | ({
-        provider: "speechmatics";
-      } & CreateSpeechmaticsCredentialDTO)
-    | ({
-        provider: "soniox";
-      } & CreateSonioxCredentialDTO)
-    | ({
-        provider: "google.calendar.oauth2-client";
-      } & CreateGoogleCalendarOAuth2ClientCredentialDTO)
-    | ({
-        provider: "google.calendar.oauth2-authorization";
-      } & CreateGoogleCalendarOAuth2AuthorizationCredentialDTO)
-    | ({
-        provider: "google.sheets.oauth2-authorization";
-      } & CreateGoogleSheetsOAuth2AuthorizationCredentialDTO)
-    | ({
-        provider: "slack.oauth2-authorization";
-      } & CreateSlackOAuth2AuthorizationCredentialDTO)
-    | ({
-        provider: "ghl.oauth2-authorization";
-      } & CreateGoHighLevelMCPCredentialDTO)
-    | ({
-        provider: "inworld";
-      } & CreateInworldCredentialDTO)
-    | ({
-        provider: "minimax";
-      } & CreateMinimaxCredentialDTO)
-    | ({
-        provider: "wellsaid";
-      } & CreateWellSaidCredentialDTO)
-    | ({
-        provider: "email";
-      } & CreateEmailCredentialDTO)
-    | ({
-        provider: "slack-webhook";
-      } & CreateSlackWebhookCredentialDTO)
-  )[];
-  /** This is a set of actions that will be performed on certain events. */
-  hooks?: (
-    | CallHookCallEnding
-    | CallHookAssistantSpeechInterrupted
-    | CallHookCustomerSpeechInterrupted
-    | CallHookCustomerSpeechTimeout
-    | SessionCreatedHook
-  )[];
-  "tools:append"?: (
-    | CreateApiRequestToolDTO
-    | CreateBashToolDTO
-    | CreateCodeToolDTO
-    | CreateComputerToolDTO
-    | CreateDtmfToolDTO
-    | CreateEndCallToolDTO
-    | CreateFunctionToolDTO
-    | CreateGoHighLevelCalendarAvailabilityToolDTO
-    | CreateGoHighLevelCalendarEventCreateToolDTO
-    | CreateGoHighLevelContactCreateToolDTO
-    | CreateGoHighLevelContactGetToolDTO
-    | CreateGoogleCalendarCheckAvailabilityToolDTO
-    | CreateGoogleCalendarCreateEventToolDTO
-    | CreateGoogleSheetsRowAppendToolDTO
-    | CreateHandoffToolDTO
-    | CreateMcpToolDTO
-    | CreateQueryToolDTO
-    | CreateSlackSendMessageToolDTO
-    | CreateSmsToolDTO
-    | CreateTextEditorToolDTO
-    | CreateTransferCallToolDTO
-    | CreateSipRequestToolDTO
-    | CreateVoicemailToolDTO
-  )[];
-  /**
-   * These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
-   * This uses LiquidJS syntax. https://liquidjs.com/tutorials/intro-to-liquid.html
-   *
-   * So for example, `{{ name }}` will be replaced with the value of `name` in `variableValues`.
-   * `{{"now" | date: "%b %d, %Y, %I:%M %p", "America/New_York"}}` will be replaced with the current date and time in New York.
-   *  Some VAPI reserved defaults:
-   *  - *customer* - the customer object
-   */
-  variableValues?: object;
-  /**
-   * This is the name of the assistant.
-   *
-   * This is required when you want to transfer between assistants in a call.
-   * @maxLength 40
-   */
-  name?: string;
-  /**
-   * This is the message that the assistant will say if the call is forwarded to voicemail.
-   *
-   * If unspecified, it will hang up.
-   * @maxLength 1000
-   */
-  voicemailMessage?: string;
-  /**
-   * This is the message that the assistant will say if it ends the call.
-   *
-   * If unspecified, it will hang up without saying anything.
-   * @maxLength 1000
-   */
-  endCallMessage?: string;
-  /** This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive. */
-  endCallPhrases?: string[];
-  compliancePlan?: CompliancePlan;
-  /** This is for metadata you want to store on the assistant. */
-  metadata?: object;
-  /**
-   * This enables filtering of noise and background speech while the user is talking.
-   *
-   * Features:
-   * - Smart denoising using Krisp
-   * - Fourier denoising
-   *
-   * Smart denoising can be combined with or used independently of Fourier denoising.
-   *
-   * Order of precedence:
-   * - Smart denoising
-   * - Fourier denoising
-   */
-  backgroundSpeechDenoisingPlan?: BackgroundSpeechDenoisingPlan;
-  /**
-   * This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
-   * @deprecated
-   */
-  analysisPlan?: AnalysisPlan;
-  /** This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`. */
-  artifactPlan?: ArtifactPlan;
-  /**
-   * This is the plan for when the assistant should start talking.
-   *
-   * You should configure this if you're running into these issues:
-   * - The assistant is too slow to start talking after the customer is done speaking.
-   * - The assistant is too fast to start talking after the customer is done speaking.
-   * - The assistant is so fast that it's actually interrupting the customer.
-   */
-  startSpeakingPlan?: StartSpeakingPlan;
-  /**
-   * This is the plan for when assistant should stop talking on customer interruption.
-   *
-   * You should configure this if you're running into these issues:
-   * - The assistant is too slow to recognize customer's interruption.
-   * - The assistant is too fast to recognize customer's interruption.
-   * - The assistant is getting interrupted by phrases that are just acknowledgments.
-   * - The assistant is getting interrupted by background noises.
-   * - The assistant is not properly stopping -- it starts talking right after getting interrupted.
-   */
-  stopSpeakingPlan?: StopSpeakingPlan;
-  /**
-   * This is the plan for real-time monitoring of the assistant's calls.
-   *
-   * Usage:
-   * - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
-   * - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
-   * - To attach monitors to the assistant, set `monitorPlan.monitorIds` to the set of monitor ids.
-   */
-  monitorPlan?: MonitorPlan;
-  /** These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this. */
-  credentialIds?: string[];
-  /**
-   * This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
-   *
-   * The order of precedence is:
-   *
-   * 1. assistant.server.url
-   * 2. phoneNumber.serverUrl
-   * 3. org.serverUrl
-   */
-  server?: Server;
-  keypadInputPlan?: KeypadInputPlan;
+  guardrails?: string[];
 }
 
 export interface CreateAssistantDTO {
+  /** Local settings and selections. Omitted ID arrays preserve selections; [] clears that kind. */
+  guardrailPlan?: GuardrailPlan | null;
   /** These are the options for the assistant's transcriber. */
   transcriber?:
     | AssemblyAITranscriber
@@ -19071,7 +19500,6 @@ export interface CreateAssistantDTO {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -19516,6 +19944,8 @@ export interface ModelDeprecationNotice {
 }
 
 export interface Assistant {
+  /** Local settings and selections. Omitted ID arrays preserve selections; [] clears that kind. */
+  guardrailPlan?: GuardrailPlan | null;
   /** These are the options for the assistant's transcriber. */
   transcriber?:
     | AssemblyAITranscriber
@@ -19566,7 +19996,6 @@ export interface Assistant {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -20042,6 +20471,8 @@ export interface AssistantPaginatedResponse {
 }
 
 export interface AssistantDraft {
+  /** Local settings and selections. Omitted ID arrays preserve selections; [] clears that kind. */
+  guardrailPlan?: GuardrailPlan | null;
   /** These are the options for the assistant's transcriber. */
   transcriber?:
     | AssemblyAITranscriber
@@ -20092,7 +20523,6 @@ export interface AssistantDraft {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -20535,6 +20965,8 @@ export interface LegacyAssistantVersionPaginatedResponse {
 }
 
 export interface AssistantVersion {
+  /** Local settings and selections. Omitted ID arrays preserve selections; [] clears that kind. */
+  guardrailPlan?: GuardrailPlan | null;
   /** These are the options for the assistant's transcriber. */
   transcriber?:
     | AssemblyAITranscriber
@@ -20585,7 +21017,6 @@ export interface AssistantVersion {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -21061,6 +21492,8 @@ export interface UpdateAssistantVersionMetadataDTO {
 }
 
 export interface CreateAssistantDraftDTO {
+  /** Local settings and selections. Omitted ID arrays preserve selections; [] clears that kind. */
+  guardrailPlan?: GuardrailPlan | null;
   /** These are the options for the assistant's transcriber. */
   transcriber?:
     | AssemblyAITranscriber
@@ -21111,7 +21544,6 @@ export interface CreateAssistantDraftDTO {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -21526,6 +21958,8 @@ export interface AssistantDraftConflictResponseDTO {
 }
 
 export interface UpdateAssistantDraftDTO {
+  /** Local settings and selections. Omitted ID arrays preserve selections; [] clears that kind. */
+  guardrailPlan?: GuardrailPlan | null;
   /** These are the options for the assistant's transcriber. */
   transcriber?:
     | AssemblyAITranscriber
@@ -21576,7 +22010,6 @@ export interface UpdateAssistantDraftDTO {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -21977,6 +22410,8 @@ export interface UpdateAssistantDraftDTO {
 }
 
 export interface UpdateAssistantDTO {
+  /** Local settings and selections. Omitted ID arrays preserve selections; [] clears that kind. */
+  guardrailPlan?: GuardrailPlan | null;
   /** These are the options for the assistant's transcriber. */
   transcriber?:
     | AssemblyAITranscriber
@@ -22027,7 +22462,6 @@ export interface UpdateAssistantDTO {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -22615,7 +23049,6 @@ export interface Workflow {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -22966,7 +23399,6 @@ export interface CreateWorkflowDTO {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -23311,7 +23743,6 @@ export interface UpdateWorkflowDTO {
     | WellSaidVoice
     | RimeAIVoice
     | SmallestAIVoice
-    | TavusVoice
     | VapiVoice
     | SesameVoice
     | InworldVoice
@@ -23978,6 +24409,8 @@ export interface StructuredOutputCostBreakdown {
   completionTokens: number;
   /** This is the number of cached prompt tokens used to evaluate this structured output. This is a subset of `promptTokens`, not an addition to it. */
   cachedPromptTokens?: number;
+  /** This is the number of reasoning tokens the model generated for this structured output. This is a subset of `completionTokens`, not an addition to it: reasoning tokens are already billed at the output-token rate, so this is for visibility only and does not affect `cost`. */
+  reasoningTokens?: number;
 }
 
 export interface AnalysisCost {
@@ -23997,6 +24430,8 @@ export interface AnalysisCost {
   completionTokens: number;
   /** This is the number of cached prompt tokens used in the analysis. This is only applicable to certain providers (e.g., OpenAI, Azure OpenAI) that support prompt caching. Cached tokens are billed at a discounted rate. */
   cachedPromptTokens?: number;
+  /** This is the number of reasoning tokens generated in the analysis, reported only by reasoning models (e.g., GPT-5) on providers that report them. This is a subset of `completionTokens`, not an addition to it: reasoning tokens are already billed at the output-token rate, so this is for visibility only and does not affect `cost`. */
+  reasoningTokens?: number;
   /**
    * This is the per-structured-output breakdown of this cost. The `cost`, `promptTokens`, `completionTokens` and `cachedPromptTokens` above are the sums of these rows.
    *
@@ -24074,6 +24509,10 @@ export interface VapiWebCallTransport {
    * recording automatically server-side, which is more reliable than the
    * client starting it after joining. Set by the server; only present when
    * video recording is enabled.
+   *
+   * With `videoRecordingStartMode: 'server'`, joining with the token doesn't
+   * start the recording: Vapi starts it once the user joins, and the client
+   * must not start it either.
    */
   callToken?: string;
   /** This is the URL of the web call. */
@@ -24715,6 +25154,11 @@ export interface Call {
     | "deletion-failed";
   /** This is the explanation for how the call ended. */
   endedReason?:
+    | "call.in-progress.error-vapifault-guardrail-evaluation-failed"
+    | "call.in-progress.error-vapifault-guardrail-playback-timeout"
+    | "call.in-progress.guardrail-blocked"
+    | "call.in-progress.error-vapifault-call-start-failed"
+    | "call.in-progress.error-vapifault-assistant-handoff-start-failed"
     | "call-start-error-neither-assistant-nor-server-set"
     | "assistant-request-failed"
     | "assistant-request-returned-error"
@@ -25413,7 +25857,7 @@ export interface Call {
    * - Squad, use `squad`
    * - Workflow, use `workflow`
    */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
   /**
@@ -25768,7 +26212,7 @@ export interface CreateCallDTO {
    * - Squad, use `squad`
    * - Workflow, use `workflow`
    */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
   /**
@@ -25913,7 +26357,7 @@ export interface CreateOutboundCallDTO {
    * - Squad, use `squad`
    * - Workflow, use `workflow`
    */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
   /**
@@ -25999,6 +26443,23 @@ export interface CreateWebCallDTO {
   /** @default true */
   roomDeleteOnUserLeaveEnabled?: boolean;
   /**
+   * This determines who starts the video recording. Only applies when video
+   * recording is enabled (`artifactPlan.videoRecordingEnabled`).
+   *
+   * - `client`: the web client starts the recording when it joins.
+   * - `server`: Vapi starts the recording once when the user first joins, so a
+   *   weak client connection can't stop it from starting. The returned
+   *   `transport.callToken` doesn't start the recording, and the client should
+   *   not start it either. If Vapi can't set up the server-side start, no token
+   *   is returned. If the start itself fails, the client is told during the
+   *   call.
+   *
+   * Defaults to `client`.
+   * @default "client"
+   * @example "server"
+   */
+  videoRecordingStartMode?: "client" | "server";
+  /**
    * This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
    *
    * To start a call with:
@@ -26015,7 +26476,7 @@ export interface CreateWebCallDTO {
    * - Squad, use `squad`
    * - Workflow, use `workflow`
    */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
   /**
@@ -26183,7 +26644,7 @@ export interface Chat {
   /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
   assistantId?: string;
   /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /**
    * These are the variable values that will be used to replace template variables in the assistant messages.
    * Only variable substitution is supported in chat contexts - other assistant properties cannot be overridden.
@@ -26305,7 +26766,7 @@ export interface CreateChatDTO {
   /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
   assistantId?: string;
   /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /**
    * These are the variable values that will be used to replace template variables in the assistant messages.
    * Only variable substitution is supported in chat contexts - other assistant properties cannot be overridden.
@@ -26462,7 +26923,7 @@ export interface OpenAIResponsesRequest {
   /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
   assistantId?: string;
   /** This is the assistant that will be used for the chat. To use an existing assistant, use `assistantId` instead. */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /**
    * These are the variable values that will be used to replace template variables in the assistant messages.
    * Only variable substitution is supported in chat contexts - other assistant properties cannot be overridden.
@@ -26580,7 +27041,7 @@ export interface CreateWebChatDTO {
   /** This is the assistant ID to use for this chat. To use a transient assistant, use `assistant` instead. */
   assistantId?: string;
   /** This is the transient assistant configuration for this chat. To use an existing assistant, use `assistantId` instead. */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /**
    * This is the ID of the session that will be used for the chat.
    * If provided, the conversation will continue from the previous state.
@@ -26651,7 +27112,7 @@ export interface OpenAIWebChatRequest {
   /** This is the assistant ID to use for this chat. To use a transient assistant, use `assistant` instead. */
   assistantId?: string;
   /** This is the transient assistant configuration for this chat. To use an existing assistant, use `assistantId` instead. */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /**
    * This is the ID of the session that will be used for the chat.
    * If provided, the conversation will continue from the previous state.
@@ -27348,7 +27809,7 @@ export interface Session {
    * This is the assistant configuration for this session. Use this when creating a new assistant configuration.
    * If assistantId is provided, this will be ignored.
    */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /**
    * These are the overrides for the assistant configuration.
    * Use this to provide variable values and other overrides when using assistantId.
@@ -27409,7 +27870,7 @@ export interface CreateSessionDTO {
    * This is the assistant configuration for this session. Use this when creating a new assistant configuration.
    * If assistantId is provided, this will be ignored.
    */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /**
    * These are the overrides for the assistant configuration.
    * Use this to provide variable values and other overrides when using assistantId.
@@ -38254,7 +38715,7 @@ export interface TesterPlan {
    *
    * Make sure to write a detailed system prompt for a test assistant, and use the {{test.script}} variable to access the test script.
    */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /**
    * Pass an assistant id that can be access
    *
@@ -38703,7 +39164,7 @@ export interface CreatePersonalityDTO {
    * This is the full assistant configuration for this personality.
    * It defines the tester's voice, model, behavior via system prompt, and other settings.
    */
-  assistant: CreateAssistantDTO;
+  assistant: TransientAssistantDTO;
   /**
    * Optional folder path for organizing personalities.
    * Supports up to 3 levels (e.g., "dept/feature/variant").
@@ -38745,7 +39206,7 @@ export interface Personality {
    * This is the full assistant configuration for this personality.
    * It defines the tester's voice, model, behavior via system prompt, and other settings.
    */
-  assistant: CreateAssistantDTO;
+  assistant: TransientAssistantDTO;
   /**
    * Optional folder path for organizing personalities.
    * Supports up to 3 levels (e.g., "dept/feature/variant").
@@ -38763,7 +39224,7 @@ export interface UpdatePersonalityDTO {
    */
   name?: string;
   /** Complete assistant replacement. Omitted credentials and redacted server secrets are preserved when their endpoint URL is unchanged. Send credentials: [] to clear credentials; omit a server container to remove it. */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /**
    * Optional folder path for organizing personalities.
    * Supports up to 3 levels (e.g., "dept/feature/variant").
@@ -39120,7 +39581,7 @@ export interface SimulationRunTargetAssistant {
    */
   assistantId?: string;
   /** Inline assistant configuration to test against. Cannot be combined with assistantId. */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
 }
 
 export interface SimulationRunTargetSquad {
@@ -39141,6 +39602,11 @@ export interface SimulationRunTransportConfiguration {
 }
 
 export interface CreateSimulationRunDTO {
+  /**
+   * Generate directly attached target structured outputs. Default false. Enabled extraction may incur additional model charges.
+   * @default false
+   */
+  includeTargetStructuredOutputs?: boolean;
   /** Array of simulations and/or suites to run */
   simulations: (SimulationRunSimulationEntry | SimulationRunSuiteEntry)[];
   /** Target to test against */
@@ -39217,6 +39683,11 @@ export interface CreateSimulationRunResponse {
   updatedAt: string;
   /** Aggregate counts of run items by status */
   itemCounts?: SimulationRunItemCounts;
+  /**
+   * Generate directly attached target structured outputs. Default false. Enabled extraction may incur additional model charges.
+   * @default false
+   */
+  includeTargetStructuredOutputs?: boolean;
   /** Array of simulations and/or suites to run */
   simulations: (SimulationRunSimulationEntry | SimulationRunSuiteEntry)[];
   /** Target to test against */
@@ -39296,6 +39767,11 @@ export interface SimulationRun {
   updatedAt: string;
   /** Aggregate counts of run items by status */
   itemCounts?: SimulationRunItemCounts;
+  /**
+   * Generate directly attached target structured outputs. Default false. Enabled extraction may incur additional model charges.
+   * @default false
+   */
+  includeTargetStructuredOutputs?: boolean;
   /** Array of simulations and/or suites to run */
   simulations: (SimulationRunSimulationEntry | SimulationRunSuiteEntry)[];
   /** Target to test against */
@@ -39367,6 +39843,11 @@ export interface SimulationRunListItem {
   updatedAt: string;
   /** Aggregate counts of run items by status */
   itemCounts?: SimulationRunItemCounts;
+  /**
+   * Generate directly attached target structured outputs. Default false. Enabled extraction may incur additional model charges.
+   * @default false
+   */
+  includeTargetStructuredOutputs?: boolean;
   /** Array of simulations and/or suites to run */
   simulations: (SimulationRunSimulationEntry | SimulationRunSuiteEntry)[];
   /** Target to test against */
@@ -39496,6 +39977,25 @@ export interface LatencyEvaluationResult {
 }
 
 export interface SimulationRunItemResults {
+  /** Retention-permitted target extraction values, present only when enabled. */
+  structuredOutputs?: Record<
+    string,
+    {
+      name: string;
+      result: any;
+    }
+  >;
+  /** Condition-gated outputs or audio outputs unsupported by chat. */
+  skippedStructuredOutputs?: Record<
+    string,
+    {
+      name: string;
+      unmetCondition?: Record<string, any>;
+      reason?: "audio-not-supported";
+    }
+  >;
+  /** Sanitized diagnostic; optional target extraction never changes pass/fail. */
+  structuredOutputError?: string;
   /** This is the list of results from structured output evaluations. */
   evaluations: StructuredOutputEvaluationResult[];
   /** This indicates whether all required, non-skipped structured output evaluations and latency expectations passed. */
@@ -39530,6 +40030,11 @@ export interface SimulationRunItemImprovements {
 }
 
 export interface SimulationRunConfiguration {
+  /**
+   * Generate directly attached target structured outputs. Default false. Enabled extraction may incur additional model charges.
+   * @default false
+   */
+  includeTargetStructuredOutputs?: boolean;
   /** Transport configuration for the simulation run */
   transport?: SimulationRunTransportConfiguration;
 }
@@ -39771,6 +40276,242 @@ export interface GenerateScenariosResponse {
   scenarios: GeneratedScenario[];
   /** Summary of test coverage */
   coverageNotes: string;
+}
+
+export interface SimulationOnboardingErrorDTO {
+  /** Which refusal this is. Retry `SIMULATION_ONBOARDING_GENERATION_IN_PROGRESS` with the same key and `SIMULATION_ONBOARDING_CONCURRENCY_LIMITED` or `SIMULATION_ONBOARDING_QUOTA_UNAVAILABLE` after `retryAfterSeconds`, send a new key for `SIMULATION_ONBOARDING_IDEMPOTENCY_KEY_REUSED`, and stop for `SIMULATION_ONBOARDING_QUOTA_EXCEEDED`. */
+  code:
+    | "SIMULATION_ONBOARDING_GENERATION_IN_PROGRESS"
+    | "SIMULATION_ONBOARDING_IDEMPOTENCY_KEY_REUSED"
+    | "SIMULATION_ONBOARDING_CONCURRENCY_LIMITED"
+    | "SIMULATION_ONBOARDING_QUOTA_EXCEEDED"
+    | "SIMULATION_ONBOARDING_QUOTA_UNAVAILABLE";
+  /** What happened, written for the user. */
+  message: string;
+  /** Seconds to wait before retrying, the same value as the `Retry-After` header. For a daily limit, the seconds until 00:00 UTC. */
+  retryAfterSeconds?: number;
+  /** The daily limit that was reached, on a daily-limit refusal only. */
+  limit?: number;
+}
+
+export interface SimulationOnboardingRequirementDTO {
+  /** Stable requirement id, e.g. `R3`. */
+  id: string;
+  /**
+   * One observable behaviour the assistant must get right.
+   * @maxLength 1000
+   */
+  text: string;
+  /** Indicates an assumption, a requirement that needs a voice simulation, or a requirement that cannot be tested. */
+  tag?: "assumption" | "not-testable" | "voice-only";
+  /**
+   * What was assumed, why only a voice run can check it, or why it cannot be tested.
+   * @maxLength 1000
+   */
+  note?: string;
+}
+
+export interface SimulationOnboardingOpenQuestionDTO {
+  /** Question id within its draft, e.g. `Q1`. */
+  id: string;
+  /**
+   * A question about expected assistant behavior that needs clarification.
+   * @maxLength 1000
+   */
+  text: string;
+  /**
+   * Which requirement the answer changes, and how.
+   * @maxLength 1000
+   */
+  why: string;
+}
+
+export interface SimulationOnboardingRequirementsDraftDTO {
+  /**
+   * Draft version, 1 for a first draft.
+   * @min 1
+   */
+  version: number;
+  /**
+   * What changed since the previous draft.
+   * @maxLength 1000
+   */
+  changeNote?: string;
+  /**
+   * What the draft was based on, e.g. the prompt and tools.
+   * @maxItems 10
+   */
+  sources: string[];
+  /**
+   * Draft test requirements describing the expected assistant behavior. Review and refine these before generating a simulation suite.
+   * @maxItems 50
+   * @minItems 1
+   */
+  requirements: SimulationOnboardingRequirementDTO[];
+  /**
+   * Questions about ambiguous or missing assistant behavior to resolve before generating a simulation suite.
+   * @maxItems 3
+   */
+  openQuestions: SimulationOnboardingOpenQuestionDTO[];
+}
+
+export interface SimulationOnboardingRequirementsCreateDTO {
+  /**
+   * Assistant to draft requirements for.
+   * @format uuid
+   */
+  assistantId: string;
+  /** The draft being revised, exactly as this endpoint returned it. Send it with `feedback`. */
+  previousDraft?: SimulationOnboardingRequirementsDraftDTO;
+  /**
+   * Natural-language instructions for revising the requirements in `previousDraft`, including answers to open questions. Required when `previousDraft` is provided.
+   * @maxLength 8000
+   */
+  feedback?: string;
+}
+
+export interface SimulationOnboardingSuiteCreateDTO {
+  /**
+   * Assistant the suite tests and is assigned to.
+   * @format uuid
+   */
+  assistantId: string;
+  /**
+   * A unique key for this suite generation request. Retrying with the same key returns the saved suite, or a 409 while generation is in progress. Use a new key for a different assistant or requirements.
+   * @minLength 1
+   * @maxLength 200
+   */
+  idempotencyKey: string;
+  /**
+   * The reviewed test requirements to generate simulations for, from the requirements draft. Each requirement must have a unique id.
+   * @maxItems 50
+   * @minItems 1
+   */
+  requirements: SimulationOnboardingRequirementDTO[];
+}
+
+export interface SimulationOnboardingSuiteRefDTO {
+  /** Suite id; pass it to edit or run the suite. */
+  id: string;
+  /** Suite name. */
+  name: string;
+}
+
+export interface SimulationOnboardingSuiteSimulationDTO {
+  /** Simulation id; pass it back to edit or remove the simulation. */
+  id: string;
+  /** Scenario the simulation runs. */
+  scenarioId: string;
+  /** Scenario name. */
+  name: string;
+  /** Name of the simulated caller's personality. */
+  personalityName?: string;
+  /** Each success criterion, as the yes/no question it is judged by. */
+  successCriteria: string[];
+  /** Requirement ids this simulation covers, e.g. `R3`. */
+  requirementIds: string[];
+  /** Tools the scenario mocks. */
+  mockedTools: string[];
+}
+
+export interface SimulationOnboardingCoverageGapDTO {
+  /** Requirement the gap is for, e.g. `R4`. */
+  requirementId: string;
+  /** Why no simulation covers it. `failed` and `budget` gaps are regenerated by an edit with `retryFailed`. */
+  reason: "not-testable" | "unmapped" | "failed" | "budget";
+  /** A short explanation for the user. */
+  detail?: string;
+}
+
+export interface SimulationOnboardingSuiteCoverageDTO {
+  /** Requirements at least one simulation covers. */
+  covered: number;
+  /** Requirements in the agreed draft. */
+  total: number;
+  /** Requirements no simulation covers, and why. */
+  gaps: SimulationOnboardingCoverageGapDTO[];
+  /** Planned scenarios an edit with `retryFailed` would regenerate. */
+  retryable: number;
+}
+
+export interface SimulationOnboardingSuiteDocsDTO {
+  /** Link to testing best practices. */
+  bestPractices: string;
+  /** Link explaining why tools are mocked by default. */
+  toolMocks: string;
+}
+
+export interface SimulationOnboardingToolGapDTO {
+  /** Function name of the tool, e.g. `handoff_to_group_1` or `transferCall`. */
+  toolName: string;
+  /** Assistant the tool belongs to, when it is a handoff destination's tool. Unset for the assistant's own tools. */
+  assistantName?: string;
+  /** Why the path is not exercised: a reason the simulations mock the tool, or why a native path is never reached. New reasons may be added. */
+  reason:
+    | "dynamic-handoff"
+    | "destination-not-plain"
+    | "destination-unresolved"
+    | "destination-truncated"
+    | "transfer-external"
+    | "destination-name-unscoped"
+    | "native-tool-shadowed";
+  /** Static destinations the simulations do not reach through this tool. */
+  destinationNames?: string[];
+}
+
+export interface SimulationOnboardingSuiteViewDTO {
+  /** The generated simulation suite id and name. */
+  suite: SimulationOnboardingSuiteRefDTO;
+  /** Assistant the suite is assigned to. */
+  assistantId: string;
+  /** The suite's simulations, in order. */
+  simulations: SimulationOnboardingSuiteSimulationDTO[];
+  /** Counts of covered and total requirements, uncovered requirements, and scenarios available to retry. */
+  coverage: SimulationOnboardingSuiteCoverageDTO;
+  /** The test requirements used to generate the suite. Match their ids to `coverage.gaps` to identify uncovered requirements. */
+  requirements: SimulationOnboardingRequirementDTO[];
+  /** Links to simulation testing best practices and tool mocking documentation. */
+  docs: SimulationOnboardingSuiteDocsDTO;
+  /** True when the request matched one already applied (same `idempotencyKey` or `patchKey`) and nothing changed. */
+  reused: boolean;
+  /** Simulations an edit asked to rewrite that were not rewritten, for example because the rewrite did not generate in time. Retry them with a new `patchKey`. */
+  failedEditSimulationIds?: string[];
+  /** Tool paths the suite's simulations do not exercise as configured, such as a tool mocked although it runs natively. Omitted when there are none. */
+  toolGaps?: SimulationOnboardingToolGapDTO[];
+}
+
+export interface SimulationOnboardingSuiteEditDTO {
+  /**
+   * Simulation in the suite whose scenario is rewritten.
+   * @format uuid
+   */
+  simulationId: string;
+  /**
+   * Natural-language instructions for revising this simulation's scenario, such as "Have the caller ask for a refund after 30 days."
+   * @maxLength 8000
+   */
+  instruction: string;
+}
+
+export interface SimulationOnboardingSuiteUpdateDTO {
+  /**
+   * A new key for each edit. Replaying an applied key changes nothing and returns the current suite. A suite remembers its last 50 keys, so never reuse one.
+   * @minLength 1
+   * @maxLength 200
+   */
+  patchKey: string;
+  /**
+   * Simulations to take out of the suite. They are unlinked, not deleted.
+   * @maxItems 100
+   */
+  removeSimulationIds?: string[];
+  /**
+   * Simulations to rewrite in place, at most one edit per simulation: put every change for a simulation in one instruction.
+   * @maxItems 10
+   */
+  edits?: SimulationOnboardingSuiteEditDTO[];
+  /** Regenerate the scenarios that failed or did not fit when the suite was generated. */
+  retryFailed?: boolean;
 }
 
 export interface CreateSimulationDTO {
@@ -42698,7 +43439,7 @@ export interface GetEvalRunPaginatedDTO {
 
 export interface EvalRunTargetAssistant {
   /** This is the transient assistant that will be run against the eval */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /**
    * This is the overrides that will be applied to the assistant.
    * @example "{"
@@ -42801,6 +43542,67 @@ export interface UpdateScorecardDTO {
    * When linked to assistants, this scorecard will be available for evaluation during those assistants' calls.
    */
   assistantIds?: string[];
+}
+
+export interface GoalEvaluationCurrentDTO {
+  /** @format uuid */
+  assistantId: string;
+  /** @format uuid */
+  goalId: string;
+  /**
+   * Current immutable goal revision, encoded as a decimal bigint string.
+   * @pattern ^[1-9][0-9]*$
+   */
+  goalVersion: string;
+  /** @format date-time */
+  callEndedAt: string;
+  processingState:
+    | "pending"
+    | "running"
+    | "parked"
+    | "unavailable"
+    | "excluded"
+    | "completed";
+  /** Absent until a semantic result is accepted. Processing failures are never goal_not_met. */
+  goalOutcome?: "goal_met" | "goal_not_met" | "ineligible";
+}
+
+export interface GoalEvaluationCurrentCallResponseDTO {
+  /** @format uuid */
+  callId: string;
+  /** @format uuid */
+  goalId: string;
+  /**
+   * Current revision of the requested goal for a visible call. Absent when that goal does not belong to the source assistant or the source is hidden. An absent evaluation does not imply queued or pending work.
+   * @pattern ^[1-9][0-9]*$
+   */
+  currentGoalVersion?: string;
+  currentEvaluation?: GoalEvaluationCurrentDTO;
+}
+
+export interface GoalEvaluationCurrentCallRequestDTO {
+  /** @format uuid */
+  callId: string;
+  /** @format uuid */
+  goalId: string;
+}
+
+export interface GoalEvaluationCurrentBatchRequestDTO {
+  /**
+   * Explicit call/goal pairs. The organization comes from the authenticated caller.
+   * @maxItems 100
+   * @minItems 1
+   * @uniqueItems true
+   */
+  evaluations: GoalEvaluationCurrentCallRequestDTO[];
+}
+
+export interface GoalEvaluationCurrentBatchResponseDTO {
+  /**
+   * One entry per requested call/goal pair, in request order, including entries without a current evaluation.
+   * @maxItems 100
+   */
+  results: GoalEvaluationCurrentCallResponseDTO[];
 }
 
 export interface CreateOrgDTO {
@@ -47999,6 +48801,11 @@ export interface ServerMessageEndOfCallReport {
   type: "end-of-call-report";
   /** This is the reason the call ended. This can also be found at `call.endedReason` on GET /call/:id. */
   endedReason:
+    | "call.in-progress.error-vapifault-guardrail-evaluation-failed"
+    | "call.in-progress.error-vapifault-guardrail-playback-timeout"
+    | "call.in-progress.guardrail-blocked"
+    | "call.in-progress.error-vapifault-call-start-failed"
+    | "call.in-progress.error-vapifault-assistant-handoff-start-failed"
     | "call-start-error-neither-assistant-nor-server-set"
     | "assistant-request-failed"
     | "assistant-request-returned-error"
@@ -48929,6 +49736,11 @@ export interface ServerMessageStatusUpdate {
     | "deletion-failed";
   /** This is the reason the call ended. This is only sent if the status is "ended". */
   endedReason?:
+    | "call.in-progress.error-vapifault-guardrail-evaluation-failed"
+    | "call.in-progress.error-vapifault-guardrail-playback-timeout"
+    | "call.in-progress.guardrail-blocked"
+    | "call.in-progress.error-vapifault-call-start-failed"
+    | "call.in-progress.error-vapifault-assistant-handoff-start-failed"
     | "call-start-error-neither-assistant-nor-server-set"
     | "assistant-request-failed"
     | "assistant-request-returned-error"
@@ -50539,7 +51351,7 @@ export interface ServerMessageResponseAssistantRequest {
    * - Squad, use `squad`
    * - Workflow, use `workflow`
    */
-  assistant?: CreateAssistantDTO;
+  assistant?: TransientAssistantDTO;
   /** These are the overrides for the `assistant` or `assistantId`'s settings and template variables. */
   assistantOverrides?: AssistantOverrides;
   /**
@@ -54892,6 +55704,55 @@ export class Api<
         secure: true,
         ...params,
       }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name GoalEvaluationCurrentControllerCurrentGet
+     * @summary Get the current goal evaluation for a call
+     * @request GET:/call/{id}/goal-evaluation
+     * @secure
+     */
+    goalEvaluationCurrentControllerCurrentGet: (
+      id: string,
+      query: {
+        /** @format uuid */
+        goalId: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<GoalEvaluationCurrentCallResponseDTO, any>({
+        path: `/call/${id}/goal-evaluation`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Calls
+     * @name GoalEvaluationCurrentControllerCurrentBatchGet
+     * @summary Get current goal evaluations for up to 100 call/goal pairs
+     * @request POST:/call/goal-evaluation/batch
+     * @secure
+     */
+    goalEvaluationCurrentControllerCurrentBatchGet: (
+      data: GoalEvaluationCurrentBatchRequestDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<GoalEvaluationCurrentBatchResponseDTO, any>({
+        path: `/call/goal-evaluation/batch`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
   };
   chat = {
     /**
@@ -55844,7 +56705,7 @@ export class Api<
   };
   trafficAllocations = {
     /**
-     * @description Creates a new traffic allocation for an assistant, replacing the one currently in effect. To start or adjust a split, send targets naming published versions (such as "v7") with percentages totaling 100; allocationIntent is inferred as 'explicit'. To stop splitting and send every call to the newest published version, send allocationIntent 'follow-latest' with no targets field; stopping always names its intent, so a dropped targets field can never end a split by accident. Traffic splitting is in beta, rolling out to select organizations; requests from organizations without access receive a 403.
+     * @description Creates a new traffic allocation for an assistant, replacing the one currently in effect. To start or adjust a split, send targets naming published versions (such as "v7") with percentages totaling 100; allocationIntent is inferred as 'explicit'. To stop splitting and send every call to the newest published version, send allocationIntent 'follow-latest' with no targets field; stopping always names its intent, so a dropped targets field can never end a split by accident.
      *
      * @tags Traffic Allocations
      * @name TrafficAllocationControllerCreate
@@ -55878,7 +56739,7 @@ export class Api<
       }),
 
     /**
-     * @description The append-only history of an assistant's allocations, newest first. Traffic splitting is in beta, rolling out to select organizations; requests from organizations without access receive a 403.
+     * @description The append-only history of an assistant's allocations, newest first.
      *
      * @tags Traffic Allocations
      * @name TrafficAllocationControllerFindAllPaginated
@@ -55916,7 +56777,7 @@ export class Api<
       }),
 
     /**
-     * @description The allocation currently in effect for the assistant, with its targets. The response carries no allocation field when traffic splitting has never been configured. Traffic splitting is in beta, rolling out to select organizations; requests from organizations without access receive a 403.
+     * @description The allocation currently in effect for the assistant, with its targets. The response carries no allocation field when traffic splitting has never been configured.
      *
      * @tags Traffic Allocations
      * @name TrafficAllocationControllerLatestGet
@@ -55941,7 +56802,7 @@ export class Api<
       }),
 
     /**
-     * @description Per-assistant-version call metrics over a time window: call counts, configured vs actual traffic share, duration, cost per minute, latency, ended reasons, a bucketed timeseries, and optional structured output aggregations. Calls with no assistant version are reported as an 'unversioned' row. Traffic splitting is in beta, rolling out to select organizations; requests from organizations without access receive a 403.
+     * @description Per-assistant-version call metrics over a time window: call counts, configured vs actual traffic share, duration, cost per minute, latency, ended reasons, a bucketed timeseries, and optional structured output aggregations. Calls with no assistant version are reported as an 'unversioned' row.
      *
      * @tags Traffic Allocations
      * @name TrafficAllocationControllerMetricsGet
@@ -55983,7 +56844,7 @@ export class Api<
       }),
 
     /**
-     * @description Returns a single allocation by id, including its targets and actor attribution. Traffic splitting is in beta, rolling out to select organizations; requests from organizations without access receive a 403.
+     * @description Returns a single allocation by id, including its targets and actor attribution.
      *
      * @tags Traffic Allocations
      * @name TrafficAllocationControllerFindOne
@@ -57905,9 +58766,7 @@ export class Api<
       params: RequestParams = {},
     ) =>
       this.request<
-        | (StructuredOutputRunPreviewResponse &
-            Record<string, StructuredOutputRunResult>)
-        | StructuredOutputRerunResponse,
+        StructuredOutputRunPreviewResponse | StructuredOutputRerunResponse,
         any
       >({
         path: `/structured-output/run`,
@@ -59352,6 +60211,112 @@ export class Api<
       }),
 
     /**
+     * @description Generate draft test requirements from an assistant's prompt, tools, and handoff configuration. The response includes numbered requirements describing expected behavior and open questions about behavior that needs clarification. Use this endpoint before generating a simulation suite. Review the requirements and resolve any open questions. To revise a draft, send it as `previousDraft` together with natural-language `feedback` describing the changes or answers. Once the requirements are ready, pass them to `POST /eval/simulation/onboarding/suite`. Requests can take up to 2 minutes. Each organization can draft requirements 60 times per UTC day, shared with the dashboard. A 429 `SIMULATION_ONBOARDING_QUOTA_EXCEEDED` response means the daily limit has been reached. Wait until the limit resets at 00:00 UTC before retrying.
+     *
+     * @tags Simulation Suites
+     * @name SimulationOnboardingControllerRequirementsDraft
+     * @summary Draft simulation requirements
+     * @request POST:/eval/simulation/onboarding/requirements
+     * @secure
+     */
+    simulationOnboardingControllerRequirementsDraft: (
+      data: SimulationOnboardingRequirementsCreateDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        SimulationOnboardingRequirementsDraftDTO,
+        | void
+        | SimulationOnboardingErrorDTO
+        | (
+            | SimulationOnboardingErrorDTO
+            | {
+                statusCode: number;
+                message: string;
+                error: string;
+              }
+          )
+      >({
+        path: `/eval/simulation/onboarding/requirements`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Generate and save a simulation suite from reviewed test requirements, and assign it to an assistant. First draft requirements with `POST /eval/simulation/onboarding/requirements`. The response includes the saved suite, its simulations, and requirement coverage, including any gaps. Requests can take up to 3 minutes. Set a client timeout of at least 200 seconds. Use a unique `idempotencyKey` for each suite generation request. Retrying with the same key does not create a duplicate suite: - On a timeout or a 5xx (502, 504, 524), retry with the same key. You get the saved suite, a 409 while it is still generating, or a fresh generation if the first one never saved. - On a 409 `SIMULATION_ONBOARDING_GENERATION_IN_PROGRESS`, the first request is still generating. Wait `Retry-After` seconds (15) and retry with the same key. - On a 409 `SIMULATION_ONBOARDING_IDEMPOTENCY_KEY_REUSED`, the key was used for a different assistant or requirements. Send a new key. Review the generated simulations and coverage gaps. Revise the suite with `PATCH /eval/simulation/onboarding/suite/{suiteId}`, then run it with `POST /eval/simulation/run`. Each organization can generate 20 suites per UTC day, shared with the dashboard, and 2 at a time. A retry that returns a saved suite does not count toward these limits. On a 429 `SIMULATION_ONBOARDING_CONCURRENCY_LIMITED`, wait `Retry-After` seconds (30) before retrying. On a 429 `SIMULATION_ONBOARDING_QUOTA_EXCEEDED`, wait until the daily limit resets at 00:00 UTC before retrying.
+     *
+     * @tags Simulation Suites
+     * @name SimulationOnboardingControllerSuiteCreate
+     * @summary Generate a simulation suite
+     * @request POST:/eval/simulation/onboarding/suite
+     * @secure
+     */
+    simulationOnboardingControllerSuiteCreate: (
+      data: SimulationOnboardingSuiteCreateDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        SimulationOnboardingSuiteViewDTO,
+        | void
+        | SimulationOnboardingErrorDTO
+        | (
+            | SimulationOnboardingErrorDTO
+            | {
+                statusCode: number;
+                message: string;
+                error: string;
+              }
+          )
+      >({
+        path: `/eval/simulation/onboarding/suite`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Revise a suite created by `POST /eval/simulation/onboarding/suite`. Remove simulations, rewrite scenarios using natural-language instructions, or set `retryFailed` to regenerate scenarios that failed or exceeded generation limits. The response includes the updated suite and requirement coverage. Requests can take up to 2 minutes. Send a new `patchKey` for each edit. Replaying an applied key changes nothing and returns the current suite, with `failedEditSimulationIds` listing the simulations that edit could not rewrite, so retry a timeout or a 5xx with the same key. A suite remembers its last 50 keys, so never reuse one. Each organization can make 60 edits per UTC day, shared with the dashboard. Requests that only remove simulations and replays of applied edits do not count toward this limit. On a 429 `SIMULATION_ONBOARDING_QUOTA_EXCEEDED`, wait until the daily limit resets at 00:00 UTC before retrying.
+     *
+     * @tags Simulation Suites
+     * @name SimulationOnboardingControllerSuiteUpdate
+     * @summary Edit a generated simulation suite
+     * @request PATCH:/eval/simulation/onboarding/suite/{suiteId}
+     * @secure
+     */
+    simulationOnboardingControllerSuiteUpdate: (
+      suiteId: string,
+      data: SimulationOnboardingSuiteUpdateDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        SimulationOnboardingSuiteViewDTO,
+        | void
+        | SimulationOnboardingErrorDTO
+        | (
+            | SimulationOnboardingErrorDTO
+            | {
+                statusCode: number;
+                message: string;
+                error: string;
+              }
+          )
+      >({
+        path: `/eval/simulation/onboarding/suite/${suiteId}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * No description
      *
      * @tags Simulations
@@ -60666,7 +61631,7 @@ export class Api<
       memberId: string,
       params: RequestParams = {},
     ) =>
-      this.request<void, any>({
+      this.request<void, void>({
         path: `/org/${id}/member/${memberId}/leave`,
         method: "DELETE",
         secure: true,
