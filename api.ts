@@ -38435,6 +38435,314 @@ export interface KnowledgeBaseV2WithFiles {
   toolId: string | null;
 }
 
+export interface CallHealthDashboardApiErrorDTO {
+  /** @minLength 1 */
+  code: string;
+  /** @minLength 1 */
+  message: string;
+  /** @minLength 1 */
+  requestId: string;
+  retryable: boolean;
+}
+
+export interface CallHealthDashboardAssistantReferenceDTO {
+  /** @format uuid */
+  id: string;
+  /** @minLength 1 */
+  name?: string;
+  /**
+   * Current assistant.latest_version label; omitted when unavailable, never a goal revision.
+   * @minLength 1
+   */
+  latestVersion?: string;
+}
+
+export interface CallHealthDashboardIssueDailyDTO {
+  /**
+   * UTC calendar date, with boundary buckets clipped to the requested window.
+   * @format date
+   */
+  date: string;
+  /**
+   * Distinct visible calls matching this issue in the bucket.
+   * @min 0
+   * @max 9007199254740991
+   */
+  affectedCallCount: number;
+  /**
+   * All accepted current-goal outcomes for the issue's assistant in the bucket.
+   * @min 0
+   * @max 9007199254740991
+   */
+  analyzedCallCount: number;
+  /**
+   * affectedCallCount / analyzedCallCount; omitted for a zero denominator.
+   * @min 0
+   * @max 1
+   */
+  affectedCallRate?: number;
+}
+
+export interface CallHealthDashboardIssueCoverageDTO {
+  state: "complete" | "partial" | "sweeping" | "blocked";
+  /**
+   * @format date-time
+   * @pattern ^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,6}))?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$
+   */
+  asOf: string;
+}
+
+export interface CallHealthDashboardIssueSummaryDTO {
+  /** @format uuid */
+  id: string;
+  /** @minLength 1 */
+  name: string;
+  status: "active" | "resolved" | "dismissed";
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  rowVersion: number;
+  /**
+   * Owning goal identity; issue-ID routes derive this selection from the issue.
+   * @format uuid
+   */
+  goalId: string;
+  /** @minLength 1 */
+  summary: string;
+  assistant: CallHealthDashboardAssistantReferenceDTO;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  affectedCallCount: number;
+  /**
+   * Same assistant/current-goal/window denominator used by the goal reads.
+   * @min 0
+   * @max 9007199254740991
+   */
+  analyzedCallCount: number;
+  /**
+   * Distinct calls matching this issue / analyzedCallCount; absent at zero.
+   * @min 0
+   * @max 1
+   */
+  affectedCallRate?: number;
+  /**
+   * One ascending contiguous page of UTC buckets; memberships across issues are not unique calls.
+   * @maxItems 100
+   * @minItems 1
+   */
+  dailySeries: CallHealthDashboardIssueDailyDTO[];
+  /**
+   * @format date-time
+   * @pattern ^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,6}))?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$
+   */
+  lastSeenAt?: string;
+  coverage: CallHealthDashboardIssueCoverageDTO;
+}
+
+export interface CallHealthDashboardWindowDTO {
+  /**
+   * @format date-time
+   * @pattern ^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,6}))?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$
+   */
+  callTimeGte: string;
+  /**
+   * @format date-time
+   * @pattern ^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,6}))?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$
+   */
+  callTimeLt: string;
+}
+
+export interface CallHealthDashboardSeriesPageDTO {
+  /** Full resolved completion window used by every total, rate and coverage count. */
+  window: CallHealthDashboardWindowDTO;
+  /** Clipped completion window represented by this page's daily buckets. */
+  pageWindow: CallHealthDashboardWindowDTO;
+  /**
+   * Continue chart dates only; independent of the issue-row nextCursor.
+   * @minLength 1
+   * @maxLength 2048
+   * @pattern ^[A-Za-z0-9_-]+$
+   */
+  nextCursor?: string;
+}
+
+export interface CallHealthDashboardFacetsDTO {
+  statuses: ("active" | "resolved" | "dismissed")[];
+}
+
+export interface CallHealthDashboardIntakeCoverageDTO {
+  deliveryMode: "bestEffort";
+  endToEndCoverage: "unknown";
+}
+
+export interface CallHealthDashboardGoalGapsDTO {
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  pending: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  unavailable: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  skipped: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  error: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  excluded: number;
+}
+
+export interface CallHealthDashboardClassificationCoverageDTO {
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  pending: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  unavailable: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  skipped: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  error: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  excluded: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  complete: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  partial: number;
+}
+
+export interface CallHealthDashboardAssignmentCoverageDTO {
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  pending: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  unmatched: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  skipped: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  unavailable: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  error: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  coverageGapCount: number;
+}
+
+export interface CallHealthDashboardDiscoveryCoverageDTO {
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  pendingIssueCategoryCount: number;
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  blockedIssueCategoryCount: number;
+}
+
+export interface CallHealthDashboardSweepCoverageDTO {
+  state: "idle" | "enumerating" | "processing" | "deduplicating" | "blocked";
+}
+
+export interface CallHealthDashboardCoverageDTO {
+  /**
+   * @format date-time
+   * @pattern ^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,6}))?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$
+   */
+  asOf: string;
+  intake: CallHealthDashboardIntakeCoverageDTO;
+  goal: CallHealthDashboardGoalGapsDTO;
+  classification: CallHealthDashboardClassificationCoverageDTO;
+  assignment: CallHealthDashboardAssignmentCoverageDTO;
+  discovery: CallHealthDashboardDiscoveryCoverageDTO;
+  sweep: CallHealthDashboardSweepCoverageDTO;
+  /** Completeness of received authorized work only; never source delivery coverage. */
+  countsComplete: boolean;
+}
+
+export interface CallHealthDashboardIssueListResponseDTO {
+  results: CallHealthDashboardIssueSummaryDTO[];
+  /** Every row's dailySeries represents this same date page. */
+  seriesPage: CallHealthDashboardSeriesPageDTO;
+  facets: CallHealthDashboardFacetsDTO;
+  /**
+   * @minLength 1
+   * @maxLength 2048
+   * @pattern ^[A-Za-z0-9_-]+$
+   */
+  nextCursor?: string;
+  coverage: CallHealthDashboardCoverageDTO;
+}
+
+export interface CallHealthDashboardIssueDefinitionDTO {
+  /** @minLength 1 */
+  applicability: string | null;
+  /** @minLength 1 */
+  problem: string | null;
+  /**
+   * @min 1
+   * @max 9007199254740991
+   */
+  createdTaxonomyVersion: number | null;
+}
+
+export interface CallHealthDashboardIssueDetailResponseDTO {
+  issue: CallHealthDashboardIssueSummaryDTO;
+  seriesPage: CallHealthDashboardSeriesPageDTO;
+  definition: CallHealthDashboardIssueDefinitionDTO;
+  coverage: CallHealthDashboardCoverageDTO;
+}
+
 export interface StructuredOutputRunResult {
   /** This is the name of the structured output that produced this value. */
   name: string;
@@ -39982,7 +40290,7 @@ export interface SimulationRunItemResults {
     string,
     {
       name: string;
-      result: any;
+      result: any | null;
     }
   >;
   /** Condition-gated outputs or audio outputs unsupported by chat. */
@@ -42860,7 +43168,14 @@ export interface EvalAnthropicModel {
     | "claude-haiku-4-5-20251001"
     | "claude-haiku-5-5";
   /**
+   * Reasoning effort for the judge on claude-haiku-5-5. `none` turns thinking
+   * off. `low` to `max` let the judge think before it submits its verdict.
+   * Unset means `none`. Rejected for every other model.
+   */
+  reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
+  /**
    * This is the optional configuration for Anthropic's thinking feature.
+   * claude-haiku-5-5 uses `reasoningEffort` instead.
    *
    * - If provided, `maxTokens` must be greater than `thinking.budgetTokens`.
    */
@@ -43564,7 +43879,7 @@ export interface GoalEvaluationCurrentDTO {
     | "excluded"
     | "completed";
   /** Absent until a semantic result is accepted. Processing failures are never goal_not_met. */
-  goalOutcome?: "goal_met" | "goal_not_met" | "ineligible";
+  goalOutcome?: "goal_met" | "goal_not_met" | "not_applicable";
 }
 
 export interface GoalEvaluationCurrentCallResponseDTO {
@@ -58576,6 +58891,131 @@ export class Api<
         ...params,
       }),
   };
+  callHealth = {
+    /**
+     * No description
+     *
+     * @tags Call Health
+     * @name CallHealthDashboardIssueReadControllerListGet
+     * @summary List one assistant’s issue aggregates in ascending ID transport pages
+     * @request GET:/call-health/assistant/{id}/issue
+     * @secure
+     */
+    callHealthDashboardIssueReadControllerListGet: (
+      id: string,
+      query: {
+        /**
+         * Inclusive endedAt bound; timezone and at most six fractional digits required. Without this bound, use seven elapsed days before callTimeLt or now. Explicit bounds have no maximum span.
+         * @format date-time
+         * @pattern ^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,6}))?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$
+         */
+        callTimeGte?: string;
+        /**
+         * Exclusive endedAt bound; timezone and at most six fractional digits required. Without this bound, use seven elapsed days after callTimeGte or now if both bounds are absent.
+         * @format date-time
+         * @pattern ^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,6}))?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$
+         */
+        callTimeLt?: string;
+        /**
+         * Continue daily buckets within the original full metric window.
+         * @minLength 1
+         * @maxLength 2048
+         * @pattern ^[A-Za-z0-9_-]+$
+         */
+        seriesCursor?: string;
+        /**
+         * Maximum UTC daily buckets in this response; totals still cover the full selected window.
+         * @min 1
+         * @max 100
+         * @default 31
+         */
+        seriesLimit?: number;
+        /**
+         * Required selected goal belonging to the path assistant.
+         * @format uuid
+         */
+        goalId: string;
+        /**
+         * @minLength 1
+         * @maxLength 2048
+         * @pattern ^[A-Za-z0-9_-]+$
+         */
+        cursor?: string;
+        /**
+         * @min 1
+         * @max 100
+         * @default 20
+         */
+        limit?: number;
+        status?: "active" | "resolved" | "dismissed";
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        CallHealthDashboardIssueListResponseDTO,
+        CallHealthDashboardApiErrorDTO
+      >({
+        path: `/call-health/assistant/${id}/issue`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Call Health
+     * @name CallHealthDashboardIssueReadControllerDetailGet
+     * @summary Get full-window issue impact and a bounded daily chart page
+     * @request GET:/call-health/issue/{id}
+     * @secure
+     */
+    callHealthDashboardIssueReadControllerDetailGet: (
+      id: string,
+      query?: {
+        /**
+         * Inclusive endedAt bound; timezone and at most six fractional digits required. Without this bound, use seven elapsed days before callTimeLt or now. Explicit bounds have no maximum span.
+         * @format date-time
+         * @pattern ^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,6}))?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$
+         */
+        callTimeGte?: string;
+        /**
+         * Exclusive endedAt bound; timezone and at most six fractional digits required. Without this bound, use seven elapsed days after callTimeGte or now if both bounds are absent.
+         * @format date-time
+         * @pattern ^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,6}))?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$
+         */
+        callTimeLt?: string;
+        /**
+         * Continue daily buckets within the original full metric window.
+         * @minLength 1
+         * @maxLength 2048
+         * @pattern ^[A-Za-z0-9_-]+$
+         */
+        seriesCursor?: string;
+        /**
+         * Maximum UTC daily buckets in this response; totals still cover the full selected window.
+         * @min 1
+         * @max 100
+         * @default 31
+         */
+        seriesLimit?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        CallHealthDashboardIssueDetailResponseDTO,
+        CallHealthDashboardApiErrorDTO
+      >({
+        path: `/call-health/issue/${id}`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+  };
   structuredOutput = {
     /**
      * No description
@@ -58766,7 +59206,9 @@ export class Api<
       params: RequestParams = {},
     ) =>
       this.request<
-        StructuredOutputRunPreviewResponse | StructuredOutputRerunResponse,
+        | (StructuredOutputRunPreviewResponse &
+            Record<string, StructuredOutputRunResult>)
+        | StructuredOutputRerunResponse,
         any
       >({
         path: `/structured-output/run`,
