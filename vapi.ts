@@ -266,7 +266,8 @@ type StartCallOptions = {
 type ReconnectOptions = {
   /**
    * Run Daily's Krisp noise cancellation on the microphone
-   * in the browser. Defaults to the value passed to the last `start()`, or true.
+   * in the browser. Defaults to the value used by the last `start()` or
+   * `reconnect()`, or true if neither set it.
    *
    * Separate from the assistant's server-side `backgroundSpeechDenoisingPlan`,
    * which this option does not change.
