@@ -225,6 +225,15 @@ type StartCallOptions = {
   /** Acquire the microphone before creating a backend call. Defaults to true. */
   microphonePreflightEnabled?: boolean;
   /**
+   * Run Daily's Krisp noise cancellation on the microphone
+   * in the browser, before the audio leaves the device. Set to `false` to send
+   * the raw microphone audio. Defaults to true.
+   *
+   * Separate from the assistant's server-side `backgroundSpeechDenoisingPlan`,
+   * which this option does not change.
+   */
+  clientSideNoiseCancellationEnabled?: boolean;
+  /**
    * This determines whether the daily room will be deleted and all participants will be kicked once the user leaves the room.
    * If set to `false`, the room will be kept alive even after the user leaves, allowing clients to reconnect to the same room.
    * If set to `true`, the room will be deleted and reconnection will not be allowed.
@@ -252,6 +261,18 @@ type StartCallOptions = {
    * @example "server"
    */
   videoRecordingStartMode?: VideoRecordingStartMode;
+}
+
+type ReconnectOptions = {
+  /**
+   * Run Daily's Krisp noise cancellation on the microphone
+   * in the browser. Defaults to the value used by the last `start()` or
+   * `reconnect()`, or true if neither set it.
+   *
+   * Separate from the assistant's server-side `backgroundSpeechDenoisingPlan`,
+   * which this option does not change.
+   */
+  clientSideNoiseCancellationEnabled?: boolean;
 }
 
 type WebCall = {
@@ -404,6 +425,7 @@ export default class Vapi extends VapiEventEmitter {
   private dailyCallObject: DailyFactoryOptions = {};
   private microphoneTrack: MediaStreamTrack | null = null;
   private cancelMicrophonePreflight: (() => void) | null = null;
+  private clientSideNoiseCancellationEnabled: boolean = true;
 
   private async microphoneAcquire(): Promise<MediaStreamTrack> {
     const source = this.dailyCallObject.audioSource;
@@ -579,6 +601,7 @@ export default class Vapi extends VapiEventEmitter {
     });
     
     this.started = true;
+    this.clientSideNoiseCancellationEnabled = options?.clientSideNoiseCancellationEnabled ?? true;
 
     let failureStage = 'microphone-preflight';
     try {
@@ -985,63 +1008,69 @@ export default class Vapi extends VapiEventEmitter {
         }
       });
 
-      // Stage 7: Audio processing setup
-      this.emit('call-start-progress', {
-        stage: 'audio-processing-setup',
-        status: 'started',
-        timestamp: new Date().toISOString()
-      });
+      if (this.clientSideNoiseCancellationEnabled) {
+        // Stage 7: Audio processing setup
+        this.emit('call-start-progress', {
+          stage: 'audio-processing-setup',
+          status: 'started',
+          timestamp: new Date().toISOString()
+        });
       
-      const audioProcessingStartTime = Date.now();
+        const audioProcessingStartTime = Date.now();
       
-      try {
-        const audioProcessingUpdate = this.call.updateInputSettings({
-          audio: {
-            processor: {
-              type: 'noise-cancellation',
+        try {
+          const audioProcessingUpdate = this.call.updateInputSettings({
+            audio: {
+              processor: {
+                type: 'noise-cancellation',
+              },
             },
-          },
-        });
+          });
 
-        audioProcessingUpdate.catch((error) => {
-          this.emitAudioProcessingError('audio-processing-setup', error);
-        });
+          audioProcessingUpdate.catch((error) => {
+            this.emitAudioProcessingError('audio-processing-setup', error);
+          });
 
-        // The observer waits for this update rather than starting alongside the
-        // remote one above, so that Krisp has already swapped the microphone
-        // track. See maybeStartLocalAudioLevelObserver().
-        //
-        // A separate chain, not another link on the one above: EventEmitter
-        // rethrows out of emit('error') when a consumer registered no 'error'
-        // listener, and whether the observer starts must not hinge on that.
-        audioProcessingUpdate
-          .catch(() => {})
-          .then(() => this.maybeStartLocalAudioLevelObserver());
+          // The observer waits for this update rather than starting alongside the
+          // remote one above, so that Krisp has already swapped the microphone
+          // track. See maybeStartLocalAudioLevelObserver().
+          //
+          // A separate chain, not another link on the one above: EventEmitter
+          // rethrows out of emit('error') when a consumer registered no 'error'
+          // listener, and whether the observer starts must not hinge on that.
+          audioProcessingUpdate
+            .catch(() => {})
+            .then(() => this.maybeStartLocalAudioLevelObserver());
 
-        const audioProcessingDuration = Date.now() - audioProcessingStartTime;
-        this.emit('call-start-progress', {
-          stage: 'audio-processing-setup',
-          status: 'completed',
-          duration: audioProcessingDuration,
-          timestamp: new Date().toISOString()
-        });
-      } catch (error) {
-        const audioProcessingDuration = Date.now() - audioProcessingStartTime;
-        const serializedError = serializeError(error);
-        this.emit('call-start-progress', {
-          stage: 'audio-processing-setup',
-          status: 'failed',
-          duration: audioProcessingDuration,
-          timestamp: new Date().toISOString(),
-          metadata: { error: serializedError.message }
-        });
-        this.emit('error', {
-          type: 'audio-processing-setup-error',
-          stage: 'audio-processing-setup',
-          error: serializedError,
-          timestamp: new Date().toISOString()
-        });
-        // Don't throw here, this is non-critical
+          const audioProcessingDuration = Date.now() - audioProcessingStartTime;
+          this.emit('call-start-progress', {
+            stage: 'audio-processing-setup',
+            status: 'completed',
+            duration: audioProcessingDuration,
+            timestamp: new Date().toISOString()
+          });
+        } catch (error) {
+          const audioProcessingDuration = Date.now() - audioProcessingStartTime;
+          const serializedError = serializeError(error);
+          this.emit('call-start-progress', {
+            stage: 'audio-processing-setup',
+            status: 'failed',
+            duration: audioProcessingDuration,
+            timestamp: new Date().toISOString(),
+            metadata: { error: serializedError.message }
+          });
+          this.emit('error', {
+            type: 'audio-processing-setup-error',
+            stage: 'audio-processing-setup',
+            error: serializedError,
+            timestamp: new Date().toISOString()
+          });
+          // Don't throw here, this is non-critical
+        }
+      } else {
+        // Daily's default processor is 'none', so the microphone track is never
+        // swapped and the observer has nothing to wait for.
+        void this.maybeStartLocalAudioLevelObserver();
       }
 
       const totalDuration = Date.now() - startTime;
@@ -1567,11 +1596,11 @@ export default class Vapi extends VapiEventEmitter {
 
   /**
    * Reconnects to an active call.
-   * 
-   * 
-   * @param webCall 
+   *
+   * @param webCall
+   * @param options
    */
-  async reconnect(webCall: WebCall): Promise<void> {
+  async reconnect(webCall: WebCall, options?: ReconnectOptions): Promise<void> {
     const startTime = Date.now();
     
     if (this.started) {
@@ -1580,6 +1609,10 @@ export default class Vapi extends VapiEventEmitter {
 
     if (!webCall.webCallUrl) {
       throw new Error('webCallUrl is required for reconnection.');
+    }
+
+    if (options?.clientSideNoiseCancellationEnabled !== undefined) {
+      this.clientSideNoiseCancellationEnabled = options.clientSideNoiseCancellationEnabled;
     }
 
     this.emit('call-start-progress', {
@@ -1912,57 +1945,63 @@ export default class Vapi extends VapiEventEmitter {
         // Don't throw here, this is non-critical
       }
 
-      // Stage 6: Audio processing setup
-      this.emit('call-start-progress', {
-        stage: 'audio-processing-setup',
-        status: 'started',
-        timestamp: new Date().toISOString()
-      });
-      
-      const audioProcessingStartTime = Date.now();
-      
-      try {
-        const audioProcessingUpdate = this.call.updateInputSettings({
-          audio: {
-            processor: {
-              type: 'noise-cancellation',
-            },
-          },
-        });
-
-        audioProcessingUpdate.catch((error) => {
-          this.emitAudioProcessingError('audio-processing-setup', error);
-        });
-
-        // The observer waits for this update rather than starting alongside the
-        // remote one above, so that Krisp has already swapped the microphone
-        // track. See maybeStartLocalAudioLevelObserver().
-        //
-        // A separate chain, not another link on the one above: EventEmitter
-        // rethrows out of emit('error') when a consumer registered no 'error'
-        // listener, and whether the observer starts must not hinge on that.
-        audioProcessingUpdate
-          .catch(() => {})
-          .then(() => this.maybeStartLocalAudioLevelObserver());
-
-        const audioProcessingDuration = Date.now() - audioProcessingStartTime;
+      if (this.clientSideNoiseCancellationEnabled) {
+        // Stage 6: Audio processing setup
         this.emit('call-start-progress', {
           stage: 'audio-processing-setup',
-          status: 'completed',
-          duration: audioProcessingDuration,
+          status: 'started',
           timestamp: new Date().toISOString()
         });
-      } catch (error) {
-        const audioProcessingDuration = Date.now() - audioProcessingStartTime;
-        const serializedError = serializeError(error);
-        this.emit('call-start-progress', {
-          stage: 'audio-processing-setup',
-          status: 'failed',
-          duration: audioProcessingDuration,
-          timestamp: new Date().toISOString(),
-          metadata: { error: serializedError.message }
-        });
-        // Don't throw here, this is non-critical
+      
+        const audioProcessingStartTime = Date.now();
+      
+        try {
+          const audioProcessingUpdate = this.call.updateInputSettings({
+            audio: {
+              processor: {
+                type: 'noise-cancellation',
+              },
+            },
+          });
+
+          audioProcessingUpdate.catch((error) => {
+            this.emitAudioProcessingError('audio-processing-setup', error);
+          });
+
+          // The observer waits for this update rather than starting alongside the
+          // remote one above, so that Krisp has already swapped the microphone
+          // track. See maybeStartLocalAudioLevelObserver().
+          //
+          // A separate chain, not another link on the one above: EventEmitter
+          // rethrows out of emit('error') when a consumer registered no 'error'
+          // listener, and whether the observer starts must not hinge on that.
+          audioProcessingUpdate
+            .catch(() => {})
+            .then(() => this.maybeStartLocalAudioLevelObserver());
+
+          const audioProcessingDuration = Date.now() - audioProcessingStartTime;
+          this.emit('call-start-progress', {
+            stage: 'audio-processing-setup',
+            status: 'completed',
+            duration: audioProcessingDuration,
+            timestamp: new Date().toISOString()
+          });
+        } catch (error) {
+          const audioProcessingDuration = Date.now() - audioProcessingStartTime;
+          const serializedError = serializeError(error);
+          this.emit('call-start-progress', {
+            stage: 'audio-processing-setup',
+            status: 'failed',
+            duration: audioProcessingDuration,
+            timestamp: new Date().toISOString(),
+            metadata: { error: serializedError.message }
+          });
+          // Don't throw here, this is non-critical
+        }
+      } else {
+        // Daily's default processor is 'none', so the microphone track is never
+        // swapped and the observer has nothing to wait for.
+        void this.maybeStartLocalAudioLevelObserver();
       }
 
       const totalDuration = Date.now() - startTime;
